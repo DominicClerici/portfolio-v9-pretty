@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary palette */
+  --color-primary: #e2c28f;
+  --color-primary-container: #b89a6a;
+  --color-on-primary: #412d06;
+
+  /* Secondary palette */
+  --color-secondary: #a9cfb8;
+  --color-secondary-container: #2b4e3c;
+  --color-on-secondary: #143726;
+
+  /* Surface / Background */
+  --color-background: #111412;
+  --color-surface: #111412;
+  --color-surface-dim: #131614;
+  --color-surface-container-lowest: #0c0f0d;
+  --color-surface-container-low: #191c1a;
+  --color-surface-container: #1d201e;
+  --color-surface-container-high: #282b28;
+  --color-surface-container-highest: #323533;
+
+  /* On-colors */
+  --color-on-surface: #e1e3df;
+  --color-on-surface-variant: #d0c5b6;
+
+  /* Outline */
+  --color-outline: #998f82;
+  --color-outline-variant: #4d463b;
+
+  /* Section backgrounds */
+  --color-section-about: #1a1c1a;
+  --color-section-quote: #181a17;
+  --color-section-work: #1b1d1b;
+
+  /* Font families */
+  --font-headline: "Newsreader", serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Space Grotesk", sans-serif;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.hero-grid {
+  background-image: linear-gradient(
+      to right,
+      var(--color-outline-variant) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--color-outline-variant) 1px,
+      transparent 1px
+    );
+  background-size: 40px 40px;
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.165), transparent);
+}
+
+/* Hero grid tracer layer — overlaps the grid but with a brighter mask */
+.hero-grid-tracer-layer {
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 1), transparent);
+}
+
+/* Hero grid tracer — shooting line that runs along a grid wire */
+.hero-grid-tracer {
+  position: absolute;
+  pointer-events: none;
+  display: none;
+  opacity: 0.7;
+}
+
+/* CRT scan lines — faint bright horizontal ridges */
+.scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.018),
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* Hamburger → X SVG path animation */
+#menu-toggle svg path {
+  transition: d 0.3s ease;
+}
+
+#menu-toggle[aria-expanded="true"] svg path:first-child {
+  d: path("M4 1L20 9");
+}
+
+#menu-toggle[aria-expanded="true"] svg path:last-child {
+  d: path("M4 9L20 1");
+}
+
+#mobile-menu {
+  transition: opacity 0.3s ease;
+}

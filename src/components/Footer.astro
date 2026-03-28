@@ -1,0 +1,44 @@
+<footer class="w-full bg-background border-t border-primary/10">
+  <div class="hidden md:flex justify-between items-end max-w-[1920px] mx-auto py-20 px-8">
+    <div class="font-label text-sm uppercase tracking-[0.2em] text-secondary/60 group cursor-default leading-relaxed">
+      <span class="flex items-center gap-2">
+        Made with
+        <svg
+          class="w-4 h-4 text-primary group-hover:text-red-500 transition-colors duration-150"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-label="love"
+        ><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </span>
+      <span>by Dominic Clerici</span>
+    </div>
+    <div class="font-label text-[10px] uppercase tracking-widest text-secondary/60">
+      &copy; <span data-footer-year>2026</span> — Dominic Clerici
+    </div>
+  </div>
+
+  <div class="flex md:hidden flex-col items-center gap-4 py-20 px-6 text-center">
+    <div class="font-label text-sm uppercase tracking-[0.2em] text-secondary/60 group cursor-default leading-relaxed flex flex-col items-center">
+      <span class="flex items-center gap-2">
+        Made with
+        <svg
+          class="w-4 h-4 text-primary group-hover:text-red-500 transition-colors duration-150"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-label="love"
+        ><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </span>
+      <span>by Dominic Clerici</span>
+    </div>
+    <p class="font-label text-[10px] uppercase tracking-widest text-outline">
+      &copy; <span data-footer-year>2026</span> — Dominic Clerici
+    </p>
+  </div>
+</footer>
+
+<script>
+  const year = new Date().getFullYear().toString();
+  document.querySelectorAll("[data-footer-year]").forEach((el) => {
+    el.textContent = year;
+  });
+</script>

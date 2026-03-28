@@ -1,17 +1,35 @@
 ---
-
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Hero from "../components/Hero.astro";
+import About from "../components/About.astro";
+import Career from "../components/Career.astro";
+import Quote from "../components/Quote.astro";
+import Work from "../components/Work.astro";
+import Contact from "../components/Contact.astro";
+import Footer from "../components/Footer.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout>
+  <Header />
+  <main>
+    <Hero />
+    <About />
+    <Career />
+    <Quote />
+    <Work />
+    <Contact />
+  </main>
+  <Footer />
+  <a
+    href="https://dev.dominicclerici.com"
+    target="_blank"
+    rel="noopener noreferrer"
+    data-terminal="scroll"
+    aria-label="Open developer terminal"
+    class="hidden md:inline-flex fixed bottom-2 left-2 font-label text-white pointer-events-none transition-opacity duration-300"
+    style="opacity: 0"
+  >
+    <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
+  </a>
+</Layout>

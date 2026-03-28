@@ -1,0 +1,73 @@
+---
+const conceptualSkills = [
+  "Full Stack", "Mobile Development", "Cloud Infrastructure",
+  "AI/ML", "Autonomous Agents", "Growth Engineering",
+  "Internal Tooling", "SEO", "Data Analysis",
+];
+
+const technicalSkills = [
+  "TypeScript", "Go", "Python", "React", "Next.js",
+  "React Native", "Swift", "Node.js", "PostgreSQL",
+  "AWS Lambda", "Electron", "WordPress", "Elementor",
+];
+---
+
+<section id="about" class="bg-section-about py-12 md:py-32 border-y border-primary/10">
+  <div class="max-w-[1140px] mx-auto px-5 md:px-24">
+  <h2 class="sr-only">About</h2>
+  <div class="md:hidden space-y-4 mb-8">
+    <div class="flex justify-between items-center border-b border-primary/10 pb-2">
+      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-secondary">NYC</span>
+      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-primary">EST. 2004</span>
+    </div>
+    <div class="flex justify-between items-center border-b border-primary/10 pb-2">
+      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-primary">5+ Years</span>
+      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface">formal experience, 9+ years programming</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-start">
+    <div class="hidden md:block md:col-span-3">
+      <div class="font-label text-[10px] tracking-[0.3em] uppercase text-secondary mb-2">Location</div>
+      <div class="font-headline text-4xl text-primary lowercase italic">NYC</div>
+      <div class="font-label text-[10px] tracking-[0.2em] text-on-surface-variant mt-4">EST. 2004</div>
+    </div>
+
+    <div class="hidden md:block md:col-span-3">
+      <div class="font-label text-[10px] tracking-[0.3em] uppercase text-secondary mb-2">Experience</div>
+      <div class="font-headline text-4xl text-primary lowercase italic">5+ Years</div>
+      <div class="font-label text-[10px] tracking-[0.2em] text-on-surface-variant mt-4">formal experience, <br /> 9+ years spent programming</div>
+    </div>
+
+    <div class="md:col-span-6">
+      <p class="font-body text-sm md:text-lg text-on-surface-variant leading-relaxed mb-8">
+        CS student at Indiana University, currently a full stack engineer at Rumor. I've been programming since before I had any business doing so. I care about speed, clean interfaces, and writing code I won't hate in six months.
+      </p>
+
+      <div class="hidden md:block space-y-4">
+        <div class="flex flex-wrap gap-x-6 gap-y-3">
+          {
+            conceptualSkills.map((skill) => (
+              <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 bg-primary" aria-hidden="true" />
+                <span class="font-label text-xs uppercase tracking-widest text-on-surface">{skill}</span>
+              </div>
+            ))
+          }
+        </div>
+        <div class="flex flex-wrap gap-x-6 gap-y-3">
+          {
+            technicalSkills.map((skill) => (
+              <div class="flex items-center gap-2">
+                <span class="w-1 h-1 bg-secondary/50 rounded-full" aria-hidden="true" />
+                <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">{skill}</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+  </div>
+</section>

@@ -1,0 +1,392 @@
+---
+const navLinks = [
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/dominic-clerici/", external: true },
+  { label: "Email", href: "mailto:contact@dominicclerici.com", external: false },
+];
+---
+
+<header class="absolute top-0 left-0 w-full z-[70]">
+  <div class="max-w-[1920px] mx-auto flex justify-between items-center px-6 md:px-12 h-20 md:h-auto md:py-6">
+    <a
+      href="https://dev.dominicclerici.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      data-terminal="header"
+      aria-label="Open developer terminal"
+      class="hidden md:inline-flex font-label text-white px-4 py-1.5"
+    >
+      <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
+    </a>
+
+    <nav class="hidden md:flex gap-8 items-center" aria-label="Main navigation">
+      {
+        navLinks.map((link) => (
+          <a
+            href={link.href}
+            class="font-label text-base font-light uppercase tracking-tighter text-on-surface hover:text-primary transition-colors duration-100"
+            {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+      <a
+        href="/resume.pdf"
+        class="font-label text-base font-light uppercase tracking-tighter text-on-surface border border-outline-variant px-4 py-1 hover:text-primary hover:border-primary transition-colors duration-100"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Resume
+      </a>
+    </nav>
+
+    <button
+      id="menu-toggle"
+      class="md:hidden ml-auto w-6 bg-transparent border-none cursor-pointer p-0 text-primary"
+      aria-label="Toggle navigation menu"
+      aria-expanded="false"
+    >
+      <svg class="w-6 h-[10px]" viewBox="0 0 24 10" fill="none" aria-hidden="true">
+        <path d="M0 1L24 1" stroke="currentColor" stroke-width="1"/>
+        <path d="M0 9L24 9" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div
+  id="mobile-menu"
+  class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background/50 backdrop-blur-xl opacity-0 pointer-events-none"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Navigation menu"
+  aria-hidden="true"
+>
+  <nav class="flex flex-col items-center gap-8" aria-label="Mobile navigation">
+    {
+      navLinks.map((link) => (
+        <a
+          href={link.href}
+          class="font-label text-xl font-light uppercase tracking-tighter text-on-surface transition-colors duration-100"
+          data-menu-link
+          {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        >
+          {link.label}
+        </a>
+      ))
+    }
+    <a
+      href="/resume.pdf"
+      class="font-label text-xl font-light uppercase tracking-tighter text-primary border border-primary px-6 py-2 transition-colors duration-100"
+      data-menu-link
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Resume
+    </a>
+  </nav>
+  <div class="absolute bottom-4 left-6 md:hidden">
+    <span
+      id="terminal-mobile-hint"
+      class="block text-xs font-label text-primary opacity-0 transition-opacity duration-300 mb-1"
+    >click it again...</span>
+    <a
+      href="https://dev.dominicclerici.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      data-terminal="mobile"
+      aria-label="Open developer terminal"
+      class="font-label text-white"
+      style="opacity: 0.5"
+    >
+      <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
+    </a>
+  </div>
+</div>
+
+<script>
+  const toggle = document.getElementById("menu-toggle");
+  const menuEl = document.getElementById("mobile-menu");
+
+  function openMenu() {
+    menuEl!.classList.remove("opacity-0", "pointer-events-none");
+    menuEl!.classList.add("opacity-100", "pointer-events-auto");
+    toggle!.setAttribute("aria-expanded", "true");
+    menuEl!.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    initMobileTerminal();
+  }
+
+  function closeMenu() {
+    menuEl!.classList.add("opacity-0", "pointer-events-none");
+    menuEl!.classList.remove("opacity-100", "pointer-events-auto");
+    toggle!.setAttribute("aria-expanded", "false");
+    menuEl!.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    teardownMobileTerminal();
+  }
+
+  toggle!.addEventListener("click", () => {
+    if (toggle!.getAttribute("aria-expanded") === "true") {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  document.querySelectorAll("[data-menu-link]").forEach((link) => {
+    link.addEventListener("click", closeMenu);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+  });
+
+  // === Terminal Animation Engine ===
+  const TYPE_STRING = "ssh dev.dominicclerici.com";
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  interface TState {
+    textEl: HTMLElement;
+    cursorEl: HTMLElement;
+    blinkInterval: number | null;
+    visTimer: number | null;
+    animCancel: { value: boolean } | null;
+    isInView: boolean;
+    isHovering: boolean;
+    isActivated: boolean;
+    hintTimer: number | null;
+    hintEl: HTMLElement | null;
+  }
+
+  function makeState(el: HTMLElement, hintEl?: HTMLElement | null): TState {
+    return {
+      textEl: el.querySelector("[data-terminal-text]") as HTMLElement,
+      cursorEl: el.querySelector("[data-terminal-cursor]") as HTMLElement,
+      blinkInterval: null,
+      visTimer: null,
+      animCancel: null,
+      isInView: false,
+      isHovering: false,
+      isActivated: false,
+      hintTimer: null,
+      hintEl: hintEl ?? null,
+    };
+  }
+
+  function startBlink(s: TState) {
+    if (prefersReducedMotion) return;
+    stopBlink(s);
+    s.cursorEl.style.visibility = "visible";
+    s.blinkInterval = window.setInterval(() => {
+      s.cursorEl.style.visibility =
+        s.cursorEl.style.visibility === "hidden" ? "visible" : "hidden";
+    }, 530);
+  }
+
+  function stopBlink(s: TState) {
+    if (s.blinkInterval !== null) {
+      clearInterval(s.blinkInterval);
+      s.blinkInterval = null;
+    }
+    s.cursorEl.style.visibility = "visible";
+  }
+
+  function cancelAnim(s: TState) {
+    if (s.animCancel) {
+      s.animCancel.value = true;
+      s.animCancel = null;
+    }
+  }
+
+  function typeText(s: TState): Promise<boolean> {
+    if (prefersReducedMotion) {
+      s.textEl.textContent = ">" + TYPE_STRING;
+      return Promise.resolve(true);
+    }
+    cancelAnim(s);
+    const cancel = { value: false };
+    s.animCancel = cancel;
+    startBlink(s);
+
+    const full = ">" + TYPE_STRING;
+    let i = s.textEl.textContent!.length;
+
+    return new Promise((resolve) => {
+      function step() {
+        if (cancel.value) { resolve(false); return; }
+        if (i >= full.length) { s.animCancel = null; resolve(true); return; }
+        s.textEl.textContent = full.slice(0, i + 1);
+        i++;
+        setTimeout(step, Math.floor(Math.random() * 46) + 15);
+      }
+      step();
+    });
+  }
+
+  function deleteText(s: TState): Promise<boolean> {
+    if (prefersReducedMotion) {
+      s.textEl.textContent = ">";
+      return Promise.resolve(true);
+    }
+    cancelAnim(s);
+    const cancel = { value: false };
+    s.animCancel = cancel;
+
+    return new Promise((resolve) => {
+      function step() {
+        if (cancel.value) { resolve(false); return; }
+        const text = s.textEl.textContent!;
+        if (text.length <= 1) { s.animCancel = null; resolve(true); return; }
+        s.textEl.textContent = text.slice(0, -1);
+        setTimeout(step, 13);
+      }
+      step();
+    });
+  }
+
+  // === Desktop Header Button ===
+  const headerEl = document.querySelector<HTMLElement>('[data-terminal="header"]');
+  if (headerEl) {
+    const hs = makeState(headerEl);
+
+    new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          hs.isInView = true;
+          if (!hs.isHovering) {
+            if (hs.visTimer !== null) { clearTimeout(hs.visTimer); }
+            hs.visTimer = window.setTimeout(() => startBlink(hs), 5000);
+          }
+        } else {
+          hs.isInView = false;
+          if (!hs.isHovering) stopBlink(hs);
+          if (hs.visTimer !== null) {
+            clearTimeout(hs.visTimer);
+            hs.visTimer = null;
+          }
+        }
+      }
+    }).observe(headerEl);
+
+    headerEl.addEventListener("mouseenter", () => {
+      hs.isHovering = true;
+      if (hs.visTimer !== null) {
+        clearTimeout(hs.visTimer);
+        hs.visTimer = null;
+      }
+      typeText(hs);
+    });
+
+    headerEl.addEventListener("mouseleave", async () => {
+      hs.isHovering = false;
+      const completed = await deleteText(hs);
+      if (completed && !hs.isHovering && hs.isInView) {
+        startBlink(hs);
+      }
+    });
+  }
+
+  // === Desktop Scroll Button ===
+  const scrollEl = document.querySelector<HTMLElement>('[data-terminal="scroll"]');
+  const heroSection = document.getElementById("hero");
+
+  if (scrollEl && heroSection) {
+    const ss = makeState(scrollEl);
+
+    new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) {
+          scrollEl.style.opacity = "0.5";
+          scrollEl.classList.remove("pointer-events-none");
+          scrollEl.classList.add("pointer-events-auto");
+          ss.isInView = true;
+          if (!ss.isHovering) {
+            if (ss.visTimer !== null) { clearTimeout(ss.visTimer); }
+            ss.visTimer = window.setTimeout(() => startBlink(ss), 5000);
+          }
+        } else {
+          scrollEl.style.opacity = "0";
+          scrollEl.classList.add("pointer-events-none");
+          scrollEl.classList.remove("pointer-events-auto");
+          ss.isInView = false;
+          cancelAnim(ss);
+          stopBlink(ss);
+          ss.textEl.textContent = ">";
+          if (ss.visTimer !== null) {
+            clearTimeout(ss.visTimer);
+            ss.visTimer = null;
+          }
+        }
+      }
+    }).observe(heroSection);
+
+    scrollEl.addEventListener("mouseenter", () => {
+      ss.isHovering = true;
+      if (ss.visTimer !== null) {
+        clearTimeout(ss.visTimer);
+        ss.visTimer = null;
+      }
+      typeText(ss);
+    });
+
+    scrollEl.addEventListener("mouseleave", async () => {
+      ss.isHovering = false;
+      const completed = await deleteText(ss);
+      if (completed && !ss.isHovering && ss.isInView) {
+        startBlink(ss);
+      }
+    });
+  }
+
+  // === Mobile Overlay Button ===
+  const mobileEl = document.querySelector<HTMLElement>('[data-terminal="mobile"]');
+  const mobileHint = document.getElementById("terminal-mobile-hint");
+  let mobileState: TState | null = null;
+
+  function handleMobileTap(e: Event) {
+    const ms = mobileState;
+    if (!ms || !mobileEl) return;
+
+    if (!ms.isActivated) {
+      e.preventDefault();
+      if (ms.animCancel) return;
+
+      typeText(ms).then((completed) => {
+        if (!completed || !mobileState) return;
+        ms.isActivated = true;
+        mobileEl!.style.opacity = "1";
+        ms.hintTimer = window.setTimeout(() => {
+          if (ms.hintEl) ms.hintEl.style.opacity = "1";
+        }, 3000);
+      });
+    }
+  }
+
+  function initMobileTerminal() {
+    if (!mobileEl) return;
+    const ms = makeState(mobileEl, mobileHint);
+    mobileState = ms;
+    mobileEl.style.opacity = "0.5";
+
+    ms.visTimer = window.setTimeout(() => startBlink(ms), 3000);
+    mobileEl.addEventListener("click", handleMobileTap);
+  }
+
+  function teardownMobileTerminal() {
+    if (!mobileEl || !mobileState) return;
+    cancelAnim(mobileState);
+    stopBlink(mobileState);
+    if (mobileState.visTimer !== null) {
+      clearTimeout(mobileState.visTimer);
+    }
+    if (mobileState.hintTimer !== null) {
+      clearTimeout(mobileState.hintTimer);
+    }
+    mobileState.textEl.textContent = ">";
+    mobileEl.style.opacity = "0.5";
+    if (mobileState.hintEl) mobileState.hintEl.style.opacity = "0";
+    mobileEl.removeEventListener("click", handleMobileTap);
+    mobileState = null;
+  }
+</script>
