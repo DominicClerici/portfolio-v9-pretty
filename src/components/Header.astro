@@ -56,11 +56,11 @@ const navLinks = [
 
 <div
   id="mobile-menu"
-  class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background/50 backdrop-blur-xl opacity-0 pointer-events-none"
+  class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background/50 backdrop-blur-xl opacity-0 pointer-events-none md:hidden"
   role="dialog"
   aria-modal="true"
   aria-label="Navigation menu"
-  aria-hidden="true"
+  inert
 >
   <nav class="flex flex-col items-center gap-8" aria-label="Mobile navigation">
     {
@@ -112,7 +112,7 @@ const navLinks = [
     menuEl!.classList.remove("opacity-0", "pointer-events-none");
     menuEl!.classList.add("opacity-100", "pointer-events-auto");
     toggle!.setAttribute("aria-expanded", "true");
-    menuEl!.setAttribute("aria-hidden", "false");
+    menuEl!.removeAttribute("inert");
     document.body.style.overflow = "hidden";
     initMobileTerminal();
   }
@@ -121,7 +121,7 @@ const navLinks = [
     menuEl!.classList.add("opacity-0", "pointer-events-none");
     menuEl!.classList.remove("opacity-100", "pointer-events-auto");
     toggle!.setAttribute("aria-expanded", "false");
-    menuEl!.setAttribute("aria-hidden", "true");
+    menuEl!.setAttribute("inert", "");
     document.body.style.overflow = "";
     teardownMobileTerminal();
   }
