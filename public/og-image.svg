@@ -1,0 +1,23 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="warmglow" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e2c28f" stop-opacity="0.07"/>
+      <stop offset="60%" stop-color="#111412" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#111412"/>
+  <rect width="1200" height="630" fill="url(#warmglow)"/>
+  <!-- Top left corner accent -->
+  <line x1="60" y1="60" x2="60" y2="140" stroke="#e2c28f" stroke-width="2"/>
+  <line x1="60" y1="60" x2="140" y2="60" stroke="#e2c28f" stroke-width="2"/>
+  <!-- Bottom right corner accent -->
+  <line x1="1140" y1="490" x2="1140" y2="570" stroke="#323533" stroke-width="1"/>
+  <line x1="1060" y1="570" x2="1140" y2="570" stroke="#323533" stroke-width="1"/>
+  <!-- Name large -->
+  <text x="94" y="300" font-family="'Newsreader', Georgia, serif" font-size="110" fill="#e1e3df" font-weight="400">Dominic</text>
+  <text x="94" y="410" font-family="'Newsreader', Georgia, serif" font-size="110" fill="#e2c28f" font-style="italic" font-weight="400">Clerici</text>
+  <!-- URL bottom left -->
+  <text x="100" y="560" font-family="'Space Grotesk', sans-serif" font-size="22" fill="#4d463b" letter-spacing="0.2em">DOMINICCLERICI.COM</text>
+  <!-- Small accent dot -->
+  <circle cx="1100" cy="320" r="4" fill="#a9cfb8" opacity="0.4"/>
+</svg>
