@@ -103,6 +103,28 @@ body {
   d: path("M4 9L20 1");
 }
 
+/* Decorative background gradients */
+.bg-glow-top-right {
+  background: radial-gradient(ellipse 120% 120% at 115% -20%, #3c382d 0%, var(--color-surface-dim) 65%);
+}
+
+.bg-glow-bottom-left {
+  background: radial-gradient(ellipse 120% 120% at -15% 120%, #3b372b 0%, var(--color-background) 65%);
+}
+
+.bg-dot-grid {
+  background-image: radial-gradient(circle, var(--color-outline-variant) 1px, var(--color-background) 1px);
+  background-size: 28px 28px;
+}
+
+.bg-vignette {
+  background: radial-gradient(circle at 50% 50%, var(--color-section-quote) 60%, #121411 100%);
+}
+
+.timeline-gradient {
+  background: linear-gradient(to bottom, transparent, rgba(169, 207, 184, 0.2) 50px, rgba(169, 207, 184, 0.2));
+}
+
 #mobile-menu {
   transition: opacity 0.3s ease;
 }

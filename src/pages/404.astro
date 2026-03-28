@@ -1,0 +1,124 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+---
+
+<Layout title="404 — Page Not Found" description="The page you're looking for doesn't exist.">
+  <Header />
+  <main class="relative min-h-svh flex items-center justify-center bg-surface-container-lowest overflow-hidden">
+    <!-- Atmospheric vignette — warm glow at center fading to deep black -->
+    <div
+      class="absolute inset-0 pointer-events-none"
+      style="background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(226,194,143,0.03) 0%, transparent 70%)"
+      aria-hidden="true"
+    ></div>
+
+    <!-- Ghost 404 -->
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden="true">
+      <span class="font-headline text-[10rem] md:text-[18rem] lg:text-[26rem] font-bold leading-none text-primary opacity-[0.05]">
+        404
+      </span>
+    </div>
+
+    <!-- Particles -->
+    <div id="drift-particles" class="absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+
+    <!-- Content -->
+    <div class="relative z-10 text-center px-6 max-w-lg mx-auto">
+      <p class="font-headline text-2xl md:text-3xl lg:text-4xl text-on-surface mb-4 leading-snug">
+        Nothing lives here.
+      </p>
+      <p class="font-body text-sm md:text-base text-on-surface-variant leading-relaxed mb-10">
+        The page you're looking for doesn't exist&mdash;or maybe it never did.
+      </p>
+      <a
+        href="/"
+        class="inline-block font-label text-xs md:text-sm uppercase tracking-[0.25em] text-primary border-b border-primary/30 pb-0.5 hover:border-primary transition-colors duration-200"
+      >
+        Return Home
+      </a>
+    </div>
+  </main>
+</Layout>
+
+<style is:global>
+  html {
+    overflow-y: scroll;
+  }
+</style>
+
+<script>
+  {
+    const container = document.getElementById("drift-particles");
+
+    if (container && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const PARTICLE_COUNT = 18;
+      const MIN_SIZE = 2;
+      const MAX_SIZE = 4;
+      const MIN_DURATION = 6000;
+      const MAX_DURATION = 14000;
+      const FADE_FRACTION = 0.25;
+
+      function spawnParticle() {
+        const el = document.createElement("div");
+
+        const size = MIN_SIZE + Math.random() * (MAX_SIZE - MIN_SIZE);
+        const x = Math.random() * 100;
+        const duration = MIN_DURATION + Math.random() * (MAX_DURATION - MIN_DURATION);
+        const startY = 100 + Math.random() * 10;
+        const drift = (Math.random() - 0.5) * 40;
+        const maxOpacity = 0.25 + Math.random() * 0.45;
+
+        el.style.position = "absolute";
+        el.style.borderRadius = "50%";
+        el.style.pointerEvents = "none";
+        el.style.willChange = "transform, opacity";
+        el.style.width = size + "px";
+        el.style.height = size + "px";
+        el.style.left = x + "%";
+        el.style.bottom = "0";
+        el.style.background = "var(--color-primary)";
+        el.style.opacity = "0";
+        el.style.boxShadow = `0 0 ${size * 3}px rgba(226,194,143,${maxOpacity * 0.4})`;
+
+        container.appendChild(el);
+
+        const start = performance.now();
+
+        function animate(now: number) {
+          const elapsed = now - start;
+          const progress = elapsed / duration;
+
+          if (progress >= 1) {
+            el.remove();
+            spawnParticle();
+            return;
+          }
+
+          const y = startY * progress;
+          const xOffset = drift * progress;
+
+          let opacity: number;
+          if (progress < FADE_FRACTION) {
+            opacity = maxOpacity * (progress / FADE_FRACTION);
+          } else if (progress > 1 - FADE_FRACTION) {
+            opacity = maxOpacity * ((1 - progress) / FADE_FRACTION);
+          } else {
+            opacity = maxOpacity;
+          }
+
+          el.style.transform = `translate(${xOffset}px, -${y}vh)`;
+          el.style.opacity = String(opacity);
+
+          requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        setTimeout(spawnParticle, Math.random() * 6000);
+      }
+    }
+  }
+</script>
