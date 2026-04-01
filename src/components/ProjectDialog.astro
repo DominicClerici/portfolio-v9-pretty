@@ -1,0 +1,157 @@
+---
+interface Props {
+  projects: { id: string; title: string }[];
+}
+const { projects } = Astro.props;
+---
+
+{projects.map((project) => (
+  <dialog
+    id={`dialog-${project.id}`}
+    class="project-dialog"
+    aria-labelledby={`dialog-title-${project.id}`}
+  >
+    <div class="flex items-center justify-between px-6 py-5 md:px-8 md:py-6">
+      <h2
+        id={`dialog-title-${project.id}`}
+        class="font-headline text-2xl md:text-3xl text-on-surface"
+      >
+        {project.title}
+      </h2>
+      <button
+        type="button"
+        class="project-dialog-close shrink-0 ml-4 p-1.5 text-on-surface-variant hover:text-primary transition-colors duration-150 cursor-pointer"
+        aria-label="Close dialog"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="h-px bg-outline-variant/30 mx-6 md:mx-8" aria-hidden="true"></div>
+    <div class="px-6 py-6 md:px-8 md:py-8 overflow-y-auto"></div>
+  </dialog>
+))}
+
+<style is:global>
+  .project-dialog {
+    padding: 0;
+    border: 1px solid rgba(77, 70, 59, 0.25);
+    border-top: 2px solid var(--color-primary);
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface);
+    width: min(720px, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    min-height: 20rem;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(0.75rem);
+    transition:
+      opacity 0.2s ease-out,
+      transform 0.2s ease-out,
+      display 0.2s allow-discrete,
+      overlay 0.2s allow-discrete;
+  }
+
+  .project-dialog[open] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @starting-style {
+    .project-dialog[open] {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+
+  .project-dialog::backdrop {
+    background: rgba(0, 0, 0, 0);
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
+    transition:
+      background 0.25s ease-out,
+      -webkit-backdrop-filter 0.25s ease-out,
+      backdrop-filter 0.25s ease-out,
+      display 0.25s allow-discrete,
+      overlay 0.25s allow-discrete;
+  }
+
+  .project-dialog[open]::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  @starting-style {
+    .project-dialog[open]::backdrop {
+      background: rgba(0, 0, 0, 0);
+      -webkit-backdrop-filter: blur(0px);
+      backdrop-filter: blur(0px);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .project-dialog {
+      width: calc(100vw - 1.5rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-dialog {
+      transition-duration: 0.01s;
+    }
+    .project-dialog::backdrop {
+      transition-duration: 0.01s;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest("[data-dialog-open]");
+    if (trigger) {
+      const id = trigger.getAttribute("data-dialog-open");
+      const dialog = document.getElementById(`dialog-${id}`);
+      if (dialog) {
+        dialog._trigger = trigger;
+        dialog.showModal();
+      }
+    }
+  });
+
+  document.querySelectorAll(".project-dialog").forEach((dialog) => {
+    dialog
+      .querySelector(".project-dialog-close")
+      ?.addEventListener("click", () => {
+        dialog.close();
+      });
+
+    dialog.addEventListener("click", (e) => {
+      const rect = dialog.getBoundingClientRect();
+      if (
+        e.clientY < rect.top ||
+        e.clientY > rect.bottom ||
+        e.clientX < rect.left ||
+        e.clientX > rect.right
+      ) {
+        dialog.close();
+      }
+    });
+
+    dialog.addEventListener("close", () => {
+      if (dialog._trigger) {
+        dialog._trigger.focus();
+        dialog._trigger = null;
+      }
+    });
+  });
+</script>

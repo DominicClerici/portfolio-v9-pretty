@@ -1,47 +1,48 @@
 ---
+import ProjectDialog from "./ProjectDialog.astro";
+
 const projects = [
   {
-    number: "01",
-    category: "Creative Engineering",
-    title: "FRACT.AL",
+    id: "dispatch",
+    title: "DISPATCH",
     tech: "Canvas / WASM",
     techTags: ["Canvas", "WASM"],
     description:
       "A high-performance generative art engine built with Rust and WebAssembly, rendering complex recursive patterns in real-time.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBpVFl4XemdzBDzt8aHwqhRSfUKJeRkeMcjziRRPvE6pWp_NfVgcfUyDlNARD3mPhGMgPZ4WI-24yXkJe32umwpdqtdl2XHEl2zRUd4YHKH1PSuf3AHJ1A9oyeMcXbZFfDTqWpXBAezLvw1kJPx3xz9F5Yp7_C2AIE9CL-QO19IFm8DToEr0CWA1nwd51IXn2g0ZZf2saDR2SsPpzCTLD4wtnuMXydnwNfjIZoslTr2j6EmlVbf-XQe2SDdxJT2hof21carIc25FrtN",
-    alt: "Abstract digital visualization of crystalline structures with golden geometric lines",
+    image: "/photos/dispatch.png",
+    alt: "Dispatch project screenshot",
     layout: "image-left",
     mobileAspect: "aspect-square",
+    githubUrl: "#",
+    websiteUrl: "#",
   },
   {
-    number: "02",
-    category: "Tooling",
-    title: "SHELLCRAFT",
+    id: "meridian",
+    title: "MERIDIAN",
     tech: "Rust / CLI",
     techTags: ["Rust", "CLI"],
     description:
       "A minimalist command-line interface framework for building robust, type-safe terminal applications with expressive styling.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC_VnN5kq4Xu9drf4YL6JoGHDwwantGcqFLTI7QJ_2O-Nzc4vk8fu_Vxi_JT9gSMTIMN5N25T6u_iWbp8LNPaMBvdUlkEdfsgYEmZCyokNSJLIvttQv1mM-Yna5wvRFUGDYyNqEKapcas7RR9QeNmbJ0IVnNh6oQ6RI_2mUp5WfFD8lA8DJVEds2yUBfLTAV9WS956yDOhKAvFqcO6ztlP9okSdxTCKixwpjg5NnNRj75dajgyZH6msgwTKwVusQsSEnm4c6_DtkMZR",
-    alt: "High contrast macro shot of vintage typewriter keys reflecting warm amber light",
+    image: "/photos/meridian.png",
+    alt: "Meridian project screenshot",
     layout: "image-right",
     mobileAspect: "aspect-[4/3]",
+    githubUrl: "#",
+    websiteUrl: "#",
   },
   {
-    number: "03",
-    category: "Systems",
-    title: "GRIDLOCK",
+    id: "fuzzbox",
+    title: "FUZZBOX",
     tech: "Canvas / TypeScript",
     techTags: ["Canvas", "TypeScript"],
     description:
       "An architectural visualization tool for mapping complex dependency trees and system hierarchies in large-scale software environments.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuB-ZMuOIz7uEVuRa8yPD-P5PnSVTNnDZrSQ5TvFPDW1D-c_eiphMFjc_cLUPy9Lx62xca3-_C4fcmB-iEJFP0niAOxSGE7mRDqpEILJLPja6y_uvktQT0mOX5WsfM-un6C1A00SD-vAuGfzEtlQ30wQOj55Ju6s1z9BamerklinCjUsZDbU7dC9gjRcfJRyEK-7Zbkhk7SzS5t-BjOnA2N0E2T3BbhoZzQfypMPbjErfG2R9HKBlCuBsNgVWWKJgUXFAyeZ_86mXd1h",
-    alt: "Expansive view of interconnected satellite data nodes forming a luminous grid",
+    image: "/photos/fuzzbox.png",
+    alt: "Fuzzbox project screenshot",
     layout: "full-width",
     mobileAspect: "aspect-[3/4]",
     featured: true,
+    websiteUrl: "#",
   },
 ];
 ---
@@ -84,13 +85,39 @@ const projects = [
                 />
               </div>
               <div class={`col-span-5 space-y-6 ${project.layout === "image-right" ? "order-first" : ""}`}>
-                <span class="font-label text-secondary text-xs uppercase tracking-[0.2em]">{project.number} / {project.category}</span>
+                <div class="w-9 h-9 border border-outline" aria-hidden="true"></div>
                 <h3 class="font-headline text-5xl text-on-surface">{project.title}</h3>
                 <p class="font-label text-primary text-sm uppercase tracking-widest">{project.tech}</p>
                 <p class="font-body text-on-surface-variant text-lg leading-relaxed">{project.description}</p>
-                <a href="#" class="group inline-flex items-center gap-4 text-primary font-label text-sm uppercase tracking-widest">
-                  View Project <svg class="w-4 h-4 opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:-translate-x-2 transition-all duration-150" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-                </a>
+                <div class="flex items-center gap-6 flex-wrap">
+                  <button
+                    type="button"
+                    data-dialog-open={project.id}
+                    class="font-label text-xs uppercase tracking-widest border border-primary/40 text-primary px-5 py-2.5 hover:bg-primary/10 transition-colors duration-200 cursor-pointer"
+                  >
+                    Read More
+                  </button>
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="group inline-flex items-center gap-2 text-on-surface-variant font-label text-xs uppercase tracking-widest hover:text-primary transition-colors duration-150"
+                  >
+                    View Website
+                    <svg class="w-3.5 h-3.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                  </a>
+                  {project.githubUrl && (
+                    <a
+                      href={project.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="group inline-flex items-center gap-2 text-on-surface-variant font-label text-xs uppercase tracking-widest hover:text-primary transition-colors duration-150"
+                    >
+                      GitHub
+                      <svg class="w-3.5 h-3.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -108,13 +135,28 @@ const projects = [
                 />
                 <div class="absolute inset-0 p-12 flex flex-col justify-end bg-gradient-to-t from-background via-transparent to-transparent">
                   <div class="max-w-2xl space-y-6">
-                    <span class="font-label text-secondary text-xs uppercase tracking-[0.2em]">{project.number} / {project.category}</span>
+                    <div class="w-9 h-9 border border-outline" aria-hidden="true"></div>
                     <h3 class="font-headline text-6xl text-on-surface">{project.title}</h3>
                     <p class="font-label text-primary text-sm uppercase tracking-widest">{project.tech}</p>
                     <p class="font-body text-on-surface-variant text-xl leading-relaxed">{project.description}</p>
-                    <a href="#" class="group inline-flex items-center gap-4 text-primary font-label text-sm uppercase tracking-widest">
-                      View Project <svg class="w-4 h-4 opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:-translate-x-2 transition-all duration-150" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-                    </a>
+                    <div class="flex items-center gap-6 flex-wrap">
+                      <button
+                        type="button"
+                        data-dialog-open={project.id}
+                        class="font-label text-xs uppercase tracking-widest border border-primary/40 text-primary px-5 py-2.5 hover:bg-primary/10 transition-colors duration-200 cursor-pointer"
+                      >
+                        Read More
+                      </button>
+                      <a
+                        href={project.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="group inline-flex items-center gap-2 text-on-surface-variant font-label text-xs uppercase tracking-widest hover:text-primary transition-colors duration-150"
+                      >
+                        View Website
+                        <svg class="w-3.5 h-3.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -131,25 +173,60 @@ const projects = [
                 loading="lazy"
                 decoding="async"
               />
-              <span class="absolute top-4 left-4 font-label text-primary text-xs font-bold bg-surface p-1">{project.number}</span>
               {project.featured && (
                 <div class="absolute bottom-4 right-4 bg-primary text-on-primary px-3 py-1 font-label text-[10px] uppercase font-bold tracking-widest">
                   Featured
                 </div>
               )}
             </div>
-            <div class="flex justify-between items-start">
-              <h3 class="font-headline text-2xl text-on-surface tracking-tighter">{project.title}</h3>
-              <div class="flex gap-2">
-                {project.techTags.map((tag: string) => (
-                  <span class="font-label text-secondary text-[9px] uppercase tracking-widest">{tag}</span>
-                ))}
+            <div class="space-y-3">
+              <div class="w-9 h-9 border border-outline" aria-hidden="true"></div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-headline text-2xl text-on-surface tracking-tighter">{project.title}</h3>
+                <div class="flex gap-2">
+                  {project.techTags.map((tag: string) => (
+                    <span class="font-label text-secondary text-[9px] uppercase tracking-widest">{tag}</span>
+                  ))}
+                </div>
               </div>
             </div>
             <div class="w-full h-px bg-primary/10"></div>
+            <div class="flex flex-col gap-3">
+              <button
+                type="button"
+                data-dialog-open={project.id}
+                class="w-full py-3 border border-primary/40 text-primary font-label text-xs uppercase tracking-widest hover:bg-primary/10 transition-colors duration-200 cursor-pointer"
+              >
+                Read More
+              </button>
+              <div class="flex justify-center gap-6">
+                {project.websiteUrl && (
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-label text-on-surface-variant text-[10px] uppercase tracking-widest hover:text-primary transition-colors duration-150"
+                  >
+                    View Website
+                  </a>
+                )}
+                {project.githubUrl && (
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-label text-on-surface-variant text-[10px] uppercase tracking-widest hover:text-primary transition-colors duration-150"
+                  >
+                    GitHub
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         </article>
       ))}
     </div>
   </div>
 </section>
+
+<ProjectDialog projects={projects.map((p) => ({ id: p.id, title: p.title }))} />
