@@ -5,10 +5,10 @@ const projects = [
   {
     id: "dispatch",
     title: "DISPATCH",
-    tech: "Canvas / WASM",
-    techTags: ["Canvas", "WASM"],
+    tech: "Astro / AI",
+    techTags: ["Astro", "AI"],
     description:
-      "A high-performance generative art engine built with Rust and WebAssembly, rendering complex recursive patterns in real-time.",
+      "A daily snapshot of the tech industry, compressing the last 24 hours of tech news into a 10 minute read.",
     image: "/photos/dispatch.png",
     alt: "Dispatch project screenshot",
     layout: "image-left",
@@ -19,10 +19,10 @@ const projects = [
   {
     id: "meridian",
     title: "MERIDIAN",
-    tech: "Rust / CLI",
-    techTags: ["Rust", "CLI"],
+    tech: "Vanilla JS",
+    techTags: ["Vanilla JS", "TypeScript"],
     description:
-      "A minimalist command-line interface framework for building robust, type-safe terminal applications with expressive styling.",
+      "A new tab Chrome and Firefox extension with zero npm dependencies, full customization, and powerful integrations.",
     image: "/photos/meridian.png",
     alt: "Meridian project screenshot",
     layout: "image-right",
@@ -33,10 +33,10 @@ const projects = [
   {
     id: "fuzzbox",
     title: "FUZZBOX",
-    tech: "Canvas / TypeScript",
-    techTags: ["Canvas", "TypeScript"],
+    tech: "Typescript / Next.js / React Native",
+    techTags: ["Typescript", "Next.js", "React Native", "PostgreSQL"],
     description:
-      "An architectural visualization tool for mapping complex dependency trees and system hierarchies in large-scale software environments.",
+      "The companion I wished I had when learning the guitar. Analyze your playing, create backing tracks, progressions, melodies, and share them with a community.",
     image: "/photos/fuzzbox.png",
     alt: "Fuzzbox project screenshot",
     layout: "full-width",
@@ -133,13 +133,12 @@ const projects = [
                   loading="lazy"
                   decoding="async"
                 />
-                <div class="absolute inset-0 p-12 flex flex-col justify-end bg-gradient-to-t from-background via-transparent to-transparent">
-                  <div class="max-w-2xl space-y-6">
-                    <div class="w-9 h-9 border border-outline" aria-hidden="true"></div>
+                <div class="absolute inset-0 p-12 flex flex-col justify-end items-end bg-gradient-to-t from-background via-transparent to-transparent">
+                  <div class="max-w-2xl space-y-6 text-right">
                     <h3 class="font-headline text-6xl text-on-surface">{project.title}</h3>
                     <p class="font-label text-primary text-sm uppercase tracking-widest">{project.tech}</p>
                     <p class="font-body text-on-surface-variant text-xl leading-relaxed">{project.description}</p>
-                    <div class="flex items-center gap-6 flex-wrap">
+                    <div class="flex items-center justify-end gap-6 flex-wrap">
                       <button
                         type="button"
                         data-dialog-open={project.id}
