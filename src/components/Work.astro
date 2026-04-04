@@ -55,7 +55,7 @@ const projects = [
   <div class="absolute inset-0 pointer-events-none bg-glow-bottom-left" aria-hidden="true"></div>
   <div class="absolute inset-0 pointer-events-none opacity-50 bg-dot-grid" aria-hidden="true"></div>
 
-  <div class="relative px-6 md:px-12 max-w-[1280px] mx-auto">
+  <div class="relative px-3 sm:px-4 md:px-12 max-w-[1280px] mx-auto">
     <div class="flex items-center gap-4 mb-6 md:mb-12 md:border-b md:border-outline-variant/40 md:pb-4">
       <div class="md:flex-none">
         <h2 class="font-label text-primary text-xs md:text-sm uppercase tracking-[0.4em] md:mb-4">Selected Work</h2>
@@ -84,7 +84,7 @@ const projects = [
                   src={project.image}
                   srcset={`${project.image} 1x, ${project.image.replace('.webp', '-2x.webp')} 2x`}
                   alt={project.alt}
-                  class="w-full h-full object-cover grayscale opacity-60 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700"
+                  class="w-full h-full object-cover grayscale opacity-60 group-hover:opacity-100 group-hover:grayscale-[40%] transition-all duration-250"
                   loading="lazy"
                   decoding="async"
                 />
@@ -135,7 +135,7 @@ const projects = [
                   src={project.image}
                   srcset={`${project.image} 1x, ${project.image.replace('.webp', '-2x.webp')} 2x`}
                   alt={project.alt}
-                  class="w-full h-full object-cover grayscale opacity-40 group-hover:opacity-70 transition-all duration-1000"
+                  class="w-full h-full object-cover grayscale opacity-40 group-hover:opacity-70 group-hover:grayscale-[40%] transition-all duration-250"
                   loading="lazy"
                   decoding="async"
                 />
@@ -175,7 +175,7 @@ const projects = [
                 src={project.image}
                 srcset={`${project.image} 1x, ${project.image.replace('.webp', '-2x.webp')} 2x`}
                 alt={project.alt}
-                class="w-full h-full object-cover grayscale-[50%]"
+                class="w-full h-full object-cover grayscale-[40%]"
                 style={project.mobileObjectPosition ? `object-position: ${project.mobileObjectPosition}` : undefined}
                 loading="lazy"
                 decoding="async"
