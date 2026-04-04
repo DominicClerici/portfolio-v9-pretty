@@ -1,6 +1,14 @@
 ---
 interface Props {
-  projects: { id: string; title: string }[];
+  projects: {
+    id: string;
+    title: string;
+    icon: string;
+    githubUrl?: string;
+    websiteUrl?: string;
+    techStack: string[];
+    descriptionParagraphs: string[];
+  }[];
 }
 const { projects } = Astro.props;
 ---
@@ -11,39 +19,98 @@ const { projects } = Astro.props;
     class="project-dialog"
     aria-labelledby={`dialog-title-${project.id}`}
   >
-    <div class="flex items-center justify-between px-6 py-5 md:px-8 md:py-6">
-      <h2
-        id={`dialog-title-${project.id}`}
-        class="font-headline text-2xl md:text-3xl text-on-surface"
+    <button
+      type="button"
+      class="project-dialog-close"
+      aria-label="Close dialog"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"
       >
-        {project.title}
-      </h2>
-      <button
-        type="button"
-        class="project-dialog-close shrink-0 ml-4 p-1.5 text-on-surface-variant hover:text-primary transition-colors duration-150 cursor-pointer"
-        aria-label="Close dialog"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          aria-hidden="true"
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
+    </button>
+
+    {/* Header */}
+    <div class="px-6 pt-5 pb-0 md:px-8 md:pt-6">
+      <div class="flex items-center gap-4 pr-10">
+        <div class="shrink-0" set:html={project.icon} />
+        <h2
+          id={`dialog-title-${project.id}`}
+          class="font-headline text-2xl md:text-3xl text-on-surface"
         >
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-      </button>
+          {project.title}
+        </h2>
+      </div>
+
+      {/* Links */}
+      <div class="flex items-center gap-5 mt-3 ml-[3.25rem]">
+        {project.websiteUrl && (
+          <a
+            href={project.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group inline-flex items-center gap-1.5 font-label text-[11px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors duration-150"
+          >
+            <svg class="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Website
+          </a>
+        )}
+        {project.githubUrl && (
+          <a
+            href={project.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group inline-flex items-center gap-1.5 font-label text-[11px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors duration-150"
+          >
+            <svg class="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        )}
+      </div>
     </div>
-    <div class="h-px bg-outline-variant/30 mx-6 md:mx-8" aria-hidden="true"></div>
-    <div class="px-6 py-6 md:px-8 md:py-8 overflow-y-auto"></div>
+
+    {/* Divider */}
+    <div class="h-px bg-outline-variant/30 mx-6 md:mx-8 mt-5" aria-hidden="true"></div>
+
+    {/* Scrollable body */}
+    <div class="px-6 py-5 md:px-8 md:py-6 overflow-y-auto dialog-body">
+      {/* Tech stack */}
+      {project.techStack.length > 0 && (
+        <div>
+          <p class="font-label text-[10px] uppercase tracking-[0.3em] text-on-surface-variant/60 mb-3">Tech Stack</p>
+          <div class="flex flex-wrap gap-2">
+            {project.techStack.map((tech) => (
+              <span class="font-label text-[11px] tracking-wider text-primary/90 border border-primary/25 px-3 py-1">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Description */}
+      {project.descriptionParagraphs.length > 0 && (
+        <div class="mt-6 space-y-4">
+          {project.descriptionParagraphs.map((para) => (
+            <p class="font-body text-on-surface-variant text-sm md:text-base leading-relaxed">{para}</p>
+          ))}
+        </div>
+      )}
+    </div>
   </dialog>
 ))}
 
 <style is:global>
   .project-dialog {
     padding: 0;
+    margin: auto;
     border: 1px solid rgba(77, 70, 59, 0.25);
     border-top: 2px solid var(--color-primary);
     background: var(--color-surface-container-low);
@@ -52,6 +119,8 @@ const { projects } = Astro.props;
     max-height: calc(100dvh - 2rem);
     min-height: 20rem;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     opacity: 0;
     transform: translateY(0.75rem);
     transition:
@@ -99,6 +168,28 @@ const { projects } = Astro.props;
     }
   }
 
+  .dialog-body {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .project-dialog-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 1;
+    padding: 0.5rem;
+    color: var(--color-on-surface-variant);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .project-dialog-close:hover {
+    color: var(--color-primary);
+  }
+
   @media (max-width: 767px) {
     .project-dialog {
       width: calc(100vw - 1.5rem);
@@ -116,19 +207,23 @@ const { projects } = Astro.props;
 </style>
 
 <script>
+  const triggerMap = new Map<HTMLDialogElement, HTMLElement>();
+
   document.addEventListener("click", (e) => {
-    const trigger = e.target.closest("[data-dialog-open]");
+    const target = e.target as HTMLElement | null;
+    const trigger = target?.closest<HTMLElement>("[data-dialog-open]");
     if (trigger) {
       const id = trigger.getAttribute("data-dialog-open");
-      const dialog = document.getElementById(`dialog-${id}`);
+      const dialog = document.getElementById(`dialog-${id}`) as HTMLDialogElement | null;
       if (dialog) {
-        dialog._trigger = trigger;
+        triggerMap.set(dialog, trigger);
         dialog.showModal();
+        document.documentElement.style.overflow = "hidden";
       }
     }
   });
 
-  document.querySelectorAll(".project-dialog").forEach((dialog) => {
+  document.querySelectorAll<HTMLDialogElement>(".project-dialog").forEach((dialog) => {
     dialog
       .querySelector(".project-dialog-close")
       ?.addEventListener("click", () => {
@@ -148,10 +243,14 @@ const { projects } = Astro.props;
     });
 
     dialog.addEventListener("close", () => {
-      if (dialog._trigger) {
-        dialog._trigger.focus();
-        dialog._trigger = null;
+      const trigger = triggerMap.get(dialog);
+      if (trigger) {
+        trigger.focus();
+        triggerMap.delete(dialog);
       }
+      dialog.addEventListener("transitionend", () => {
+        document.documentElement.style.overflow = "";
+      }, { once: true });
     });
   });
 </script>
