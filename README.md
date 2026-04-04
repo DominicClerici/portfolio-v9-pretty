@@ -2,7 +2,7 @@
 
 My personal developer portfolio — a single-page site built to be fast, minimal, and easy on the eyes. Dark theme, warm gold accents, and just enough animation to keep things interesting without getting in the way.
 
-**Live at [dominicclerici.com](https://dominicclerici.com)**
+**Live at [dominicclerici.com](https://www.dominicclerici.com)**
 
 ## Tech Stack
 

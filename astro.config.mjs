@@ -6,7 +6,7 @@ import { visualizer } from "rollup-plugin-visualizer"
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://dominicclerici.com",
+  site: "https://www.dominicclerici.com",
   integrations: [sitemap()],
   vite: {
     plugins: [
