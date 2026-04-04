@@ -16,7 +16,11 @@ const projects = [
     githubUrl: "https://github.com/DominicClerici/dispatch",
     websiteUrl: "https://dispatch.dominicclerici.com/",
     techStack: ["Astro", "TypeScript", "OpenAI API", "Tailwind CSS", "Vercel"],
-    descriptionParagraphs: [] as string[],
+    descriptionParagraphs: [
+      "This started as something I built for myself — a script that fired off a few search queries, sent the results to Claude, and wrote a markdown file. A faster way to catch up on what happened in tech that day. A friend saw me reading one and asked me to send it to him. That was enough to start turning it into something real.",
+      "Every day, a multi-stage pipeline researches the tech landscape, triages what matters, and writes a snapshot covering up to twelve stories with full coverage and inline citations. Every few days, a second pipeline picks a flagged story and produces a long-form deep dive — investigative writing with a depth that belies its automated origin. The two pipelines run as GitHub Actions, share nothing but a content directory and a Zod-defined markdown contract, and are completely decoupled from the Astro site that publishes them.",
+      "The hardest part was prompt engineering. Getting Claude to consistently produce writing that does not read like a corporate press release took dozens of revisions — small changes like banning em-dashes or restructuring how it leads into a story had outsized effects on quality. The prompts are plain text files in their own directory, entirely separate from the pipeline code, and they are the most important files in the project.",
+    ],
   },
   {
     id: "meridian",
@@ -31,7 +35,11 @@ const projects = [
     githubUrl: "https://github.com/DominicClerici/meridian",
     websiteUrl: "https://meridian.dominicclerici.com/",
     techStack: ["JavaScript", "HTML", "CSS", "Chrome Extensions API", "Firefox Add-ons"],
-    descriptionParagraphs: [] as string[],
+    descriptionParagraphs: [
+      "For as long as I have been writing code, I have been building startpage dashboards. Each one a little more sophisticated than the last — the first was a list of links in a div, the next discovered CSS grid, the one after that discovered React. After a long stretch away from the concept, I decided to build one I would actually want to use every day.",
+      "The defining constraint is that the entire extension is written in vanilla TypeScript with zero npm dependencies. No framework, no node_modules. The build system is a single bash script calling standalone esbuild and Tailwind binaries. I wanted it to feel instant — no framework bootstrapping, no blank-content flashes — and I wanted to prove I understood the platform deeply enough to do it all by hand.",
+      "The result is eleven feature modules, a reactive storage layer, and a full component library built from scratch. A recommendation engine analyzes up to 45 days of browser history, builds temporal heatmaps for each domain, and surfaces the right links at the right time — all running locally, with nothing leaving the browser. The drag-and-drop system alone — reordering, cross-tab moves, folder creation, multi-select — took longer to get right than some of the other modules took to build entirely.",
+    ],
   },
   {
     id: "fuzzbox",
@@ -46,7 +54,11 @@ const projects = [
     featured: true,
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     techStack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
-    descriptionParagraphs: [] as string[],
+    descriptionParagraphs: [
+      "There is no good central place for guitar knowledge on the internet. The best options are paid courses that are too general or one-on-one lessons that are hard to schedule. Fuzzbox is a collection of tools I wished existed when I was learning — tools to help you play, understand what you are playing, and eventually, get better.",
+      "The first published tool is a chord analysis engine. You place notes on an interactive fretboard and it tells you what chord you are playing — then breaks down the intervals, the theory, and what makes it sound the way it does. It is built for those moments when you stumble onto something that sounds good and want to understand what you found. The tool I am most excited about is a backing track generator — you provide as little or as much direction as you want, and the system builds a track tailored to how you want to play, with recommendations that explain not just what to add, but why.",
+      "The design system is called Neon Riff — cyberpunk brutalist, dark surfaces, sharp geometry. Lime green marks diatonic intervals, magenta marks altered ones. When you play a seventh sharp nine, the altered interval glows a different color from the rest of the chord. It is the kind of detail that makes a music tool feel like it was built by someone who actually plays.",
+    ],
   },
 ];
 ---
