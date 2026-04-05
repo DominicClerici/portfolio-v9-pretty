@@ -42,14 +42,19 @@ const navLinks = [
 
     <button
       id="menu-toggle"
-      class="md:hidden ml-auto w-6 bg-transparent border-none cursor-pointer p-0 text-primary"
+      class="group md:hidden ml-auto flex flex-col justify-center gap-1 w-6 h-6 bg-transparent border-none cursor-pointer p-0"
       aria-label="Toggle navigation menu"
       aria-expanded="false"
     >
-      <svg class="w-6 h-[10px]" viewBox="0 0 24 10" fill="none" aria-hidden="true">
-        <path d="M0 1L24 1" stroke="currentColor" stroke-width="1"/>
-        <path d="M0 9L24 9" stroke="currentColor" stroke-width="1"/>
-      </svg>
+      <span
+        class="block w-full h-[1px] bg-primary transition-all duration-200 origin-center group-aria-expanded:translate-y-[5px] group-aria-expanded:rotate-45"
+      ></span>
+      <span
+        class="block w-full h-[1px] bg-primary transition-all duration-200 group-aria-expanded:opacity-0"
+      ></span>
+      <span
+        class="block w-full h-[1px] bg-primary transition-all duration-200 origin-center group-aria-expanded:-translate-y-[5px] group-aria-expanded:-rotate-45"
+      ></span>
     </button>
   </div>
 </header>
