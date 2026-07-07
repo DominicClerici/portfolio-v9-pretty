@@ -93,15 +93,16 @@ import Layout from "../layouts/Layout.astro";
 
     /* Camera + world tuning (shared spec with /tjs-dunes) */
     const FOVY = (60 * Math.PI) / 180;
-    const AMP = 14; // dune amplitude: heights span ±AMP around the mean plane
+    const AMP = 14; // dune amplitude scale: heights span −1.05·AMP … +1.45·AMP
     const CAM_H = 32; // camera height above the mean plane
     const SPEED = 10; // forward flight, world units / sec
     const PITCH_TOP = 50; // degrees, at the top of the page
     const PITCH_END = 30; // degrees, when the background starts leaving
     // Base dune wavelengths (world units) — anisotropic so dunes elongate
-    // across the direction of travel (120-unit tile, x scaled 0.62, z 1.2).
-    const WAVE_X = 120 / (2 * 0.62);
-    const WAVE_Z = 120 / (2 * 1.2);
+    // across the direction of travel (120-unit tile, x scaled 0.5, z 0.9).
+    // Long wavelengths relative to AMP keep the swells sparse and low-slope.
+    const WAVE_X = 120 / (2 * 0.5);
+    const WAVE_Z = 120 / (2 * 0.9);
 
     /* Scroll → camera pitch. Progress 0 at the top of the page, 1 when the
        sticky background reaches the end of its scope and starts to leave. */
@@ -177,14 +178,22 @@ import Layout from "../layouts/Layout.astro";
           float d = hash(i + vec2(1.0, 1.0));
           return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
         }
-        // 3 octaves of long smooth swells; mid-heavy fbm contrast-stretched
-        // then s-curved so valleys/crests span the full range with a dune
-        // profile. Identical to the /tjs-dunes vertex shader.
+        // 3 octaves of long smooth swells with the high frequencies kept
+        // quiet, so the field reads as flowing spaced-out dunes instead of
+        // clustered churn. The centred sum runs through a strictly-monotone
+        // rational soft-clip (tanh approximation — its derivative only
+        // reaches zero at |x| = 3, outside our ±2.1 range) rather than a
+        // clamped smoothstep, so slope never dies: no plateaus, no flat
+        // floors. A final asymmetric gain dips the floors slightly and
+        // stretches the crests — heights span −1.05·uAmp … +1.45·uAmp.
         float hgt(vec2 xz) {
           vec2 p = xz * vec2(${(1 / WAVE_X).toFixed(6)}, ${(1 / WAVE_Z).toFixed(6)});
-          float v = vnoise(p) + vnoise(p * 2.0 + 13.1) * 0.45 + vnoise(p * 4.0 + 71.7) * 0.2025;
-          float n = smoothstep(0.0, 1.0, clamp((v / 1.6525 - 0.28) / 0.44, 0.0, 1.0));
-          return (n - 0.5) * 2.0 * uAmp;
+          float v = vnoise(p) - 0.5;
+          v += (vnoise(p * 2.0 + 13.1) - 0.5) * 0.38;
+          v += (vnoise(p * 4.0 + 71.7) - 0.5) * 0.10;
+          float x = v * 2.84;
+          float d = x * (27.0 + x * x) / (27.0 + 9.0 * x * x);
+          return uAmp * d * (1.25 + 0.2 * d);
         }
 
         void main() {
@@ -196,7 +205,9 @@ import Layout from "../layouts/Layout.astro";
           float hz = hgt(s + vec2(0.0, e)) - hgt(s - vec2(0.0, e));
           vNormal = normalize(vec3(-hx, 2.0 * e, -hz));
           vWorld = wp;
-          vT = clamp(h / (2.0 * uAmp) + 0.5, 0.0, 1.0);
+          // normalized against the realistic height span (extremes are rare
+          // post-soft-clip) so the full palette actually gets used
+          vT = clamp((h / uAmp + 0.95) * 0.45, 0.0, 1.0);
           gl_Position = uVP * vec4(wp, 1.0);
         }
       `;
@@ -208,6 +219,7 @@ import Layout from "../layouts/Layout.astro";
         precision mediump float;
         #endif
         uniform vec3 uCamPos;
+        uniform float uTime;
         varying vec3 vWorld;
         varying vec3 vNormal;
         varying float vT;
@@ -229,15 +241,24 @@ import Layout from "../layouts/Layout.astro";
           // sun low in the front-left, same heading as the CPU version
           vec3 sun = normalize(vec3(-0.66, 0.55, 0.75));
           float diff = clamp(dot(n, sun), 0.0, 1.0);
-          float light = 0.35 + 0.85 * diff;
-          vec3 col = palette(vT) * light;
+          float light = 0.3 + 0.95 * diff;
+          // Composite palette coordinate: elevation carries the broad
+          // structure, the slope's facing direction — projected onto a
+          // reference heading that itself spins slowly — detunes it from
+          // spot to spot, and a slow global breath drifts the whole field
+          // through the palette. Colors shift as the animation runs yet
+          // stay unique across the surface.
+          float ang = uTime * 0.2;
+          float swing = n.x * cos(ang) + n.z * sin(ang);
+          float t = clamp(0.72 * vT + 0.05 + 0.65 * swing + 0.08 * sin(uTime * 0.09), 0.0, 1.0);
+          vec3 col = palette(t) * light;
           // bio-lime glint on sunlit crests only
           float sp = pow(diff, 6.0) * vT * vT * 0.5;
           col += vec3(0.808, 0.969, 0.62) * sp;
           // exponential distance fog into the dark ink horizon; the length is
           // computed on a scaled vector so mediump devices don't overflow
           float dist = length((vWorld - uCamPos) * 0.02) * 50.0;
-          float fog = 1.0 - exp(-dist * 0.008);
+          float fog = 1.0 - exp(-dist * 0.0045);
           col = mix(col, vec3(0.055, 0.1, 0.075), fog);
           gl_FragColor = vec4(col, 1.0);
         }
@@ -303,6 +324,7 @@ import Layout from "../layouts/Layout.astro";
 
       const uVP = gl.getUniformLocation(prog, "uVP");
       const uOff = gl.getUniformLocation(prog, "uOff");
+      const uTime = gl.getUniformLocation(prog, "uTime");
       gl.uniform1f(gl.getUniformLocation(prog, "uAmp"), AMP);
       gl.uniform3f(gl.getUniformLocation(prog, "uCamPos"), 0, CAM_H, 0);
 
@@ -351,6 +373,7 @@ import Layout from "../layouts/Layout.astro";
         gl!.uniformMatrix4fv(uVP, false, vp);
         // forward flight: translate the noise domain toward the camera
         gl!.uniform2f(uOff, 8 * Math.sin(tSec * 0.05), -tSec * SPEED);
+        gl!.uniform1f(uTime, tSec);
         gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT);
         gl!.drawElements(gl!.TRIANGLES, idx.length, gl!.UNSIGNED_SHORT, 0);
       }
@@ -408,8 +431,13 @@ import Layout from "../layouts/Layout.astro";
           return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
         const out = new Float32Array(TS * TS);
-        let amp = 1;
-        for (const L of [2, 4, 8]) {
+        // high octaves kept quiet (matching the GL weights) so the field is
+        // flowing spaced-out swells, not clustered churn
+        for (const [L, amp] of [
+          [2, 1],
+          [4, 0.38],
+          [8, 0.1],
+        ]) {
           const lat = new Float32Array(L * L);
           for (let i = 0; i < L * L; i++) lat[i] = rand();
           for (let y = 0; y < TS; y++) {
@@ -433,7 +461,6 @@ import Layout from "../layouts/Layout.astro";
               out[y * TS + x] += amp * (ab + (c + (d - c) * fx - ab) * fy);
             }
           }
-          amp *= 0.45;
         }
         // Histogram-equalize: the low octave has only a handful of lattice
         // cells, so the raw distribution is heavily skewed per seed.
@@ -446,9 +473,10 @@ import Layout from "../layouts/Layout.astro";
       })();
 
       const W2T = TS / WORLD_PER_TILE; // world units → texels
-      // Dunes elongate across the direction of travel: longer wavelength in x
-      const AX = 0.62;
-      const AZ = 1.2;
+      // Dunes elongate across the direction of travel: longer wavelength in x.
+      // Scales match the GL WAVE_X/WAVE_Z — sparse, low-slope swells.
+      const AX = 0.5;
+      const AZ = 0.9;
 
       // Bilinear sample with wraparound, world coordinates → height in units
       function height(wx: number, wz: number) {
@@ -464,14 +492,16 @@ import Layout from "../layouts/Layout.astro";
         const r1 = ((yi + 1) & TMASK) * TS;
         const ab = T[r0 + x0] + (T[r0 + x1] - T[r0 + x0]) * fx;
         const v = ab + (T[r1 + x0] + (T[r1 + x1] - T[r1 + x0]) * fx - ab) * fy;
-        // s-curve the equalized field: broad rounded valleys and crests with
-        // steeper flanks between — a dune profile rather than raw noise
-        const n = v * v * (3 - 2 * v);
-        return (n - 0.5) * 2 * AMP;
+        // The equalized field is uniform on [0,1]: recentre it and apply the
+        // same asymmetric gain as the GL path — no clamp or smoothstep, so
+        // slope never dies into a plateau; floors dip slightly below −AMP
+        // and crests stretch to +1.45·AMP
+        const c = (v - 0.5) * 2;
+        return AMP * c * (1.25 + 0.2 * c);
       }
 
-      /* Height → base color LUT, same stops as the hero's pine→mint→bone
-         palette so the two hero candidates read as one family. */
+      /* Palette-coordinate → base color LUT, same stops as the hero's
+         pine→mint→bone palette so the two hero candidates read as one family. */
       const LUT_N = 512;
       const lutR = new Float32Array(LUT_N);
       const lutG = new Float32Array(LUT_N);
@@ -524,6 +554,12 @@ import Layout from "../layouts/Layout.astro";
         const tanHalfX = tanHalfY * (W / H);
         const camX = 8 * Math.sin(tSec * 0.05);
         const camZ = tSec * SPEED; // forward flight: +z is ahead
+        // color-composite drivers, matched to the fragment shader: a slowly
+        // spinning reference heading for the facing-direction term, plus a
+        // global palette breath
+        const rotC = Math.cos(tSec * 0.2);
+        const rotS = Math.sin(tSec * 0.2);
+        const breathe = 0.08 * Math.sin(tSec * 0.09);
 
         // Sky: only a thin band ever shows (horizon sits at/above the top edge
         // at 30–50° pitch with a 60° fov) — a quiet dark gradient is enough.
@@ -568,19 +604,24 @@ import Layout from "../layouts/Layout.astro";
             let yi = sy | 0;
             if (yi < prevY) {
               // visible span — shade once per sample (hidden samples skip this)
-              const t01 = Math.min(1, Math.max(0, h / (2 * AMP) + 0.5));
-              const idx = (t01 * (LUT_N - 1)) | 0;
+              const t01 = Math.min(1, Math.max(0, (h / AMP + 0.95) * 0.45));
               // true normal from forward differences → Lambert, same as the shader
               const nx = -(height(wx + NE, wz) - h) / NE;
               const nz = -(height(wx, wz + NE) - h) / NE;
               const inv = 1 / Math.sqrt(nx * nx + 1 + nz * nz);
+              // composite palette coordinate: elevation + facing + time
+              const swing = (nx * rotC + nz * rotS) * inv;
+              let tc = 0.72 * t01 + 0.05 + 0.65 * swing + breathe;
+              if (tc < 0) tc = 0;
+              else if (tc > 1) tc = 1;
+              const idx = (tc * (LUT_N - 1)) | 0;
               let diff = (nx * sunX + sunY + nz * sunZ) * inv;
               if (diff < 0) diff = 0;
-              const light = 0.35 + 0.85 * diff;
+              const light = 0.3 + 0.95 * diff;
               const d2 = diff * diff;
               const sp = d2 * d2 * d2 * t01 * t01 * 0.5; // pow(diff,6) crest glint
               // exponential distance fog into the dark ink horizon
-              const fog = 1 - Math.exp(-f * 0.008);
+              const fog = 1 - Math.exp(-f * 0.0045);
               const r = (lutR[idx] * light + SPEC_R * sp) * (1 - fog) + FOG_R * fog;
               const g = (lutG[idx] * light + SPEC_G * sp) * (1 - fog) + FOG_G * fog;
               const b = (lutB[idx] * light + SPEC_B * sp) * (1 - fog) + FOG_B * fog;
