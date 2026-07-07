@@ -120,15 +120,73 @@ import Layout from "../layouts/Layout.astro"
     const FOVY = (60 * Math.PI) / 180
     const AMP = 14 // dune amplitude scale: heights span −1.05·AMP … +1.45·AMP
     const SPEED = 10 // forward flight, world units / sec
-    const CAM_H_TOP = 64 // camera height above the mean plane, at the top of the page
+    const CAM_H_TOP = 128 // camera height above the mean plane, at the top of the page
     const CAM_H_END = 32 // camera height, when the background starts leaving
-    const PITCH_TOP = 45 // degrees, at the top of the page
-    const PITCH_END = 30 // degrees, when the background starts leaving
+    const PITCH_TOP = 50 // degrees, at the top of the page
+    const PITCH_END = 35 // degrees, when the background starts leaving
     // Base dune wavelengths (world units) — anisotropic so dunes elongate
     // across the direction of travel (120-unit tile, x scaled 0.5, z 0.9).
     // Long wavelengths relative to AMP keep the swells sparse and low-slope.
     const WAVE_X = 120 / (2 * 0.5)
     const WAVE_Z = 120 / (2 * 0.9)
+
+    /* ── Lighting, material & color config ──
+       Shared verbatim by the GL shaders (baked in at compile time) and the
+       Canvas2D painter, so tweaks here stay in parity across both backends. */
+    // Sun, in forward-relative coords (+x right, +y up, +z toward the
+    // horizon). The GL path flips z internally — its camera looks down −z.
+    const SUN_DIR = [-0.66, 0.48, 0.75]
+    const SUN_COLOR = [1.35, 0.85, 0.72] // warm rose key light
+    const DIFFUSE_WRAP = 2.8 // powder-diffuse exponent: higher = deeper shade
+    // The long-wavelength swells are low-slope, so raw normals barely tilt;
+    // exaggerating their xz for shading is what makes the light sculpt them
+    const NORMAL_GAIN = 2.4
+    const SKY_COLOR = [0.38, 0.52, 0.62] // violet-teal fill
+    const SKY_FILL_FLOOR = 0.25 // fill = FLOOR + GAIN·n.y — low floor keeps
+    const SKY_FILL_GAIN = 0.35 //   shaded faces genuinely dark
+    const RIM_COLOR = [1.0, 0.7, 0.75] // rose rim on crest silhouettes
+    const RIM_STRENGTH = 0.16
+    const RIM_POW = 3.0
+    // Grain sparkle (replaces the old broad specular glint)
+    const SPARKLE = true
+    const SPARKLE_COLOR = [1.35, 1.1, 1.15] // pink-white glints
+    const SPARKLE_DENSITY = 0.01 // fraction of grain cells lit per twinkle tick
+    const SPARKLE_STRENGTH = 3.0
+    const SPARKLE_CELL = 3.0 // grain cells per world unit (GL path)
+    const SPARKLE_HZ = 2.5 // twinkle re-roll rate, staggered per grain
+    // Atmosphere
+    const FOG_COLOR = [0.16, 0.2, 0.28] // dusk purple-teal haze
+    const FOG_GLOW_COLOR = [0.42, 0.27, 0.3] // rose glow where the view runs sunward
+    const FOG_GLOW_POW = 3.0
+    const FOG_DENSITY = 0.0028
+    const TONEMAP_EXPOSURE = 1.6 // soft-clip 1 − e^(−col·k): higher = brighter mids
+    // Albedo ramp, elevation-keyed — desaturated so the light tints carry hue
+    const ALBEDO_STOPS: [number, [number, number, number]][] = [
+      [0.0, [0.1, 0.2, 0.22]], // deep sea teal — valley floors
+      [0.18, [0.16, 0.33, 0.36]], // lighter teal
+      [0.38, [0.18, 0.46, 0.34]], // sea green
+      [0.56, [0.3, 0.6, 0.4]], // soft green
+      [0.74, [0.52, 0.74, 0.48]], // sage
+      [0.88, [0.76, 0.84, 0.66]], // pale lime
+      [1.0, [0.93, 0.93, 0.82]], // sand cream — crests
+    ]
+    const SWING_WEIGHT = 0.08 // spot-to-spot hue shimmer (demoted from 0.65)
+    const BREATH_AMP = 0.06 // slow global drift through the ramp
+
+    // Derived: horizontal sun heading (unit), for the fog glow
+    const SUN_H = (() => {
+      const l = Math.hypot(SUN_DIR[0], SUN_DIR[2])
+      return [SUN_DIR[0] / l, SUN_DIR[2] / l]
+    })()
+    // GLSL generated from the config so both backends share one source of truth
+    const f1 = (x: number) => x.toFixed(3)
+    const v3 = (c: number[]) => `vec3(${c.map(f1).join(", ")})`
+    const albedoGLSL = ALBEDO_STOPS.slice(1)
+      .map(
+        ([p, c], i) =>
+          `c = mix(c, ${v3(c)}, smoothstep(${f1(ALBEDO_STOPS[i][0])}, ${f1(p)}, t));`,
+      )
+      .join("\n          ")
 
     /* Scroll → camera pitch + height. Progress 0 at the top of the page, 1
        when the sticky background reaches the end of its scope and starts
@@ -255,51 +313,85 @@ import Layout from "../layouts/Layout.astro"
         #endif
         uniform vec3 uCamPos;
         uniform float uTime;
+        uniform vec2 uSpark;
         varying vec3 vWorld;
         varying vec3 vNormal;
         varying float vT;
 
-        // vivid green-family palette, wider hue sweep than the hero's:
-        // deep teal → dark emerald → emerald → vivid green → spring → lime → warm cream
-        vec3 palette(float t) {
-          vec3 c = vec3(0.02, 0.09, 0.1);
-          c = mix(c, vec3(0.03, 0.2, 0.17), smoothstep(0.0, 0.16, t));
-          c = mix(c, vec3(0.06, 0.38, 0.24), smoothstep(0.16, 0.34, t));
-          c = mix(c, vec3(0.13, 0.6, 0.32), smoothstep(0.34, 0.52, t));
-          c = mix(c, vec3(0.35, 0.8, 0.38), smoothstep(0.52, 0.7, t));
-          c = mix(c, vec3(0.65, 0.94, 0.45), smoothstep(0.7, 0.85, t));
-          c = mix(c, vec3(0.97, 0.99, 0.8), smoothstep(0.85, 1.0, t));
+        float hash(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        // elevation-keyed albedo, generated from ALBEDO_STOPS (shared with
+        // the CPU LUT)
+        vec3 albedo(float t) {
+          vec3 c = ${v3(ALBEDO_STOPS[0][1])};
+          ${albedoGLSL}
           return c;
         }
 
         void main() {
-          vec3 n = normalize(vNormal);
-          // sun lower in the front-left for longer, more sculpted shading
-          vec3 sun = normalize(vec3(-0.66, 0.48, 0.75));
-          float diff = clamp(dot(n, sun), 0.0, 1.0);
-          // two-tone directional light: warm key from the sun, cool teal
-          // sky fill (scaled by n.y so slopes facing away from the sky sit
-          // deeper) — sunlit and shaded faces separate in hue, not just value
-          vec3 light = vec3(0.36, 0.48, 0.5) * (0.75 + 0.25 * n.y)
-                     + vec3(1.15, 1.05, 0.82) * diff;
-          // Composite palette coordinate: elevation carries the broad
-          // structure, the slope's facing direction — projected onto a
-          // reference heading that itself spins slowly — detunes it from
-          // spot to spot, and a slow global breath drifts the whole field
-          // through the palette. Colors shift as the animation runs yet
-          // stay unique across the surface.
+          vec3 n = normalize(vNormal * vec3(${f1(NORMAL_GAIN)}, 1.0, ${f1(NORMAL_GAIN)}));
+          // SUN_DIR is forward-relative; this camera looks down -z, so z is
+          // flipped to keep the sun in front, matching the CPU path
+          vec3 sun = normalize(vec3(${f1(SUN_DIR[0])}, ${f1(SUN_DIR[1])}, ${f1(-SUN_DIR[2])}));
+          vec3 V = normalize(uCamPos - vWorld);
+
+          // sand material: wrapped powder diffuse — a long soft rolloff into
+          // shade instead of a hard Lambert terminator — under a rose sun,
+          // over a low violet-teal sky fill
+          float lam = dot(n, sun);
+          float diff = pow(clamp(lam * 0.5 + 0.5, 0.0, 1.0), ${f1(DIFFUSE_WRAP)});
+          vec3 light = ${v3(SKY_COLOR)} * (${f1(SKY_FILL_FLOOR)} + ${f1(SKY_FILL_GAIN)} * n.y)
+                     + ${v3(SUN_COLOR)} * diff;
+
+          // albedo coordinate: elevation carries the structure, detuned by a
+          // light spot-to-spot shimmer and a slow global breath
           float ang = uTime * 0.2;
           float swing = n.x * cos(ang) + n.z * sin(ang);
-          float t = clamp(0.72 * vT + 0.1 + 0.65 * swing + 0.08 * sin(uTime * 0.09), 0.0, 1.0);
-          vec3 col = palette(t) * light;
-          // warm lime glint on sunlit crests only
-          float sp = pow(diff, 6.0) * vT * vT * 0.6;
-          col += vec3(0.95, 1.0, 0.62) * sp;
-          // exponential distance fog into a luminous teal haze; the length is
-          // computed on a scaled vector so mediump devices don't overflow
+          float t = clamp(0.95 * vT + 0.02 + ${f1(SWING_WEIGHT)} * swing + ${f1(BREATH_AMP)} * sin(uTime * 0.09), 0.0, 1.0);
+          vec3 col = albedo(t) * light;
+
+          // rose rim where crests graze the view direction
+          float rim = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), ${f1(RIM_POW)});
+          col += ${v3(RIM_COLOR)} * (rim * ${f1(RIM_STRENGTH)} * (0.4 + 0.6 * diff));
+
+          // the length is computed on a scaled vector so mediump devices
+          // don't overflow
           float dist = length((vWorld - uCamPos) * 0.02) * 50.0;
-          float fog = 1.0 - exp(-dist * 0.0045);
-          col = mix(col, vec3(0.09, 0.2, 0.19), fog);
+          float fog = 1.0 - exp(-dist * ${f1(FOG_DENSITY)});
+${
+  SPARKLE
+    ? `
+          // grain sparkle: world-anchored cells re-roll on staggered clocks;
+          // survivors aligned with the sun/view half-vector spike pink-white,
+          // gated to sunlit faces
+          vec2 cell = floor((vWorld.xz + uSpark) * ${f1(SPARKLE_CELL)});
+          float tick = floor(uTime * ${f1(SPARKLE_HZ)} + 7.0 * hash(cell));
+          float rnd = hash(cell + vec2(tick * 0.37, tick * 0.11));
+          float glint = step(${f1(1 - SPARKLE_DENSITY)}, rnd);
+          float align = pow(clamp(dot(n, normalize(sun + V)), 0.0, 1.0), 6.0);
+          // gate by how much the slope tilts toward the sun (flat ground →
+          // zero) — n·sun alone is dominated by the uniform up-component on
+          // this low-slope terrain and would pass everywhere
+          float tilt = clamp((n.x * ${f1(SUN_H[0])} + n.z * ${f1(-SUN_H[1])}) * 3.0, 0.0, 1.0);
+          // squared fog fade: distant grain cells alias below pixel size and
+          // would otherwise carpet the midfield with glitter
+          float sfade = (1.0 - fog) * (1.0 - fog);
+          col += ${v3(SPARKLE_COLOR)} * (glint * align * tilt * tilt * sfade * ${f1(SPARKLE_STRENGTH)});
+`
+    : ""
+}
+          // soft tonemap: sun + sparkle saturate into rose-cream, never clip
+          col = 1.0 - exp(-col * ${f1(TONEMAP_EXPOSURE)});
+
+          // dusk haze, tinted rose where the view runs toward the sun (the
+          // glow dot uses unnormalized horizontal V — no NaN when looking
+          // straight down, and glow fades there naturally)
+          float glow = pow(clamp(dot(vec3(-V.x, 0.0, -V.z), vec3(${f1(SUN_H[0])}, 0.0, ${f1(-SUN_H[1])})), 0.0, 1.0), ${f1(FOG_GLOW_POW)});
+          col = mix(col, mix(${v3(FOG_COLOR)}, ${v3(FOG_GLOW_COLOR)}, glow), fog);
           gl_FragColor = vec4(col, 1.0);
         }
       `
@@ -366,10 +458,12 @@ import Layout from "../layouts/Layout.astro"
       const uOff = gl.getUniformLocation(prog, "uOff")
       const uTime = gl.getUniformLocation(prog, "uTime")
       const uCamPos = gl.getUniformLocation(prog, "uCamPos")
+      const uSpark = gl.getUniformLocation(prog, "uSpark")
       gl.uniform1f(gl.getUniformLocation(prog, "uAmp"), AMP)
 
       gl.enable(gl.DEPTH_TEST)
-      gl.clearColor(0.09, 0.2, 0.19, 1) // matches the fog haze at the horizon
+      // matches the fog haze at the horizon
+      gl.clearColor(FOG_COLOR[0], FOG_COLOR[1], FOG_COLOR[2], 1)
 
       // If the GPU goes away mid-session, degrade to the CPU painter instead
       // of freezing on a dead canvas.
@@ -413,7 +507,13 @@ import Layout from "../layouts/Layout.astro"
         gl!.uniformMatrix4fv(uVP, false, vp)
         gl!.uniform3f(uCamPos, 0, camH, 0)
         // forward flight: translate the noise domain toward the camera
-        gl!.uniform2f(uOff, 8 * Math.sin(tSec * 0.05), -tSec * SPEED)
+        const offX = 8 * Math.sin(tSec * 0.05)
+        const offZ = -tSec * SPEED
+        gl!.uniform2f(uOff, offX, offZ)
+        // sparkle-cell offset, wrapped so fragment-shader floats keep
+        // precision as the flight distance grows (the wrap just reshuffles
+        // all grains once every ~51s — invisible among constant twinkle)
+        gl!.uniform2f(uSpark, offX % 512, offZ % 512)
         gl!.uniform1f(uTime, tSec)
         gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT)
         gl!.drawElements(gl!.TRIANGLES, idx.length, gl!.UNSIGNED_SHORT, 0)
@@ -453,10 +553,12 @@ import Layout from "../layouts/Layout.astro"
       const NEAR = 2.5
       const FAR = 300
       const WORLD_PER_TILE = 120 // noise tile (256 texels) spans this many units
-      // Sun low in the front-left: dune faces sloping toward it catch light
-      const SUN_X = -0.66
-      const SUN_Y = 0.48
-      const SUN_Z = 0.75
+      // Normalized sun (forward-relative coords match this path's +z-ahead
+      // march, so SUN_DIR is used as-is)
+      const SL = Math.hypot(SUN_DIR[0], SUN_DIR[1], SUN_DIR[2])
+      const sunX = SUN_DIR[0] / SL
+      const sunY = SUN_DIR[1] / SL
+      const sunZ = SUN_DIR[2] / SL
 
       /* Tileable fbm texture, computed once — 3 wrapped value-noise octaves.
          Fewer/larger octaves than the hero field: dunes want long smooth
@@ -551,8 +653,8 @@ import Layout from "../layouts/Layout.astro"
         return AMP * c * (1.25 + 0.2 * c)
       }
 
-      /* Palette-coordinate → base color LUT, same stops as the GL fragment
-         shader: deep teal → emerald → vivid green → lime → warm cream. */
+      /* Elevation → albedo LUT, built from ALBEDO_STOPS — the same stops the
+         GL ramp is generated from, so the surfaces match exactly. */
       const LUT_N = 512
       const lutR = new Float32Array(LUT_N)
       const lutG = new Float32Array(LUT_N)
@@ -562,15 +664,7 @@ import Layout from "../layouts/Layout.astro"
           const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0)))
           return t * t * (3 - 2 * t)
         }
-        const stops: [number, [number, number, number]][] = [
-          [0.0, [0.02, 0.09, 0.1]], // deep teal — valley floors
-          [0.16, [0.03, 0.2, 0.17]], // dark emerald
-          [0.34, [0.06, 0.38, 0.24]], // emerald
-          [0.52, [0.13, 0.6, 0.32]], // vivid green
-          [0.7, [0.35, 0.8, 0.38]], // spring green
-          [0.85, [0.65, 0.94, 0.45]], // lime
-          [1.0, [0.97, 0.99, 0.8]], // warm cream — crests
-        ]
+        const stops = ALBEDO_STOPS
         for (let i = 0; i < LUT_N; i++) {
           const f = i / (LUT_N - 1)
           let s = 0
@@ -584,13 +678,22 @@ import Layout from "../layouts/Layout.astro"
         }
       }
 
-      // Fog + specular colors (warm lime crest glints, luminous teal haze)
-      const FOG_R = 0.09 * 255,
-        FOG_G = 0.2 * 255,
-        FOG_B = 0.19 * 255
-      const SPEC_R = 0.95 * 255,
-        SPEC_G = 1.0 * 255,
-        SPEC_B = 0.62 * 255
+      // Prescaled light/atmosphere colors from the shared config
+      const FOG_R = FOG_COLOR[0] * 255,
+        FOG_G = FOG_COLOR[1] * 255,
+        FOG_B = FOG_COLOR[2] * 255
+      const GLOW_R = FOG_GLOW_COLOR[0] * 255,
+        GLOW_G = FOG_GLOW_COLOR[1] * 255,
+        GLOW_B = FOG_GLOW_COLOR[2] * 255
+      const RIM_R = RIM_COLOR[0] * 255,
+        RIM_G = RIM_COLOR[1] * 255,
+        RIM_B = RIM_COLOR[2] * 255
+
+      // Soft tonemap as a LUT over 0..1023 of 255-scaled linear light —
+      // same 1 − e^(−col·k) curve as the fragment shader, without per-sample exp
+      const TONE = new Float32Array(1024)
+      for (let i = 0; i < 1024; i++)
+        TONE[i] = 255 * (1 - Math.exp((-i / 255) * TONEMAP_EXPOSURE))
 
       const off = document.createElement("canvas")
       const offCtx = off.getContext("2d")!
@@ -598,6 +701,8 @@ import Layout from "../layouts/Layout.astro"
       let H = 0
       let img: ImageData | null = null
       let blurTmp: Float32Array | null = null
+      // per-pixel sparkle gate (sun-facing × fog), filled during the march
+      let gate = new Float32Array(0)
 
       function paint(tSec: number) {
         if (!img) return
@@ -618,32 +723,35 @@ import Layout from "../layouts/Layout.astro"
         bobT = tSec * BOB_SPEED
 
         // Sky: only a thin band ever shows (horizon sits at/above the top edge
-        // at 30–50° pitch with a 60° fov) — a quiet dark gradient is enough.
+        // at 30–50° pitch with a 60° fov) — a dark dusk gradient into the haze.
         const skyR = new Float32Array(H)
         const skyG = new Float32Array(H)
         const skyB = new Float32Array(H)
         for (let y = 0; y < H; y++) {
           const t = y / H
-          skyR[y] = (0.03 + 0.06 * t) * 255
-          skyG[y] = (0.08 + 0.12 * t) * 255
-          skyB[y] = (0.09 + 0.1 * t) * 255
+          skyR[y] = (0.04 + (FOG_COLOR[0] - 0.04) * t) * 255
+          skyG[y] = (0.05 + (FOG_COLOR[1] - 0.05) * t) * 255
+          skyB[y] = (0.09 + (FOG_COLOR[2] - 0.09) * t) * 255
         }
 
-        // sun direction matched to the fragment shader
-        const SL = Math.hypot(SUN_X, SUN_Y, SUN_Z)
-        const sunX = SUN_X / SL
-        const sunY = SUN_Y / SL
-        const sunZ = SUN_Z / SL
         const NE = 3.0 // normal finite-difference epsilon
 
         for (let x = 0; x < W; x++) {
           const ndcX = ((x + 0.5) / W) * 2 - 1
           const lat = ndcX * tanHalfX // lateral offset per unit of forward dist
+          // dusk haze tinted rose where this column's view runs toward the sun
+          const invL = 1 / Math.sqrt(lat * lat + 1)
+          let glow = (lat * SUN_H[0] + SUN_H[1]) * invL
+          glow = glow < 0 ? 0 : Math.pow(glow, FOG_GLOW_POW)
+          const fogCR = FOG_R + (GLOW_R - FOG_R) * glow
+          const fogCG = FOG_G + (GLOW_G - FOG_G) * glow
+          const fogCB = FOG_B + (GLOW_B - FOG_B) * glow
           let prevY = H // lowest unfilled row (fills bottom-up, near-to-far)
           // previous visible sample's shaded color, for Gouraud interpolation
           let pr = 0
           let pg = 0
           let pb = 0
+          let pgat = 0
           let havePrev = false
           let f = NEAR
           let df = 0.25
@@ -661,31 +769,53 @@ import Layout from "../layouts/Layout.astro"
             if (yi < prevY) {
               // visible span — shade once per sample (hidden samples skip this)
               const t01 = Math.min(1, Math.max(0, (h / AMP + 0.95) * 0.45))
-              // true normal from forward differences → Lambert, same as the shader
-              const nx = -(height(wx + NE, wz) - h) / NE
-              const nz = -(height(wx, wz + NE) - h) / NE
+              // normal from forward differences, xz exaggerated by
+              // NORMAL_GAIN — same sculpting as the fragment shader
+              const nx = (-(height(wx + NE, wz) - h) / NE) * NORMAL_GAIN
+              const nz = (-(height(wx, wz + NE) - h) / NE) * NORMAL_GAIN
               const inv = 1 / Math.sqrt(nx * nx + 1 + nz * nz)
-              // composite palette coordinate: elevation + facing + time
+              // albedo coordinate: elevation + light shimmer + breath
               const swing = (nx * rotC + nz * rotS) * inv
-              let tc = 0.72 * t01 + 0.1 + 0.65 * swing + breathe
+              let tc = 0.95 * t01 + 0.02 + SWING_WEIGHT * swing + breathe
               if (tc < 0) tc = 0
               else if (tc > 1) tc = 1
               const idx = (tc * (LUT_N - 1)) | 0
-              let diff = (nx * sunX + sunY + nz * sunZ) * inv
-              if (diff < 0) diff = 0
-              // two-tone directional light matched to the fragment shader:
-              // warm key from the sun + cool teal sky fill (n.y = inv here)
-              const fill = 0.75 + 0.25 * inv
-              const lr = 0.36 * fill + 1.15 * diff
-              const lg = 0.48 * fill + 1.05 * diff
-              const lb = 0.5 * fill + 0.82 * diff
-              const d2 = diff * diff
-              const sp = d2 * d2 * d2 * t01 * t01 * 0.6 // pow(diff,6) crest glint
-              // exponential distance fog into the luminous teal haze
-              const fog = 1 - Math.exp(-f * 0.0045)
-              const r = (lutR[idx] * lr + SPEC_R * sp) * (1 - fog) + FOG_R * fog
-              const g = (lutG[idx] * lg + SPEC_G * sp) * (1 - fog) + FOG_G * fog
-              const b = (lutB[idx] * lb + SPEC_B * sp) * (1 - fog) + FOG_B * fog
+              // wrapped powder diffuse — soft rolloff into shade, matched to
+              // the fragment shader's sand material
+              const lam = (nx * sunX + sunY + nz * sunZ) * inv
+              let ndl = lam * 0.5 + 0.5
+              if (ndl < 0) ndl = 0
+              else if (ndl > 1) ndl = 1
+              const diff = Math.pow(ndl, DIFFUSE_WRAP)
+              const fill = SKY_FILL_FLOOR + SKY_FILL_GAIN * inv
+              const lr = SKY_COLOR[0] * fill + SUN_COLOR[0] * diff
+              const lg = SKY_COLOR[1] * fill + SUN_COLOR[1] * diff
+              const lb = SKY_COLOR[2] * fill + SUN_COLOR[2] * diff
+              // rose rim where the surface grazes the view direction
+              const vx = lat * f
+              const invV = 1 / Math.sqrt(vx * vx + dh * dh + f * f)
+              let ndv = -(nx * vx + dh + nz * f) * inv * invV
+              if (ndv < 0) ndv = 0
+              const rim =
+                Math.pow(1 - ndv, RIM_POW) * RIM_STRENGTH * (0.4 + 0.6 * diff)
+              // exponential distance fog into the dusk haze
+              const fog = 1 - Math.exp(-f * FOG_DENSITY)
+              // linear light → shared tonemap LUT, then fog blend
+              const linR = lutR[idx] * lr + RIM_R * rim
+              const linG = lutG[idx] * lg + RIM_G * rim
+              const linB = lutB[idx] * lb + RIM_B * rim
+              const r =
+                TONE[linR < 1023 ? linR | 0 : 1023] * (1 - fog) + fogCR * fog
+              const g =
+                TONE[linG < 1023 ? linG | 0 : 1023] * (1 - fog) + fogCG * fog
+              const b =
+                TONE[linB < 1023 ? linB | 0 : 1023] * (1 - fog) + fogCB * fog
+              // sparkle gate: how much the slope tilts toward the sun (flat
+              // ground → zero, matching the shader), faded out with distance
+              let tilt = (nx * SUN_H[0] + nz * SUN_H[1]) * inv * 3
+              if (tilt < 0) tilt = 0
+              else if (tilt > 1) tilt = 1
+              const gat = tilt * tilt * (1 - fog)
               if (yi < 0) yi = 0
               // a long span means a new surface appearing from behind a ridge —
               // don't smear the occluded dune's color across the boundary
@@ -694,6 +824,7 @@ import Layout from "../layouts/Layout.astro"
                 pr = r
                 pg = g
                 pb = b
+                pgat = gat
                 havePrev = true
               }
               // Gouraud span: lerp prev sample's color (at prevY) → this one (at yi)
@@ -706,10 +837,12 @@ import Layout from "../layouts/Layout.astro"
                 data[k + 1] = pg + (g - pg) * m
                 data[k + 2] = pb + (b - pb) * m
                 data[k + 3] = 255
+                gate[y * W + x] = pgat + (gat - pgat) * m
               }
               pr = r
               pg = g
               pb = b
+              pgat = gat
               prevY = yi
             }
             df *= 1.009
@@ -717,10 +850,13 @@ import Layout from "../layouts/Layout.astro"
           }
           for (let y = 0; y < prevY; y++) {
             const k = (y * W + x) * 4
-            data[k] = skyR[y]
-            data[k + 1] = skyG[y]
-            data[k + 2] = skyB[y]
+            // thin sky band, pulled toward the rose glow near the horizon
+            const gm = (y / H) * glow
+            data[k] = skyR[y] + (GLOW_R - skyR[y]) * gm
+            data[k + 1] = skyG[y] + (GLOW_G - skyG[y]) * gm
+            data[k + 2] = skyB[y] + (GLOW_B - skyB[y]) * gm
             data[k + 3] = 255
+            gate[y * W + x] = 0
           }
         }
 
@@ -775,6 +911,36 @@ import Layout from "../layouts/Layout.astro"
           }
         }
 
+        // sunlit grain sparkle: per-pixel twinkle on a staggered clock,
+        // gated by the march's sun-facing/fog buffer. Applied after the AA
+        // blur so glints stay single crisp pixels through the upscale
+        // (Uint8Clamped saturates them toward white, echoing the GL tonemap).
+        if (SPARKLE) {
+          const fbase = tSec * SPARKLE_HZ
+          const D = SPARKLE_DENSITY
+          for (let i = 0, y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++, i++) {
+              const gt = gate[i]
+              if (gt < 0.1) continue
+              let h1 = (Math.imul(x, 374761393) ^ Math.imul(y, 668265263)) | 0
+              h1 = Math.imul(h1 ^ (h1 >>> 13), 1274126177)
+              const stag = ((h1 >>> 16) & 0xffff) / 65536
+              const tick = (fbase + stag * 7) | 0
+              let h2 = (h1 ^ Math.imul(tick, 974634331)) | 0
+              h2 = Math.imul(h2 ^ (h2 >>> 13), 1274126177)
+              const rn = ((h2 >>> 16) & 0xffff) / 65536
+              if (rn < 1 - D) continue
+              const amt =
+                Math.min(1, gt * ((rn - 1 + D) / D) * SPARKLE_STRENGTH * 0.5) *
+                255
+              const k = i * 4
+              data[k] += SPARKLE_COLOR[0] * amt
+              data[k + 1] += SPARKLE_COLOR[1] * amt
+              data[k + 2] += SPARKLE_COLOR[2] * amt
+            }
+          }
+        }
+
         // grain dither breaks the banding that smooth gradients + 8-bit quantize
         // would otherwise show through the upscale
         let seed = (tSec * 977) | 0
@@ -807,6 +973,7 @@ import Layout from "../layouts/Layout.astro"
         ctx.imageSmoothingQuality = "high"
         img = ctx.createImageData(W, H)
         blurTmp = new Float32Array(W * H * 3)
+        gate = new Float32Array(W * H)
         updateCamera()
         if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT)
       }
