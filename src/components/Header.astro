@@ -6,24 +6,24 @@ const navLinks = [
 ---
 
 <header class="absolute top-0 left-0 w-full z-[70]">
-  <div class="max-w-[1920px] mx-auto flex justify-between items-center px-3 sm:px-4 md:px-12 h-20 md:h-auto md:py-6">
+  <div class="header-enter max-w-[1200px] mx-auto flex justify-between items-center px-6 sm:px-8 md:px-10 h-20 md:h-auto md:py-7">
     <a
       href="https://dev.dominicclerici.com"
       target="_blank"
       rel="noopener noreferrer"
       data-terminal="header"
       aria-label="Open developer terminal"
-      class="hidden md:inline-flex font-label text-white px-4 py-1.5"
+      class="hidden md:inline-flex font-mono text-[14px] text-paper py-1.5"
     >
       <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
     </a>
 
-    <nav class="hidden md:flex gap-8 items-center" aria-label="Main navigation">
+    <nav class="hidden md:flex gap-7 items-center" aria-label="Main navigation">
       {
         navLinks.map((link) => (
           <a
             href={link.href}
-            class="font-label text-base font-light uppercase tracking-tighter text-on-surface hover:text-primary transition-colors duration-100"
+            class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper/70 hover:text-paper transition-colors duration-150"
             {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           >
             {link.label}
@@ -32,7 +32,7 @@ const navLinks = [
       }
       <a
         href="/DominicClerici_CV.pdf"
-        class="font-label text-base font-light uppercase tracking-tighter text-on-surface border border-outline-variant px-4 py-1 hover:text-primary hover:border-primary transition-colors duration-100"
+        class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper border border-paper/35 rounded-xl px-4 py-1.5 hover:bg-bio-lime hover:text-ink hover:border-bio-lime transition-colors duration-150"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -47,13 +47,13 @@ const navLinks = [
       aria-expanded="false"
     >
       <span
-        class="block w-full h-[1px] bg-primary transition-all duration-200 origin-center group-aria-expanded:translate-y-[5px] group-aria-expanded:rotate-45"
+        class="block w-full h-[1px] bg-paper transition-all duration-200 origin-center group-aria-expanded:translate-y-[5px] group-aria-expanded:rotate-45"
       ></span>
       <span
-        class="block w-full h-[1px] bg-primary transition-all duration-200 group-aria-expanded:opacity-0"
+        class="block w-full h-[1px] bg-paper transition-all duration-200 group-aria-expanded:opacity-0"
       ></span>
       <span
-        class="block w-full h-[1px] bg-primary transition-all duration-200 origin-center group-aria-expanded:-translate-y-[5px] group-aria-expanded:-rotate-45"
+        class="block w-full h-[1px] bg-paper transition-all duration-200 origin-center group-aria-expanded:-translate-y-[5px] group-aria-expanded:-rotate-45"
       ></span>
     </button>
   </div>
@@ -61,7 +61,7 @@ const navLinks = [
 
 <div
   id="mobile-menu"
-  class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background/50 backdrop-blur-xl opacity-0 pointer-events-none md:hidden"
+  class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-ink/60 backdrop-blur-xl opacity-0 pointer-events-none md:hidden"
   role="dialog"
   aria-modal="true"
   aria-label="Navigation menu"
@@ -72,7 +72,7 @@ const navLinks = [
       navLinks.map((link) => (
         <a
           href={link.href}
-          class="font-label text-xl font-light uppercase tracking-tighter text-on-surface transition-colors duration-100"
+          class="font-mono text-lg uppercase tracking-[-0.02em] text-paper transition-colors duration-100"
           data-menu-link
           {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         >
@@ -82,7 +82,7 @@ const navLinks = [
     }
     <a
       href="/DominicClerici_CV.pdf"
-      class="font-label text-xl font-light uppercase tracking-tighter text-primary border border-primary px-6 py-2 transition-colors duration-100"
+      class="font-mono text-lg uppercase tracking-[-0.02em] text-bio-lime border border-bio-lime/60 rounded-xl px-6 py-2 transition-colors duration-100"
       data-menu-link
       target="_blank"
       rel="noopener noreferrer"

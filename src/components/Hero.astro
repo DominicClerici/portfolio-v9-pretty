@@ -1,28 +1,51 @@
-<section id="hero" class="relative min-h-[500px] md:min-h-[90svh] flex flex-col justify-end md:justify-center bg-surface-dim overflow-hidden">
-  <div class="hidden md:block absolute left-3 md:left-12 top-0 bottom-0 w-px bg-secondary/30"></div>
-
-  <div class="absolute right-0 top-0 bottom-0 w-1/2 hero-grid pointer-events-none" aria-hidden="true"></div>
-
-  <!-- Tracer layer — same position as grid but with its own brighter mask -->
-  <div class="absolute right-0 top-0 bottom-0 w-1/2 hero-grid-tracer-layer pointer-events-none" aria-hidden="true">
-    <div class="hero-grid-tracer" aria-hidden="true"></div>
+<section id="hero" class="relative h-svh min-h-[560px] bg-bone">
+  <!-- Framed dark canvas — the bone gutter around it recesses on scroll -->
+  <div class="hero-frame" aria-hidden="true">
+    <div class="hero-canvas-wrap">
+      <canvas id="hero-canvas"></canvas>
+    </div>
   </div>
 
-  <div class="relative z-10 max-w-[1920px] mx-auto w-full px-3 sm:px-4 pt-12 pb-16 md:px-24 md:py-0">
-    <div class="max-w-4xl">
-    <h1 class="font-headline text-6xl md:text-7xl lg:text-9xl leading-none tracking-tight text-on-surface mb-4">
-      Dominic<br class="md:hidden" /> Clerici
+  <!-- Content -->
+  <div class="relative z-10 h-full max-w-[1200px] mx-auto flex flex-col justify-between px-6 sm:px-8 md:px-10 pt-28 md:pt-36 pb-10 md:pb-14">
+    <h1
+      class="hero-enter-mask font-display font-normal text-paper leading-none tracking-[-0.03em] text-[clamp(3.25rem,9.5vw,6.9375rem)]"
+    >
+      <span>Dominic Clerici.</span>
     </h1>
-    <div class="flex flex-col md:flex-row gap-1 md:gap-x-6 mb-6 md:mb-8">
-      <span class="font-label text-primary text-xs md:text-xl uppercase tracking-widest font-medium">Engineer & Designer</span>
-      <span class="font-label text-secondary text-xs md:text-xl uppercase tracking-widest font-medium">New York</span>
-    </div>
-    <p class="font-headline text-lg md:text-2xl lg:text-4xl text-on-surface-variant max-w-[280px] md:max-w-2xl leading-relaxed mb-8 md:mb-12">
-      I design and build software that's fast, useful, and worth looking at.
-    </p>
-      <div class="hidden md:block relative">
-        <div class="w-full md:max-w-md h-px bg-primary/20 md:bg-primary"></div>
-        <div class="absolute -left-3 md:-left-12 top-0 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full" aria-hidden="true"></div>
+
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-10 md:gap-6">
+      <div class="max-w-[600px]">
+        <div class="hero-enter flex items-center gap-2.5 mb-5" style="--enter-delay: 1.2s">
+          <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true"></span>
+          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60">
+            Engineer &amp; Designer&ensp;·&ensp;New York
+          </span>
+        </div>
+        <p
+          class="hero-enter font-display font-normal text-paper/90 text-[20px] md:text-[24px] leading-[1.25] tracking-[-0.006em]"
+          style="--enter-delay: 1.3s"
+        >
+          I design and build software that&rsquo;s fast, useful, and worth looking at.
+        </p>
+      </div>
+
+      <div class="hero-enter flex items-center gap-3 shrink-0" style="--enter-delay: 1.45s">
+        <a
+          href="#work"
+          class="font-mono text-[14px] tracking-[-0.008em] text-paper border border-paper/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-paper transition-colors duration-200"
+        >
+          View selected work
+        </a>
+        <a
+          href="#work"
+          aria-label="Scroll to selected work"
+          class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-y-0.5 transition-transform duration-200"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 1v11M2 7.5 7 12.5 12 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
       </div>
     </div>
   </div>
@@ -30,110 +53,220 @@
 
 <script>
   {
-    const SPEED_MIN = 850;    // px per second
-    const SPEED_MAX = 1500;   // px per second
-    const MIN_DELAY = 1000;   // ms before next tracer
-    const MAX_DELAY = 4000;   // ms before next tracer
-    const GRID_SIZE = 40;     // must match background-size in CSS
-    const TRACER_LENGTH = 100;      // white tracer gradient length in px
-    const GOLD_TRACER_LENGTH = 200; // gold tracer gradient length in px
-    const GOLD_CHANCE = 0.2;        // 20% chance of gold tracer
-    const GOLD_COLOR = 'var(--color-primary)'; // #e2c28f
+    const section = document.getElementById("hero")!;
+    const frame = section.querySelector<HTMLElement>(".hero-frame")!;
+    const wrap = section.querySelector<HTMLElement>(".hero-canvas-wrap")!;
+    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const grid = document.querySelector('.hero-grid') as HTMLElement | null;
-    const tracer = document.querySelector('.hero-grid-tracer') as HTMLElement | null;
-
-    if (grid && tracer) {
-      function getEligibleLines() {
-        const gridWidth = grid!.offsetWidth;
-        const gridHeight = grid!.offsetHeight;
-        const screenThird = window.innerWidth / 3;
-
-        // Vertical lines (for down-tracers): exclude rightmost 2 and
-        // any further left than 1/3 of the screen from the right edge
-        const minX = Math.max(0, Math.ceil((gridWidth - screenThird) / GRID_SIZE) * GRID_SIZE);
-        const maxX = Math.floor(gridWidth / GRID_SIZE) * GRID_SIZE - 2 * GRID_SIZE;
-        const verticalLines: number[] = [];
-        for (let x = minX; x <= maxX; x += GRID_SIZE) verticalLines.push(x);
-
-        // Horizontal lines (for left-tracers): exclude topmost 2 and bottommost 2
-        const maxY = Math.floor(gridHeight / GRID_SIZE) * GRID_SIZE - 2 * GRID_SIZE;
-        const horizontalLines: number[] = [];
-        for (let y = 2 * GRID_SIZE; y <= maxY; y += GRID_SIZE) horizontalLines.push(y);
-
-        return { verticalLines, horizontalLines, gridWidth, gridHeight };
-      }
-
-      function animateTracer() {
-        const { verticalLines, horizontalLines, gridWidth, gridHeight } = getEligibleLines();
-
-        // Pick direction, falling back if one set is empty
-        let direction: 'down' | 'left';
-        if (!verticalLines.length && !horizontalLines.length) { scheduleNext(); return; }
-        else if (!verticalLines.length) direction = 'left';
-        else if (!horizontalLines.length) direction = 'down';
-        else direction = Math.random() < 0.5 ? 'down' : 'left';
-
-        // Randomize speed and color variant
-        const speed = SPEED_MIN + Math.random() * (SPEED_MAX - SPEED_MIN);
-        const isGold = Math.random() < GOLD_CHANCE;
-        const length = isGold ? GOLD_TRACER_LENGTH : TRACER_LENGTH;
-        const color = isGold ? GOLD_COLOR : 'white';
-
-        if (direction === 'down') {
-          const x = verticalLines[Math.floor(Math.random() * verticalLines.length)];
-          const startY = -length;
-          const endY = gridHeight;
-          const duration = (endY - startY) / speed;
-
-          tracer!.style.width = '1px';
-          tracer!.style.height = length + 'px';
-          tracer!.style.background = `linear-gradient(to bottom, transparent, ${color})`;
-          tracer!.dataset.dir = 'down';
-          tracer!.style.left = x + 'px';
-          tracer!.style.top = '0px';
-          tracer!.style.transition = 'none';
-          tracer!.style.transform = `translateY(${startY}px)`;
-          tracer!.style.display = 'block';
-          tracer!.offsetHeight; // force reflow
-
-          tracer!.style.transition = `transform ${duration}s linear`;
-          tracer!.style.transform = `translateY(${endY}px)`;
-        } else {
-          const y = horizontalLines[Math.floor(Math.random() * horizontalLines.length)];
-          const startX = gridWidth;
-          const endX = -length;
-          const duration = (startX - endX) / speed;
-
-          tracer!.style.height = '1px';
-          tracer!.style.width = length + 'px';
-          tracer!.style.background = `linear-gradient(to right, ${color}, transparent)`;
-          tracer!.dataset.dir = 'left';
-          tracer!.style.top = y + 'px';
-          tracer!.style.left = '0px';
-          tracer!.style.transition = 'none';
-          tracer!.style.transform = `translateX(${startX}px)`;
-          tracer!.style.display = 'block';
-          tracer!.offsetHeight; // force reflow
-
-          tracer!.style.transition = `transform ${duration}s linear`;
-          tracer!.style.transform = `translateX(${endX}px)`;
+    /* ── Frame recess: gutter + radius collapse over the first ~40px of scroll ── */
+    const RECESS_DISTANCE = 40;
+    let recessQueued = false;
+    function updateRecess() {
+      recessQueued = false;
+      const p = Math.min(window.scrollY / RECESS_DISTANCE, 1);
+      frame.style.setProperty("--recess", p.toFixed(4));
+    }
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!recessQueued) {
+          recessQueued = true;
+          requestAnimationFrame(updateRecess);
         }
+      },
+      { passive: true }
+    );
+    updateRecess();
 
-        tracer!.addEventListener('transitionend', () => {
-          tracer!.style.display = 'none';
-          scheduleNext();
-        }, { once: true });
+    // Once the iris-open finishes, drop the clip so the frame's own radius
+    // (which the recess animates to 0) is the only rounding in play.
+    wrap.addEventListener("animationend", (e) => {
+      if (e.animationName === "hero-iris-open") wrap.style.clipPath = "none";
+    });
+
+    /* ── Bioluminescent canvas ──
+       Glowing motes drifting through a slow flow field on an abyssal
+       ground, clustering around a wandering focal point. Mostly dim
+       teal-green; a rationed few flash lime. */
+    const ctx = canvas.getContext("2d")!;
+    const DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+
+    let W = 0;
+    let H = 0;
+
+    type Mote = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      z: number; // depth: 0.25 (far) → 1 (near)
+      phase: number;
+      pulse: number;
+      lime: boolean;
+    };
+    let motes: Mote[] = [];
+
+    function makeSprite(r: number, g: number, b: number) {
+      const s = document.createElement("canvas");
+      s.width = s.height = 64;
+      const c = s.getContext("2d")!;
+      // near-gaussian falloff — hard stops turn into visible rings once
+      // trail accumulation amplifies them
+      const grad = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+      grad.addColorStop(0.18, `rgba(${r},${g},${b},0.62)`);
+      grad.addColorStop(0.38, `rgba(${r},${g},${b},0.28)`);
+      grad.addColorStop(0.6, `rgba(${r},${g},${b},0.1)`);
+      grad.addColorStop(0.8, `rgba(${r},${g},${b},0.03)`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      c.fillStyle = grad;
+      c.fillRect(0, 0, 64, 64);
+      return s;
+    }
+    const tealSprite = makeSprite(126, 196, 176);
+    const limeSprite = makeSprite(206, 247, 158);
+
+    function seed() {
+      const count = Math.round(Math.min(220, Math.max(80, (W * H) / 9500)));
+      motes = Array.from({ length: count }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: 0,
+        vy: 0,
+        z: 0.25 + Math.random() * 0.75,
+        phase: Math.random() * Math.PI * 2,
+        pulse: 0.5 + Math.random() * 1.2,
+        lime: Math.random() < 0.09,
+      }));
+    }
+
+    function resize() {
+      const rect = wrap.getBoundingClientRect();
+      W = Math.max(1, Math.round(rect.width));
+      H = Math.max(1, Math.round(rect.height));
+      canvas.width = Math.round(W * DPR);
+      canvas.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      seed();
+      paintGround(1);
+    }
+
+    function paintGround(alpha: number) {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = `rgba(17, 25, 24, ${alpha})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function flowAngle(x: number, y: number, t: number) {
+      return (
+        Math.sin(x * 0.0016 + t * 0.00019) * 1.9 +
+        Math.cos(y * 0.0013 - t * 0.00023) * 1.7 +
+        Math.sin((x + y) * 0.0005 + t * 0.00011) * 1.2
+      );
+    }
+
+    function render(t: number) {
+      // Trails: wash the previous frame down instead of clearing
+      paintGround(0.16);
+      ctx.globalCompositeOperation = "lighter";
+
+      // Ambient breathing glows — drawn every frame into the trail buffer,
+      // so their alpha accumulates to roughly drawAlpha / fadeAlpha. Keep
+      // the per-frame value tiny.
+      const g1 = Math.min(W, H);
+      const ax = W * (0.62 + 0.1 * Math.sin(t * 0.00006));
+      const ay = H * (0.45 + 0.12 * Math.cos(t * 0.00005));
+      ctx.globalAlpha = 0.009 + 0.003 * Math.sin(t * 0.00012);
+      ctx.drawImage(tealSprite, ax - g1 * 1.3, ay - g1 * 1.3, g1 * 2.6, g1 * 2.6);
+      const bx = W * (0.2 + 0.08 * Math.cos(t * 0.00004));
+      const by = H * (0.75 + 0.08 * Math.sin(t * 0.00007));
+      ctx.globalAlpha = 0.006;
+      ctx.drawImage(limeSprite, bx - g1, by - g1, g1 * 2, g1 * 2);
+
+      // Wandering focal point the motes loosely school around
+      const fx = W * (0.55 + 0.28 * Math.sin(t * 0.00005));
+      const fy = H * (0.5 + 0.26 * Math.sin(t * 0.000037 + 1.7));
+
+      for (const m of motes) {
+        const a = flowAngle(m.x, m.y, t);
+        m.vx += Math.cos(a) * 0.011 * m.z;
+        m.vy += Math.sin(a) * 0.011 * m.z;
+        m.vx += (fx - m.x) * 0.0000045;
+        m.vy += (fy - m.y) * 0.0000045;
+        m.vx *= 0.985;
+        m.vy *= 0.985;
+        m.x += m.vx;
+        m.y += m.vy;
+
+        // wrap with a margin so glows don't pop at the edges
+        if (m.x < -40) m.x = W + 40;
+        if (m.x > W + 40) m.x = -40;
+        if (m.y < -40) m.y = H + 40;
+        if (m.y > H + 40) m.y = -40;
+
+        const blink = 0.55 + 0.45 * Math.sin(t * 0.001 * m.pulse + m.phase);
+        const alpha = (m.lime ? 0.42 : 0.26) * m.z * blink;
+        const size = (m.lime ? 22 : 16) * m.z * (0.75 + 0.25 * blink);
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(m.lime ? limeSprite : tealSprite, m.x - size / 2, m.y - size / 2, size, size);
       }
 
-      function scheduleNext() {
-        const delay = MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY);
-        setTimeout(animateTracer, delay);
-      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+    }
 
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        scheduleNext();
-      }
+    let rafId: number | null = null;
+    let running = false;
+    function loop(t: number) {
+      if (!running) return;
+      render(t);
+      rafId = requestAnimationFrame(loop);
+    }
+    function start() {
+      if (running || reducedMotion) return;
+      running = true;
+      rafId = requestAnimationFrame(loop);
+    }
+    function stop() {
+      running = false;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    let resizeTimer: number | undefined;
+    new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resize();
+        if (reducedMotion) staticFrame();
+      }, 120);
+    }).observe(wrap);
+    resize();
+
+    // A settled still of the same scene for reduced motion
+    function staticFrame() {
+      paintGround(1);
+      for (let i = 0; i < 40; i++) render(i * 120);
+      paintGround(0.35);
+      render(5000);
+    }
+
+    if (reducedMotion) {
+      staticFrame();
+    } else {
+      new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            entry.isIntersecting ? start() : stop();
+          }
+        },
+        { threshold: 0 }
+      ).observe(section);
+      document.addEventListener("visibilitychange", () => {
+        document.hidden ? stop() : start();
+      });
+      start();
     }
   }
 </script>
