@@ -213,12 +213,13 @@
           b += (stops[sIdx + 1][2] - b) * m;
         }
         // bronze ribbon hugging one contour, dark rim beside it — the
-        // glassy edge highlight in the reference render
-        const rib = smooth(0.06, 0.0, Math.abs(f - 0.62)) * 0.45;
+        // glassy edge highlight in the reference render. Widened + softened
+        // into a glow rather than a hard seam so it reads clean once upscaled.
+        const rib = smooth(0.12, 0.0, Math.abs(f - 0.62)) * 0.32;
         r += (0.55 - r) * rib;
         g += (0.38 - g) * rib;
         b += (0.18 - b) * rib;
-        const rim = smooth(0.06, 0.0, Math.abs(f - 0.54)) * 0.25;
+        const rim = smooth(0.11, 0.0, Math.abs(f - 0.53)) * 0.18;
         r += (0.16 - r) * rim;
         g += (0.12 - g) * rim;
         b += (0.05 - b) * rim;
@@ -240,41 +241,114 @@
     let img: ImageData | null = null;
     let vig: Float32Array | null = null;
     let bias: Float32Array | null = null;
+    // Float RGB scratch + ping-pong temp for the separable box blur that
+    // stands in for depth-of-field. Real blur on the small buffer beats the
+    // old bilinear-upscale faceting and lets the field carry more detail.
+    let fR: Float32Array | null = null;
+    let fG: Float32Array | null = null;
+    let fB: Float32Array | null = null;
+    let tR: Float32Array | null = null;
+    let tG: Float32Array | null = null;
+    let tB: Float32Array | null = null;
+
+    /* Separable box blur, running-sum so cost is independent of radius.
+       Clamps at edges. One call = horizontal then vertical pass. */
+    function blurH(src: Float32Array, dst: Float32Array, w: number, h: number, r: number) {
+      const norm = 1 / (2 * r + 1);
+      for (let y = 0; y < h; y++) {
+        const row = y * w;
+        let sum = 0;
+        for (let i = -r; i <= r; i++) sum += src[row + Math.min(w - 1, Math.max(0, i))];
+        for (let x = 0; x < w; x++) {
+          dst[row + x] = sum * norm;
+          sum += src[row + Math.min(w - 1, x + r + 1)] - src[row + Math.max(0, x - r)];
+        }
+      }
+    }
+    function blurV(src: Float32Array, dst: Float32Array, w: number, h: number, r: number) {
+      const norm = 1 / (2 * r + 1);
+      for (let x = 0; x < w; x++) {
+        let sum = 0;
+        for (let i = -r; i <= r; i++) sum += src[Math.min(h - 1, Math.max(0, i)) * w + x];
+        for (let y = 0; y < h; y++) {
+          dst[y * w + x] = sum * norm;
+          sum +=
+            src[Math.min(h - 1, y + r + 1) * w + x] - src[Math.max(0, y - r) * w + x];
+        }
+      }
+    }
 
     function paint(tSec: number) {
-      if (!img || !vig) return;
+      if (!img || !vig || !fR) return;
       const data = img.data;
       const scale = 105 / H; // texels per buffer pixel (base period = 128 texels)
-      const warp = 105;
-      const t1 = tSec * 1.3;
-      const t2 = tSec * -1.0;
-      const t3 = tSec * 0.8;
-      const t4 = tSec * -0.6;
-      let k = 0;
+      // Warp magnitude breathes ±18% (~25s period) so features swell and
+      // dissolve in place — the part that reads as morphing, not sliding.
+      const warp = 105 * (1 + 0.18 * Math.sin(tSec * 0.25));
+      // Each warp layer gets its own decorrelated velocity (texels/sec, ~5×
+      // the old drift). Divergent directions churn the field instead of
+      // rigidly translating it. A gentle global drift on the final lookup
+      // keeps the whole surface quietly on the move.
+      const a1x = tSec * 7.0,
+        a1y = tSec * -4.5;
+      const a2x = tSec * -5.5,
+        a2y = tSec * 6.2;
+      const a3x = tSec * 4.0,
+        a3y = tSec * 5.0;
+      const a4x = tSec * -6.0,
+        a4y = tSec * -3.5;
+      const gdx = tSec * 1.5,
+        gdy = tSec * -1.0;
       let g = 0;
-      let seed = (tSec * 977) | 0;
       for (let y = 0; y < H; y++) {
         const ys = y * scale;
         for (let x = 0; x < W; x++) {
           const xs = x * scale;
-          const qx = sampleT(xs + t1, ys + t2);
-          const qy = sampleT(xs + 137.7 + t3, ys + 89.2 + t4);
-          const rx = sampleT(xs + warp * qx + 41.3 + t3, ys + warp * qy + 9.7 + t2);
-          const ry = sampleT(xs + warp * qx + 199.1 - t4, ys + warp * qy + 152.9 + t1);
-          const f = sampleT(xs + warp * rx, ys + warp * ry) + bias![g];
+          const qx = sampleT(xs + a1x, ys + a1y);
+          const qy = sampleT(xs + 137.7 + a2x, ys + 89.2 + a2y);
+          const rx = sampleT(xs + warp * qx + 41.3 + a3x, ys + warp * qy + 9.7 + a3y);
+          const ry = sampleT(xs + warp * qx + 199.1 + a4x, ys + warp * qy + 152.9 + a4y);
+          const f = sampleT(xs + warp * rx + gdx, ys + warp * ry + gdy) + bias![g];
           let idx = (f * (LUT_N - 1)) | 0;
           if (idx < 0) idx = 0;
           else if (idx >= LUT_N) idx = LUT_N - 1;
           const v = vig[g];
-          seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
-          const grain = (((seed >>> 16) & 31) - 16) * 0.22;
-          data[k] = lutR[idx] * v + grain;
-          data[k + 1] = lutG[idx] * v + grain;
-          data[k + 2] = lutB[idx] * v + grain;
-          data[k + 3] = 255;
-          k += 4;
+          fR![g] = lutR[idx] * v;
+          fG![g] = lutG[idx] * v;
+          fB![g] = lutB[idx] * v;
           g++;
         }
+      }
+
+      // Depth-of-field: two box-blur iterations (≈ Gaussian) on the small
+      // buffer before it is upscaled. Radius kept modest so the ribbon and
+      // deep pockets survive as soft form rather than mush.
+      const R = 2;
+      blurH(fR!, tR!, W, H, R);
+      blurV(tR!, fR!, W, H, R);
+      blurH(fR!, tR!, W, H, R);
+      blurV(tR!, fR!, W, H, R);
+      blurH(fG!, tG!, W, H, R);
+      blurV(tG!, fG!, W, H, R);
+      blurH(fG!, tG!, W, H, R);
+      blurV(tG!, fG!, W, H, R);
+      blurH(fB!, tB!, W, H, R);
+      blurV(tB!, fB!, W, H, R);
+      blurH(fB!, tB!, W, H, R);
+      blurV(tB!, fB!, W, H, R);
+
+      // Write out, dithering with a little grain AFTER the blur so it breaks
+      // up banding instead of being smeared into blobs (the old failure).
+      let k = 0;
+      let seed = (tSec * 977) | 0;
+      for (let i = 0; i < W * H; i++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+        const grain = (((seed >>> 16) & 31) - 16) * 0.06;
+        data[k] = fR![i] + grain;
+        data[k + 1] = fG![i] + grain;
+        data[k + 2] = fB![i] + grain;
+        data[k + 3] = 255;
+        k += 4;
       }
       offCtx.putImageData(img, 0, 0);
       ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
@@ -282,8 +356,11 @@
 
     function resize() {
       const rect = wrap.getBoundingClientRect();
-      W = Math.min(150, Math.max(80, Math.round(rect.width * 0.09)));
-      H = Math.max(40, Math.round(W * (rect.height / Math.max(rect.width, 1))));
+      // Higher source resolution than before (~0.14 vs 0.09) — halves the
+      // upscale factor, so the real blur carries the softness instead of the
+      // bilinear stretch faceting. Still a tiny buffer (~34k px worst case).
+      W = Math.min(240, Math.max(96, Math.round(rect.width * 0.14)));
+      H = Math.max(56, Math.round(W * (rect.height / Math.max(rect.width, 1))));
       off.width = W;
       off.height = H;
       canvas.width = W * 4;
@@ -293,6 +370,12 @@
       img = ctx.createImageData(W, H);
       vig = new Float32Array(W * H);
       bias = new Float32Array(W * H);
+      fR = new Float32Array(W * H);
+      fG = new Float32Array(W * H);
+      fB = new Float32Array(W * H);
+      tR = new Float32Array(W * H);
+      tG = new Float32Array(W * H);
+      tB = new Float32Array(W * H);
       const cx = W / 2;
       const cy = H / 2;
       const norm = Math.min(W, H);
