@@ -71,7 +71,10 @@ import Layout from "../layouts/Layout.astro"
     const SEAM_DARK = 0.07 // subtle dark seam so packed cylinders read on white
     // Sphere
     const SPHERE_R_FRAC = 0.3 // radius, fraction of min(w, h)
-    const SPHERE_POS = [0.5, 0.52] // center, fraction of (w, h), y-up
+    // At rest the sphere sits just right of center — its left edge touches
+    // the page's vertical center line (center x = 0.5·w + radius).
+    const SPHERE_EDGE_X = 0.5 // fraction of w the left edge rests on
+    const SPHERE_Y = 0.52 // center height, fraction of h, y-up
     // Sphere fresnel — Spline: 100%, #fff, bias .4, scale 1.5, int 8, factor .8
     const S_FRES = { bias: 0.4, scale: 1.5, pow: 2.5, gain: 0.8 }
     // Linear gradients (0% at the top of the sphere → 100% at the bottom)
@@ -79,6 +82,7 @@ import Layout from "../layouts/Layout.astro"
     const GRAD_B = { c0: [0.0, 0.424, 0.133], mix: 0.4 } // #006C22 → #fff
     // Phong lighting layer — Spline: 60%, #333, shininess 5
     const LIGHT_DIR = [-0.3, -0.55, 0.75] // directional light, from below-front like the reference
+    const LIGHT_SWING = 0.45 // rad the light rotates per unit of pointer travel
     const LIGHT_MIX = 0.6
     const AMBIENT = 0.25
     const SHININESS = 5.0
@@ -87,7 +91,7 @@ import Layout from "../layouts/Layout.astro"
     const GRAIN_LUM = 0.12
     // Idle drift + pointer parallax
     const DRIFT_FRAC = 0.02
-    const PARALLAX_FRAC = 0.035
+    const PARALLAX_FRAC = 0.05
     const BG = [0.957, 0.953, 0.945] // backdrop behind the glass
 
     const v3 = (c: number[]) =>
@@ -113,11 +117,28 @@ import Layout from "../layouts/Layout.astro"
       py += (tpy - py) * 0.04
       const m = Math.min(w, h)
       return [
-        w * SPHERE_POS[0] +
-          m * (DRIFT_FRAC * Math.sin(tSec * 0.21) + PARALLAX_FRAC * px),
-        h * SPHERE_POS[1] +
+        w * SPHERE_EDGE_X +
+          m *
+            (SPHERE_R_FRAC +
+              DRIFT_FRAC * Math.sin(tSec * 0.21) +
+              PARALLAX_FRAC * px),
+        h * SPHERE_Y +
           m * (DRIFT_FRAC * 0.6 * Math.sin(tSec * 0.13 + 1.7) + PARALLAX_FRAC * py),
       ]
+    }
+    // Directional light, swung slightly toward the smoothed pointer
+    // (yaw around y, then pitch around x — call after sphereCenter so it
+    // sees this frame's eased px/py)
+    function lightDir(): [number, number, number] {
+      const [bx, by, bz] = LIGHT_DIR
+      const ya = px * LIGHT_SWING
+      const xa = py * LIGHT_SWING
+      const x = bx * Math.cos(ya) + bz * Math.sin(ya)
+      let z = bz * Math.cos(ya) - bx * Math.sin(ya)
+      const y = by * Math.cos(xa) + z * Math.sin(xa)
+      z = z * Math.cos(xa) - by * Math.sin(xa)
+      const l = Math.hypot(x, y, z)
+      return [x / l, y / l, z / l]
     }
 
     type Impl = { render: (tSec: number) => void; resize: () => void }
@@ -179,6 +200,7 @@ import Layout from "../layouts/Layout.astro"
       const SCENE_FS = `#version 300 es
         precision highp float;
         uniform vec3 uSphere;    // center (px, y-up), radius (px)
+        uniform vec3 uLight;     // unit, toward the light
         uniform sampler2D uMatcap;
         uniform float uMatcapOn;
         out vec4 outColor;
@@ -203,7 +225,7 @@ import Layout from "../layouts/Layout.astro"
             float t = 0.5 - n.y * 0.5;                  // 0 top → 1 bottom
             c = mix(c, gradB(t), ${f1(GRAD_B.mix)});
             c = mix(c, gradA(t), ${f1(GRAD_A.mix)});
-            vec3 L = normalize(${v3(LIGHT_DIR)});
+            vec3 L = uLight;
             float diff = max(dot(n, L), 0.0);
             float spec = pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), ${f1(SHININESS)});
             vec3 lit = c * (${f1(AMBIENT)} + (1.0 - ${f1(AMBIENT)}) * diff) + vec3(spec * 0.35);
@@ -307,6 +329,7 @@ import Layout from "../layouts/Layout.astro"
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
       const uSphere = gl.getUniformLocation(sceneProg, "uSphere")
+      const uLightU = gl.getUniformLocation(sceneProg, "uLight")
       const uMatcapOn = gl.getUniformLocation(sceneProg, "uMatcapOn")
       gl.useProgram(sceneProg)
       gl.uniform1i(gl.getUniformLocation(sceneProg, "uMatcap"), 0)
@@ -382,6 +405,7 @@ import Layout from "../layouts/Layout.astro"
         gl!.viewport(0, 0, fw, fh)
         gl!.useProgram(sceneProg)
         gl!.uniform3f(uSphere, cx * FBO_SCALE, cy * FBO_SCALE, m * SPHERE_R_FRAC * FBO_SCALE)
+        gl!.uniform3fv(uLightU, lightDir())
         gl!.uniform1f(uMatcapOn, matcapReady ? 1 : 0)
         gl!.drawArrays(gl!.TRIANGLES, 0, 3)
         gl!.activeTexture(gl!.TEXTURE1)
@@ -440,21 +464,21 @@ import Layout from "../layouts/Layout.astro"
         return t * t * (3 - 2 * t)
       }
 
-      // Green sphere ramp ≈ the GL layers after the 45px blur: gradients +
-      // phong collapse into a top→bottom ramp with a bright lower rim.
-      function sphereColor(t: number): [number, number, number] {
+      // Green sphere ramp ≈ the GL gradient layers after the 45px blur:
+      // a top→bottom ramp with a bright lower rim. Lighting is applied by
+      // the caller so it can follow the pointer-swung light.
+      function sphereColor(t: number, shade: number): [number, number, number] {
         const gA = [
           lerp(GRAD_A.c0[0], GRAD_A.c1[0], sstep(0, 0.8, t)),
           lerp(GRAD_A.c0[1], GRAD_A.c1[1], sstep(0, 0.8, t)),
           lerp(GRAD_A.c0[2], GRAD_A.c1[2], sstep(0, 0.8, t)),
         ]
         const w = sstep(0.8, 1, t)
-        const dark = 1 - GRAD_B.mix * (1 - w) * 0.5 // gradient B darkening
-        const shade = lerp(0.55, 1.1, t) * dark // phong: lit from below-front
+        const dark = (1 - GRAD_B.mix * (1 - w) * 0.5) * shade // gradient B darkening
         return [
-          255 * Math.min(1, lerp(gA[0] * shade, 1, w)),
-          255 * Math.min(1, lerp(gA[1] * shade, 1, w)),
-          255 * Math.min(1, lerp(gA[2] * shade, 1, w)),
+          255 * Math.min(1, lerp(gA[0] * dark, 1, w)),
+          255 * Math.min(1, lerp(gA[1] * dark, 1, w)),
+          255 * Math.min(1, lerp(gA[2] * dark, 1, w)),
         ]
       }
 
@@ -471,6 +495,7 @@ import Layout from "../layouts/Layout.astro"
         const pxv = -Math.sin(a)
         const pyv = -Math.cos(a)
         const eta = 1 / IOR
+        const L = lightDir()
         let seed = (tSec * 61.7) % 1
 
         for (let y = 0; y < H; y++) {
@@ -496,7 +521,15 @@ import Layout from "../layouts/Layout.astro"
             let b = BG[2] * 255
             if (cov > 0) {
               const t = Math.min(1, Math.max(0, (dy + R) / (2 * R)))
-              const sc = sphereColor(t)
+              // diffuse against the swung light, from the blob's implied
+              // normal (y flipped back to y-up)
+              const nbx = Math.max(-1, Math.min(1, dx / R))
+              const nby = Math.max(-1, Math.min(1, -dy / R))
+              const nbz = Math.sqrt(Math.max(0, 1 - nbx * nbx - nby * nby))
+              const diff = Math.max(0, nbx * L[0] + nby * L[1] + nbz * L[2])
+              const shade =
+                1 - LIGHT_MIX + LIGHT_MIX * (AMBIENT + (1 - AMBIENT) * diff)
+              const sc = sphereColor(t, lerp(0.85, 1.15, diff) * shade)
               r = lerp(r, sc[0], cov)
               g = lerp(g, sc[1], cov)
               b = lerp(b, sc[2], cov)
