@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title="CPU Dunes — demo" description="Canvas2D sand-dune heightfield demo">
+<Layout title="CPU Dunes — demo" description="Dependency-free WebGL sand-dune demo with a Canvas2D fallback">
   <div id="dune-scope" class="relative bg-bone">
     <!-- Pinned canvas — sticky for the whole scope, same pattern as the hero:
          content scrolls over it, and the background leaves with the flow at
@@ -18,7 +18,7 @@ import Layout from "../layouts/Layout.astro";
         </h1>
         <div class="flex items-center gap-2.5">
           <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true"></span>
-          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60">
+          <span id="dune-mode" class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60">
             Canvas2D heightfield raymarch&ensp;·&ensp;scroll to flatten the camera
           </span>
         </div>
@@ -78,154 +78,30 @@ import Layout from "../layouts/Layout.astro";
   {
     const scope = document.getElementById("dune-scope")!;
     const bg = scope.querySelector<HTMLElement>(".dune-bg")!;
-    const canvas = document.getElementById("dune-canvas") as HTMLCanvasElement;
+    let canvas = document.getElementById("dune-canvas") as HTMLCanvasElement;
     const readout = document.getElementById("pitch-readout")!;
+    const modeLabel = document.getElementById("dune-mode")!;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const ctx = canvas.getContext("2d")!;
 
-    /* ── Sand-dune heightfield, rendered on the CPU ──
-       Per screen column, a ray is marched across a tileable fbm heightfield;
-       each terrain sample is perspective-projected (with real camera pitch)
-       to a screen row and drawn as a vertical span, nearest-first. Runs at a
-       tiny resolution (~240px wide) into ImageData and is upscaled by
-       drawImage + CSS smoothing — same no-WebGL recipe as the hero. */
+    /* ── Dunes without the three.js bundle ──
+       Primary path is raw WebGL: the exact displaced-plane shaders from
+       /tjs-dunes, driven by ~150 lines of hand-rolled GL setup (one grid
+       mesh, one program, one view-projection matrix). Full-resolution,
+       hardware-accelerated, zero dependencies. When WebGL is unavailable
+       (or the context dies), it falls back to the original Canvas2D
+       heightfield raymarch at reduced resolution. */
 
     /* Camera + world tuning (shared spec with /tjs-dunes) */
     const FOVY = (60 * Math.PI) / 180;
     const AMP = 14; // dune amplitude: heights span ±AMP around the mean plane
     const CAM_H = 32; // camera height above the mean plane
     const SPEED = 10; // forward flight, world units / sec
-    const NEAR = 2.5;
-    const FAR = 300;
-    const WORLD_PER_TILE = 120; // noise tile (256 texels) spans this many units
     const PITCH_TOP = 50; // degrees, at the top of the page
     const PITCH_END = 30; // degrees, when the background starts leaving
-    // Sun low in the front-left: dune faces sloping toward it catch light
-    const SUN_X = -0.66;
-    const SUN_Z = 0.75;
-
-    /* Tileable fbm texture, computed once — 3 wrapped value-noise octaves.
-       Fewer/larger octaves than the hero field: dunes want long smooth
-       swells, not fine churn. */
-    const TS = 256;
-    const TMASK = TS - 1;
-    const T = (() => {
-      let s = 4243;
-      const rand = () => {
-        s |= 0;
-        s = (s + 0x6d2b79f5) | 0;
-        let t = Math.imul(s ^ (s >>> 15), 1 | s);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-      const out = new Float32Array(TS * TS);
-      let amp = 1;
-      let total = 0;
-      for (const L of [2, 4, 8]) {
-        const lat = new Float32Array(L * L);
-        for (let i = 0; i < L * L; i++) lat[i] = rand();
-        for (let y = 0; y < TS; y++) {
-          const gy = (y / TS) * L;
-          const y0 = Math.floor(gy);
-          let fy = gy - y0;
-          fy = fy * fy * (3 - 2 * fy);
-          const r0 = (y0 % L) * L;
-          const r1 = ((y0 + 1) % L) * L;
-          for (let x = 0; x < TS; x++) {
-            const gx = (x / TS) * L;
-            const x0 = Math.floor(gx);
-            let fx = gx - x0;
-            fx = fx * fx * (3 - 2 * fx);
-            const x1 = (x0 + 1) % L;
-            const a = lat[r0 + x0];
-            const b = lat[r0 + x1];
-            const c = lat[r1 + x0];
-            const d = lat[r1 + x1];
-            const ab = a + (b - a) * fx;
-            out[y * TS + x] += amp * (ab + (c + (d - c) * fx - ab) * fy);
-          }
-        }
-        total += amp;
-        amp *= 0.45;
-      }
-      // Histogram-equalize: the low octave has only a handful of lattice
-      // cells, so the raw distribution is heavily skewed per seed.
-      // Rank-normalizing keeps every ridge line in place but spreads heights
-      // uniformly over [0,1], so the full valley→crest palette appears.
-      const order = Array.from(out.keys()).sort((a, b) => out[a] - out[b]);
-      const eq = new Float32Array(out.length);
-      for (let r = 0; r < order.length; r++) eq[order[r]] = r / (order.length - 1);
-      return eq;
-    })();
-
-    const W2T = TS / WORLD_PER_TILE; // world units → texels
-    // Dunes elongate across the direction of travel: longer wavelength in x
-    const AX = 0.62;
-    const AZ = 1.2;
-
-    // Bilinear sample with wraparound, world coordinates → height in units
-    function height(wx: number, wz: number) {
-      const x = wx * W2T * AX;
-      const y = wz * W2T * AZ;
-      const xi = Math.floor(x);
-      const yi = Math.floor(y);
-      const fx = x - xi;
-      const fy = y - yi;
-      const x0 = xi & TMASK;
-      const x1 = (xi + 1) & TMASK;
-      const r0 = (yi & TMASK) * TS;
-      const r1 = ((yi + 1) & TMASK) * TS;
-      const ab = T[r0 + x0] + (T[r0 + x1] - T[r0 + x0]) * fx;
-      const v = ab + (T[r1 + x0] + (T[r1 + x1] - T[r1 + x0]) * fx - ab) * fy;
-      // s-curve the equalized field: broad rounded valleys and crests with
-      // steeper flanks between — a dune profile rather than raw noise
-      const n = v * v * (3 - 2 * v);
-      return (n - 0.5) * 2 * AMP;
-    }
-
-    /* Height → base color LUT, same stops as the hero's pine→mint→bone
-       palette so the two hero candidates read as one family. */
-    const LUT_N = 512;
-    const lutR = new Float32Array(LUT_N);
-    const lutG = new Float32Array(LUT_N);
-    const lutB = new Float32Array(LUT_N);
-    {
-      const smooth = (e0: number, e1: number, v: number) => {
-        const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0)));
-        return t * t * (3 - 2 * t);
-      };
-      const stops: [number, [number, number, number]][] = [
-        [0.0, [0.02, 0.045, 0.032]], // abyss — valley floors
-        [0.18, [0.05, 0.13, 0.09]], // pine
-        [0.36, [0.09, 0.24, 0.16]], // forest
-        [0.55, [0.19, 0.42, 0.29]], // green
-        [0.72, [0.38, 0.63, 0.46]], // sage
-        [0.87, [0.6, 0.83, 0.62]], // mint
-        [1.0, [0.8, 0.87, 0.75]], // pale bone — crests
-      ];
-      for (let i = 0; i < LUT_N; i++) {
-        const f = i / (LUT_N - 1);
-        let s = 0;
-        while (s < stops.length - 2 && f > stops[s + 1][0]) s++;
-        const [p0, c0] = stops[s];
-        const [p1, c1] = stops[s + 1];
-        const m = smooth(p0, p1, f);
-        lutR[i] = (c0[0] + (c1[0] - c0[0]) * m) * 255;
-        lutG[i] = (c0[1] + (c1[1] - c0[1]) * m) * 255;
-        lutB[i] = (c0[2] + (c1[2] - c0[2]) * m) * 255;
-      }
-    }
-
-    // Fog + specular colors (bio-lime crest glints, dark ink horizon)
-    const FOG_R = 0.055 * 255, FOG_G = 0.1 * 255, FOG_B = 0.075 * 255;
-    const SPEC_R = 0.808 * 255, SPEC_G = 0.969 * 255, SPEC_B = 0.62 * 255; // #cef79e
-
-    const off = document.createElement("canvas");
-    const offCtx = off.getContext("2d")!;
-    let W = 0;
-    let H = 0;
-    let img: ImageData | null = null;
-    let blurTmp: Float32Array | null = null;
+    // Base dune wavelengths (world units) — anisotropic so dunes elongate
+    // across the direction of travel (120-unit tile, x scaled 0.62, z 1.2).
+    const WAVE_X = 120 / (2 * 0.62);
+    const WAVE_Z = 120 / (2 * 1.2);
 
     /* Scroll → camera pitch. Progress 0 at the top of the page, 1 when the
        sticky background reaches the end of its scope and starts to leave. */
@@ -237,190 +113,17 @@ import Layout from "../layouts/Layout.astro";
       readout.textContent = `pitch ${pitchDeg.toFixed(1)}°`;
     }
 
-    function paint(tSec: number) {
-      if (!img) return;
-      const data = img.data;
-      const pitch = (pitchDeg * Math.PI) / 180;
-      const cosP = Math.cos(pitch);
-      const sinP = Math.sin(pitch);
-      const tanHalfY = Math.tan(FOVY / 2);
-      const tanHalfX = tanHalfY * (W / H);
-      const camX = 8 * Math.sin(tSec * 0.05);
-      const camZ = tSec * SPEED; // forward flight: +z is ahead
+    type Impl = { render: (tSec: number) => void; resize: () => void };
+    let impl: Impl;
 
-      // Sky: only a thin band ever shows (horizon sits at/above the top edge
-      // at 30–50° pitch with a 60° fov) — a quiet dark gradient is enough.
-      const skyR = new Float32Array(H);
-      const skyG = new Float32Array(H);
-      const skyB = new Float32Array(H);
-      for (let y = 0; y < H; y++) {
-        const t = y / H;
-        skyR[y] = (0.03 + 0.035 * t) * 255;
-        skyG[y] = (0.05 + 0.06 * t) * 255;
-        skyB[y] = (0.04 + 0.045 * t) * 255;
-      }
-
-      // sun direction matched to the tjs fragment shader
-      const SL = Math.hypot(SUN_X, 0.55, SUN_Z);
-      const sunX = SUN_X / SL;
-      const sunY = 0.55 / SL;
-      const sunZ = SUN_Z / SL;
-      const NE = 3.0; // normal finite-difference epsilon
-
-      for (let x = 0; x < W; x++) {
-        const ndcX = ((x + 0.5) / W) * 2 - 1;
-        const lat = ndcX * tanHalfX; // lateral offset per unit of forward dist
-        let prevY = H; // lowest unfilled row (fills bottom-up, near-to-far)
-        // previous visible sample's shaded color, for Gouraud interpolation
-        let pr = 0;
-        let pg = 0;
-        let pb = 0;
-        let havePrev = false;
-        let f = NEAR;
-        let df = 0.25;
-        while (f < FAR && prevY > 0) {
-          const wx = camX + lat * f;
-          const wz = camZ + f;
-          const h = height(wx, wz);
-          const dh = h - CAM_H;
-          // camera-space projection with real pitch (θ down):
-          // y = dh·cosθ + f·sinθ, z = f·cosθ − dh·sinθ
-          const zc = f * cosP - dh * sinP;
-          const yc = dh * cosP + f * sinP;
-          const sy = (0.5 - yc / zc / (2 * tanHalfY)) * H;
-          let yi = sy | 0;
-          if (yi < prevY) {
-            // visible span — shade once per sample (hidden samples skip this)
-            const t01 = Math.min(1, Math.max(0, h / (2 * AMP) + 0.5));
-            const idx = (t01 * (LUT_N - 1)) | 0;
-            // true normal from forward differences → Lambert, same as the shader
-            const nx = -(height(wx + NE, wz) - h) / NE;
-            const nz = -(height(wx, wz + NE) - h) / NE;
-            const inv = 1 / Math.sqrt(nx * nx + 1 + nz * nz);
-            let diff = (nx * sunX + sunY + nz * sunZ) * inv;
-            if (diff < 0) diff = 0;
-            const light = 0.35 + 0.85 * diff;
-            const d2 = diff * diff;
-            const sp = d2 * d2 * d2 * t01 * t01 * 0.5; // pow(diff,6) crest glint
-            // exponential distance fog into the dark ink horizon
-            const fog = 1 - Math.exp(-f * 0.008);
-            const r = (lutR[idx] * light + SPEC_R * sp) * (1 - fog) + FOG_R * fog;
-            const g = (lutG[idx] * light + SPEC_G * sp) * (1 - fog) + FOG_G * fog;
-            const b = (lutB[idx] * light + SPEC_B * sp) * (1 - fog) + FOG_B * fog;
-            if (yi < 0) yi = 0;
-            // a long span means a new surface appearing from behind a ridge —
-            // don't smear the occluded dune's color across the boundary
-            const span = prevY - yi;
-            if (!havePrev || span > 8) {
-              pr = r;
-              pg = g;
-              pb = b;
-              havePrev = true;
-            }
-            // Gouraud span: lerp prev sample's color (at prevY) → this one (at yi)
-            const istep = span > 0 ? 1 / span : 0;
-            let m = 0;
-            for (let y = prevY - 1; y >= yi; y--) {
-              m += istep;
-              const k = (y * W + x) * 4;
-              data[k] = pr + (r - pr) * m;
-              data[k + 1] = pg + (g - pg) * m;
-              data[k + 2] = pb + (b - pb) * m;
-              data[k + 3] = 255;
-            }
-            pr = r;
-            pg = g;
-            pb = b;
-            prevY = yi;
-          }
-          df *= 1.009;
-          f += df;
-        }
-        for (let y = 0; y < prevY; y++) {
-          const k = (y * W + x) * 4;
-          data[k] = skyR[y];
-          data[k + 1] = skyG[y];
-          data[k + 2] = skyB[y];
-          data[k + 3] = 255;
-        }
-      }
-
-      // radius-1 box blur: anti-aliases ridge silhouettes (the per-column march
-      // stair-steps them) at the cost of a touch of softness, which fits the look
-      if (blurTmp) {
-        const tmp = blurTmp;
-        for (let y = 0; y < H; y++) {
-          const row = y * W;
-          for (let x = 0; x < W; x++) {
-            const x0 = x > 0 ? x - 1 : 0;
-            const x1 = x < W - 1 ? x + 1 : W - 1;
-            const o = (row + x) * 3;
-            tmp[o] = (data[(row + x0) * 4] + data[(row + x) * 4] + data[(row + x1) * 4]) / 3;
-            tmp[o + 1] =
-              (data[(row + x0) * 4 + 1] + data[(row + x) * 4 + 1] + data[(row + x1) * 4 + 1]) / 3;
-            tmp[o + 2] =
-              (data[(row + x0) * 4 + 2] + data[(row + x) * 4 + 2] + data[(row + x1) * 4 + 2]) / 3;
-          }
-        }
-        for (let x = 0; x < W; x++) {
-          for (let y = 0; y < H; y++) {
-            const y0 = y > 0 ? y - 1 : 0;
-            const y1 = y < H - 1 ? y + 1 : H - 1;
-            const o = (y * W + x) * 4;
-            data[o] = (tmp[(y0 * W + x) * 3] + tmp[(y * W + x) * 3] + tmp[(y1 * W + x) * 3]) / 3;
-            data[o + 1] =
-              (tmp[(y0 * W + x) * 3 + 1] + tmp[(y * W + x) * 3 + 1] + tmp[(y1 * W + x) * 3 + 1]) / 3;
-            data[o + 2] =
-              (tmp[(y0 * W + x) * 3 + 2] + tmp[(y * W + x) * 3 + 2] + tmp[(y1 * W + x) * 3 + 2]) / 3;
-          }
-        }
-      }
-
-      // grain dither breaks the banding that smooth gradients + 8-bit quantize
-      // would otherwise show through the upscale
-      let seed = (tSec * 977) | 0;
-      for (let i = 0; i < W * H * 4; i += 4) {
-        seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
-        const grain = (((seed >>> 16) & 31) - 16) * 0.14;
-        data[i] += grain;
-        data[i + 1] += grain;
-        data[i + 2] += grain;
-      }
-
-      offCtx.putImageData(img, 0, 0);
-      ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
-    }
-
-    function resize() {
-      const rect = bg.getBoundingClientRect();
-      // ~0.22 of display width: high enough that the Gouraud shading and AA
-      // blur read as smooth surfaces after the upscale, still ~110k pixels max
-      W = Math.min(460, Math.max(160, Math.round(rect.width * 0.22)));
-      H = Math.max(96, Math.round(W * (rect.height / Math.max(rect.width, 1))));
-      off.width = W;
-      off.height = H;
-      canvas.width = W * 4;
-      canvas.height = H * 4;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      img = ctx.createImageData(W, H);
-      blurTmp = new Float32Array(W * H * 3);
-      updatePitch();
-      if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT);
-    }
-
+    /* ── Shared render-loop harness (raf, scroll, resize, visibility) ── */
     let rafId: number | null = null;
     let running = false;
     let lastT = 0;
-    let lastPaintMs = -Infinity;
     function loop(ms: number) {
       if (!running) return;
-      // ~30fps is plenty at this drift speed and halves CPU cost
-      if (ms - lastPaintMs >= 28) {
-        lastPaintMs = ms;
-        lastT = ms / 1000;
-        paint(lastT);
-      }
+      lastT = ms / 1000;
+      impl.render(lastT);
       rafId = requestAnimationFrame(loop);
     }
     function start() {
@@ -434,6 +137,577 @@ import Layout from "../layouts/Layout.astro";
       rafId = null;
     }
 
+    /* ── Raw WebGL backend ── */
+    // Set once a GL context has been requested on the canvas: the element is
+    // then committed to WebGL, so the CPU fallback must swap in a fresh one.
+    let glTouched = false;
+
+    function startGL(): Impl | null {
+      const attrs: WebGLContextAttributes = {
+        antialias: true,
+        alpha: false,
+        powerPreference: "low-power",
+      };
+      const gl = (canvas.getContext("webgl2", attrs) ||
+        canvas.getContext("webgl", attrs)) as WebGLRenderingContext | null;
+      if (!gl) return null;
+      glTouched = true;
+
+      const vsSrc = `
+        attribute vec2 aXZ;
+        uniform mat4 uVP;
+        uniform vec2 uOff;
+        uniform float uAmp;
+        varying vec3 vWorld;
+        varying vec3 vNormal;
+        varying float vT;
+
+        float hash(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+        float vnoise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        // 3 octaves of long smooth swells; mid-heavy fbm contrast-stretched
+        // then s-curved so valleys/crests span the full range with a dune
+        // profile. Identical to the /tjs-dunes vertex shader.
+        float hgt(vec2 xz) {
+          vec2 p = xz * vec2(${(1 / WAVE_X).toFixed(6)}, ${(1 / WAVE_Z).toFixed(6)});
+          float v = vnoise(p) + vnoise(p * 2.0 + 13.1) * 0.45 + vnoise(p * 4.0 + 71.7) * 0.2025;
+          float n = smoothstep(0.0, 1.0, clamp((v / 1.6525 - 0.28) / 0.44, 0.0, 1.0));
+          return (n - 0.5) * 2.0 * uAmp;
+        }
+
+        void main() {
+          vec2 s = aXZ + uOff;
+          float h = hgt(s);
+          vec3 wp = vec3(aXZ.x, h, aXZ.y);
+          float e = 2.0;
+          float hx = hgt(s + vec2(e, 0.0)) - hgt(s - vec2(e, 0.0));
+          float hz = hgt(s + vec2(0.0, e)) - hgt(s - vec2(0.0, e));
+          vNormal = normalize(vec3(-hx, 2.0 * e, -hz));
+          vWorld = wp;
+          vT = clamp(h / (2.0 * uAmp) + 0.5, 0.0, 1.0);
+          gl_Position = uVP * vec4(wp, 1.0);
+        }
+      `;
+
+      const fsSrc = `
+        #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+        #else
+        precision mediump float;
+        #endif
+        uniform vec3 uCamPos;
+        varying vec3 vWorld;
+        varying vec3 vNormal;
+        varying float vT;
+
+        // hero palette: abyss → pine → forest → green → sage → mint → bone
+        vec3 palette(float t) {
+          vec3 c = vec3(0.02, 0.045, 0.032);
+          c = mix(c, vec3(0.05, 0.13, 0.09), smoothstep(0.0, 0.18, t));
+          c = mix(c, vec3(0.09, 0.24, 0.16), smoothstep(0.18, 0.36, t));
+          c = mix(c, vec3(0.19, 0.42, 0.29), smoothstep(0.36, 0.55, t));
+          c = mix(c, vec3(0.38, 0.63, 0.46), smoothstep(0.55, 0.72, t));
+          c = mix(c, vec3(0.6, 0.83, 0.62), smoothstep(0.72, 0.87, t));
+          c = mix(c, vec3(0.8, 0.87, 0.75), smoothstep(0.87, 1.0, t));
+          return c;
+        }
+
+        void main() {
+          vec3 n = normalize(vNormal);
+          // sun low in the front-left, same heading as the CPU version
+          vec3 sun = normalize(vec3(-0.66, 0.55, 0.75));
+          float diff = clamp(dot(n, sun), 0.0, 1.0);
+          float light = 0.35 + 0.85 * diff;
+          vec3 col = palette(vT) * light;
+          // bio-lime glint on sunlit crests only
+          float sp = pow(diff, 6.0) * vT * vT * 0.5;
+          col += vec3(0.808, 0.969, 0.62) * sp;
+          // exponential distance fog into the dark ink horizon; the length is
+          // computed on a scaled vector so mediump devices don't overflow
+          float dist = length((vWorld - uCamPos) * 0.02) * 50.0;
+          float fog = 1.0 - exp(-dist * 0.008);
+          col = mix(col, vec3(0.055, 0.1, 0.075), fog);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `;
+
+      function compile(type: number, src: string) {
+        const s = gl!.createShader(type)!;
+        gl!.shaderSource(s, src);
+        gl!.compileShader(s);
+        if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) {
+          console.error("dune shader:", gl!.getShaderInfoLog(s));
+          return null;
+        }
+        return s;
+      }
+      const vs = compile(gl.VERTEX_SHADER, vsSrc);
+      const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+      const prog = gl.createProgram()!;
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error("dune program:", gl.getProgramInfoLog(prog));
+        return null;
+      }
+      gl.useProgram(prog);
+
+      /* Grid mesh matching the tjs plane: 900×520 units at z ∈ [-505, 15],
+         300×190 segments — 57k vertices, small enough for Uint16 indices. */
+      const SX = 300;
+      const SZ = 190;
+      const verts = new Float32Array((SX + 1) * (SZ + 1) * 2);
+      let vi = 0;
+      for (let iz = 0; iz <= SZ; iz++) {
+        const z = -505 + (iz / SZ) * 520;
+        for (let ix = 0; ix <= SX; ix++) {
+          verts[vi++] = -450 + (ix / SX) * 900;
+          verts[vi++] = z;
+        }
+      }
+      const idx = new Uint16Array(SX * SZ * 6);
+      let ii = 0;
+      for (let iz = 0; iz < SZ; iz++) {
+        for (let ix = 0; ix < SX; ix++) {
+          const a = iz * (SX + 1) + ix;
+          const b = a + SX + 1;
+          idx[ii++] = a;
+          idx[ii++] = b;
+          idx[ii++] = a + 1;
+          idx[ii++] = a + 1;
+          idx[ii++] = b;
+          idx[ii++] = b + 1;
+        }
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+      const aXZ = gl.getAttribLocation(prog, "aXZ");
+      gl.enableVertexAttribArray(aXZ);
+      gl.vertexAttribPointer(aXZ, 2, gl.FLOAT, false, 0, 0);
+
+      const uVP = gl.getUniformLocation(prog, "uVP");
+      const uOff = gl.getUniformLocation(prog, "uOff");
+      gl.uniform1f(gl.getUniformLocation(prog, "uAmp"), AMP);
+      gl.uniform3f(gl.getUniformLocation(prog, "uCamPos"), 0, CAM_H, 0);
+
+      gl.enable(gl.DEPTH_TEST);
+      gl.clearColor(0.039, 0.051, 0.043, 1); // 0x0a0d0b sky, same as tjs
+
+      // If the GPU goes away mid-session, degrade to the CPU painter instead
+      // of freezing on a dead canvas.
+      canvas.addEventListener(
+        "webglcontextlost",
+        (e) => {
+          e.preventDefault();
+          stop();
+          impl = startCPU();
+          setModeLabel(false);
+          impl.resize();
+          start();
+        },
+        { once: true }
+      );
+
+      let aspect = 1;
+      const vp = new Float32Array(16);
+
+      function render(tSec: number) {
+        const p = (pitchDeg * Math.PI) / 180;
+        const c = Math.cos(p);
+        const s = Math.sin(p);
+        const f = 1 / Math.tan(FOVY / 2);
+        const near = 0.5;
+        const far = 800;
+        const C = (far + near) / (near - far);
+        const D = (2 * far * near) / (near - far);
+        // VP = perspective(FOVY, aspect) · rotX(pitch) · translate(0, -CAM_H, 0)
+        // composed by hand (column-major); everything not set stays 0.
+        vp[0] = f / aspect;
+        vp[5] = f * c;
+        vp[6] = C * s;
+        vp[7] = -s;
+        vp[9] = -f * s;
+        vp[10] = C * c;
+        vp[11] = -c;
+        vp[13] = -CAM_H * f * c;
+        vp[14] = -CAM_H * C * s + D;
+        vp[15] = CAM_H * s;
+        gl!.uniformMatrix4fv(uVP, false, vp);
+        // forward flight: translate the noise domain toward the camera
+        gl!.uniform2f(uOff, 8 * Math.sin(tSec * 0.05), -tSec * SPEED);
+        gl!.clear(gl!.COLOR_BUFFER_BIT | gl!.DEPTH_BUFFER_BIT);
+        gl!.drawElements(gl!.TRIANGLES, idx.length, gl!.UNSIGNED_SHORT, 0);
+      }
+
+      function resize() {
+        const rect = bg.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+        canvas.width = Math.max(1, Math.round(rect.width * dpr));
+        canvas.height = Math.max(1, Math.round(rect.height * dpr));
+        gl!.viewport(0, 0, canvas.width, canvas.height);
+        aspect = canvas.width / Math.max(canvas.height, 1);
+        updatePitch();
+        if (reducedMotion || !running) render(reducedMotion ? 40 : lastT);
+      }
+
+      return { render, resize };
+    }
+
+    /* ── Canvas2D fallback backend ──
+       Per screen column, a ray is marched across a tileable fbm heightfield;
+       each terrain sample is perspective-projected (with real camera pitch)
+       to a screen row and drawn as a vertical span, nearest-first. Runs at a
+       tiny resolution (~240px wide) into ImageData and is upscaled by
+       drawImage + CSS smoothing — same no-WebGL recipe as the hero. */
+    function startCPU(): Impl {
+      if (glTouched) {
+        // the old canvas is committed to a (dead) WebGL context
+        const fresh = document.createElement("canvas");
+        fresh.id = "dune-canvas";
+        canvas.replaceWith(fresh);
+        canvas = fresh;
+        glTouched = false;
+      }
+      const ctx = canvas.getContext("2d")!;
+
+      const NEAR = 2.5;
+      const FAR = 300;
+      const WORLD_PER_TILE = 120; // noise tile (256 texels) spans this many units
+      // Sun low in the front-left: dune faces sloping toward it catch light
+      const SUN_X = -0.66;
+      const SUN_Z = 0.75;
+
+      /* Tileable fbm texture, computed once — 3 wrapped value-noise octaves.
+         Fewer/larger octaves than the hero field: dunes want long smooth
+         swells, not fine churn. */
+      const TS = 256;
+      const TMASK = TS - 1;
+      const T = (() => {
+        let s = 4243;
+        const rand = () => {
+          s |= 0;
+          s = (s + 0x6d2b79f5) | 0;
+          let t = Math.imul(s ^ (s >>> 15), 1 | s);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const out = new Float32Array(TS * TS);
+        let amp = 1;
+        for (const L of [2, 4, 8]) {
+          const lat = new Float32Array(L * L);
+          for (let i = 0; i < L * L; i++) lat[i] = rand();
+          for (let y = 0; y < TS; y++) {
+            const gy = (y / TS) * L;
+            const y0 = Math.floor(gy);
+            let fy = gy - y0;
+            fy = fy * fy * (3 - 2 * fy);
+            const r0 = (y0 % L) * L;
+            const r1 = ((y0 + 1) % L) * L;
+            for (let x = 0; x < TS; x++) {
+              const gx = (x / TS) * L;
+              const x0 = Math.floor(gx);
+              let fx = gx - x0;
+              fx = fx * fx * (3 - 2 * fx);
+              const x1 = (x0 + 1) % L;
+              const a = lat[r0 + x0];
+              const b = lat[r0 + x1];
+              const c = lat[r1 + x0];
+              const d = lat[r1 + x1];
+              const ab = a + (b - a) * fx;
+              out[y * TS + x] += amp * (ab + (c + (d - c) * fx - ab) * fy);
+            }
+          }
+          amp *= 0.45;
+        }
+        // Histogram-equalize: the low octave has only a handful of lattice
+        // cells, so the raw distribution is heavily skewed per seed.
+        // Rank-normalizing keeps every ridge line in place but spreads heights
+        // uniformly over [0,1], so the full valley→crest palette appears.
+        const order = Array.from(out.keys()).sort((a, b) => out[a] - out[b]);
+        const eq = new Float32Array(out.length);
+        for (let r = 0; r < order.length; r++) eq[order[r]] = r / (order.length - 1);
+        return eq;
+      })();
+
+      const W2T = TS / WORLD_PER_TILE; // world units → texels
+      // Dunes elongate across the direction of travel: longer wavelength in x
+      const AX = 0.62;
+      const AZ = 1.2;
+
+      // Bilinear sample with wraparound, world coordinates → height in units
+      function height(wx: number, wz: number) {
+        const x = wx * W2T * AX;
+        const y = wz * W2T * AZ;
+        const xi = Math.floor(x);
+        const yi = Math.floor(y);
+        const fx = x - xi;
+        const fy = y - yi;
+        const x0 = xi & TMASK;
+        const x1 = (xi + 1) & TMASK;
+        const r0 = (yi & TMASK) * TS;
+        const r1 = ((yi + 1) & TMASK) * TS;
+        const ab = T[r0 + x0] + (T[r0 + x1] - T[r0 + x0]) * fx;
+        const v = ab + (T[r1 + x0] + (T[r1 + x1] - T[r1 + x0]) * fx - ab) * fy;
+        // s-curve the equalized field: broad rounded valleys and crests with
+        // steeper flanks between — a dune profile rather than raw noise
+        const n = v * v * (3 - 2 * v);
+        return (n - 0.5) * 2 * AMP;
+      }
+
+      /* Height → base color LUT, same stops as the hero's pine→mint→bone
+         palette so the two hero candidates read as one family. */
+      const LUT_N = 512;
+      const lutR = new Float32Array(LUT_N);
+      const lutG = new Float32Array(LUT_N);
+      const lutB = new Float32Array(LUT_N);
+      {
+        const smooth = (e0: number, e1: number, v: number) => {
+          const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0)));
+          return t * t * (3 - 2 * t);
+        };
+        const stops: [number, [number, number, number]][] = [
+          [0.0, [0.02, 0.045, 0.032]], // abyss — valley floors
+          [0.18, [0.05, 0.13, 0.09]], // pine
+          [0.36, [0.09, 0.24, 0.16]], // forest
+          [0.55, [0.19, 0.42, 0.29]], // green
+          [0.72, [0.38, 0.63, 0.46]], // sage
+          [0.87, [0.6, 0.83, 0.62]], // mint
+          [1.0, [0.8, 0.87, 0.75]], // pale bone — crests
+        ];
+        for (let i = 0; i < LUT_N; i++) {
+          const f = i / (LUT_N - 1);
+          let s = 0;
+          while (s < stops.length - 2 && f > stops[s + 1][0]) s++;
+          const [p0, c0] = stops[s];
+          const [p1, c1] = stops[s + 1];
+          const m = smooth(p0, p1, f);
+          lutR[i] = (c0[0] + (c1[0] - c0[0]) * m) * 255;
+          lutG[i] = (c0[1] + (c1[1] - c0[1]) * m) * 255;
+          lutB[i] = (c0[2] + (c1[2] - c0[2]) * m) * 255;
+        }
+      }
+
+      // Fog + specular colors (bio-lime crest glints, dark ink horizon)
+      const FOG_R = 0.055 * 255, FOG_G = 0.1 * 255, FOG_B = 0.075 * 255;
+      const SPEC_R = 0.808 * 255, SPEC_G = 0.969 * 255, SPEC_B = 0.62 * 255; // #cef79e
+
+      const off = document.createElement("canvas");
+      const offCtx = off.getContext("2d")!;
+      let W = 0;
+      let H = 0;
+      let img: ImageData | null = null;
+      let blurTmp: Float32Array | null = null;
+
+      function paint(tSec: number) {
+        if (!img) return;
+        const data = img.data;
+        const pitch = (pitchDeg * Math.PI) / 180;
+        const cosP = Math.cos(pitch);
+        const sinP = Math.sin(pitch);
+        const tanHalfY = Math.tan(FOVY / 2);
+        const tanHalfX = tanHalfY * (W / H);
+        const camX = 8 * Math.sin(tSec * 0.05);
+        const camZ = tSec * SPEED; // forward flight: +z is ahead
+
+        // Sky: only a thin band ever shows (horizon sits at/above the top edge
+        // at 30–50° pitch with a 60° fov) — a quiet dark gradient is enough.
+        const skyR = new Float32Array(H);
+        const skyG = new Float32Array(H);
+        const skyB = new Float32Array(H);
+        for (let y = 0; y < H; y++) {
+          const t = y / H;
+          skyR[y] = (0.03 + 0.035 * t) * 255;
+          skyG[y] = (0.05 + 0.06 * t) * 255;
+          skyB[y] = (0.04 + 0.045 * t) * 255;
+        }
+
+        // sun direction matched to the fragment shader
+        const SL = Math.hypot(SUN_X, 0.55, SUN_Z);
+        const sunX = SUN_X / SL;
+        const sunY = 0.55 / SL;
+        const sunZ = SUN_Z / SL;
+        const NE = 3.0; // normal finite-difference epsilon
+
+        for (let x = 0; x < W; x++) {
+          const ndcX = ((x + 0.5) / W) * 2 - 1;
+          const lat = ndcX * tanHalfX; // lateral offset per unit of forward dist
+          let prevY = H; // lowest unfilled row (fills bottom-up, near-to-far)
+          // previous visible sample's shaded color, for Gouraud interpolation
+          let pr = 0;
+          let pg = 0;
+          let pb = 0;
+          let havePrev = false;
+          let f = NEAR;
+          let df = 0.25;
+          while (f < FAR && prevY > 0) {
+            const wx = camX + lat * f;
+            const wz = camZ + f;
+            const h = height(wx, wz);
+            const dh = h - CAM_H;
+            // camera-space projection with real pitch (θ down):
+            // y = dh·cosθ + f·sinθ, z = f·cosθ − dh·sinθ
+            const zc = f * cosP - dh * sinP;
+            const yc = dh * cosP + f * sinP;
+            const sy = (0.5 - yc / zc / (2 * tanHalfY)) * H;
+            let yi = sy | 0;
+            if (yi < prevY) {
+              // visible span — shade once per sample (hidden samples skip this)
+              const t01 = Math.min(1, Math.max(0, h / (2 * AMP) + 0.5));
+              const idx = (t01 * (LUT_N - 1)) | 0;
+              // true normal from forward differences → Lambert, same as the shader
+              const nx = -(height(wx + NE, wz) - h) / NE;
+              const nz = -(height(wx, wz + NE) - h) / NE;
+              const inv = 1 / Math.sqrt(nx * nx + 1 + nz * nz);
+              let diff = (nx * sunX + sunY + nz * sunZ) * inv;
+              if (diff < 0) diff = 0;
+              const light = 0.35 + 0.85 * diff;
+              const d2 = diff * diff;
+              const sp = d2 * d2 * d2 * t01 * t01 * 0.5; // pow(diff,6) crest glint
+              // exponential distance fog into the dark ink horizon
+              const fog = 1 - Math.exp(-f * 0.008);
+              const r = (lutR[idx] * light + SPEC_R * sp) * (1 - fog) + FOG_R * fog;
+              const g = (lutG[idx] * light + SPEC_G * sp) * (1 - fog) + FOG_G * fog;
+              const b = (lutB[idx] * light + SPEC_B * sp) * (1 - fog) + FOG_B * fog;
+              if (yi < 0) yi = 0;
+              // a long span means a new surface appearing from behind a ridge —
+              // don't smear the occluded dune's color across the boundary
+              const span = prevY - yi;
+              if (!havePrev || span > 8) {
+                pr = r;
+                pg = g;
+                pb = b;
+                havePrev = true;
+              }
+              // Gouraud span: lerp prev sample's color (at prevY) → this one (at yi)
+              const istep = span > 0 ? 1 / span : 0;
+              let m = 0;
+              for (let y = prevY - 1; y >= yi; y--) {
+                m += istep;
+                const k = (y * W + x) * 4;
+                data[k] = pr + (r - pr) * m;
+                data[k + 1] = pg + (g - pg) * m;
+                data[k + 2] = pb + (b - pb) * m;
+                data[k + 3] = 255;
+              }
+              pr = r;
+              pg = g;
+              pb = b;
+              prevY = yi;
+            }
+            df *= 1.009;
+            f += df;
+          }
+          for (let y = 0; y < prevY; y++) {
+            const k = (y * W + x) * 4;
+            data[k] = skyR[y];
+            data[k + 1] = skyG[y];
+            data[k + 2] = skyB[y];
+            data[k + 3] = 255;
+          }
+        }
+
+        // radius-1 box blur: anti-aliases ridge silhouettes (the per-column march
+        // stair-steps them) at the cost of a touch of softness, which fits the look
+        if (blurTmp) {
+          const tmp = blurTmp;
+          for (let y = 0; y < H; y++) {
+            const row = y * W;
+            for (let x = 0; x < W; x++) {
+              const x0 = x > 0 ? x - 1 : 0;
+              const x1 = x < W - 1 ? x + 1 : W - 1;
+              const o = (row + x) * 3;
+              tmp[o] = (data[(row + x0) * 4] + data[(row + x) * 4] + data[(row + x1) * 4]) / 3;
+              tmp[o + 1] =
+                (data[(row + x0) * 4 + 1] + data[(row + x) * 4 + 1] + data[(row + x1) * 4 + 1]) / 3;
+              tmp[o + 2] =
+                (data[(row + x0) * 4 + 2] + data[(row + x) * 4 + 2] + data[(row + x1) * 4 + 2]) / 3;
+            }
+          }
+          for (let x = 0; x < W; x++) {
+            for (let y = 0; y < H; y++) {
+              const y0 = y > 0 ? y - 1 : 0;
+              const y1 = y < H - 1 ? y + 1 : H - 1;
+              const o = (y * W + x) * 4;
+              data[o] = (tmp[(y0 * W + x) * 3] + tmp[(y * W + x) * 3] + tmp[(y1 * W + x) * 3]) / 3;
+              data[o + 1] =
+                (tmp[(y0 * W + x) * 3 + 1] + tmp[(y * W + x) * 3 + 1] + tmp[(y1 * W + x) * 3 + 1]) / 3;
+              data[o + 2] =
+                (tmp[(y0 * W + x) * 3 + 2] + tmp[(y * W + x) * 3 + 2] + tmp[(y1 * W + x) * 3 + 2]) / 3;
+            }
+          }
+        }
+
+        // grain dither breaks the banding that smooth gradients + 8-bit quantize
+        // would otherwise show through the upscale
+        let seed = (tSec * 977) | 0;
+        for (let i = 0; i < W * H * 4; i += 4) {
+          seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+          const grain = (((seed >>> 16) & 31) - 16) * 0.14;
+          data[i] += grain;
+          data[i + 1] += grain;
+          data[i + 2] += grain;
+        }
+
+        offCtx.putImageData(img, 0, 0);
+        ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+      }
+
+      function resize() {
+        const rect = bg.getBoundingClientRect();
+        // ~0.22 of display width: high enough that the Gouraud shading and AA
+        // blur read as smooth surfaces after the upscale, still ~110k pixels max
+        W = Math.min(460, Math.max(160, Math.round(rect.width * 0.22)));
+        H = Math.max(96, Math.round(W * (rect.height / Math.max(rect.width, 1))));
+        off.width = W;
+        off.height = H;
+        canvas.width = W * 4;
+        canvas.height = H * 4;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        img = ctx.createImageData(W, H);
+        blurTmp = new Float32Array(W * H * 3);
+        updatePitch();
+        if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT);
+      }
+
+      // ~30fps is plenty at this drift speed and halves CPU cost; direct calls
+      // while paused (scroll with reduced motion, resize) bypass the gate
+      let lastPaintSec = -Infinity;
+      function render(tSec: number) {
+        if (running && tSec - lastPaintSec < 0.028) return;
+        lastPaintSec = tSec;
+        paint(tSec);
+      }
+
+      return { render, resize };
+    }
+
+    function setModeLabel(glActive: boolean) {
+      modeLabel.textContent = glActive
+        ? "raw WebGL displaced plane · no bundle · scroll to flatten the camera"
+        : "Canvas2D heightfield raymarch · scroll to flatten the camera";
+    }
+
+    const glImpl = startGL();
+    impl = glImpl ?? startCPU();
+    setModeLabel(glImpl !== null);
+
     let scrollQueued = false;
     window.addEventListener(
       "scroll",
@@ -444,7 +718,7 @@ import Layout from "../layouts/Layout.astro";
             scrollQueued = false;
             updatePitch();
             // keep the pitch live while paused (reduced motion / offscreen)
-            if (!running) paint(reducedMotion ? 40 : lastT);
+            if (!running) impl.render(reducedMotion ? 40 : lastT);
           });
         }
       },
@@ -454,12 +728,12 @@ import Layout from "../layouts/Layout.astro";
     let resizeTimer: number | undefined;
     new ResizeObserver(() => {
       clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(resize, 120);
+      resizeTimer = window.setTimeout(() => impl.resize(), 120);
     }).observe(bg);
-    resize();
+    impl.resize();
 
     if (reducedMotion) {
-      paint(40);
+      impl.render(40);
     } else {
       new IntersectionObserver(
         (entries) => {
