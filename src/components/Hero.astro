@@ -73,21 +73,15 @@
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /* ── Scroll: gutter + radius collapse over the first ~50px (painted
-       overlay only — no layout change), then the canvas slowly zooms
-       (1.06 → 1.24) and dims across the whole pinned scope (hero + the
-       section after it) — the reference scrubs its pinned video the same
-       way (scale 1 → 1.2, opacity 0.875 → 0.6). ── */
+       overlay only — no layout change). The canvas itself holds still —
+       a fixed overscan, no scroll-driven zoom or dim. ── */
     const RECESS_DISTANCE = 50;
+    canvas.style.opacity = "1";
     let scrollQueued = false;
     function onScrollFrame() {
       scrollQueued = false;
       const y = window.scrollY;
       frame.style.setProperty("--recess", Math.min(y / RECESS_DISTANCE, 1).toFixed(4));
-      // pinned distance = scope height minus the sticky background's height
-      const pinned = Math.max(scope.offsetHeight - Math.max(window.innerHeight, 560), 1);
-      const drift = Math.min(y / pinned, 1);
-      canvas.style.transform = `scale(${(1.06 + 0.18 * drift).toFixed(4)})`;
-      canvas.style.opacity = (1 - 0.35 * drift).toFixed(3);
     }
     window.addEventListener(
       "scroll",
