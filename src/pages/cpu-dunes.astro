@@ -103,7 +103,6 @@ import Layout from "../layouts/Layout.astro";
     // Sun low in the front-left: dune faces sloping toward it catch light
     const SUN_X = -0.66;
     const SUN_Z = 0.75;
-    const SUN_EPS = 4.0; // finite-difference distance for slope lighting
 
     /* Tileable fbm texture, computed once — 3 wrapped value-noise octaves.
        Fewer/larger octaves than the hero field: dunes want long smooth
@@ -226,6 +225,7 @@ import Layout from "../layouts/Layout.astro";
     let W = 0;
     let H = 0;
     let img: ImageData | null = null;
+    let blurTmp: Float32Array | null = null;
 
     /* Scroll → camera pitch. Progress 0 at the top of the page, 1 when the
        sticky background reaches the end of its scope and starts to leave. */
@@ -260,12 +260,24 @@ import Layout from "../layouts/Layout.astro";
         skyB[y] = (0.04 + 0.045 * t) * 255;
       }
 
+      // sun direction matched to the tjs fragment shader
+      const SL = Math.hypot(SUN_X, 0.55, SUN_Z);
+      const sunX = SUN_X / SL;
+      const sunY = 0.55 / SL;
+      const sunZ = SUN_Z / SL;
+      const NE = 3.0; // normal finite-difference epsilon
+
       for (let x = 0; x < W; x++) {
         const ndcX = ((x + 0.5) / W) * 2 - 1;
         const lat = ndcX * tanHalfX; // lateral offset per unit of forward dist
         let prevY = H; // lowest unfilled row (fills bottom-up, near-to-far)
+        // previous visible sample's shaded color, for Gouraud interpolation
+        let pr = 0;
+        let pg = 0;
+        let pb = 0;
+        let havePrev = false;
         let f = NEAR;
-        let df = 0.3;
+        let df = 0.25;
         while (f < FAR && prevY > 0) {
           const wx = camX + lat * f;
           const wz = camZ + f;
@@ -278,36 +290,50 @@ import Layout from "../layouts/Layout.astro";
           const sy = (0.5 - yc / zc / (2 * tanHalfY)) * H;
           let yi = sy | 0;
           if (yi < prevY) {
-            // visible span — shade once per sample (cheap, hidden samples skip)
+            // visible span — shade once per sample (hidden samples skip this)
             const t01 = Math.min(1, Math.max(0, h / (2 * AMP) + 0.5));
-            let idx = (t01 * (LUT_N - 1)) | 0;
-            // slope lighting: directional derivative toward the sun
-            const h2 = height(wx + SUN_X * SUN_EPS, wz + SUN_Z * SUN_EPS);
-            const slope = (h - h2) / SUN_EPS; // >0 → face tilts toward sun
-            let light = 0.58 + slope * 0.85;
-            if (light < 0.2) light = 0.2;
-            else if (light > 1.35) light = 1.35;
-            // bio-lime glint on sunlit crests only
-            let sp = slope * 1.2 - 0.28;
-            if (sp < 0) sp = 0;
-            else if (sp > 1) sp = 1;
-            sp *= t01 * t01 * 0.6;
+            const idx = (t01 * (LUT_N - 1)) | 0;
+            // true normal from forward differences → Lambert, same as the shader
+            const nx = -(height(wx + NE, wz) - h) / NE;
+            const nz = -(height(wx, wz + NE) - h) / NE;
+            const inv = 1 / Math.sqrt(nx * nx + 1 + nz * nz);
+            let diff = (nx * sunX + sunY + nz * sunZ) * inv;
+            if (diff < 0) diff = 0;
+            const light = 0.35 + 0.85 * diff;
+            const d2 = diff * diff;
+            const sp = d2 * d2 * d2 * t01 * t01 * 0.5; // pow(diff,6) crest glint
             // exponential distance fog into the dark ink horizon
             const fog = 1 - Math.exp(-f * 0.008);
             const r = (lutR[idx] * light + SPEC_R * sp) * (1 - fog) + FOG_R * fog;
             const g = (lutG[idx] * light + SPEC_G * sp) * (1 - fog) + FOG_G * fog;
             const b = (lutB[idx] * light + SPEC_B * sp) * (1 - fog) + FOG_B * fog;
             if (yi < 0) yi = 0;
-            for (let y = yi; y < prevY; y++) {
+            // a long span means a new surface appearing from behind a ridge —
+            // don't smear the occluded dune's color across the boundary
+            const span = prevY - yi;
+            if (!havePrev || span > 8) {
+              pr = r;
+              pg = g;
+              pb = b;
+              havePrev = true;
+            }
+            // Gouraud span: lerp prev sample's color (at prevY) → this one (at yi)
+            const istep = span > 0 ? 1 / span : 0;
+            let m = 0;
+            for (let y = prevY - 1; y >= yi; y--) {
+              m += istep;
               const k = (y * W + x) * 4;
-              data[k] = r;
-              data[k + 1] = g;
-              data[k + 2] = b;
+              data[k] = pr + (r - pr) * m;
+              data[k + 1] = pg + (g - pg) * m;
+              data[k + 2] = pb + (b - pb) * m;
               data[k + 3] = 255;
             }
+            pr = r;
+            pg = g;
+            pb = b;
             prevY = yi;
           }
-          df *= 1.014;
+          df *= 1.009;
           f += df;
         }
         for (let y = 0; y < prevY; y++) {
@@ -319,14 +345,58 @@ import Layout from "../layouts/Layout.astro";
         }
       }
 
+      // radius-1 box blur: anti-aliases ridge silhouettes (the per-column march
+      // stair-steps them) at the cost of a touch of softness, which fits the look
+      if (blurTmp) {
+        const tmp = blurTmp;
+        for (let y = 0; y < H; y++) {
+          const row = y * W;
+          for (let x = 0; x < W; x++) {
+            const x0 = x > 0 ? x - 1 : 0;
+            const x1 = x < W - 1 ? x + 1 : W - 1;
+            const o = (row + x) * 3;
+            tmp[o] = (data[(row + x0) * 4] + data[(row + x) * 4] + data[(row + x1) * 4]) / 3;
+            tmp[o + 1] =
+              (data[(row + x0) * 4 + 1] + data[(row + x) * 4 + 1] + data[(row + x1) * 4 + 1]) / 3;
+            tmp[o + 2] =
+              (data[(row + x0) * 4 + 2] + data[(row + x) * 4 + 2] + data[(row + x1) * 4 + 2]) / 3;
+          }
+        }
+        for (let x = 0; x < W; x++) {
+          for (let y = 0; y < H; y++) {
+            const y0 = y > 0 ? y - 1 : 0;
+            const y1 = y < H - 1 ? y + 1 : H - 1;
+            const o = (y * W + x) * 4;
+            data[o] = (tmp[(y0 * W + x) * 3] + tmp[(y * W + x) * 3] + tmp[(y1 * W + x) * 3]) / 3;
+            data[o + 1] =
+              (tmp[(y0 * W + x) * 3 + 1] + tmp[(y * W + x) * 3 + 1] + tmp[(y1 * W + x) * 3 + 1]) / 3;
+            data[o + 2] =
+              (tmp[(y0 * W + x) * 3 + 2] + tmp[(y * W + x) * 3 + 2] + tmp[(y1 * W + x) * 3 + 2]) / 3;
+          }
+        }
+      }
+
+      // grain dither breaks the banding that smooth gradients + 8-bit quantize
+      // would otherwise show through the upscale
+      let seed = (tSec * 977) | 0;
+      for (let i = 0; i < W * H * 4; i += 4) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+        const grain = (((seed >>> 16) & 31) - 16) * 0.14;
+        data[i] += grain;
+        data[i + 1] += grain;
+        data[i + 2] += grain;
+      }
+
       offCtx.putImageData(img, 0, 0);
       ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
     }
 
     function resize() {
       const rect = bg.getBoundingClientRect();
-      W = Math.min(260, Math.max(120, Math.round(rect.width * 0.16)));
-      H = Math.max(72, Math.round(W * (rect.height / Math.max(rect.width, 1))));
+      // ~0.22 of display width: high enough that the Gouraud shading and AA
+      // blur read as smooth surfaces after the upscale, still ~110k pixels max
+      W = Math.min(460, Math.max(160, Math.round(rect.width * 0.22)));
+      H = Math.max(96, Math.round(W * (rect.height / Math.max(rect.width, 1))));
       off.width = W;
       off.height = H;
       canvas.width = W * 4;
@@ -334,6 +404,7 @@ import Layout from "../layouts/Layout.astro";
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       img = ctx.createImageData(W, H);
+      blurTmp = new Float32Array(W * H * 3);
       updatePitch();
       if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT);
     }
