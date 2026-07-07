@@ -1,5 +1,5 @@
 <section id="hero" class="relative h-svh min-h-[560px] bg-bone">
-  <!-- Framed dark canvas — the bone gutter around it recesses on scroll -->
+  <!-- Framed canvas — the bone gutter around it recesses on scroll -->
   <div class="hero-frame" aria-hidden="true">
     <div class="hero-canvas-wrap">
       <canvas id="hero-canvas"></canvas>
@@ -7,30 +7,32 @@
   </div>
 
   <!-- Content -->
-  <div class="relative z-10 h-full max-w-[1200px] mx-auto flex flex-col justify-between px-6 sm:px-8 md:px-10 pt-28 md:pt-36 pb-10 md:pb-14">
+  <div
+    class="relative z-10 h-full max-w-[1524px] mx-auto flex flex-col justify-between gap-y-[100px] px-6 lg:px-12 pt-[clamp(112px,calc(112px+(100vw-440px)*0.036),148px)] pb-[clamp(32px,calc(32px+(100vw-440px)*0.012),44px)]"
+  >
     <h1
-      class="hero-enter-mask font-display font-normal text-paper leading-none tracking-[-0.03em] text-[clamp(3.25rem,9.5vw,6.9375rem)]"
+      class="hero-enter-mask font-display font-normal text-paper leading-none tracking-[-0.03em] max-w-[1070px] text-[clamp(3.125rem,calc(3.125rem+(100vw-27.5rem)*0.062),7rem)]"
     >
       <span>Dominic Clerici.</span>
     </h1>
 
-    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-10 md:gap-6">
-      <div class="max-w-[600px]">
-        <div class="hero-enter flex items-center gap-2.5 mb-5" style="--enter-delay: 1.2s">
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div class="max-w-[640px]">
+        <div class="hero-enter flex items-center gap-2.5 mb-5" style="--enter-delay: 1.6s">
           <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true"></span>
           <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60">
             Engineer &amp; Designer&ensp;·&ensp;New York
           </span>
         </div>
         <p
-          class="hero-enter font-display font-normal text-paper/90 text-[20px] md:text-[24px] leading-[1.25] tracking-[-0.006em]"
-          style="--enter-delay: 1.3s"
+          class="hero-enter font-display font-normal text-paper/90 leading-[1.2] tracking-[-0.02em] text-[clamp(1.25rem,calc(1.25rem+(100vw-27.5rem)*0.004),1.5rem)]"
+          style="--enter-delay: 1.6s"
         >
           I design and build software that&rsquo;s fast, useful, and worth looking at.
         </p>
       </div>
 
-      <div class="hero-enter flex items-center gap-3 shrink-0" style="--enter-delay: 1.45s">
+      <div class="hero-enter-cta flex items-center gap-3 shrink-0" style="--enter-delay: 2s">
         <a
           href="#work"
           class="font-mono text-[14px] tracking-[-0.008em] text-paper border border-paper/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-paper transition-colors duration-200"
@@ -59,25 +61,31 @@
     const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    /* ── Frame recess: gutter + radius collapse over the first ~40px of scroll ── */
-    const RECESS_DISTANCE = 40;
-    let recessQueued = false;
-    function updateRecess() {
-      recessQueued = false;
-      const p = Math.min(window.scrollY / RECESS_DISTANCE, 1);
-      frame.style.setProperty("--recess", p.toFixed(4));
+    /* ── Scroll: gutter + radius collapse over the first ~50px, then the
+       canvas slowly zooms (1.06 → 1.24) and dims as the hero scrolls away —
+       the reference scrubs its pinned video the same way (scale 1 → 1.2,
+       opacity 0.875 → 0.6). ── */
+    const RECESS_DISTANCE = 50;
+    let scrollQueued = false;
+    function onScrollFrame() {
+      scrollQueued = false;
+      const y = window.scrollY;
+      frame.style.setProperty("--recess", Math.min(y / RECESS_DISTANCE, 1).toFixed(4));
+      const drift = Math.min(y / Math.max(section.offsetHeight, 1), 1);
+      canvas.style.transform = `scale(${(1.06 + 0.18 * drift).toFixed(4)})`;
+      canvas.style.opacity = (1 - 0.3 * drift).toFixed(3);
     }
     window.addEventListener(
       "scroll",
       () => {
-        if (!recessQueued) {
-          recessQueued = true;
-          requestAnimationFrame(updateRecess);
+        if (!scrollQueued) {
+          scrollQueued = true;
+          requestAnimationFrame(onScrollFrame);
         }
       },
       { passive: true }
     );
-    updateRecess();
+    onScrollFrame();
 
     // Once the iris-open finishes, drop the clip so the frame's own radius
     // (which the recess animates to 0) is the only rounding in play.
@@ -85,142 +93,227 @@
       if (e.animationName === "hero-iris-open") wrap.style.clipPath = "none";
     });
 
-    /* ── Bioluminescent canvas ──
-       Glowing motes drifting through a slow flow field on an abyssal
-       ground, clustering around a wandering focal point. Mostly dim
-       teal-green; a rationed few flash lime. */
-    const ctx = canvas.getContext("2d")!;
-    const DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+    /* ── Soft-focus gradient field ──
+       The reference hero is a pre-rendered 3D loop (glassy green ribbons,
+       heavy depth of field) shipped as video. This recreates that look in
+       real time: double domain-warped fbm mapped through an abyss → mint →
+       bone palette with a bronze contour ribbon. Runs on the CPU at a tiny
+       resolution (a few thousand pixels, all table lookups) and lets CSS
+       upscale + blur it into out-of-focus glass — no WebGL required. */
 
+    const ctx = canvas.getContext("2d")!;
+
+    /* Tileable fbm texture, computed once. 4 wrapped value-noise octaves. */
+    const TS = 256;
+    const TMASK = TS - 1;
+    const T = (() => {
+      let s = 1337;
+      const rand = () => {
+        s |= 0;
+        s = (s + 0x6d2b79f5) | 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+      const out = new Float32Array(TS * TS);
+      let amp = 1;
+      let total = 0;
+      for (const L of [2, 4, 8, 16]) {
+        const lat = new Float32Array(L * L);
+        for (let i = 0; i < L * L; i++) lat[i] = rand();
+        for (let y = 0; y < TS; y++) {
+          const gy = (y / TS) * L;
+          const y0 = Math.floor(gy);
+          let fy = gy - y0;
+          fy = fy * fy * (3 - 2 * fy);
+          const r0 = (y0 % L) * L;
+          const r1 = ((y0 + 1) % L) * L;
+          for (let x = 0; x < TS; x++) {
+            const gx = (x / TS) * L;
+            const x0 = Math.floor(gx);
+            let fx = gx - x0;
+            fx = fx * fx * (3 - 2 * fx);
+            const x1 = (x0 + 1) % L;
+            const a = lat[r0 + x0];
+            const b = lat[r0 + x1];
+            const c = lat[r1 + x0];
+            const d = lat[r1 + x1];
+            const ab = a + (b - a) * fx;
+            out[y * TS + x] += amp * (ab + (c + (d - c) * fx - ab) * fy);
+          }
+        }
+        total += amp;
+        amp *= 0.5;
+      }
+      for (let i = 0; i < out.length; i++) out[i] /= total;
+      return out;
+    })();
+
+    // Bilinear sample with wraparound, coordinates in texels
+    function sampleT(x: number, y: number) {
+      const xi = Math.floor(x);
+      const yi = Math.floor(y);
+      const fx = x - xi;
+      const fy = y - yi;
+      const x0 = xi & TMASK;
+      const x1 = (xi + 1) & TMASK;
+      const r0 = (yi & TMASK) * TS;
+      const r1 = ((yi + 1) & TMASK) * TS;
+      const ab = T[r0 + x0] + (T[r0 + x1] - T[r0 + x0]) * fx;
+      return ab + (T[r1 + x0] + (T[r1 + x1] - T[r1 + x0]) * fx - ab) * fy;
+    }
+
+    /* Palette LUT — field value → color, ribbon and settle baked in */
+    const LUT_N = 1024;
+    const lutR = new Float32Array(LUT_N);
+    const lutG = new Float32Array(LUT_N);
+    const lutB = new Float32Array(LUT_N);
+    {
+      const smooth = (e0: number, e1: number, v: number) => {
+        const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0)));
+        return t * t * (3 - 2 * t);
+      };
+      const stops: [number, number, number][] = [
+        [0.055, 0.14, 0.1], // abyss
+        [0.11, 0.28, 0.19], // pine
+        [0.35, 0.58, 0.45], // sage
+        [0.66, 0.85, 0.7], // mint
+        [0.85, 0.91, 0.83], // pale
+        [0.87, 0.82, 0.72], // bone
+      ];
+      const edges: [number, number][] = [
+        [0.0, 0.3],
+        [0.25, 0.5],
+        [0.45, 0.65],
+        [0.62, 0.82],
+        [0.76, 0.94],
+      ];
+      for (let i = 0; i < LUT_N; i++) {
+        // stretch the mid-heavy fbm distribution out to both extremes so
+        // deep pine and near-bone cream both actually appear
+        const f = smooth(0.3, 0.78, i / (LUT_N - 1));
+        let [r, g, b] = stops[0];
+        for (let sIdx = 0; sIdx < edges.length; sIdx++) {
+          const m = smooth(edges[sIdx][0], edges[sIdx][1], f);
+          r += (stops[sIdx + 1][0] - r) * m;
+          g += (stops[sIdx + 1][1] - g) * m;
+          b += (stops[sIdx + 1][2] - b) * m;
+        }
+        // bronze ribbon hugging one contour, dark rim beside it — the
+        // glassy edge highlight in the reference render
+        const rib = smooth(0.06, 0.0, Math.abs(f - 0.62)) * 0.45;
+        r += (0.55 - r) * rib;
+        g += (0.38 - g) * rib;
+        b += (0.18 - b) * rib;
+        const rim = smooth(0.06, 0.0, Math.abs(f - 0.54)) * 0.25;
+        r += (0.16 - r) * rim;
+        g += (0.12 - g) * rim;
+        b += (0.05 - b) * rim;
+        // settle darker overall (reference runs its video at 0.875 over black)
+        lutR[i] = r * 0.9 * 255;
+        lutG[i] = g * 0.9 * 255;
+        lutB[i] = b * 0.9 * 255;
+      }
+    }
+
+    /* Field geometry: base feature ≈ one noise period across the height.
+       The field is computed tiny (≈96px wide), stretched 4× onto the canvas
+       with smoothing, then CSS-upscaled to the viewport — two bilinear
+       passes stand in for the reference's depth-of-field blur. */
+    const off = document.createElement("canvas");
+    const offCtx = off.getContext("2d")!;
     let W = 0;
     let H = 0;
+    let img: ImageData | null = null;
+    let vig: Float32Array | null = null;
+    let bias: Float32Array | null = null;
 
-    type Mote = {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      z: number; // depth: 0.25 (far) → 1 (near)
-      phase: number;
-      pulse: number;
-      lime: boolean;
-    };
-    let motes: Mote[] = [];
-
-    function makeSprite(r: number, g: number, b: number) {
-      const s = document.createElement("canvas");
-      s.width = s.height = 64;
-      const c = s.getContext("2d")!;
-      // near-gaussian falloff — hard stops turn into visible rings once
-      // trail accumulation amplifies them
-      const grad = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-      grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
-      grad.addColorStop(0.18, `rgba(${r},${g},${b},0.62)`);
-      grad.addColorStop(0.38, `rgba(${r},${g},${b},0.28)`);
-      grad.addColorStop(0.6, `rgba(${r},${g},${b},0.1)`);
-      grad.addColorStop(0.8, `rgba(${r},${g},${b},0.03)`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      c.fillStyle = grad;
-      c.fillRect(0, 0, 64, 64);
-      return s;
-    }
-    const tealSprite = makeSprite(126, 196, 176);
-    const limeSprite = makeSprite(206, 247, 158);
-
-    function seed() {
-      const count = Math.round(Math.min(220, Math.max(80, (W * H) / 9500)));
-      motes = Array.from({ length: count }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: 0,
-        vy: 0,
-        z: 0.25 + Math.random() * 0.75,
-        phase: Math.random() * Math.PI * 2,
-        pulse: 0.5 + Math.random() * 1.2,
-        lime: Math.random() < 0.09,
-      }));
+    function paint(tSec: number) {
+      if (!img || !vig) return;
+      const data = img.data;
+      const scale = 105 / H; // texels per buffer pixel (base period = 128 texels)
+      const warp = 105;
+      const t1 = tSec * 1.3;
+      const t2 = tSec * -1.0;
+      const t3 = tSec * 0.8;
+      const t4 = tSec * -0.6;
+      let k = 0;
+      let g = 0;
+      let seed = (tSec * 977) | 0;
+      for (let y = 0; y < H; y++) {
+        const ys = y * scale;
+        for (let x = 0; x < W; x++) {
+          const xs = x * scale;
+          const qx = sampleT(xs + t1, ys + t2);
+          const qy = sampleT(xs + 137.7 + t3, ys + 89.2 + t4);
+          const rx = sampleT(xs + warp * qx + 41.3 + t3, ys + warp * qy + 9.7 + t2);
+          const ry = sampleT(xs + warp * qx + 199.1 - t4, ys + warp * qy + 152.9 + t1);
+          const f = sampleT(xs + warp * rx, ys + warp * ry) + bias![g];
+          let idx = (f * (LUT_N - 1)) | 0;
+          if (idx < 0) idx = 0;
+          else if (idx >= LUT_N) idx = LUT_N - 1;
+          const v = vig[g];
+          seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+          const grain = (((seed >>> 16) & 31) - 16) * 0.22;
+          data[k] = lutR[idx] * v + grain;
+          data[k + 1] = lutG[idx] * v + grain;
+          data[k + 2] = lutB[idx] * v + grain;
+          data[k + 3] = 255;
+          k += 4;
+          g++;
+        }
+      }
+      offCtx.putImageData(img, 0, 0);
+      ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
     }
 
     function resize() {
       const rect = wrap.getBoundingClientRect();
-      W = Math.max(1, Math.round(rect.width));
-      H = Math.max(1, Math.round(rect.height));
-      canvas.width = Math.round(W * DPR);
-      canvas.height = Math.round(H * DPR);
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      seed();
-      paintGround(1);
-    }
-
-    function paintGround(alpha: number) {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = `rgba(17, 25, 24, ${alpha})`;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    function flowAngle(x: number, y: number, t: number) {
-      return (
-        Math.sin(x * 0.0016 + t * 0.00019) * 1.9 +
-        Math.cos(y * 0.0013 - t * 0.00023) * 1.7 +
-        Math.sin((x + y) * 0.0005 + t * 0.00011) * 1.2
-      );
-    }
-
-    function render(t: number) {
-      // Trails: wash the previous frame down instead of clearing
-      paintGround(0.16);
-      ctx.globalCompositeOperation = "lighter";
-
-      // Ambient breathing glows — drawn every frame into the trail buffer,
-      // so their alpha accumulates to roughly drawAlpha / fadeAlpha. Keep
-      // the per-frame value tiny.
-      const g1 = Math.min(W, H);
-      const ax = W * (0.62 + 0.1 * Math.sin(t * 0.00006));
-      const ay = H * (0.45 + 0.12 * Math.cos(t * 0.00005));
-      ctx.globalAlpha = 0.009 + 0.003 * Math.sin(t * 0.00012);
-      ctx.drawImage(tealSprite, ax - g1 * 1.3, ay - g1 * 1.3, g1 * 2.6, g1 * 2.6);
-      const bx = W * (0.2 + 0.08 * Math.cos(t * 0.00004));
-      const by = H * (0.75 + 0.08 * Math.sin(t * 0.00007));
-      ctx.globalAlpha = 0.006;
-      ctx.drawImage(limeSprite, bx - g1, by - g1, g1 * 2, g1 * 2);
-
-      // Wandering focal point the motes loosely school around
-      const fx = W * (0.55 + 0.28 * Math.sin(t * 0.00005));
-      const fy = H * (0.5 + 0.26 * Math.sin(t * 0.000037 + 1.7));
-
-      for (const m of motes) {
-        const a = flowAngle(m.x, m.y, t);
-        m.vx += Math.cos(a) * 0.011 * m.z;
-        m.vy += Math.sin(a) * 0.011 * m.z;
-        m.vx += (fx - m.x) * 0.0000045;
-        m.vy += (fy - m.y) * 0.0000045;
-        m.vx *= 0.985;
-        m.vy *= 0.985;
-        m.x += m.vx;
-        m.y += m.vy;
-
-        // wrap with a margin so glows don't pop at the edges
-        if (m.x < -40) m.x = W + 40;
-        if (m.x > W + 40) m.x = -40;
-        if (m.y < -40) m.y = H + 40;
-        if (m.y > H + 40) m.y = -40;
-
-        const blink = 0.55 + 0.45 * Math.sin(t * 0.001 * m.pulse + m.phase);
-        const alpha = (m.lime ? 0.42 : 0.26) * m.z * blink;
-        const size = (m.lime ? 22 : 16) * m.z * (0.75 + 0.25 * blink);
-        ctx.globalAlpha = alpha;
-        ctx.drawImage(m.lime ? limeSprite : tealSprite, m.x - size / 2, m.y - size / 2, size, size);
+      W = Math.min(150, Math.max(80, Math.round(rect.width * 0.09)));
+      H = Math.max(40, Math.round(W * (rect.height / Math.max(rect.width, 1))));
+      off.width = W;
+      off.height = H;
+      canvas.width = W * 4;
+      canvas.height = H * 4;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      img = ctx.createImageData(W, H);
+      vig = new Float32Array(W * H);
+      bias = new Float32Array(W * H);
+      const cx = W / 2;
+      const cy = H / 2;
+      const norm = Math.min(W, H);
+      const sm = (t: number) => t * t * (3 - 2 * t);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const d = Math.hypot((x - cx) / norm, (y - cy) / norm);
+          let m = Math.min(1, Math.max(0, (1.25 - d) / (1.25 - 0.35)));
+          vig[y * W + x] = 0.82 + 0.18 * sm(m);
+          // keep the corners the text lives in from drifting pale: a dark
+          // pocket toward bottom-right, a lighter hand at the top
+          const u = x / W;
+          const v = y / H;
+          bias[y * W + x] =
+            -0.2 * sm(Math.max(0, (u - 0.5) * 2)) * sm(Math.max(0, (v - 0.4) / 0.6)) -
+            0.1 * sm(Math.max(0, (0.45 - u) / 0.45)) * sm(Math.max(0, (v - 0.55) / 0.45)) -
+            0.08 * sm(Math.max(0, 1 - v / 0.35));
+        }
       }
-
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = "source-over";
+      if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT);
     }
 
     let rafId: number | null = null;
     let running = false;
-    function loop(t: number) {
+    let lastT = 0;
+    let lastPaintMs = -Infinity;
+    function loop(ms: number) {
       if (!running) return;
-      render(t);
+      // ~30fps is indistinguishable at this drift speed and halves CPU cost
+      if (ms - lastPaintMs >= 28) {
+        lastPaintMs = ms;
+        lastT = ms / 1000;
+        paint(lastT);
+      }
       rafId = requestAnimationFrame(loop);
     }
     function start() {
@@ -237,23 +330,12 @@
     let resizeTimer: number | undefined;
     new ResizeObserver(() => {
       clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
-        resize();
-        if (reducedMotion) staticFrame();
-      }, 120);
+      resizeTimer = window.setTimeout(resize, 120);
     }).observe(wrap);
     resize();
 
-    // A settled still of the same scene for reduced motion
-    function staticFrame() {
-      paintGround(1);
-      for (let i = 0; i < 40; i++) render(i * 120);
-      paintGround(0.35);
-      render(5000);
-    }
-
     if (reducedMotion) {
-      staticFrame();
+      paint(40);
     } else {
       new IntersectionObserver(
         (entries) => {
