@@ -22,11 +22,20 @@
           <span>Dominic Clerici.</span>
         </h1>
 
-        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div
+          class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6"
+        >
           <div class="max-w-[640px]">
-            <div class="hero-enter flex items-center gap-2.5 mb-5" style="--enter-delay: 1.6s">
-              <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true"></span>
-              <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60">
+            <div
+              class="hero-enter flex items-center gap-2.5 mb-5"
+              style="--enter-delay: 1.6s"
+            >
+              <span
+                class="w-[6px] h-[6px] rounded-full bg-bio-lime"
+                aria-hidden="true"></span>
+              <span
+                class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60"
+              >
                 Engineer &amp; Designer&ensp;·&ensp;New York
               </span>
             </div>
@@ -34,11 +43,15 @@
               class="hero-enter font-display font-normal text-paper/90 leading-[1.2] tracking-[-0.02em] text-[clamp(1.25rem,calc(1.25rem+(100vw-27.5rem)*0.004),1.5rem)]"
               style="--enter-delay: 1.6s"
             >
-              I design and build software that&rsquo;s fast, useful, and worth looking at.
+              I design and build software that&rsquo;s fast, useful, and worth
+              looking at.
             </p>
           </div>
 
-          <div class="hero-enter-cta flex items-center gap-3 shrink-0" style="--enter-delay: 2s">
+          <div
+            class="hero-enter-cta flex items-center gap-3 shrink-0"
+            style="--enter-delay: 2s"
+          >
             <a
               href="#work"
               class="font-mono text-[14px] tracking-[-0.008em] text-paper border border-paper/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-paper transition-colors duration-200"
@@ -50,8 +63,19 @@
               aria-label="Scroll to selected work"
               class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-y-0.5 transition-transform duration-200"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1v11M2 7.5 7 12.5 12 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M7 1v11M2 7.5 7 12.5 12 7.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
               </svg>
             </a>
           </div>
@@ -66,34 +90,39 @@
 
 <script>
   {
-    const scope = document.getElementById("hero-scope")!;
-    const frame = scope.querySelector<HTMLElement>(".hero-frame")!;
-    const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!;
-    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const scope = document.getElementById("hero-scope")!
+    const frame = scope.querySelector<HTMLElement>(".hero-frame")!
+    const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!
+    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
 
     /* ── Scroll: gutter + radius collapse over the first ~50px (painted
        overlay only — no layout change). The canvas itself holds still —
        a fixed overscan, no scroll-driven zoom or dim. ── */
-    const RECESS_DISTANCE = 50;
-    canvas.style.opacity = "1";
-    let scrollQueued = false;
+    const RECESS_DISTANCE = 50
+    canvas.style.opacity = "1"
+    let scrollQueued = false
     function onScrollFrame() {
-      scrollQueued = false;
-      const y = window.scrollY;
-      frame.style.setProperty("--recess", Math.min(y / RECESS_DISTANCE, 1).toFixed(4));
+      scrollQueued = false
+      const y = window.scrollY
+      frame.style.setProperty(
+        "--recess",
+        Math.min(y / RECESS_DISTANCE, 1).toFixed(4),
+      )
     }
     window.addEventListener(
       "scroll",
       () => {
         if (!scrollQueued) {
-          scrollQueued = true;
-          requestAnimationFrame(onScrollFrame);
+          scrollQueued = true
+          requestAnimationFrame(onScrollFrame)
         }
       },
-      { passive: true }
-    );
-    onScrollFrame();
+      { passive: true },
+    )
+    onScrollFrame()
 
     // Once the iris-open finishes, drop the clip so the frame's own radius
     // (which the recess animates to 0) is the only rounding in play. The
@@ -101,10 +130,10 @@
     // the end keyframe over any inline clip-path override.
     wrap.addEventListener("animationend", (e) => {
       if (e.animationName === "hero-iris-open") {
-        wrap.style.animation = "none";
-        wrap.style.clipPath = "none";
+        wrap.style.animation = "none"
+        wrap.style.clipPath = "none"
       }
-    });
+    })
 
     /* ── Soft-focus gradient field ──
        The reference hero is a pre-rendered 3D loop (glassy green ribbons,
@@ -114,66 +143,66 @@
        resolution (a few thousand pixels, all table lookups) and lets CSS
        upscale + blur it into out-of-focus glass — no WebGL required. */
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")!
 
     /* Tileable fbm texture, computed once. 4 wrapped value-noise octaves. */
-    const TS = 256;
-    const TMASK = TS - 1;
+    const TS = 256
+    const TMASK = TS - 1
     const T = (() => {
-      let s = 1337;
+      let s = 1337
       const rand = () => {
-        s |= 0;
-        s = (s + 0x6d2b79f5) | 0;
-        let t = Math.imul(s ^ (s >>> 15), 1 | s);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-      const out = new Float32Array(TS * TS);
-      let amp = 1;
-      let total = 0;
+        s |= 0
+        s = (s + 0x6d2b79f5) | 0
+        let t = Math.imul(s ^ (s >>> 15), 1 | s)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      }
+      const out = new Float32Array(TS * TS)
+      let amp = 1
+      let total = 0
       for (const L of [2, 4, 8, 16]) {
-        const lat = new Float32Array(L * L);
-        for (let i = 0; i < L * L; i++) lat[i] = rand();
+        const lat = new Float32Array(L * L)
+        for (let i = 0; i < L * L; i++) lat[i] = rand()
         for (let y = 0; y < TS; y++) {
-          const gy = (y / TS) * L;
-          const y0 = Math.floor(gy);
-          let fy = gy - y0;
-          fy = fy * fy * (3 - 2 * fy);
-          const r0 = (y0 % L) * L;
-          const r1 = ((y0 + 1) % L) * L;
+          const gy = (y / TS) * L
+          const y0 = Math.floor(gy)
+          let fy = gy - y0
+          fy = fy * fy * (3 - 2 * fy)
+          const r0 = (y0 % L) * L
+          const r1 = ((y0 + 1) % L) * L
           for (let x = 0; x < TS; x++) {
-            const gx = (x / TS) * L;
-            const x0 = Math.floor(gx);
-            let fx = gx - x0;
-            fx = fx * fx * (3 - 2 * fx);
-            const x1 = (x0 + 1) % L;
-            const a = lat[r0 + x0];
-            const b = lat[r0 + x1];
-            const c = lat[r1 + x0];
-            const d = lat[r1 + x1];
-            const ab = a + (b - a) * fx;
-            out[y * TS + x] += amp * (ab + (c + (d - c) * fx - ab) * fy);
+            const gx = (x / TS) * L
+            const x0 = Math.floor(gx)
+            let fx = gx - x0
+            fx = fx * fx * (3 - 2 * fx)
+            const x1 = (x0 + 1) % L
+            const a = lat[r0 + x0]
+            const b = lat[r0 + x1]
+            const c = lat[r1 + x0]
+            const d = lat[r1 + x1]
+            const ab = a + (b - a) * fx
+            out[y * TS + x] += amp * (ab + (c + (d - c) * fx - ab) * fy)
           }
         }
-        total += amp;
-        amp *= 0.5;
+        total += amp
+        amp *= 0.5
       }
-      for (let i = 0; i < out.length; i++) out[i] /= total;
-      return out;
-    })();
+      for (let i = 0; i < out.length; i++) out[i] /= total
+      return out
+    })()
 
     // Bilinear sample with wraparound, coordinates in texels
     function sampleT(x: number, y: number) {
-      const xi = Math.floor(x);
-      const yi = Math.floor(y);
-      const fx = x - xi;
-      const fy = y - yi;
-      const x0 = xi & TMASK;
-      const x1 = (xi + 1) & TMASK;
-      const r0 = (yi & TMASK) * TS;
-      const r1 = ((yi + 1) & TMASK) * TS;
-      const ab = T[r0 + x0] + (T[r0 + x1] - T[r0 + x0]) * fx;
-      return ab + (T[r1 + x0] + (T[r1 + x1] - T[r1 + x0]) * fx - ab) * fy;
+      const xi = Math.floor(x)
+      const yi = Math.floor(y)
+      const fx = x - xi
+      const fy = y - yi
+      const x0 = xi & TMASK
+      const x1 = (xi + 1) & TMASK
+      const r0 = (yi & TMASK) * TS
+      const r1 = ((yi + 1) & TMASK) * TS
+      const ab = T[r0 + x0] + (T[r0 + x1] - T[r0 + x0]) * fx
+      return ab + (T[r1 + x0] + (T[r1 + x1] - T[r1 + x0]) * fx - ab) * fy
     }
 
     /* Base color LUT — broad field value fc (0→1) → deep-pine..mint..bone.
@@ -181,15 +210,15 @@
        luminous mint at the crests. The ribbon edges, bio-lime specular and
        bronze rim are NOT baked here — they're shaded per-pixel from the
        ribbon cross-section in paint(), so the drama lives in the geometry. */
-    const LUT_N = 1024;
-    const lutR = new Float32Array(LUT_N);
-    const lutG = new Float32Array(LUT_N);
-    const lutB = new Float32Array(LUT_N);
+    const LUT_N = 1024
+    const lutR = new Float32Array(LUT_N)
+    const lutG = new Float32Array(LUT_N)
+    const lutB = new Float32Array(LUT_N)
     {
       const smooth = (e0: number, e1: number, v: number) => {
-        const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0)));
-        return t * t * (3 - 2 * t);
-      };
+        const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0)))
+        return t * t * (3 - 2 * t)
+      }
       const stops: [number, [number, number, number]][] = [
         [0.0, [0.02, 0.045, 0.032]], // abyss — near-black green
         [0.18, [0.05, 0.13, 0.09]], // pine
@@ -198,17 +227,17 @@
         [0.72, [0.38, 0.63, 0.46]], // sage
         [0.87, [0.6, 0.83, 0.62]], // mint
         [1.0, [0.8, 0.87, 0.75]], // pale bone
-      ];
+      ]
       for (let i = 0; i < LUT_N; i++) {
-        const f = i / (LUT_N - 1);
-        let s = 0;
-        while (s < stops.length - 2 && f > stops[s + 1][0]) s++;
-        const [p0, c0] = stops[s];
-        const [p1, c1] = stops[s + 1];
-        const m = smooth(p0, p1, f);
-        lutR[i] = (c0[0] + (c1[0] - c0[0]) * m) * 255;
-        lutG[i] = (c0[1] + (c1[1] - c0[1]) * m) * 255;
-        lutB[i] = (c0[2] + (c1[2] - c0[2]) * m) * 255;
+        const f = i / (LUT_N - 1)
+        let s = 0
+        while (s < stops.length - 2 && f > stops[s + 1][0]) s++
+        const [p0, c0] = stops[s]
+        const [p1, c1] = stops[s + 1]
+        const m = smooth(p0, p1, f)
+        lutR[i] = (c0[0] + (c1[0] - c0[0]) * m) * 255
+        lutG[i] = (c0[1] + (c1[1] - c0[1]) * m) * 255
+        lutB[i] = (c0[2] + (c1[2] - c0[2]) * m) * 255
       }
     }
 
@@ -217,109 +246,143 @@
        occluded seams between ribbons, a domed body, a bio-lime specular
        crest, and a hot-bronze underside rim. This is what turns the old
        ambiguous gradient into distinct, dramatic ribbons. */
-    const RIB_N = 5; // ribbons across the diagonal span
-    const RIB_WARP = 0.85; // how far the field folds the ribbons
-    const RIB_UX = 0.927, RIB_UY = 0.375; // flow direction (~22°)
-    const RIB_DRIFT = 0.008; // slow lateral flow (phase / sec)
-    const CREASE_W = 0.09, OCCL_MIN = 0.16; // seam shadow depth
-    const DOME = 0.34; // rounded-tube body lighting
-    const SPEC_UL = 0.66, SPEC_W = 0.1, SPEC_POW = 3, SPEC_STR = 0.8; // crest
-    const RIM_UR = 0.14, RIM_W = 0.07, RIM_STR = 0.5; // bronze underside
-    const SPEC_R = 0.808 * 255, SPEC_G = 0.969 * 255, SPEC_B = 0.62 * 255; // bio-lime #cef79e
-    const RIM_R = 0.72 * 255, RIM_G = 0.5 * 255, RIM_B = 0.24 * 255; // hot bronze
+    const RIB_N = 5 // ribbons across the diagonal span
+    const RIB_WARP = 0.85 // how far the field folds the ribbons
+    const RIB_UX = 0.927,
+      RIB_UY = 0.375 // flow direction (~22°)
+    const RIB_DRIFT = 0.008 // slow lateral flow (phase / sec)
+    const CREASE_W = 0.09,
+      OCCL_MIN = 0.16 // seam shadow depth
+    const DOME = 0.34 // rounded-tube body lighting
+    const SPEC_UL = 0.66,
+      SPEC_W = 0.1,
+      SPEC_POW = 3,
+      SPEC_STR = 0.8 // crest
+    const RIM_UR = 0.14,
+      RIM_W = 0.07,
+      RIM_STR = 0.5 // bronze underside
+    const SPEC_R = 0.808 * 255,
+      SPEC_G = 0.969 * 255,
+      SPEC_B = 0.62 * 255 // bio-lime #cef79e
+    const RIM_R = 0.72 * 255,
+      RIM_G = 0.5 * 255,
+      RIM_B = 0.24 * 255 // hot bronze
 
     /* Field geometry: base feature ≈ one noise period across the height.
        The field is computed tiny (≈96px wide), stretched 4× onto the canvas
        with smoothing, then CSS-upscaled to the viewport — two bilinear
        passes stand in for the reference's depth-of-field blur. */
-    const off = document.createElement("canvas");
-    const offCtx = off.getContext("2d")!;
-    let W = 0;
-    let H = 0;
-    let img: ImageData | null = null;
-    let vig: Float32Array | null = null;
-    let bias: Float32Array | null = null;
-    let field: Float32Array | null = null; // broad domain-warped field (fc), pass 1 → pass 2
+    const off = document.createElement("canvas")
+    const offCtx = off.getContext("2d")!
+    let W = 0
+    let H = 0
+    let img: ImageData | null = null
+    let vig: Float32Array | null = null
+    let bias: Float32Array | null = null
+    let field: Float32Array | null = null // broad domain-warped field (fc), pass 1 → pass 2
     // Float RGB scratch + ping-pong temp for the light body blur, plus the
     // specular/rim intensity buffers added on top crisp after the blur so the
     // glassy highlights survive instead of being smeared into the body.
-    let fR: Float32Array | null = null;
-    let fG: Float32Array | null = null;
-    let fB: Float32Array | null = null;
-    let tR: Float32Array | null = null;
-    let tG: Float32Array | null = null;
-    let tB: Float32Array | null = null;
-    let sBuf: Float32Array | null = null; // bio-lime specular crest intensity
-    let rBuf: Float32Array | null = null; // bronze underside rim intensity
+    let fR: Float32Array | null = null
+    let fG: Float32Array | null = null
+    let fB: Float32Array | null = null
+    let tR: Float32Array | null = null
+    let tG: Float32Array | null = null
+    let tB: Float32Array | null = null
+    let sBuf: Float32Array | null = null // bio-lime specular crest intensity
+    let rBuf: Float32Array | null = null // bronze underside rim intensity
 
     /* Separable box blur, running-sum so cost is independent of radius.
        Clamps at edges. One call = horizontal then vertical pass. */
-    function blurH(src: Float32Array, dst: Float32Array, w: number, h: number, r: number) {
-      const norm = 1 / (2 * r + 1);
+    function blurH(
+      src: Float32Array,
+      dst: Float32Array,
+      w: number,
+      h: number,
+      r: number,
+    ) {
+      const norm = 1 / (2 * r + 1)
       for (let y = 0; y < h; y++) {
-        const row = y * w;
-        let sum = 0;
-        for (let i = -r; i <= r; i++) sum += src[row + Math.min(w - 1, Math.max(0, i))];
+        const row = y * w
+        let sum = 0
+        for (let i = -r; i <= r; i++)
+          sum += src[row + Math.min(w - 1, Math.max(0, i))]
         for (let x = 0; x < w; x++) {
-          dst[row + x] = sum * norm;
-          sum += src[row + Math.min(w - 1, x + r + 1)] - src[row + Math.max(0, x - r)];
+          dst[row + x] = sum * norm
+          sum +=
+            src[row + Math.min(w - 1, x + r + 1)] -
+            src[row + Math.max(0, x - r)]
         }
       }
     }
-    function blurV(src: Float32Array, dst: Float32Array, w: number, h: number, r: number) {
-      const norm = 1 / (2 * r + 1);
+    function blurV(
+      src: Float32Array,
+      dst: Float32Array,
+      w: number,
+      h: number,
+      r: number,
+    ) {
+      const norm = 1 / (2 * r + 1)
       for (let x = 0; x < w; x++) {
-        let sum = 0;
-        for (let i = -r; i <= r; i++) sum += src[Math.min(h - 1, Math.max(0, i)) * w + x];
+        let sum = 0
+        for (let i = -r; i <= r; i++)
+          sum += src[Math.min(h - 1, Math.max(0, i)) * w + x]
         for (let y = 0; y < h; y++) {
-          dst[y * w + x] = sum * norm;
+          dst[y * w + x] = sum * norm
           sum +=
-            src[Math.min(h - 1, y + r + 1) * w + x] - src[Math.max(0, y - r) * w + x];
+            src[Math.min(h - 1, y + r + 1) * w + x] -
+            src[Math.max(0, y - r) * w + x]
         }
       }
     }
 
     function paint(tSec: number) {
-      if (!img || !vig || !fR || !field) return;
-      const data = img.data;
-      const scale = 105 / H; // texels per buffer pixel (base period = 128 texels)
+      if (!img || !vig || !fR || !field) return
+      const data = img.data
+      const scale = 105 / H // texels per buffer pixel (base period = 128 texels)
       // Warp magnitude breathes ±18% (~25s period) so features swell and
       // dissolve in place — the part that reads as morphing, not sliding.
-      const warp = 105 * (1 + 0.18 * Math.sin(tSec * 0.25));
+      const warp = 105 * (1 + 0.18 * Math.sin(tSec * 0.25))
       // Each warp layer gets its own decorrelated velocity (texels/sec).
       // Divergent directions churn the field instead of rigidly translating
       // it; a gentle global drift keeps the whole surface quietly on the move.
       const a1x = tSec * 7.0,
-        a1y = tSec * -4.5;
+        a1y = tSec * -4.5
       const a2x = tSec * -5.5,
-        a2y = tSec * 6.2;
+        a2y = tSec * 6.2
       const a3x = tSec * 4.0,
-        a3y = tSec * 5.0;
+        a3y = tSec * 5.0
       const a4x = tSec * -6.0,
-        a4y = tSec * -3.5;
+        a4y = tSec * -3.5
       const gdx = tSec * 1.5,
-        gdy = tSec * -1.0;
+        gdy = tSec * -1.0
 
       /* Pass 1 — the broad domain-warped field, contrast-stretched into
          fc ∈ [0,1]. This is the volume the ribbons are cut from; it carries
          the pine↔mint depth and, via its contours, the fold of the ribbons. */
-      let g = 0;
+      let g = 0
       for (let y = 0; y < H; y++) {
-        const ys = y * scale;
+        const ys = y * scale
         for (let x = 0; x < W; x++) {
-          const xs = x * scale;
-          const qx = sampleT(xs + a1x, ys + a1y);
-          const qy = sampleT(xs + 137.7 + a2x, ys + 89.2 + a2y);
-          const rx = sampleT(xs + warp * qx + 41.3 + a3x, ys + warp * qy + 9.7 + a3y);
-          const ry = sampleT(xs + warp * qx + 199.1 + a4x, ys + warp * qy + 152.9 + a4y);
-          let f = sampleT(xs + warp * rx + gdx, ys + warp * ry + gdy) + bias![g];
+          const xs = x * scale
+          const qx = sampleT(xs + a1x, ys + a1y)
+          const qy = sampleT(xs + 137.7 + a2x, ys + 89.2 + a2y)
+          const rx = sampleT(
+            xs + warp * qx + 41.3 + a3x,
+            ys + warp * qy + 9.7 + a3y,
+          )
+          const ry = sampleT(
+            xs + warp * qx + 199.1 + a4x,
+            ys + warp * qy + 152.9 + a4y,
+          )
+          let f = sampleT(xs + warp * rx + gdx, ys + warp * ry + gdy) + bias![g]
           // stretch the mid-heavy fbm across the full range, then ease it so
           // deep abyss and bright mint both actually appear
-          f = (f - 0.32) * (1 / (0.74 - 0.32));
-          if (f < 0) f = 0;
-          else if (f > 1) f = 1;
-          field![g] = f * f * (3 - 2 * f);
-          g++;
+          f = (f - 0.32) * (1 / (0.74 - 0.32))
+          if (f < 0) f = 0
+          else if (f > 1) f = 1
+          field![g] = f * f * (3 - 2 * f)
+          g++
         }
       }
 
@@ -327,180 +390,189 @@
          by the field itself, and shade each as a glass cross-section. The
          band edges are antialiased analytically from the field gradient so
          they stay crisp through the upscale without jaggies. */
-      const projLen = W * Math.abs(RIB_UX) + H * Math.abs(RIB_UY);
-      const pdx = (RIB_N * RIB_UX) / projLen; // ribbon-phase step per x pixel
-      const pdy = (RIB_N * RIB_UY) / projLen; // ribbon-phase step per y pixel
-      const warpN = RIB_N * RIB_WARP;
-      const driftPhase = RIB_N * RIB_DRIFT * tSec;
-      g = 0;
+      const projLen = W * Math.abs(RIB_UX) + H * Math.abs(RIB_UY)
+      const pdx = (RIB_N * RIB_UX) / projLen // ribbon-phase step per x pixel
+      const pdy = (RIB_N * RIB_UY) / projLen // ribbon-phase step per y pixel
+      const warpN = RIB_N * RIB_WARP
+      const driftPhase = RIB_N * RIB_DRIFT * tSec
+      g = 0
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
-          const fc = field![g];
+          const fc = field![g]
           // field gradient (finite diff, clamped) → both the ribbon fold and
           // the per-pixel band width used for antialiasing
-          const fx = field![x < W - 1 ? g + 1 : g] - fc;
-          const fy = field![y < H - 1 ? g + W : g] - fc;
-          const b = pdx * x + pdy * y + warpN * (fc - 0.5) + driftPhase;
-          const u = b - Math.floor(b); // position across the ribbon, 0→1
-          const aa = Math.abs(pdx + warpN * fx) + Math.abs(pdy + warpN * fy) + 1e-4;
+          const fx = field![x < W - 1 ? g + 1 : g] - fc
+          const fy = field![y < H - 1 ? g + W : g] - fc
+          const b = pdx * x + pdy * y + warpN * (fc - 0.5) + driftPhase
+          const u = b - Math.floor(b) // position across the ribbon, 0→1
+          const aa =
+            Math.abs(pdx + warpN * fx) + Math.abs(pdy + warpN * fy) + 1e-4
 
           // occluded seam between ribbons (dark crevice at u≈0 and u≈1) plus
           // a domed body so each ribbon reads as a rounded glass tube
-          const edge = u < 1 - u ? u : 1 - u;
-          const cw = CREASE_W > aa * 1.5 ? CREASE_W : aa * 1.5;
-          let occl = edge / cw;
-          if (occl > 1) occl = 1;
-          occl = occl * occl * (3 - 2 * occl);
-          const shade = (OCCL_MIN + (1 - OCCL_MIN) * occl) * (1 + DOME * (4 * u * (1 - u) - 0.5));
+          const edge = u < 1 - u ? u : 1 - u
+          const cw = CREASE_W > aa * 1.5 ? CREASE_W : aa * 1.5
+          let occl = edge / cw
+          if (occl > 1) occl = 1
+          occl = occl * occl * (3 - 2 * occl)
+          const shade =
+            (OCCL_MIN + (1 - OCCL_MIN) * occl) *
+            (1 + DOME * (4 * u * (1 - u) - 0.5))
 
           // bio-lime specular crest, brighter on the higher (mint) ribbons
-          const sw = SPEC_W > aa ? SPEC_W : aa;
-          let sd = 1 - Math.abs(u - SPEC_UL) / sw;
-          if (sd < 0) sd = 0;
-          const spec = sd * sd * sd * SPEC_STR * (0.45 + 0.9 * fc);
+          const sw = SPEC_W > aa ? SPEC_W : aa
+          let sd = 1 - Math.abs(u - SPEC_UL) / sw
+          if (sd < 0) sd = 0
+          const spec = sd * sd * sd * SPEC_STR * (0.45 + 0.9 * fc)
 
           // hot-bronze underside rim, a touch stronger on the deeper ribbons
-          const rw = RIM_W > aa ? RIM_W : aa;
-          let rd = 1 - Math.abs(u - RIM_UR) / rw;
-          if (rd < 0) rd = 0;
-          const rim = rd * rd * RIM_STR * (0.6 + 0.5 * (1 - fc));
+          const rw = RIM_W > aa ? RIM_W : aa
+          let rd = 1 - Math.abs(u - RIM_UR) / rw
+          if (rd < 0) rd = 0
+          const rim = rd * rd * RIM_STR * (0.6 + 0.5 * (1 - fc))
 
-          let idx = (fc * (LUT_N - 1)) | 0;
-          if (idx < 0) idx = 0;
-          else if (idx >= LUT_N) idx = LUT_N - 1;
-          fR![g] = lutR[idx] * shade;
-          fG![g] = lutG[idx] * shade;
-          fB![g] = lutB[idx] * shade;
-          sBuf![g] = spec;
-          rBuf![g] = rim;
-          g++;
+          let idx = (fc * (LUT_N - 1)) | 0
+          if (idx < 0) idx = 0
+          else if (idx >= LUT_N) idx = LUT_N - 1
+          fR![g] = lutR[idx] * shade
+          fG![g] = lutG[idx] * shade
+          fB![g] = lutB[idx] * shade
+          sBuf![g] = spec
+          rBuf![g] = rim
+          g++
         }
       }
 
       // Light depth-of-field on the ribbon bodies only (one box pass) — enough
       // to soften the low-res stepping without dulling the glass. Highlights
       // are added crisp below so the specular stays a sharp glossy streak.
-      blurH(fR!, tR!, W, H, 1);
-      blurV(tR!, fR!, W, H, 1);
-      blurH(fG!, tG!, W, H, 1);
-      blurV(tG!, fG!, W, H, 1);
-      blurH(fB!, tB!, W, H, 1);
-      blurV(tB!, fB!, W, H, 1);
+      blurH(fR!, tR!, W, H, 1)
+      blurV(tR!, fR!, W, H, 1)
+      blurH(fG!, tG!, W, H, 1)
+      blurV(tG!, fG!, W, H, 1)
+      blurH(fB!, tB!, W, H, 1)
+      blurV(tB!, fB!, W, H, 1)
 
       // Compose body + specular + bronze rim, apply vignette, and dither with
       // grain AFTER blur so it breaks banding instead of smearing into blobs.
-      let k = 0;
-      let seed = (tSec * 977) | 0;
+      let k = 0
+      let seed = (tSec * 977) | 0
       for (let i = 0; i < W * H; i++) {
-        seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
-        const grain = (((seed >>> 16) & 31) - 16) * 0.06;
-        const v = vig![i];
-        const sp = sBuf![i];
-        const rm = rBuf![i];
-        data[k] = (fR![i] + SPEC_R * sp + RIM_R * rm) * v + grain;
-        data[k + 1] = (fG![i] + SPEC_G * sp + RIM_G * rm) * v + grain;
-        data[k + 2] = (fB![i] + SPEC_B * sp + RIM_B * rm) * v + grain;
-        data[k + 3] = 255;
-        k += 4;
+        seed = (Math.imul(seed, 1664525) + 1013904223) | 0
+        const grain = (((seed >>> 16) & 31) - 16) * 0.06
+        const v = vig![i]
+        const sp = sBuf![i]
+        const rm = rBuf![i]
+        data[k] = (fR![i] + SPEC_R * sp + RIM_R * rm) * v + grain
+        data[k + 1] = (fG![i] + SPEC_G * sp + RIM_G * rm) * v + grain
+        data[k + 2] = (fB![i] + SPEC_B * sp + RIM_B * rm) * v + grain
+        data[k + 3] = 255
+        k += 4
       }
-      offCtx.putImageData(img, 0, 0);
-      ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+      offCtx.putImageData(img, 0, 0)
+      ctx.drawImage(off, 0, 0, canvas.width, canvas.height)
     }
 
     function resize() {
-      const rect = wrap.getBoundingClientRect();
+      const rect = wrap.getBoundingClientRect()
       // Higher source resolution than before (~0.14 vs 0.09) — halves the
       // upscale factor, so the real blur carries the softness instead of the
       // bilinear stretch faceting. Still a tiny buffer (~34k px worst case).
-      W = Math.min(240, Math.max(96, Math.round(rect.width * 0.14)));
-      H = Math.max(56, Math.round(W * (rect.height / Math.max(rect.width, 1))));
-      off.width = W;
-      off.height = H;
-      canvas.width = W * 4;
-      canvas.height = H * 4;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      img = ctx.createImageData(W, H);
-      vig = new Float32Array(W * H);
-      bias = new Float32Array(W * H);
-      field = new Float32Array(W * H);
-      fR = new Float32Array(W * H);
-      fG = new Float32Array(W * H);
-      fB = new Float32Array(W * H);
-      tR = new Float32Array(W * H);
-      tG = new Float32Array(W * H);
-      tB = new Float32Array(W * H);
-      sBuf = new Float32Array(W * H);
-      rBuf = new Float32Array(W * H);
-      const cx = W / 2;
-      const cy = H / 2;
-      const norm = Math.min(W, H);
-      const sm = (t: number) => t * t * (3 - 2 * t);
+      // W = Math.min(240, Math.max(96, Math.round(rect.width * 0.14)))
+      W = Math.round(rect.width * 0.5)
+      // H = Math.max(56, Math.round(W * (rect.height / Math.max(rect.width, 1))));
+      H = Math.round(rect.height * 0.5)
+      off.width = W
+      off.height = H
+      canvas.width = W * 4
+      canvas.height = H * 4
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = "high"
+      img = ctx.createImageData(W, H)
+      vig = new Float32Array(W * H)
+      bias = new Float32Array(W * H)
+      field = new Float32Array(W * H)
+      fR = new Float32Array(W * H)
+      fG = new Float32Array(W * H)
+      fB = new Float32Array(W * H)
+      tR = new Float32Array(W * H)
+      tG = new Float32Array(W * H)
+      tB = new Float32Array(W * H)
+      sBuf = new Float32Array(W * H)
+      rBuf = new Float32Array(W * H)
+      const cx = W / 2
+      const cy = H / 2
+      const norm = Math.min(W, H)
+      const sm = (t: number) => t * t * (3 - 2 * t)
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
-          const d = Math.hypot((x - cx) / norm, (y - cy) / norm);
-          let m = Math.min(1, Math.max(0, (1.25 - d) / (1.25 - 0.35)));
-          vig[y * W + x] = 0.82 + 0.18 * sm(m);
+          const d = Math.hypot((x - cx) / norm, (y - cy) / norm)
+          let m = Math.min(1, Math.max(0, (1.25 - d) / (1.25 - 0.35)))
+          vig[y * W + x] = 0.82 + 0.18 * sm(m)
           // keep the corners the text lives in from drifting pale: a dark
           // pocket toward bottom-right, a lighter hand at the top
-          const u = x / W;
-          const v = y / H;
+          const u = x / W
+          const v = y / H
           bias[y * W + x] =
-            -0.2 * sm(Math.max(0, (u - 0.5) * 2)) * sm(Math.max(0, (v - 0.4) / 0.6)) -
-            0.1 * sm(Math.max(0, (0.45 - u) / 0.45)) * sm(Math.max(0, (v - 0.55) / 0.45)) -
-            0.08 * sm(Math.max(0, 1 - v / 0.35));
+            -0.2 *
+              sm(Math.max(0, (u - 0.5) * 2)) *
+              sm(Math.max(0, (v - 0.4) / 0.6)) -
+            0.1 *
+              sm(Math.max(0, (0.45 - u) / 0.45)) *
+              sm(Math.max(0, (v - 0.55) / 0.45)) -
+            0.08 * sm(Math.max(0, 1 - v / 0.35))
         }
       }
-      if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT);
+      if (reducedMotion || !running) paint(reducedMotion ? 40 : lastT)
     }
 
-    let rafId: number | null = null;
-    let running = false;
-    let lastT = 0;
-    let lastPaintMs = -Infinity;
+    let rafId: number | null = null
+    let running = false
+    let lastT = 0
+    let lastPaintMs = -Infinity
     function loop(ms: number) {
-      if (!running) return;
+      if (!running) return
       // ~30fps is indistinguishable at this drift speed and halves CPU cost
       if (ms - lastPaintMs >= 28) {
-        lastPaintMs = ms;
-        lastT = ms / 1000;
-        paint(lastT);
+        lastPaintMs = ms
+        lastT = ms / 1000
+        paint(lastT)
       }
-      rafId = requestAnimationFrame(loop);
+      rafId = requestAnimationFrame(loop)
     }
     function start() {
-      if (running || reducedMotion) return;
-      running = true;
-      rafId = requestAnimationFrame(loop);
+      if (running || reducedMotion) return
+      running = true
+      rafId = requestAnimationFrame(loop)
     }
     function stop() {
-      running = false;
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = null;
+      running = false
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      rafId = null
     }
 
-    let resizeTimer: number | undefined;
+    let resizeTimer: number | undefined
     new ResizeObserver(() => {
-      clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(resize, 120);
-    }).observe(wrap);
-    resize();
+      clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(resize, 120)
+    }).observe(wrap)
+    resize()
 
     if (reducedMotion) {
-      paint(40);
+      paint(40)
     } else {
       new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            entry.isIntersecting ? start() : stop();
+            entry.isIntersecting ? start() : stop()
           }
         },
-        { threshold: 0 }
-      ).observe(scope);
+        { threshold: 0 },
+      ).observe(scope)
       document.addEventListener("visibilitychange", () => {
-        document.hidden ? stop() : start();
-      });
-      start();
+        document.hidden ? stop() : start()
+      })
+      start()
     }
   }
 </script>
