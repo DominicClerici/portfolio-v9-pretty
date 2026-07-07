@@ -12,62 +12,83 @@ const technicalSkills = [
 ];
 ---
 
-<section id="about" class="bg-section-about py-12 md:py-32 border-y border-primary/10">
-  <div class="max-w-[1140px] mx-auto px-3 sm:px-4 md:px-24">
-  <h2 class="sr-only">About</h2>
-  <div class="md:hidden space-y-4 mb-8">
-    <div class="flex justify-between items-center border-b border-primary/10 pb-2">
-      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-secondary">NYC</span>
-      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-primary">EST. 2004</span>
-    </div>
-    <div class="flex justify-between items-center border-b border-primary/10 pb-2">
-      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-primary">5+ Years</span>
-      <span class="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface">formal experience, 9+ years programming</span>
-    </div>
-  </div>
+<!-- Scrolls over the pinned hero canvas — no background of its own -->
+<section id="about" class="relative">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(120px,18vh,200px)]">
+    <h2 class="sr-only">About</h2>
 
-  <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-start">
-    <div class="hidden md:block md:col-span-3">
-      <div class="font-label text-[10px] tracking-[0.3em] uppercase text-secondary mb-2">Location</div>
-      <div class="font-headline text-4xl text-primary lowercase italic">NYC</div>
-      <div class="font-label text-[10px] tracking-[0.2em] text-on-surface-variant mt-4">EST. 2004</div>
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-paper/60 border border-paper/30 rounded-full px-3.5 py-2"
+      >
+        01&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/60">
+        About
+      </span>
     </div>
 
-    <div class="hidden md:block md:col-span-3">
-      <div class="font-label text-[10px] tracking-[0.3em] uppercase text-secondary mb-2">Experience</div>
-      <div class="font-headline text-4xl text-primary lowercase italic">5+ Years</div>
-      <div class="font-label text-[10px] tracking-[0.2em] text-on-surface-variant mt-4">formal experience, <br /> 9+ years spent programming</div>
-    </div>
+    <p
+      class="font-display font-normal text-paper leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)]"
+    >
+      CS student at Indiana University, full-stack engineer at Rumor. I&rsquo;ve been programming
+      since before I had any business doing so&nbsp;&mdash;
+      <span class="text-paper/55">
+        I care about speed, clean interfaces, and code I won&rsquo;t hate in six months.
+      </span>
+    </p>
 
-    <div class="md:col-span-6">
-      <p class="font-body text-sm md:text-lg text-on-surface-variant leading-relaxed mb-8">
-        CS student at Indiana University, currently a full stack engineer at Rumor. I've been programming since before I had any business doing so. I care about speed, clean interfaces, and writing code I won't hate in six months.
-      </p>
+    <div
+      class="mt-16 lg:mt-24 pt-8 lg:pt-10 border-t border-paper/20 grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-10"
+    >
+      <div class="md:col-span-3">
+        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper/45 mb-3">
+          Location
+        </div>
+        <div class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-paper">
+          New York
+        </div>
+        <div class="font-mono text-[13px] tracking-[-0.02em] text-paper/45 mt-2">EST. 2004</div>
+      </div>
 
-      <div class="hidden md:block space-y-4">
-        <div class="flex flex-wrap gap-x-6 gap-y-3">
-          {
-            conceptualSkills.map((skill) => (
-              <div class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-primary" aria-hidden="true" />
-                <span class="font-label text-xs uppercase tracking-widest text-on-surface">{skill}</span>
-              </div>
-            ))
-          }
+      <div class="md:col-span-3">
+        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper/45 mb-3">
+          Experience
+        </div>
+        <div class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-paper">
+          5+ years
+        </div>
+        <div class="font-mono text-[13px] tracking-[-0.02em] text-paper/45 mt-2">
+          9+ years programming
+        </div>
+      </div>
+
+      <div class="col-span-2 md:col-span-6">
+        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper/45 mb-4">
+          Focus
         </div>
         <div class="flex flex-wrap gap-x-6 gap-y-3">
           {
+            conceptualSkills.map((skill) => (
+              <span class="inline-flex items-center gap-2">
+                <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true" />
+                <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-paper/80">
+                  {skill}
+                </span>
+              </span>
+            ))
+          }
+        </div>
+        <div class="flex flex-wrap gap-x-4 gap-y-2 mt-6">
+          {
             technicalSkills.map((skill) => (
-              <div class="flex items-center gap-2">
-                <span class="w-1 h-1 bg-secondary/50 rounded-full" aria-hidden="true" />
-                <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">{skill}</span>
-              </div>
+              <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-paper/45">
+                {skill}
+              </span>
             ))
           }
         </div>
       </div>
-
     </div>
-  </div>
   </div>
 </section>

@@ -141,20 +141,52 @@ body {
   scrollbar-gutter: stable;
 }
 
+/* ── Hero: pinned background scope ──
+   The canvas background is sticky for the full height of #hero-scope
+   (hero + the section after it): content scrolls over it, and at the
+   end of the scope the background is pushed off-screen with the flow. */
+.hero-bg {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 560px;
+}
+
+/* Content stack rides above the sticky background, pulled up by exactly
+   the background's height so the hero starts at the top of the page. */
+.hero-scope-content {
+  position: relative;
+  z-index: 10;
+  margin-top: calc(-1 * max(100svh, 560px));
+}
+
 /* ── Hero: framed viewport ──
-   The bone-white page canvas shows through as a gutter around the dark
-   frame. --recess (0 → 1, driven by scroll) collapses the gutter and
-   corner radius so the frame becomes full-bleed. */
+   The frame is full-bleed at all times; the bone gutter and its collapse
+   (--recess 0 → 1, driven by scroll) are painted on top of the canvas,
+   so the border leaving the viewport is purely cosmetic — it never
+   resizes the canvas or reflows content. */
 .hero-frame {
   --recess: 0;
   --inset-max: 8px;
   position: absolute;
-  inset: calc(var(--inset-max) * (1 - var(--recess)));
-  border-radius: calc(20px * (1 - var(--recess)));
+  inset: 0;
+  /* outer radius = 20px + gutter width, so the visible dark corner
+     inside the painted ring keeps a 20px radius */
+  border-radius: calc((20px + var(--inset-max)) * (1 - var(--recess)));
   overflow: hidden;
   /* isolate so the inner clip-path animation composites cleanly */
   isolation: isolate;
   transform: translateZ(0);
+}
+
+.hero-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  border: calc(var(--inset-max) * (1 - var(--recess))) solid var(--color-bone);
 }
 
 @media (min-width: 1024px) {
@@ -190,8 +222,9 @@ body {
 }
 
 /* Iris-open on load: the canvas dilates from a rounded point at the center
-   of the viewport — inset(50% round R) → inset(0 round 20px), matching
-   integratedbio.com (2s expo.inOut, 0.3s delay). */
+   of the viewport — inset(50% round R) → inset(0 round outer-radius),
+   matching integratedbio.com (2s expo.inOut, 0.3s delay). The end radius
+   matches the frame's outer radius so the painted gutter ring lines up. */
 @media (prefers-reduced-motion: no-preference) {
   .hero-canvas-wrap {
     animation: hero-iris-open 2s cubic-bezier(0.87, 0, 0.13, 1) 0.3s both;
@@ -202,7 +235,7 @@ body {
       clip-path: inset(50% 50% 50% 50% round var(--iris-r, 100px));
     }
     to {
-      clip-path: inset(0% 0% 0% 0% round 20px);
+      clip-path: inset(0% 0% 0% 0% round calc(20px + var(--inset-max, 8px)));
     }
   }
 
