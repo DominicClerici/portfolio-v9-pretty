@@ -1,8 +1,10 @@
 ---
-// V3 — "The Courier": the green sphere from the hero rolls back in. A
-// Canvas2D scene behind the cards draws a route through all three
-// projects; as you scroll, the sphere travels the route, lighting up each
-// station as it passes. Same palette, same sphere, no WebGL.
+// V3 — "The Vitrine": all three screenshots live in one 3D deck, fanned
+// like V4's teardown — except the layers are the projects themselves.
+// V2's card rail on the left picks which pane steps to the front; the
+// other two frost over with the hero's ribbed-glass render (a soft fade,
+// not a wipe). Hovering the vitrine squares the deck up to face you.
+// The spec sheet below is V4's dossier card, swapping with the pick.
 const projects = [
   {
     index: "01",
@@ -13,7 +15,7 @@ const projects = [
       "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
     image: "/photos/dispatch.webp",
     alt: "Dispatch project screenshot",
-    stack: ["Astro", "TypeScript", "OpenAI API", "Vercel"],
+    stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
     websiteUrl: "https://dispatch.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/dispatch",
   },
@@ -40,24 +42,15 @@ const projects = [
       "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
     alt: "Fuzzbox project screenshot",
-    stack: ["TypeScript", "Next.js", "React Native", "PostgreSQL"],
+    stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
   },
 ];
-
-const placements = [
-  "lg:col-start-1 lg:col-end-7",
-  "lg:col-start-7 lg:col-end-13",
-  "lg:col-start-1 lg:col-end-7",
-];
 ---
 
-<section class="cr3 relative bg-bone overflow-hidden" aria-label="Selected work">
-  <canvas class="cr3-canvas absolute inset-0 w-full h-full pointer-events-none" data-courier-canvas aria-hidden="true"
-  ></canvas>
-
-  <div class="relative max-w-[1400px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+<section class="vd3 relative bg-bone" aria-label="Selected work">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
     <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
       <div class="flex items-center gap-4">
         <span
@@ -80,93 +73,278 @@ const placements = [
     </div>
 
     <p
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-16 lg:mb-32"
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-20"
     >
-      The sphere from upstairs makes deliveries&nbsp;&mdash;
-      <span class="text-ink/55">scroll, and it walks the route.</span>
+      Three builds share one vitrine&nbsp;&mdash;
+      <span class="text-ink/55">the one you pick steps out of the frost.</span>
     </p>
 
-    <div class="pl-9 sm:pl-12 lg:pl-0 flex flex-col gap-y-20 lg:gap-y-40 lg:grid lg:grid-cols-12">
-      {
-        projects.map((project, i) => (
-          <article class:list={["cr3-station relative", placements[i]]} data-station={i}>
-            <span
-              class:list={[
-                "cr3-node absolute top-12 -left-9 sm:-left-12",
-                i % 2 === 0 ? "lg:-right-16 lg:left-auto" : "lg:-left-16",
-              ]}
-              data-node={i}
-              aria-hidden="true"
-            />
-
-            <div class="cr3-card bg-paper rounded-[20px] border border-ink/10 overflow-hidden">
-              <div class="p-4 sm:p-5 pb-0">
+    <!-- Desktop: card rail + vitrine -->
+    <div class="hidden lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:items-start">
+      <!-- Card rail -->
+      <div class="flex flex-col gap-3.5 sticky top-[max(96px,calc(50vh-260px))]">
+        {
+          projects.map((project, i) => (
+            <button
+              type="button"
+              class="vd3-tab text-left rounded-[16px] border border-ink/10 bg-paper p-4 grid grid-cols-[84px_minmax(0,1fr)] gap-4 items-center cursor-pointer"
+              data-tab={i}
+              aria-pressed={i === 0 ? "true" : "false"}
+            >
+              <span class="vd3-thumb relative block aspect-[16/11] rounded-[8px] overflow-hidden border border-ink/10">
                 <img
                   src={project.image}
-                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                  alt={project.alt}
-                  class="w-full aspect-[16/10] object-cover object-top rounded-[12px] border border-ink/10"
+                  alt=""
+                  class="absolute inset-0 w-full h-full object-cover object-top"
                   loading="lazy"
                   decoding="async"
                 />
-              </div>
-              <div class="p-6 sm:p-8">
+              </span>
+              <span class="min-w-0">
+                <span class="flex items-baseline justify-between gap-3">
+                  <span class="vd3-tab-title font-display font-normal leading-[1] tracking-[-0.014em] text-ink/45 text-[22px] truncate">
+                    {project.title}
+                  </span>
+                  <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/40 shrink-0">
+                    {project.index}
+                  </span>
+                </span>
+                <span class="flex items-center gap-2 mt-2 min-w-0">
+                  <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/45 truncate">
+                    {project.tech}
+                  </span>
+                  {project.featured && (
+                    <span class="font-mono text-[9px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-1.5 py-0.5 shrink-0">
+                      featured
+                    </span>
+                  )}
+                </span>
+              </span>
+            </button>
+          ))
+        }
+        <p class="font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35 mt-2 pl-1">
+          rotation policy: whoever&rsquo;s picked skips the frost
+        </p>
+      </div>
+
+      <!-- Vitrine + spec sheet -->
+      <div>
+        <div class="vd3-stage relative" data-stage>
+          <div class="vd3-space absolute inset-0">
+            <div class="vd3-deck">
+              <div class="vd3-floor" aria-hidden="true"></div>
+              {
+                projects.map((project, i) => (
+                  <figure class="vd3-pane" data-pane={i} data-depth={i === 0 ? "0" : i === 1 ? "1" : "2"}>
+                    <img
+                      src={project.image}
+                      srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                      alt={project.alt}
+                      class="w-full h-full object-cover object-top"
+                      loading="lazy"
+                      decoding="async"
+                      data-frost-img
+                    />
+                    <div class="vd3-frost absolute inset-0" aria-hidden="true">
+                      <canvas class="absolute inset-0 w-full h-full" data-frost-canvas />
+                      <div class="vd3-seams absolute inset-0" />
+                    </div>
+                    <figcaption class="vd3-pane-tag font-mono">{project.title}</figcaption>
+                  </figure>
+                ))
+              }
+            </div>
+          </div>
+          <p class="absolute -bottom-7 right-1 font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35">
+            hover to square the stack
+          </p>
+        </div>
+
+        <!-- Spec sheet -->
+        <div class="mt-16">
+          {
+            projects.map((project, i) => (
+              <div class="vd3-panel" data-panel={i} hidden={i !== 0}>
                 <div class="flex items-center gap-3 flex-wrap">
                   <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
-                    stop&thinsp;{project.index}
+                    fig.&thinsp;{project.index}
                   </span>
                   {project.featured && (
                     <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
                       featured
                     </span>
                   )}
-                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
-                    {project.fact}
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
+                </div>
+
+                <div class="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12 mt-6">
+                  <div>
+                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,calc(2rem+(100vw-27.5rem)*0.014),2.75rem)]">
+                      {project.title}
+                    </h3>
+                    <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                      {project.tech}
+                    </p>
+                    <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-ink/60 max-w-[520px] mt-6">
+                      {project.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <dl class="border-t border-ink/10">
+                      <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
+                        <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
+                          stack
+                        </dt>
+                        <dd class="flex flex-wrap gap-x-5 gap-y-2">
+                          {project.stack.map((item) => (
+                            <span class="inline-flex items-center gap-2">
+                              <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
+                              <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
+                                {item}
+                              </span>
+                            </span>
+                          ))}
+                        </dd>
+                      </div>
+                      <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
+                        <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
+                          status
+                        </dt>
+                        <dd class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
+                          live · maintained
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div class="flex items-center gap-3 mt-7">
+                      <a
+                        href={project.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                      >
+                        Visit site
+                      </a>
+                      {project.githubUrl && (
+                        <a
+                          href={project.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
+                        >
+                          GitHub
+                        </a>
+                      )}
+                      <a
+                        href={project.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${project.title} in a new tab`}
+                        class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path
+                            d="M2 12 12 2M4.5 2H12v7.5"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: the deck unpacked into plain cards -->
+    <div class="lg:hidden flex flex-col gap-8">
+      {
+        projects.map((project) => (
+          <article class="bg-paper rounded-[20px] border border-ink/10 overflow-hidden">
+            <div class="p-4 pb-0">
+              <img
+                src={project.image}
+                srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                alt={project.alt}
+                class="w-full aspect-[16/10] object-cover object-top rounded-[12px] border border-ink/10"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="p-6">
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
+                  fig.&thinsp;{project.index}
+                </span>
+                {project.featured && (
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
+                    featured
                   </span>
-                </div>
+                )}
+                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
+              </div>
 
-                <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink mt-5 text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.014),2.625rem)]">
-                  {project.title}
-                </h3>
-                <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
-                  {project.tech}
-                </p>
-                <p class="font-display text-[15px] lg:text-[16px] leading-[1.6] text-ink/60 mt-5">
-                  {project.description}
-                </p>
+              <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink mt-5 text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.014),2.625rem)]">
+                {project.title}
+              </h3>
+              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
+                {project.tech}
+              </p>
+              <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
 
-                <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-6">
-                  {project.stack.map((item) => (
-                    <span class="inline-flex items-center gap-2">
-                      <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
-                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">{item}</span>
-                    </span>
-                  ))}
-                </div>
+              <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-6">
+                {project.stack.map((item) => (
+                  <span class="inline-flex items-center gap-2">
+                    <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">{item}</span>
+                  </span>
+                ))}
+              </div>
 
-                <div class="flex items-center gap-3 mt-8">
+              <div class="flex items-center gap-3 mt-8">
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                >
+                  Visit site
+                </a>
+                {project.githubUrl && (
                   <a
-                    href={project.websiteUrl}
+                    href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
                   >
-                    Visit site
+                    GitHub
                   </a>
-                  {project.githubUrl && (
-                    <a
-                      href={project.githubUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
-                    >
-                      GitHub
-                    </a>
-                  )}
-                  <span class="cr3-stamp font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35 ml-auto">
-                    awaiting delivery
-                  </span>
-                </div>
+                )}
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${project.title} in a new tab`}
+                  class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12 12 2M4.5 2H12v7.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </a>
               </div>
             </div>
           </article>
@@ -174,319 +352,282 @@ const placements = [
       }
     </div>
 
-    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-16">
-      route length: 3 stops · courier: one (1) green sphere
+    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-12">
+      the frost is real refraction &mdash; same glass as upstairs, no gpu required
     </p>
   </div>
 </section>
 
 <style>
-  .cr3-node {
-    width: 18px;
-    height: 18px;
-    border-radius: 999px;
-    background: var(--color-paper);
-    border: 1.5px solid rgba(34, 47, 48, 0.3);
+  .vd3-tab:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .vd3-tab {
+    box-shadow: inset 3px 0 0 transparent;
     transition:
-      background-color 0.3s ease,
       border-color 0.3s ease,
       box-shadow 0.3s ease;
   }
 
-  .cr3-station.cr3-lit .cr3-node {
-    background: var(--color-bio-lime);
-    border-color: var(--color-ink);
-    box-shadow: 0 0 0 6px rgba(206, 247, 158, 0.35);
+  .vd3-tab[data-active] {
+    border-color: rgba(34, 47, 48, 0.25);
+    box-shadow:
+      inset 3px 0 0 var(--color-bio-lime),
+      0 18px 40px -28px rgba(34, 47, 48, 0.3);
   }
 
-  .cr3-card {
-    box-shadow: 0 20px 44px -28px rgba(34, 47, 48, 0.3);
-    transition:
-      border-color 0.35s ease,
-      box-shadow 0.35s ease,
-      transform 0.35s ease;
-  }
-
-  .cr3-station.cr3-lit .cr3-card {
-    border-color: rgba(34, 47, 48, 0.22);
-    box-shadow: 0 28px 56px -28px rgba(34, 47, 48, 0.38);
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .cr3-station .cr3-card {
-      transform: translateY(14px);
-    }
-
-    .cr3-station.cr3-lit .cr3-card {
-      transform: translateY(0);
-    }
-  }
-
-  .cr3-stamp {
+  .vd3-tab-title {
     transition: color 0.3s ease;
   }
 
-  .cr3-station.cr3-lit .cr3-stamp {
+  .vd3-tab[data-active] .vd3-tab-title,
+  .vd3-tab:hover .vd3-tab-title {
     color: var(--color-ink);
   }
 
-  .cr3-station.cr3-lit .cr3-stamp::after {
-    content: " ✓";
+  .vd3-thumb {
+    opacity: 0.65;
+    transition: opacity 0.3s ease;
+  }
+
+  .vd3-tab[data-active] .vd3-thumb,
+  .vd3-tab:hover .vd3-thumb {
+    opacity: 1;
+  }
+
+  /* ── The vitrine ── */
+  .vd3-stage {
+    height: clamp(320px, 34vw, 460px);
+  }
+
+  .vd3-space {
+    perspective: 1600px;
+    display: grid;
+    place-items: center;
+  }
+
+  .vd3-deck {
+    position: relative;
+    width: min(74%, 520px);
+    aspect-ratio: 16 / 10;
+    transform-style: preserve-3d;
+    /* Rest state: the fan — three panes spread through real depth */
+    transform: rotateX(50deg) rotateZ(-28deg) scale(0.94);
+  }
+
+  /* Hover: square up and face the viewer, edges still peeking */
+  @media (hover: hover) {
+    .vd3-stage:hover .vd3-deck {
+      transform: rotateX(5deg) rotateZ(0deg) scale(1);
+    }
+  }
+
+  .vd3-floor {
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    bottom: -6%;
+    height: 18%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(34, 47, 48, 0.2), transparent 68%);
+    transform: translateZ(-150px);
+  }
+
+  .vd3-pane {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(34, 47, 48, 0.14);
+    overflow: hidden;
+    backface-visibility: hidden;
+    background: var(--color-paper);
+    box-shadow: 0 24px 48px -24px rgba(34, 47, 48, 0.45);
+    transform: translate3d(
+      calc(var(--d) * 18px),
+      calc(var(--d) * 14px),
+      calc((1 - var(--d)) * 88px)
+    );
+  }
+
+  .vd3-pane[data-depth="0"] {
+    --d: 0;
+  }
+
+  .vd3-pane[data-depth="1"] {
+    --d: 1;
+  }
+
+  .vd3-pane[data-depth="2"] {
+    --d: 2;
+  }
+
+  /* The frost: refracted canvas + ribbed seams, faded — never wiped. The
+     front pane sheds it; the two behind stay under glass. */
+  .vd3-frost {
+    opacity: 1;
+  }
+
+  .vd3-frost::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(247, 247, 245, 0.16);
+  }
+
+  .vd3-pane[data-depth="0"] .vd3-frost {
+    opacity: 0;
+  }
+
+  /* Cell count must match GLASS_CELLS in the script below */
+  .vd3-seams {
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(34, 47, 48, 0.1) 0px,
+      rgba(255, 255, 255, 0.34) 1.5%,
+      rgba(255, 255, 255, 0) 12%,
+      rgba(255, 255, 255, 0) 88%,
+      rgba(255, 255, 255, 0.34) 98.5%,
+      rgba(34, 47, 48, 0.1) 100%
+    );
+    background-size: calc(100% / 16) 100%;
+  }
+
+  .vd3-pane-tag {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    background: rgba(247, 247, 245, 0.92);
+    border: 1px solid rgba(34, 47, 48, 0.14);
+    border-radius: 999px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  .vd3-pane[data-depth="0"] .vd3-pane-tag {
+    background: var(--color-bio-lime);
+    border-color: transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .vd3-deck,
+    .vd3-pane {
+      transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    .vd3-frost {
+      transition: opacity 0.55s ease 0.1s;
+    }
+
+    /* Spec sheet settles in when the pick changes (display toggle
+       restarts the animation) */
+    .vd3-panel {
+      animation: vd3-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+  }
+
+  @keyframes vd3-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
   }
 </style>
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".cr3");
-    const canvas = section?.querySelector<HTMLCanvasElement>("[data-courier-canvas]");
+    const section = document.querySelector<HTMLElement>(".vd3");
+    if (section) {
+      const tabs = section.querySelectorAll<HTMLButtonElement>("[data-tab]");
+      const panes = section.querySelectorAll<HTMLElement>("[data-pane]");
+      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
+      const count = panes.length;
 
-    if (section && canvas) {
-      const ctx = canvas.getContext("2d")!;
-      const stations = [...section.querySelectorAll<HTMLElement>("[data-station]")];
-      const nodes = [...section.querySelectorAll<HTMLElement>("[data-node]")];
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      const SPHERE_R = 26;
-      let dpr = 1;
-      let pts: { x: number; y: number }[] = []; // sampled route, CSS px
-      let lens: number[] = []; // cumulative arc length
-      let nodeArc: number[] = []; // arc length at each station node
-      let total = 1;
-      let progress = 0; // drawn position, 0..1 of total length
-      let target = 0;
-      let rafId = 0;
-
-      // Catmull-Rom through the node centers, sampled to a polyline
-      const buildRoute = () => {
-        const rect = section.getBoundingClientRect();
-        if (!rect.width || !rect.height) return false;
-        const anchors = nodes.map((n) => {
-          const r = n.getBoundingClientRect();
-          return { x: r.left - rect.left + r.width / 2, y: r.top - rect.top + r.height / 2 };
+      const select = (id: string) => {
+        const active = Number(id);
+        panes.forEach((pane) => {
+          const i = Number(pane.dataset.pane);
+          pane.dataset.depth = String((i - active + count) % count);
         });
-        if (anchors.some((a) => !isFinite(a.x))) return false;
-
-        const first = anchors[0];
-        const last = anchors[anchors.length - 1];
-        const raw = [
-          { x: first.x + (rect.width * 0.5 - first.x) * 0.6, y: Math.max(first.y - 340, 90) },
-          ...anchors,
-          { x: last.x, y: Math.min(last.y + 260, rect.height - 60) },
-        ];
-
-        pts = [];
-        const P = (i: number) => raw[Math.min(Math.max(i, 0), raw.length - 1)];
-        for (let s = 0; s < raw.length - 1; s++) {
-          const p0 = P(s - 1);
-          const p1 = P(s);
-          const p2 = P(s + 1);
-          const p3 = P(s + 2);
-          for (let t = 0; t < 40; t++) {
-            const u = t / 40;
-            const u2 = u * u;
-            const u3 = u2 * u;
-            pts.push({
-              x:
-                0.5 *
-                (2 * p1.x + (-p0.x + p2.x) * u + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * u2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * u3),
-              y:
-                0.5 *
-                (2 * p1.y + (-p0.y + p2.y) * u + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * u2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * u3),
-            });
-          }
-        }
-        pts.push(raw[raw.length - 1]);
-
-        lens = [0];
-        for (let i = 1; i < pts.length; i++) {
-          lens.push(lens[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
-        }
-        total = lens[lens.length - 1] || 1;
-
-        // arc position of each anchor = nearest sample
-        nodeArc = anchors.map((a) => {
-          let best = 0;
-          let bd = Infinity;
-          for (let i = 0; i < pts.length; i += 4) {
-            const d = Math.hypot(pts[i].x - a.x, pts[i].y - a.y);
-            if (d < bd) {
-              bd = d;
-              best = lens[i];
-            }
-          }
-          return best;
+        tabs.forEach((tab) => {
+          const on = tab.dataset.tab === id;
+          tab.setAttribute("aria-pressed", String(on));
+          if (on) tab.setAttribute("data-active", "");
+          else tab.removeAttribute("data-active");
         });
-        return true;
-      };
-
-      const pointAt = (arc: number) => {
-        let lo = 0;
-        let hi = lens.length - 1;
-        while (lo < hi) {
-          const mid = (lo + hi) >> 1;
-          if (lens[mid] < arc) lo = mid + 1;
-          else hi = mid;
-        }
-        const i = Math.max(lo, 1);
-        const seg = lens[i] - lens[i - 1] || 1;
-        const f = (arc - lens[i - 1]) / seg;
-        return {
-          x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * f,
-          y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * f,
-        };
-      };
-
-      const draw = () => {
-        const w = canvas.width / dpr;
-        const h = canvas.height / dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, w, h);
-        if (pts.length < 2) return;
-
-        const arc = progress * total;
-
-        // Base route — quiet dashed ink
-        ctx.beginPath();
-        pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-        ctx.setLineDash([2, 7]);
-        ctx.strokeStyle = "rgba(34, 47, 48, 0.28)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Travelled portion — solid lime with a soft glow
-        ctx.beginPath();
-        let started = false;
-        for (let i = 0; i < pts.length; i++) {
-          if (lens[i] > arc) break;
-          if (started) ctx.lineTo(pts[i].x, pts[i].y);
-          else {
-            ctx.moveTo(pts[i].x, pts[i].y);
-            started = true;
-          }
-        }
-        if (started) {
-          const tip = pointAt(arc);
-          ctx.lineTo(tip.x, tip.y);
-          ctx.strokeStyle = "#b7ef7c";
-          ctx.lineWidth = 3;
-          ctx.lineCap = "round";
-          ctx.shadowColor = "rgba(206, 247, 158, 0.9)";
-          ctx.shadowBlur = 8;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
-
-        // The courier itself — hero's green sphere, matcap-ish shading
-        const s = pointAt(arc);
-
-        const sh = ctx.createRadialGradient(s.x, s.y + SPHERE_R * 1.35, SPHERE_R * 0.1, s.x, s.y + SPHERE_R * 1.35, SPHERE_R * 1.5);
-        sh.addColorStop(0, "rgba(34, 47, 48, 0.22)");
-        sh.addColorStop(1, "rgba(34, 47, 48, 0)");
-        ctx.fillStyle = sh;
-        ctx.save();
-        ctx.translate(s.x, s.y + SPHERE_R * 1.35);
-        ctx.scale(1, 0.32);
-        ctx.beginPath();
-        ctx.arc(0, 0, SPHERE_R * 1.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        const g = ctx.createRadialGradient(
-          s.x - SPHERE_R * 0.38,
-          s.y - SPHERE_R * 0.42,
-          SPHERE_R * 0.12,
-          s.x,
-          s.y,
-          SPHERE_R,
-        );
-        g.addColorStop(0, "#d8fba4");
-        g.addColorStop(0.35, "#6fe93c");
-        g.addColorStop(0.75, "#16c50d");
-        g.addColorStop(1, "#079400");
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, SPHERE_R, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-
-        // bottom rim light, like the hero sphere's white lower edge
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, SPHERE_R, 0, Math.PI * 2);
-        ctx.clip();
-        const rim = ctx.createRadialGradient(s.x, s.y + SPHERE_R * 0.9, SPHERE_R * 0.1, s.x, s.y + SPHERE_R * 0.7, SPHERE_R);
-        rim.addColorStop(0, "rgba(255, 255, 255, 0.85)");
-        rim.addColorStop(0.45, "rgba(255, 255, 255, 0.25)");
-        rim.addColorStop(1, "rgba(255, 255, 255, 0)");
-        ctx.fillStyle = rim;
-        ctx.fillRect(s.x - SPHERE_R, s.y - SPHERE_R, SPHERE_R * 2, SPHERE_R * 2);
-        ctx.restore();
-
-        // stations light up as the courier passes
-        stations.forEach((st, i) => {
-          st.classList.toggle("cr3-lit", arc >= nodeArc[i] - 4);
+        panels.forEach((panel) => {
+          panel.hidden = panel.dataset.panel !== id;
         });
       };
 
-      const tick = () => {
-        progress += (target - progress) * 0.09;
-        draw();
-        if (Math.abs(target - progress) > 0.0008) rafId = requestAnimationFrame(tick);
-        else {
-          progress = target;
-          draw();
-          rafId = 0;
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => select(tab.dataset.tab!));
+      });
+      select("0");
+
+      /* The hero's glass, miniaturized: vertical packed cylinders, 2D
+         refraction at the entry interface, sampled from a blurred copy of
+         the screenshot. Rendered once per pane — the canvas is just a
+         picture afterwards, zero cost. */
+      const GLASS_CELLS = 16; // must match .vd3-seams background-size
+      const IOR = 1.14;
+      const THICK = 3.4; // displacement scale, in cylinder-diameters
+      const BLUR_FRAC = 0.014; // blur radius as a fraction of internal width
+      const W = 720;
+      const H = 450; // 16/10, matches the pane aspect
+
+      const renderGlass = (canvas: HTMLCanvasElement, img: HTMLImageElement) => {
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const blur = Math.round(W * BLUR_FRAC);
+        const off = document.createElement("canvas");
+        off.width = W;
+        off.height = H;
+        const octx = off.getContext("2d")!;
+        const pad = blur * 3;
+        // object-fit: cover, object-position: top — mirror the real <img>
+        const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+        const dw = img.naturalWidth * scale;
+        const dh = img.naturalHeight * scale;
+        octx.filter = `blur(${blur}px)`;
+        octx.drawImage(img, (W - dw) / 2 - pad, -pad, dw + pad * 2, dh + pad * 2);
+        octx.filter = "none";
+
+        const period = W / GLASS_CELLS;
+        const thick = period * THICK;
+        const eta = 1 / IOR;
+        for (let c = 0; c < W; c++) {
+          const nx = ((c % period) / period) * 2 - 1;
+          const ny = Math.sqrt(Math.max(1 - nx * nx, 1e-5));
+          const k = 1 - eta * eta * (1 - ny * ny);
+          const coef = eta * ny - Math.sqrt(Math.max(k, 0));
+          const tx = coef * nx;
+          const ty = -eta + coef * ny;
+          const shift = (tx / Math.max(Math.abs(ty), 0.18)) * thick;
+          const sx = Math.min(Math.max(c + shift, 0), W - 1);
+          ctx.drawImage(off, sx, 0, 1, H, c, 0, 1, H);
         }
       };
 
-      const onScroll = () => {
-        const rect = section.getBoundingClientRect();
-        if (!rect.height) return;
-        const focus = window.innerHeight * 0.62 - rect.top;
-        const y0 = pts.length ? pts[0].y : 0;
-        const y1 = pts.length ? pts[pts.length - 1].y : 1;
-        target = Math.min(Math.max((focus - y0) / Math.max(y1 - y0, 1), 0), 1);
-        if (reducedMotion) {
-          progress = target;
-          draw();
-        } else if (!rafId) {
-          rafId = requestAnimationFrame(tick);
-        }
-      };
-
-      const measure = () => {
-        const rect = section.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-        dpr = Math.min(window.devicePixelRatio || 1, 1.75);
-        canvas.width = Math.round(rect.width * dpr);
-        canvas.height = Math.round(rect.height * dpr);
-        if (buildRoute()) onScroll();
-      };
-
-      let resizeTimer: number | undefined;
-      new ResizeObserver(() => {
-        clearTimeout(resizeTimer);
-        resizeTimer = window.setTimeout(measure, 120);
-      }).observe(section);
-
-      let listening = false;
-      const listen = (on: boolean) => {
-        if (on && !listening) {
-          window.addEventListener("scroll", onScroll, { passive: true });
-          listening = true;
-          onScroll();
-        } else if (!on && listening) {
-          window.removeEventListener("scroll", onScroll);
-          listening = false;
-        }
-      };
-
-      new IntersectionObserver(
-        (entries) => entries.forEach((entry) => listen(entry.isIntersecting)),
-        { rootMargin: "200px 0px" },
-      ).observe(section);
-
-      measure();
+      panes.forEach((pane) => {
+        const img = pane.querySelector<HTMLImageElement>("[data-frost-img]");
+        const canvas = pane.querySelector<HTMLCanvasElement>("[data-frost-canvas]");
+        if (!img || !canvas) return;
+        const paint = () => renderGlass(canvas, img);
+        if (img.complete && img.naturalWidth) paint();
+        else img.addEventListener("load", paint, { once: true });
+      });
     }
   }
 </script>

@@ -1,7 +1,7 @@
 ---
-// V4 — "Drift field": artifacts of everyone's first languages drift dimly
-// behind the quote like dust that never quite settles. Near the cursor
-// they glow lime. Canvas2D only — no WebGL.
+// V4 — "Drift field": "Hello, World!" — everyone's first program — drifts
+// dimly behind the quote in the syntax of many languages and eras, like dust
+// that never quite settles. Near the cursor they glow lime. Canvas2D only.
 ---
 
 <section
@@ -74,15 +74,30 @@
   if (section && canvas && ctx) {
     const motionOK = matchMedia("(prefers-reduced-motion: no-preference)").matches;
 
-    // Fossils of everyone's first language
+    // "Hello, World!" — everyone's first program — across languages and eras.
+    // Each snippet is unique; the field renders exactly one of each.
     const TOKENS = [
-      "10 PRINT", "20 GOTO 10", "GOSUB", "END.", "BEGIN", "writeln", "printf(\"%d\")",
-      "#include <stdio.h>", "public static void main", "console.log", "print()",
-      "def main():", "SELECT *", "car", "cdr", "(lambda ())", "malloc(64)",
-      "segfault", "NullPointerException", "undefined", "nil", "0x2A", "i++",
-      "while (true)", "; expected", "syntax error", "Hello, World!", "int x = 0;",
-      "REM a comment", "let x", "goto considered harmful", "{ }", "=>", "std::cout",
-      "import this", "MOV AX, 1",
+      "mov ah, 9h; int 21h", // Assembly (x86 DOS)
+      'PRINT *, "Hello, World!"', // Fortran
+      'DISPLAY "Hello, World!"', // COBOL
+      '10 PRINT "HELLO, WORLD!"', // BASIC
+      "writeln('Hello, World!');", // Pascal
+      'printf("Hello, World!\\n");', // C
+      'std::cout << "Hello, World!"', // C++
+      'NSLog(@"Hello, World!");', // Objective-C
+      'echo "Hello, World!"', // Bash
+      'putStrLn "Hello, World!"', // Haskell
+      'print("Hello, World!")', // Python
+      'puts "Hello, World!"', // Ruby
+      'echo "Hello, World!";', // PHP
+      'System.out.println("Hello, World!");', // Java
+      'console.log("Hello, World!")', // JavaScript
+      'Console.WriteLine("Hello, World!");', // C#
+      'fmt.Println("Hello, World!")', // Go
+      'println!("Hello, World!");', // Rust
+      'IO.puts "Hello, World!"', // Elixir
+      'io:format("Hello, World!~n").', // Erlang
+      "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>+.<<.+++.------.--------.>>+.", // Brainfuck
     ];
 
     type P = { t: string; x: number; y: number; vx: number; vy: number; s: number; a: number };
@@ -101,14 +116,14 @@
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       if (!parts.length) {
-        const n = Math.round(Math.min(75, (w * h) / 15000));
-        parts = Array.from({ length: n }, () => ({
-          t: TOKENS[(Math.random() * TOKENS.length) | 0],
+        // One particle per snippet — never repeated.
+        parts = TOKENS.map((t) => ({
+          t,
           x: Math.random() * w,
           y: Math.random() * h,
           vx: (Math.random() - 0.5) * 0.16,
           vy: (Math.random() - 0.5) * 0.1,
-          s: 11 + Math.random() * 9,
+          s: 10 + Math.random() * 6,
           a: 0.05 + Math.random() * 0.09,
         }));
       }
