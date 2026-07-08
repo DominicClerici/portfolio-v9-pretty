@@ -1,136 +1,255 @@
 ---
+const RANGE_START = 2019;
+const RANGE_END = 2027;
+const SPAN = RANGE_END - RANGE_START;
+
 const entries = [
   {
     period: "2025 — Now",
+    year: "2025",
+    start: 2025,
+    end: 2026.5,
+    lane: 0,
+    now: true,
     company: "Rumor",
     title: "Full Stack Developer",
-    description: "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack, from the database layer up to what users see on their phones.",
+    description:
+      "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack, from the database layer up to what users see on their phones.",
     skills: ["Full Stack", "Mobile", "Cloud Infrastructure"],
     tags: ["TypeScript", "PostgreSQL", "AWS Lambda", "Next.js", "React Native", "Swift"],
     url: "https://www.therumor.com/",
   },
   {
     period: "2024 — 2026",
+    year: "2024",
+    start: 2024,
+    end: 2026,
+    lane: 1,
+    now: false,
     company: "Squib",
     title: "Founding Engineer",
-    description: "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona, a product that creates AI-powered social profiles — digital twins that grow audiences and predict how communities will respond before a campaign launches. Early-stage startup, so I had my hands in everything from agent architecture to the product interface.",
+    description:
+      "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona, a product that creates AI-powered social profiles — digital twins that grow audiences and predict how communities will respond before a campaign launches. Early-stage startup, so I had my hands in everything from agent architecture to the product interface.",
     skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
     tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
     url: "https://www.heysquib.com/",
   },
   {
     period: "2021 — 2022",
+    year: "2021",
+    start: 2021,
+    end: 2022,
+    lane: 0,
+    now: false,
     company: "Artesian Builds",
     title: "Full Stack Developer",
-    description: "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Also built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings. Small team, learned a lot about wearing different hats and shipping quickly.",
+    description:
+      "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Also built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings. Small team, learned a lot about wearing different hats and shipping quickly.",
     skills: ["Full Stack", "Internal Tooling", "SEO", "Data Analysis"],
     tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
     url: "https://en.wikipedia.org/wiki/Artesian_Builds",
   },
   {
     period: "2019",
-    company: "McDonalds",
+    year: "2019",
+    start: 2019.05,
+    end: 2019.85,
+    lane: 0,
+    now: false,
+    company: "McDonald's",
     title: "Crew Member",
-    description: "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
+    description:
+      "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
     skills: ["Deep Fryer", "Cash Register", "Drive-Thru", "Customer Service"],
     tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
     url: "https://www.mcdonalds.com/us/en-us.html",
   },
 ];
 
+// Vertical axis: oldest at the top, so a year maps to distance from RANGE_START
+const yPct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
+const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
+
+// Render order oldest-first while keeping each entry's original index for
+// selection/hover-sync wiring (data-select/data-i key off the original i).
+const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse();
 ---
 
-<section id="career" class="relative bg-surface-dim py-16 md:py-32 overflow-hidden">
-  <!-- Soft gold light — large, off-screen top-right -->
-  <div
-    class="absolute inset-0 pointer-events-none bg-glow-top-right"
-    aria-hidden="true"
-  ></div>
+<section class="career-v1 relative bg-[#0a0a0a] overflow-hidden" aria-label="Career">
+  <div class="v1-dots absolute inset-0 pointer-events-none" aria-hidden="true"></div>
 
-  <div class="relative max-w-[1280px] mx-auto px-3 sm:px-4 md:px-24">
-    <div class="flex items-center gap-4 mb-12 md:mb-20">
-      <h2 class="font-label text-xs tracking-[0.4em] uppercase text-primary md:border-b md:border-primary/30 md:pb-2 shrink-0">
-        Recently
-      </h2>
-      <div class="flex-grow h-px bg-primary/10 md:hidden"></div>
+  <div class="relative max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-white/55 border border-white/20 rounded-full px-3.5 py-2"
+      >
+        02&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55">
+        Career
+      </span>
     </div>
 
-    <div class="relative pl-4 md:pl-12">
-      <!-- Vertical timeline line — extends above with fade, and below into section padding -->
-      <div
-        class="absolute left-0 md:left-[7px] -top-[50px] -bottom-16 md:-bottom-32 w-px timeline-gradient"
-        aria-hidden="true"
-      ></div>
+    <p
+      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-20"
+    >
+      Time on one axis,
+      <span class="text-white/45">the story on the other.</span>
+    </p>
 
-      <div class="flex flex-col gap-12 md:gap-24">
+    <div class="grid lg:grid-cols-[360px_1fr] gap-8 lg:gap-14 items-start">
+      <!-- Rail: time spine + employer tabs -->
+      <div class="lg:sticky lg:top-24 lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
+        <!-- The spine — V3's chart, rotated vertical -->
+        <div class="v1-spine relative hidden lg:block">
+          <div class="absolute inset-x-0 top-2 bottom-2">
+            {
+              years.map((y) => (
+                <div class="absolute inset-x-0" style={`top: ${yPct(y)}%`} aria-hidden="true">
+                  <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-[#4d4d4d]">
+                    {`'${String(y).slice(2)}`}
+                  </span>
+                  <span class="absolute left-7 right-0 top-0 border-t border-[#1b1b1b]" />
+                </div>
+              ))
+            }
+            {
+              orderedEntries.map(({ entry, i }) => (
+                <button
+                  type="button"
+                  class="v1-bar absolute w-[14px] rounded-full border border-[#333333]"
+                  style={`top: ${yPct(entry.start)}%; height: ${yPct(entry.end) - yPct(entry.start)}%; left: ${30 + entry.lane * 20}px; --d: ${i * 120}ms`}
+                  data-select={i}
+                  data-i={i}
+                  data-on={i === 0 ? "true" : "false"}
+                  aria-label={`${entry.company}, ${entry.period}`}
+                >
+                  {entry.now && (
+                    <span class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]" aria-hidden="true">
+                      <span class="v1-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
+                      <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
+                    </span>
+                  )}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+
+        <!-- Tabs — list rows on desktop, chip strip on mobile -->
+        <div
+          class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+          role="tablist"
+          aria-label="Employers"
+        >
+          {
+            orderedEntries.map(({ entry, i }) => (
+              <button
+                type="button"
+                class="v1-tab group shrink-0 lg:w-full text-left"
+                role="tab"
+                aria-selected={i === 0 ? "true" : "false"}
+                data-select={i}
+                data-i={i}
+              >
+                <span class="block">
+                  <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-[#5f5f5f] block">
+                    {entry.period}
+                  </span>
+                  <span class="v1-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
+                    <span class="v1-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true" />
+                    {entry.company}
+                  </span>
+                </span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- The dossier panel -->
+      <div class="relative rounded-[20px] border border-[#232323] bg-[#0f0f0f] min-h-[520px] overflow-hidden">
         {
-          entries.map((entry) => (
+          entries.map((entry, i) => (
             <div
-              class="relative"
+              class="v1-panel relative p-7 sm:p-10 lg:p-14"
+              role="tabpanel"
+              data-panel={i}
+              hidden={i !== 0}
             >
-              <div
-                class="md:hidden absolute -left-4 top-1.5 w-2 h-2 bg-primary rounded-full -translate-x-1/2"
-                aria-hidden="true"
-              />
-              <div
-                class="hidden md:flex absolute -left-12 top-3 w-4 h-4 bg-background border border-primary items-center justify-center"
+              {/* Ghost year watermark */}
+              <span
+                class="absolute -top-8 right-2 font-display leading-none tracking-[-0.04em] text-white/[0.035] select-none pointer-events-none text-[clamp(9rem,18vw,15rem)]"
                 aria-hidden="true"
               >
-                <div class="w-1.5 h-1.5 bg-primary" />
-              </div>
-
-              <span class="font-label text-[10px] tracking-widest text-secondary uppercase block mb-1 md:mb-2">
-                {entry.period}
+                {entry.year}
               </span>
 
-              <a
-                href={entry.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="group inline-flex items-center gap-2"
-              >
-                <h3 class="font-headline text-xl md:text-5xl text-primary">
+              <div class="relative v1-enter">
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class:list={["w-[6px] h-[6px] rounded-full", entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]"]}
+                    aria-hidden="true"
+                  />
+                  <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-[#8a8a8a]">
+                    {entry.period}&ensp;·&ensp;{entry.title}
+                  </span>
+                </div>
+
+                <h3 class="font-display font-normal leading-[0.95] tracking-[-0.02em] text-[#f5f5f5] mt-6 text-[clamp(2.75rem,calc(2.75rem+(100vw-27.5rem)*0.03),5rem)]">
                   {entry.company}
                 </h3>
-                <svg
-                  class="w-6 h-6 text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:-translate-x-0.5 transition-all duration-150"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                ><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-              </a>
 
-              {entry.title && (
-                <span class="font-label text-[10px] md:text-xs tracking-widest text-on-surface-variant uppercase block mt-1 md:mt-2">
-                  {entry.title}
-                </span>
-              )}
-
-              {entry.description && (
-                <p class="font-body text-outline md:text-on-surface-variant text-sm md:text-base mt-2 md:mt-4 max-w-xl">
+                <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-[#a8a8a8] max-w-[640px] mt-8">
                   {entry.description}
                 </p>
-              )}
 
-              {entry.skills && entry.skills.length > 0 && (
-                <div class="flex flex-wrap gap-2 mt-3 md:mt-5">
+                <div class="flex flex-wrap gap-x-6 gap-y-3 mt-10">
                   {entry.skills.map((skill) => (
-                    <span class="font-label text-[9px] md:text-[10px] px-2 py-1 border border-primary/30 text-primary uppercase tracking-wider">
-                      {skill}
+                    <span class="inline-flex items-center gap-2">
+                      <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true" />
+                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-[#c9c9c9]">
+                        {skill}
+                      </span>
                     </span>
                   ))}
                 </div>
-              )}
-
-              {entry.tags && entry.tags.length > 0 && (
-                <div class="flex flex-wrap gap-2 mt-2">
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-5">
                   {entry.tags.map((tag) => (
-                    <span class="font-label text-[9px] md:text-[10px] px-2 py-1 border border-secondary/20 text-secondary uppercase tracking-wider">
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#616161]">
                       {tag}
                     </span>
                   ))}
                 </div>
-              )}
+
+                <div class="flex items-center gap-3 mt-12">
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-[#f5f5f5] border border-[#3a3a3a] rounded-lg h-10 px-4 inline-flex items-center hover:border-[#8a8a8a] transition-colors duration-200"
+                  >
+                    Visit {entry.company}
+                  </a>
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${entry.company} in a new tab`}
+                    class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path
+                        d="M2 12 12 2M4.5 2H12v7.5"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </div>
             </div>
           ))
         }
@@ -138,3 +257,201 @@ const entries = [
     </div>
   </div>
 </section>
+
+<style>
+  .v1-dots {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  /* Spine bars */
+  .v1-bar {
+    background: #191919;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .v1-bar:hover,
+  .v1-bar.hl {
+    border-color: rgba(206, 247, 158, 0.5);
+    background: #232323;
+  }
+
+  .v1-bar[data-on="true"] {
+    background: #cef79e;
+    border-color: #cef79e;
+  }
+
+  /* Tabs */
+  .v1-tab-name {
+    color: #6e6e6e;
+    transition: color 0.2s ease;
+  }
+
+  .v1-tab:hover .v1-tab-name,
+  .v1-tab.hl .v1-tab-name {
+    color: #bdbdbd;
+  }
+
+  .v1-tab[aria-selected="true"] .v1-tab-name {
+    color: #f5f5f5;
+  }
+
+  .v1-tab-dot {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .v1-tab[aria-selected="true"] .v1-tab-dot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @media (min-width: 1024px) {
+    .v1-tab {
+      padding: 20px 0;
+      border-top: 1px solid #222222;
+      cursor: pointer;
+    }
+
+    .v1-tab:last-child {
+      border-bottom: 1px solid #222222;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .v1-tab {
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 12px 18px;
+      background: #111111;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .v1-tab[aria-selected="true"] {
+      border-color: #4a4a4a;
+      background: #191919;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Bars grow down the spine when it scrolls into view */
+    .v1-bar {
+      transform: scaleY(0);
+      transform-origin: top center;
+      transition:
+        transform 0.9s cubic-bezier(0.33, 1, 0.68, 1) var(--d, 0ms),
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    .v1-spine.in .v1-bar {
+      transform: scaleY(1);
+    }
+
+    .v1-ping {
+      animation: v1-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes v1-ping {
+      0% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+      75%,
+      100% {
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+
+    /* Panel content entrance on tab switch */
+    .v1-enter {
+      animation: v1-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+
+    @keyframes v1-rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+</style>
+
+<script>
+  {
+    const section = document.querySelector<HTMLElement>(".career-v1");
+    if (section) {
+      const tabs = section.querySelectorAll<HTMLButtonElement>("[role='tab']");
+      const bars = section.querySelectorAll<HTMLButtonElement>(".v1-bar");
+      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
+
+      const select = (id: string | undefined) => {
+        if (!id) return;
+        tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.select === id)));
+        bars.forEach((b) => b.setAttribute("data-on", String(b.dataset.select === id)));
+        panels.forEach((panel) => {
+          const show = panel.dataset.panel === id;
+          panel.hidden = !show;
+          if (show) {
+            // retrigger the entrance animation
+            const inner = panel.querySelector<HTMLElement>(".v1-enter");
+            if (inner) {
+              inner.style.animation = "none";
+              void inner.offsetWidth;
+              inner.style.animation = "";
+            }
+          }
+        });
+      };
+
+      section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
+        el.addEventListener("click", () => select(el.dataset.select));
+      });
+
+      // Hover sync between spine bars and tab rows
+      const groups = new Map<string, HTMLElement[]>();
+      section.querySelectorAll<HTMLElement>("[data-i]").forEach((el) => {
+        const key = el.dataset.i!;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(el);
+      });
+      groups.forEach((els) => {
+        const toggle = (on: boolean) => () =>
+          els.forEach((el) => el.classList.toggle("hl", on));
+        els.forEach((el) => {
+          el.addEventListener("mouseenter", toggle(true));
+          el.addEventListener("mouseleave", toggle(false));
+        });
+      });
+
+      // Grow-in trigger
+      const spine = section.querySelector<HTMLElement>(".v1-spine");
+      if (spine) {
+        const io = new IntersectionObserver(
+          (obs) => {
+            obs.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add("in");
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.25 },
+        );
+        io.observe(spine);
+      }
+    }
+  }
+</script>
