@@ -119,11 +119,9 @@
     Consolas, monospace;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
+/* Smooth scrolling is owned by the JS engine (src/scripts/smooth-scroll.ts) when
+   motion is allowed; under prefers-reduced-motion the engine is a no-op and native
+   instant scrolling (scroll-behavior: auto) is the intentional, accessible fallback. */
 
 body {
   margin: 0;
