@@ -9,6 +9,20 @@
  * Scope is intentionally tiny: wheel-driven easing on the root, native scroll left
  * alone on touch, plus the small amount of glue needed to coexist with the rest of
  * the site (external-scroll resync, anchor links, reduced-motion, opt-out regions).
+ *
+ * Soft barriers: consumers (e.g. the Career scroll-pin) can register the scroll
+ * positions where the page visually "locks" (registered in pairs — the two edges
+ * of each locked zone). A fast wheel flick that crosses an edge is caught two
+ * different ways depending on whether you're entering or leaving the zone:
+ *
+ *   Entry (crossing in from outside): the engine brakes to a stop *at* the edge —
+ *   a smooth deceleration into the pin, exactly like easing into the top of the
+ *   page — then re-launches past it at half speed.
+ *
+ *   Exit (crossing out from inside): no deceleration. Motion coasts at full speed
+ *   right up to the edge, is cut instantly to zero there, then re-launches away at
+ *   a quarter of the speed it hit the edge with — so leaving the pin reads as a
+ *   clean snap-and-accelerate rather than a slow crawl toward the boundary.
  */
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -20,6 +34,19 @@ if (!prefersReducedMotion) {
   const LAMBDA = -Math.log(1 - LERP) * 60;
   const WHEEL_MULTIPLIER = 1;
 
+  // Soft-barrier tuning.
+  // Fraction of the incoming inertia carried past a barrier. On entry it's what
+  // survives the brake; on exit it's the fraction of the impact speed you launch
+  // away with. Entry keeps half, exit a quarter.
+  const RETENTION_ENTRY = 0.5;
+  const RETENTION_EXIT = 0.25;
+  // Below this overshoot past a barrier a crossing is ignored — slow/gentle
+  // scrolls pass straight through; only fast flicks get caught and eased.
+  const MIN_OVERSHOOT = 4;
+  // How close current must get to the barrier before the brake hands off to the
+  // launch. Small enough that velocity has decayed to ~0 (the "stop").
+  const BRAKE_EPS = 0.5;
+
   const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight;
   const clamp = (value: number) => Math.max(0, Math.min(value, maxScroll()));
 
@@ -28,20 +55,114 @@ if (!prefersReducedMotion) {
   let running = false;
   let lastTime = 0;
 
+  // Registered soft-barrier scroll positions (sorted ascending).
+  let barriers: number[] = [];
+  // Barriers only catch wheel-driven motion; programmatic jumps (tab clicks,
+  // anchors) pass through so they land exactly where asked.
+  let crossingEnabled = false;
+
+  // Crossing state machine: "normal" exponential ease; "brake" easing to a stop
+  // at a barrier (entry); "coast" full-speed ease up to a barrier (exit); or
+  // "launch" ramping velocity up from zero on the far side.
+  let mode: "normal" | "brake" | "coast" | "launch" = "normal";
+  let crossB = 0;
+  let crossDir = 1;
+  let launchVel = 0;
+
+  // Nearest barrier strictly between current and target in the travel direction,
+  // with enough overshoot beyond it to be worth catching.
+  const nextBarrier = (c: number, t: number): number | null => {
+    let best: number | null = null;
+    if (t > c) {
+      for (const B of barriers) {
+        if (B - c > BRAKE_EPS && t - B > MIN_OVERSHOOT && (best === null || B < best)) best = B;
+      }
+    } else if (t < c) {
+      for (const B of barriers) {
+        if (c - B > BRAKE_EPS && B - t > MIN_OVERSHOOT && (best === null || B > best)) best = B;
+      }
+    }
+    return best;
+  };
+
+  // Barriers are registered in pairs — each pair is the two edges of a locked
+  // zone. A position strictly between a pair is "inside": crossing an edge from
+  // there is an exit (coast, no brake) rather than an entry (brake to a stop).
+  const isInsideZone = (p: number): boolean => {
+    for (let i = 0; i + 1 < barriers.length; i += 2) {
+      if (p > barriers[i] + BRAKE_EPS && p < barriers[i + 1] - BRAKE_EPS) return true;
+    }
+    return false;
+  };
+
   const tick = (time: number) => {
     // Clamp dt so a backgrounded tab (paused rAF) can't produce a wild step.
     const dt = lastTime ? Math.min((time - lastTime) / 1000, 0.064) : 0;
     lastTime = time;
 
     const alpha = 1 - Math.exp(-LAMBDA * dt);
-    current += (target - current) * alpha;
+
+    // Engage a new crossing before moving (only mid-flight wheel scrolls).
+    // Inside a locked zone the crossing is an exit (coast); outside it's an
+    // entry (brake).
+    if (mode === "normal" && crossingEnabled && dt > 0) {
+      const B = nextBarrier(current, target);
+      if (B !== null) {
+        crossB = B;
+        crossDir = target > current ? 1 : -1;
+        mode = isInsideZone(current) ? "coast" : "brake";
+      }
+    }
+
+    if (mode === "brake") {
+      // Ease to a stop right at the barrier (velocity decays to ~0 at the edge).
+      current += (crossB - current) * alpha;
+      const overshoot = (target - crossB) * crossDir;
+      if (overshoot <= MIN_OVERSHOOT) {
+        // User eased off or reversed before reaching the edge — resume normally.
+        mode = "normal";
+      } else if (Math.abs(current - crossB) < BRAKE_EPS) {
+        // Reached the edge: snap to it, absorb (1 - RETENTION_ENTRY) of the
+        // overshoot, and launch the rest with a velocity that ramps up from zero.
+        current = crossB;
+        target = crossB + RETENTION_ENTRY * (target - crossB);
+        launchVel = 0;
+        mode = "launch";
+      }
+    } else if (mode === "coast") {
+      // Exit: keep full-speed easing (no deceleration toward the edge) until we
+      // reach it, then cut to zero and launch at half the impact speed.
+      current += (target - current) * alpha;
+      const overshoot = (target - crossB) * crossDir;
+      if (overshoot <= MIN_OVERSHOOT) {
+        // User eased off or reversed before reaching the edge — resume normally.
+        mode = "normal";
+      } else if ((current - crossB) * crossDir >= 0) {
+        current = crossB;
+        target = crossB + RETENTION_EXIT * (target - crossB);
+        launchVel = 0;
+        mode = "launch";
+      }
+    } else if (mode === "launch") {
+      // vExp is the velocity the plain exponential ease would apply right now;
+      // ramp launchVel up toward it so motion accelerates from rest, then merge
+      // back into the normal ease once we've caught up to it.
+      const vExp = LAMBDA * (target - current);
+      launchVel += (vExp - launchVel) * alpha;
+      current += launchVel * dt;
+      if (Math.abs(launchVel) >= Math.abs(vExp) || Math.abs(target - current) < BRAKE_EPS) {
+        mode = "normal";
+      }
+    } else {
+      current += (target - current) * alpha;
+    }
 
     // Snap and stop once we're within a sub-pixel of the target.
-    if (Math.abs(target - current) < 0.1) current = target;
+    if (mode === "normal" && Math.abs(target - current) < 0.1) current = target;
 
     window.scrollTo(0, current);
 
-    if (current === target) {
+    if (mode === "normal" && current === target) {
       running = false;
       return;
     }
@@ -57,10 +178,20 @@ if (!prefersReducedMotion) {
 
   // Public scroll-to that rides the same easing. Consumers (e.g. the Career
   // scroll-pin) call this instead of window.scrollTo so programmatic jumps feel
-  // identical to wheel scrolling and don't fight the engine's resync.
+  // identical to wheel scrolling and don't fight the engine's resync. Barriers
+  // are bypassed so a jump lands exactly on its target.
   (window as any).__smoothScrollTo = (y: number) => {
+    crossingEnabled = false;
+    mode = "normal";
     target = clamp(y);
     start();
+  };
+
+  // Register the soft-barrier scroll positions (absolute document Y). Consumers
+  // recompute and re-register on layout changes; passing the same values is cheap
+  // and harmless.
+  (window as any).__setScrollBarriers = (ys: number[]) => {
+    barriers = ys.filter((y) => Number.isFinite(y)).sort((a, b) => a - b);
   };
 
   window.addEventListener(
@@ -71,6 +202,7 @@ if (!prefersReducedMotion) {
       if ((e.target as Element)?.closest?.("[data-lenis-prevent]")) return;
 
       e.preventDefault();
+      crossingEnabled = true;
       target = clamp(target + e.deltaY * WHEEL_MULTIPLIER);
       start();
     },
@@ -102,6 +234,8 @@ if (!prefersReducedMotion) {
     if (!el) return;
 
     e.preventDefault();
+    crossingEnabled = false;
+    mode = "normal";
     target = clamp(window.scrollY + el.getBoundingClientRect().top);
     start();
     history.pushState(null, "", hash);
@@ -113,7 +247,8 @@ if (!prefersReducedMotion) {
   });
 } else {
   // No eased engine under reduced motion — still expose the API so consumers can
-  // navigate; here it's an instant (accessible) jump.
+  // navigate; here it's an instant (accessible) jump, and barriers are a no-op.
   (window as any).__smoothScrollTo = (y: number) =>
     window.scrollTo(0, Math.max(0, y));
+  (window as any).__setScrollBarriers = () => {};
 }
