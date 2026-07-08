@@ -1,8 +1,7 @@
 <div id="hero-scope" class="relative bg-bone">
   <!-- Pinned canvas — sticky for the whole scope, so it holds still while
        the hero and the section below scroll over it, then leaves with the
-       flow at the end of the scope. The viewport frame paints in over the
-       last stretch of the pinned range. -->
+       flow at the end of the scope. -->
   <div class="hero-bg" aria-hidden="true">
     <div class="hero-frame">
       <div class="hero-canvas-wrap">
@@ -93,7 +92,6 @@
   {
     const scope = document.getElementById("hero-scope")!
     const bg = scope.querySelector<HTMLElement>(".hero-bg")!
-    const frame = scope.querySelector<HTMLElement>(".hero-frame")!
     const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!
     let canvas = document.getElementById("hero-canvas") as HTMLCanvasElement
     const reducedMotion = window.matchMedia(
@@ -104,12 +102,9 @@
     /* ── Scroll behavior ──
        The background is pinned (sticky) for the whole scope. While pinned,
        the glass cylinders hold still in screen space and the sphere climbs
-       at 0.75× scroll speed. Over the last FRAME_PX of the pinned range the
-       viewport frame paints in (--frame 0 → 1, painted overlay only — no
-       layout change); once it is fully in, the pin ends and the background
-       leaves with the flow. The sphere's lift clamps at the pin end, so
-       from there sphere and glass scroll away together with the page. */
-    const FRAME_PX = 45
+       at 0.75× scroll speed. Once the pin ends the background leaves with
+       the flow. The sphere's lift clamps at the pin end, so from there
+       sphere and glass scroll away together with the page. */
     const SPHERE_SCROLL = 0.75
     let pinEnd = 1 // scroll distance the background stays pinned (px)
     let scrollLift = 0 // sphere lift from scroll, CSS px, clamped at pinEnd
@@ -117,8 +112,6 @@
     function onScrollFrame() {
       scrollQueued = false
       const y = window.scrollY
-      const f = Math.min(Math.max((y - (pinEnd - FRAME_PX)) / FRAME_PX, 0), 1)
-      frame.style.setProperty("--frame", f.toFixed(4))
       scrollLift = Math.min(y, pinEnd) * SPHERE_SCROLL
       // No raf loop under reduced motion — repaint the static frame instead
       // so the scroll-linked sphere parallax still tracks the page.
@@ -135,10 +128,10 @@
       { passive: true },
     )
 
-    // Once the iris-open finishes, drop the clip so the frame's own radius
-    // (which --frame animates in from 0) is the only rounding in play. The
-    // animation itself must be removed too: its fill-mode keeps applying
-    // the end keyframe over any inline clip-path override.
+    // Once the iris-open finishes, drop the clip so no stale clip-path
+    // lingers on the canvas. The animation itself must be removed too: its
+    // fill-mode keeps applying the end keyframe over any inline clip-path
+    // override.
     wrap.addEventListener("animationend", (e) => {
       if (e.animationName === "hero-iris-open") {
         wrap.style.animation = "none"

@@ -148,40 +148,16 @@ body {
   margin-top: calc(-1 * max(100svh, 560px));
 }
 
-/* ── Hero: framed viewport ──
-   The frame is full-bleed at all times; the bone gutter and its arrival
-   (--frame 0 → 1, driven by scroll over the last stretch of the pinned
-   range) are painted on top of the canvas, so the border entering the
-   viewport is purely cosmetic — it never resizes the canvas or reflows
-   content. The page loads borderless (--frame: 0). */
+/* ── Hero: pinned canvas container ──
+   .hero-frame is a full-bleed clipping container for the canvas; the
+   iris-open reveal (below) animates the canvas-wrap's clip-path on load. */
 .hero-frame {
-  --frame: 0;
-  --inset-max: 8px;
   position: absolute;
   inset: 0;
-  /* outer radius = 20px + gutter width, so the visible corner inside the
-     painted ring keeps a 20px radius once the frame is fully in */
-  border-radius: calc((20px + var(--inset-max)) * var(--frame));
   overflow: hidden;
   /* isolate so the inner clip-path animation composites cleanly */
   isolation: isolate;
   transform: translateZ(0);
-}
-
-.hero-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  border-radius: inherit;
-  border: calc(var(--inset-max) * var(--frame)) solid var(--color-bone);
-}
-
-@media (min-width: 1024px) {
-  .hero-frame {
-    --inset-max: 12px;
-  }
 }
 
 .hero-canvas-wrap {
@@ -210,7 +186,7 @@ body {
    borderless — the frame only arrives later, driven by scroll. */
 @media (prefers-reduced-motion: no-preference) {
   .hero-canvas-wrap {
-    animation: hero-iris-open 2s cubic-bezier(0.87, 0, 0.13, 1) 0.3s both;
+    animation: hero-iris-open 1.6s cubic-bezier(0.87, 0, 0.13, 1) 0.3s both;
   }
 
   @keyframes hero-iris-open {
