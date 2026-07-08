@@ -1,8 +1,235 @@
 ---
+// V2 — "The Letter": the form IS a letter. Name and email are inline
+// fill-in-the-blank inputs woven into serif prose (Newsreader — the one
+// section of the redesign allowed correspondence type), the message is the
+// letter's body, and the quote signs off as a P.S.
 ---
 
-<section class="relative bg-surface-dim py-24 md:py-48 px-3 sm:px-4 md:px-12 border-t border-outline-variant/20 overflow-hidden">
-  <div class="max-w-4xl mx-auto flex items-center justify-center min-h-[160px] md:min-h-[240px] border border-dashed border-outline-variant/40">
-    <p class="font-label text-outline-variant text-xs uppercase tracking-widest">Contact — Variant 2</p>
+<section class="cv2 relative bg-[#0a0a0a] overflow-hidden" aria-label="Contact">
+  <div class="relative max-w-[860px] mx-auto px-6 md:px-10 py-[clamp(110px,15vh,190px)]">
+    <h2 class="sr-only">Contact</h2>
+
+    <!-- Notebook margin rule -->
+    <div class="cv2-margin absolute top-0 bottom-0 left-3 md:-left-8 w-px pointer-events-none" aria-hidden="true"></div>
+
+    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-white/45 mb-14 md:mb-20">
+      04&hairsp;/&hairsp;04 &middot; Write to me
+    </p>
+
+    <form class="cv2-form" novalidate>
+      <p class="cv2-line">Hi Dominic —</p>
+
+      <p class="cv2-line mt-6">
+        <label for="cv2-name" class="sr-only">Your name (optional)</label>
+        my name is
+        <input
+          id="cv2-name"
+          name="name"
+          type="text"
+          autocomplete="name"
+          data-fit="10"
+          class="cv2-blank"
+        />
+        <span class="text-white/35">(or don&rsquo;t say — that&rsquo;s fine)</span>
+        and I wanted to tell you:
+      </p>
+
+      <label for="cv2-message" class="sr-only">Your message (required)</label>
+      <textarea
+        id="cv2-message"
+        name="message"
+        rows="3"
+        required
+        placeholder="…anything. This is the only part I actually need."
+        class="cv2-body mt-8"
+      ></textarea>
+
+      <p class="cv2-line mt-8">
+        <label for="cv2-email" class="sr-only">Your email (optional)</label>
+        If a reply would be welcome, I&rsquo;m at
+        <input
+          id="cv2-email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          data-fit="14"
+          class="cv2-blank"
+        />.
+      </p>
+
+      <div class="flex items-center gap-6 mt-14 md:mt-16">
+        <button
+          type="submit"
+          aria-label="Send the letter"
+          class="cv2-seal group relative shrink-0 w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
+        >
+          <svg class="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M2 12 12 2M4.5 2H12v7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <div>
+          <p class="font-mono text-[13px] tracking-[-0.02em] text-[#c9c9c9]">Send the letter</p>
+          <p class="font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-1.5">
+            Blanks are optional. The middle part isn&rsquo;t.
+          </p>
+        </div>
+      </div>
+
+      <p class="cv2-error hidden font-mono text-[12px] tracking-[-0.02em] text-[#e0a68b] mt-6" role="alert">
+        The letter needs a body — write anything at all.
+      </p>
+    </form>
+
+    <div class="border-t border-[#1e1e1e] mt-16 md:mt-20 pt-10">
+      <p class="font-headline italic text-[19px] md:text-[22px] leading-[1.55] text-white/55 max-w-[560px]">
+        P.S. — The first language was a disaster. Everything since has been
+        <span class="text-bio-lime not-italic">on purpose</span>.
+      </p>
+
+      <div class="flex flex-wrap gap-x-8 gap-y-3 mt-10">
+        <a href="https://github.com/DominicClerici" target="_blank" rel="noopener noreferrer" class="cv2-link">GitHub</a>
+        <a href="https://www.linkedin.com/in/dominic-clerici/" target="_blank" rel="noopener noreferrer" class="cv2-link">LinkedIn</a>
+        <a href="mailto:contact@dominicclerici.com" class="cv2-link">contact@dominicclerici.com</a>
+      </div>
+    </div>
   </div>
 </section>
+
+<style>
+  .cv2-margin {
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(206, 247, 158, 0.28) 120px,
+      rgba(206, 247, 158, 0.28) calc(100% - 120px),
+      transparent
+    );
+  }
+
+  .cv2-line {
+    font-family: var(--font-headline);
+    font-size: clamp(1.5rem, 3.4vw, 2.125rem);
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    color: #e9e9e6;
+  }
+
+  /* Inline fill-in-the-blank inputs */
+  .cv2-blank {
+    display: inline-block;
+    vertical-align: baseline;
+    width: 10ch;
+    max-width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.35);
+    border-radius: 0;
+    outline: none;
+    padding: 0 0.15em 0.05em;
+    font: inherit;
+    color: var(--color-bio-lime);
+    caret-color: var(--color-bio-lime);
+    transition: border-color 0.2s ease;
+  }
+
+  .cv2-blank:focus {
+    border-bottom-style: solid;
+    border-bottom-color: var(--color-bio-lime);
+  }
+
+  /* The letter body */
+  .cv2-body {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 0;
+    font-family: var(--font-headline);
+    font-size: clamp(1.5rem, 3.4vw, 2.125rem);
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    color: #e9e9e6;
+    caret-color: var(--color-bio-lime);
+  }
+
+  .cv2-body::placeholder {
+    color: rgba(255, 255, 255, 0.22);
+    font-style: italic;
+  }
+
+  .cv2-link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+    transition: color 0.2s ease;
+  }
+
+  .cv2-link:hover {
+    color: var(--color-bio-lime);
+  }
+
+  .cv2-link:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 4px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cv2-seal {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .cv2-seal:hover {
+      transform: scale(1.06) rotate(4deg);
+    }
+  }
+</style>
+
+<script>
+  {
+    const form = document.querySelector<HTMLFormElement>(".cv2-form");
+    if (form) {
+      const message = form.querySelector<HTMLTextAreaElement>("#cv2-message");
+      const error = form.querySelector<HTMLElement>(".cv2-error");
+
+      // Blanks grow with their contents, like handwriting filling a line
+      form.querySelectorAll<HTMLInputElement>("[data-fit]").forEach((input) => {
+        const min = Number(input.dataset.fit) || 10;
+        const fit = () => {
+          input.style.width = `${Math.max(min, input.value.length + 2)}ch`;
+        };
+        input.addEventListener("input", fit);
+        fit();
+      });
+
+      if (message) {
+        message.addEventListener("input", () => {
+          message.style.height = "auto";
+          message.style.height = `${message.scrollHeight}px`;
+          error?.classList.add("hidden");
+        });
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const data = new FormData(form);
+        const name = String(data.get("name") || "").trim();
+        const email = String(data.get("email") || "").trim();
+        const body = String(data.get("message") || "").trim();
+
+        if (!body) {
+          error?.classList.remove("hidden");
+          message?.focus();
+          return;
+        }
+
+        const subject = name ? `A letter from ${name}` : "A letter from your portfolio";
+        const lines = ["Hi Dominic —", "", body, "", name ? `— ${name}` : "", email ? `Reply to: ${email}` : ""].filter(Boolean);
+        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+      });
+    }
+  }
+</script>
