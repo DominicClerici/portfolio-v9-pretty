@@ -262,6 +262,9 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
   .v1-dots {
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 26px 26px;
+    /* Viewport-anchored so the grid lines up seamlessly with the quote
+       section directly below (which uses the same fixed grid). */
+    background-attachment: fixed;
   }
 
   /* Spine bars */
