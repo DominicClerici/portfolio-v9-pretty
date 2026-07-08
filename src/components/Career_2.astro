@@ -1,0 +1,195 @@
+---
+// Variant 2 — "Strata"
+// Sticky stacking cards on a green-undertone black (echoing the hero's
+// abyssal ink). Each card is a layer of the career pile, carrying a giant
+// hairline-stroked year numeral; the current role strokes lime and wears a
+// live dot. Scrolling stacks the layers like sediment.
+const entries = [
+  {
+    period: "2025 — Now",
+    year: "2025",
+    now: true,
+    company: "Rumor",
+    title: "Full Stack Developer",
+    description:
+      "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack, from the database layer up to what users see on their phones.",
+    skills: ["Full Stack", "Mobile", "Cloud Infrastructure"],
+    tags: ["TypeScript", "PostgreSQL", "AWS Lambda", "Next.js", "React Native", "Swift"],
+    url: "https://www.therumor.com/",
+  },
+  {
+    period: "2024 — 2026",
+    year: "2024",
+    now: false,
+    company: "Squib",
+    title: "Founding Engineer",
+    description:
+      "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona, a product that creates AI-powered social profiles — digital twins that grow audiences and predict how communities will respond before a campaign launches. Early-stage startup, so I had my hands in everything from agent architecture to the product interface.",
+    skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
+    tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
+    url: "https://www.heysquib.com/",
+  },
+  {
+    period: "2021 — 2022",
+    year: "2021",
+    now: false,
+    company: "Artesian Builds",
+    title: "Full Stack Developer",
+    description:
+      "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Also built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings. Small team, learned a lot about wearing different hats and shipping quickly.",
+    skills: ["Full Stack", "Internal Tooling", "SEO", "Data Analysis"],
+    tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
+    url: "https://en.wikipedia.org/wiki/Artesian_Builds",
+  },
+  {
+    period: "2019",
+    year: "2019",
+    now: false,
+    company: "McDonald's",
+    title: "Crew Member",
+    description:
+      "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
+    skills: ["Deep Fryer", "Cash Register", "Drive-Thru", "Customer Service"],
+    tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
+    url: "https://www.mcdonalds.com/us/en-us.html",
+  },
+];
+---
+
+<section class="career-v2 relative bg-[#0b100e] overflow-clip" aria-label="Career">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-[#8fa197] border border-[#2c3a33] rounded-full px-3.5 py-2"
+      >
+        02&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-[#8fa197]">
+        Career
+      </span>
+    </div>
+
+    <p
+      class="font-display font-normal text-[#e9ede9] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-16 lg:mb-28"
+    >
+      Every place I&rsquo;ve worked left a layer.
+      <span class="text-[#e9ede9]/45">Newest on top.</span>
+    </p>
+
+    <!-- The strata pile -->
+    <div class="flex flex-col gap-8 lg:gap-10">
+      {
+        entries.map((entry, i) => (
+          <article
+            class="v2-card relative rounded-[24px] border border-[#27332d] bg-[#121a16] p-7 sm:p-10 lg:p-14"
+            style={`top: calc(84px + ${i} * 22px); z-index: ${i + 1};`}
+          >
+            {/* Peek strip — reads as an index label when cards stack */}
+            <div class="flex items-center justify-between font-mono text-[12px] leading-none tracking-[-0.02em] text-[#728479] mb-8 lg:mb-12">
+              <span class="uppercase">{entry.company}</span>
+              <span class="inline-flex items-center gap-2">
+                {entry.now && (
+                  <span class="relative flex w-[6px] h-[6px]" aria-hidden="true">
+                    <span class="v2-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-60" />
+                    <span class="relative inline-flex rounded-full h-[6px] w-[6px] bg-bio-lime" />
+                  </span>
+                )}
+                {entry.period}
+              </span>
+            </div>
+
+            <div class="grid lg:grid-cols-[1fr_auto] gap-x-12 gap-y-10 items-start">
+              <div class="min-w-0 max-w-[640px]">
+                <a
+                  href={entry.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group inline-block"
+                >
+                  <h3 class="font-display font-normal leading-none tracking-[-0.02em] text-[#f0f3f0] text-[clamp(2.25rem,calc(2.25rem+(100vw-27.5rem)*0.026),4rem)]">
+                    {entry.company}
+                    <span class="inline-block font-mono text-[14px] tracking-normal align-top translate-y-1 text-[#728479] group-hover:text-bio-lime transition-colors duration-200">
+                      &nearr;
+                    </span>
+                  </h3>
+                </a>
+                <div class="font-mono text-[12px] tracking-[-0.02em] uppercase text-[#728479] mt-3">
+                  {entry.title}
+                </div>
+
+                <p class="font-display text-[15px] leading-[1.65] text-[#a9b5ad] mt-7">
+                  {entry.description}
+                </p>
+
+                <div class="flex flex-wrap gap-2 mt-8">
+                  {entry.skills.map((skill) => (
+                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-[#cfd8d1] border border-[#31403a] rounded-full px-3 py-[7px]">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+                  {entry.tags.map((tag) => (
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#5e6d64]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Giant stroked year — the stratum's date stamp */}
+              <div class="hidden lg:flex flex-col items-end justify-between self-stretch shrink-0">
+                <span
+                  class:list={["v2-year font-display leading-[0.85] select-none", entry.now && "v2-year-now"]}
+                  aria-hidden="true"
+                >
+                  {entry.year}
+                </span>
+                {entry.now && (
+                  <span class="font-mono text-[11px] tracking-[0.08em] uppercase text-bio-lime mt-6">
+                    Current
+                  </span>
+                )}
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .v2-card {
+    position: sticky;
+  }
+
+  .v2-year {
+    font-size: clamp(6rem, 10vw, 10rem);
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1.5px #2c3d34;
+  }
+
+  .v2-year-now {
+    -webkit-text-stroke: 1.5px rgba(206, 247, 158, 0.55);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .v2-ping {
+      animation: v2-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes v2-ping {
+      0% {
+        transform: scale(1);
+        opacity: 0.6;
+      }
+      75%,
+      100% {
+        transform: scale(3.2);
+        opacity: 0;
+      }
+    }
+  }
+</style>

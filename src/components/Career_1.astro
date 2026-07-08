@@ -1,0 +1,205 @@
+---
+// Variant 1 — "The Ledger"
+// An oversized editorial index: hairline-ruled rows, giant Aspekta company
+// names, hover expands the row to reveal the story. Dub dark surfaces
+// (#0a0a0a / #262626) + Biosciences accent discipline (lime only on the
+// 40px arrow and skill dots).
+const entries = [
+  {
+    period: "2025 — Now",
+    year: "2025",
+    company: "Rumor",
+    title: "Full Stack Developer",
+    description:
+      "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack, from the database layer up to what users see on their phones.",
+    skills: ["Full Stack", "Mobile", "Cloud Infrastructure"],
+    tags: ["TypeScript", "PostgreSQL", "AWS Lambda", "Next.js", "React Native", "Swift"],
+    url: "https://www.therumor.com/",
+  },
+  {
+    period: "2024 — 2026",
+    year: "2024",
+    company: "Squib",
+    title: "Founding Engineer",
+    description:
+      "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona, a product that creates AI-powered social profiles — digital twins that grow audiences and predict how communities will respond before a campaign launches. Early-stage startup, so I had my hands in everything from agent architecture to the product interface.",
+    skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
+    tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
+    url: "https://www.heysquib.com/",
+  },
+  {
+    period: "2021 — 2022",
+    year: "2021",
+    company: "Artesian Builds",
+    title: "Full Stack Developer",
+    description:
+      "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Also built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings. Small team, learned a lot about wearing different hats and shipping quickly.",
+    skills: ["Full Stack", "Internal Tooling", "SEO", "Data Analysis"],
+    tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
+    url: "https://en.wikipedia.org/wiki/Artesian_Builds",
+  },
+  {
+    period: "2019",
+    year: "2019",
+    company: "McDonald's",
+    title: "Crew Member",
+    description:
+      "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
+    skills: ["Deep Fryer", "Cash Register", "Drive-Thru", "Customer Service"],
+    tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
+    url: "https://www.mcdonalds.com/us/en-us.html",
+  },
+];
+---
+
+<section class="career-v1 relative bg-[#0a0a0a] overflow-hidden" aria-label="Career">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <!-- Section header — mirrors the About header, flipped to dark -->
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-white/55 border border-white/20 rounded-full px-3.5 py-2"
+      >
+        02&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55">
+        Career
+      </span>
+    </div>
+
+    <p
+      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-16 lg:mb-24"
+    >
+      Four jobs, five years,
+      <span class="text-white/45">one broken ice-cream machine.</span>
+    </p>
+
+    <!-- The ledger -->
+    <div>
+      {
+        entries.map((entry, i) => (
+          <a
+            href={entry.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="v1-row group relative block border-t border-[#1f1f1f] last:border-b transition-colors duration-300 hover:bg-[#0f0f0f]"
+            style={`--d: ${i * 90}ms`}
+          >
+            <div class="grid lg:grid-cols-[170px_1fr_56px] gap-x-8 py-8 lg:py-10">
+              <div class="font-mono text-[13px] leading-none tracking-[-0.02em] text-[#737373] pt-2 lg:pt-4 mb-4 lg:mb-0">
+                {entry.period}
+              </div>
+
+              <div class="min-w-0">
+                <h3 class="font-display font-normal leading-[0.95] tracking-[-0.02em] text-[#d6d6d6] group-hover:text-white transition-colors duration-300 text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.034),4.75rem)]">
+                  {entry.company}
+                </h3>
+                <div class="font-mono text-[12px] tracking-[-0.02em] uppercase text-[#737373] mt-3">
+                  {entry.title}
+                </div>
+
+                <div class="v1-body">
+                  <div class="overflow-hidden">
+                    <p class="font-display text-[15px] leading-[1.6] text-[#a3a3a3] max-w-[620px] pt-6">
+                      {entry.description}
+                    </p>
+                    <div class="flex flex-wrap gap-x-6 gap-y-3 pt-6">
+                      {entry.skills.map((skill) => (
+                        <span class="inline-flex items-center gap-2">
+                          <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true" />
+                          <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-[#c9c9c9]">
+                            {skill}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 pt-4 pb-2">
+                      {entry.tags.map((tag) => (
+                        <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#5d5d5d]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hidden lg:flex items-start justify-end pt-2">
+                <span class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12 12 2M4.5 2H12v7.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Hover-expanding row body — grid-rows trick keeps it CSS-only */
+  .v1-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  @media (hover: hover) and (min-width: 1024px) {
+    .v1-row:hover .v1-body,
+    .v1-row:focus-visible .v1-body {
+      grid-template-rows: 1fr;
+    }
+  }
+
+  /* Touch / small screens: always expanded */
+  @media (hover: none), (max-width: 1023px) {
+    .v1-body {
+      grid-template-rows: 1fr;
+    }
+  }
+
+  /* Scroll-in reveal */
+  @media (prefers-reduced-motion: no-preference) {
+    .v1-row {
+      opacity: 0;
+      transform: translateY(24px);
+      transition:
+        opacity 0.7s cubic-bezier(0.33, 1, 0.68, 1) var(--d, 0ms),
+        transform 0.7s cubic-bezier(0.33, 1, 0.68, 1) var(--d, 0ms),
+        background-color 0.3s ease;
+    }
+
+    .v1-row.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  {
+    const rows = document.querySelectorAll<HTMLElement>(".career-v1 .v1-row");
+    if (rows.length) {
+      const io = new IntersectionObserver(
+        (obs) => {
+          obs.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add("in");
+              io.unobserve(e.target);
+            }
+          });
+        },
+        { threshold: 0.15 },
+      );
+      rows.forEach((row) => io.observe(row));
+    }
+  }
+</script>

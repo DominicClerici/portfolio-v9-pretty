@@ -1,0 +1,306 @@
+---
+// Variant 4 — "The Dossier"
+// A personnel file: a sticky rail of roles on the left, a spec-sheet panel
+// on the right with a ghost year watermark, mono metadata, and a lime
+// arrow CTA. Tabs swap the open file. On mobile the rail becomes a
+// horizontal chip strip.
+const entries = [
+  {
+    period: "2025 — Now",
+    year: "2025",
+    now: true,
+    company: "Rumor",
+    title: "Full Stack Developer",
+    description:
+      "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack, from the database layer up to what users see on their phones.",
+    skills: ["Full Stack", "Mobile", "Cloud Infrastructure"],
+    tags: ["TypeScript", "PostgreSQL", "AWS Lambda", "Next.js", "React Native", "Swift"],
+    url: "https://www.therumor.com/",
+  },
+  {
+    period: "2024 — 2026",
+    year: "2024",
+    now: false,
+    company: "Squib",
+    title: "Founding Engineer",
+    description:
+      "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona, a product that creates AI-powered social profiles — digital twins that grow audiences and predict how communities will respond before a campaign launches. Early-stage startup, so I had my hands in everything from agent architecture to the product interface.",
+    skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
+    tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
+    url: "https://www.heysquib.com/",
+  },
+  {
+    period: "2021 — 2022",
+    year: "2021",
+    now: false,
+    company: "Artesian Builds",
+    title: "Full Stack Developer",
+    description:
+      "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Also built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings. Small team, learned a lot about wearing different hats and shipping quickly.",
+    skills: ["Full Stack", "Internal Tooling", "SEO", "Data Analysis"],
+    tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
+    url: "https://en.wikipedia.org/wiki/Artesian_Builds",
+  },
+  {
+    period: "2019",
+    year: "2019",
+    now: false,
+    company: "McDonald's",
+    title: "Crew Member",
+    description:
+      "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
+    skills: ["Deep Fryer", "Cash Register", "Drive-Thru", "Customer Service"],
+    tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
+    url: "https://www.mcdonalds.com/us/en-us.html",
+  },
+];
+---
+
+<section class="career-v4 relative bg-[#101010] overflow-hidden" aria-label="Career">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-white/55 border border-white/20 rounded-full px-3.5 py-2"
+      >
+        02&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55">
+        Career
+      </span>
+    </div>
+
+    <p
+      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-20"
+    >
+      The personnel file.
+      <span class="text-white/45">Employment record, 2019 to present.</span>
+    </p>
+
+    <div class="grid lg:grid-cols-[300px_1fr] gap-8 lg:gap-14 items-start">
+      <!-- Rail -->
+      <div
+        class="v4-rail lg:sticky lg:top-24 flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+        role="tablist"
+        aria-label="Employers"
+      >
+        {
+          entries.map((entry, i) => (
+            <button
+              type="button"
+              class="v4-tab group shrink-0 lg:w-full text-left"
+              role="tab"
+              aria-selected={i === 0 ? "true" : "false"}
+              data-tab={i}
+            >
+              <span class="v4-tab-inner">
+                <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-[#5f5f5f] block">
+                  {entry.period}
+                </span>
+                <span class="v4-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[22px] lg:text-[26px] mt-1.5 inline-flex items-center gap-2.5">
+                  <span class="v4-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true"></span>
+                  {entry.company}
+                </span>
+              </span>
+            </button>
+          ))
+        }
+      </div>
+
+      <!-- Panel -->
+      <div class="relative rounded-[20px] border border-[#262626] bg-[#161616] min-h-[520px] overflow-hidden">
+        {
+          entries.map((entry, i) => (
+            <div
+              class="v4-panel relative p-7 sm:p-10 lg:p-14"
+              role="tabpanel"
+              data-panel={i}
+              hidden={i !== 0}
+            >
+              {/* Ghost year watermark */}
+              <span
+                class="absolute -top-8 right-2 font-display leading-none tracking-[-0.04em] text-white/[0.035] select-none pointer-events-none text-[clamp(9rem,18vw,15rem)]"
+                aria-hidden="true"
+              >
+                {entry.year}
+              </span>
+
+              <div class="relative v4-enter">
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class:list={["w-[6px] h-[6px] rounded-full", entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]"]}
+                    aria-hidden="true"
+                  />
+                  <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-[#8a8a8a]">
+                    {entry.period}&ensp;·&ensp;{entry.title}
+                  </span>
+                </div>
+
+                <h3 class="font-display font-normal leading-[0.95] tracking-[-0.02em] text-[#f5f5f5] mt-6 text-[clamp(2.75rem,calc(2.75rem+(100vw-27.5rem)*0.03),5rem)]">
+                  {entry.company}
+                </h3>
+
+                <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-[#a8a8a8] max-w-[640px] mt-8">
+                  {entry.description}
+                </p>
+
+                <div class="flex flex-wrap gap-2 mt-10">
+                  {entry.skills.map((skill) => (
+                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-[#d4d4d4] border border-[#333333] rounded-full px-3 py-[7px]">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+                  {entry.tags.map((tag) => (
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#616161]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div class="flex items-center gap-3 mt-12">
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-[#f5f5f5] border border-[#3a3a3a] rounded-lg h-10 px-4 inline-flex items-center hover:border-[#8a8a8a] transition-colors duration-200"
+                  >
+                    Visit {entry.company}
+                  </a>
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${entry.company} in a new tab`}
+                    class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path
+                        d="M2 12 12 2M4.5 2H12v7.5"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Rail tabs — list rows on desktop, chip strip on mobile */
+  .v4-tab-inner {
+    display: block;
+  }
+
+  .v4-tab-name {
+    color: #6e6e6e;
+    transition: color 0.2s ease;
+  }
+
+  .v4-tab:hover .v4-tab-name {
+    color: #bdbdbd;
+  }
+
+  .v4-tab[aria-selected="true"] .v4-tab-name {
+    color: #f5f5f5;
+  }
+
+  .v4-tab-dot {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .v4-tab[aria-selected="true"] .v4-tab-dot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @media (min-width: 1024px) {
+    .v4-tab {
+      padding: 22px 0;
+      border-top: 1px solid #242424;
+      cursor: pointer;
+    }
+
+    .v4-tab:last-child {
+      border-bottom: 1px solid #242424;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .v4-tab {
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 12px 18px;
+      background: #141414;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .v4-tab[aria-selected="true"] {
+      border-color: #4a4a4a;
+      background: #1b1b1b;
+    }
+  }
+
+  /* Panel content entrance on tab switch */
+  @media (prefers-reduced-motion: no-preference) {
+    .v4-enter {
+      animation: v4-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+
+    @keyframes v4-rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+</style>
+
+<script>
+  {
+    const section = document.querySelector<HTMLElement>(".career-v4");
+    if (section) {
+      const tabs = section.querySelectorAll<HTMLButtonElement>("[data-tab]");
+      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const id = tab.dataset.tab;
+          tabs.forEach((t) =>
+            t.setAttribute("aria-selected", String(t.dataset.tab === id)),
+          );
+          panels.forEach((panel) => {
+            const show = panel.dataset.panel === id;
+            panel.hidden = !show;
+            if (show) {
+              // retrigger the entrance animation
+              const inner = panel.querySelector<HTMLElement>(".v4-enter");
+              if (inner) {
+                inner.style.animation = "none";
+                void inner.offsetWidth;
+                inner.style.animation = "";
+              }
+            }
+          });
+        });
+      });
+    }
+  }
+</script>

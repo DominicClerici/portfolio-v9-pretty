@@ -1,0 +1,292 @@
+---
+// Variant 3 — "The Instrument"
+// A working history drawn literally to scale: a Gantt chart on a year ruler
+// (2019 → 2027). Bars grow in on scroll; the current role carries a live
+// pulsing lime dot. Hovering a bar highlights its dossier below, and vice
+// versa. Dot-grid canvas nods to the lab-notebook voice of the hero system.
+const RANGE_START = 2019;
+const RANGE_END = 2027;
+const SPAN = RANGE_END - RANGE_START;
+
+const entries = [
+  {
+    period: "2025 — Now",
+    start: 2025,
+    end: 2026.5,
+    now: true,
+    company: "Rumor",
+    title: "Full Stack Developer",
+    description:
+      "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack.",
+    tags: ["TypeScript", "PostgreSQL", "AWS Lambda", "Next.js", "React Native", "Swift"],
+    url: "https://www.therumor.com/",
+  },
+  {
+    period: "2024 — 2026",
+    start: 2024,
+    end: 2026,
+    now: false,
+    company: "Squib",
+    title: "Founding Engineer",
+    description:
+      "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona — AI-powered digital twins that grow audiences and predict how communities respond before a campaign launches. Hands in everything from agent architecture to the product interface.",
+    tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
+    url: "https://www.heysquib.com/",
+  },
+  {
+    period: "2021 — 2022",
+    start: 2021,
+    end: 2022,
+    now: false,
+    company: "Artesian Builds",
+    title: "Full Stack Developer",
+    description:
+      "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings.",
+    tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
+    url: "https://en.wikipedia.org/wiki/Artesian_Builds",
+  },
+  {
+    period: "2019",
+    start: 2019.05,
+    end: 2019.85,
+    now: false,
+    company: "McDonald's",
+    title: "Crew Member",
+    description:
+      "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
+    tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
+    url: "https://www.mcdonalds.com/us/en-us.html",
+  },
+];
+
+const pct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
+const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
+---
+
+<section class="career-v3 relative bg-[#0a0a0a] overflow-hidden" aria-label="Career">
+  <!-- Blueprint dot grid, polarity-reversed: faint white dots on black -->
+  <div class="v3-dots absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-white/55 border border-white/20 rounded-full px-3.5 py-2"
+      >
+        02&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55">
+        Career
+      </span>
+    </div>
+
+    <p
+      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-20"
+    >
+      A working history,
+      <span class="text-white/45">drawn to scale.</span>
+    </p>
+
+    <!-- The chart -->
+    <div class="rounded-2xl border border-[#232323] bg-[#0d0d0d]/90 p-5 sm:p-8 lg:p-10 overflow-x-auto">
+      <div class="v3-chart min-w-[560px]">
+        <!-- Year ruler -->
+        <div class="relative h-5 mb-3 ml-[124px] lg:ml-[148px]">
+          {
+            years.map((y) => (
+              <span
+                class="absolute -translate-x-1/2 font-mono text-[11px] leading-none tracking-[-0.02em] text-[#4d4d4d]"
+                style={`left: ${pct(y)}%`}
+              >
+                {`'${String(y).slice(2)}`}
+              </span>
+            ))
+          }
+        </div>
+
+        <!-- Tracks -->
+        <div class="flex flex-col">
+          {
+            entries.map((entry, i) => (
+              <div class="grid grid-cols-[124px_1fr] lg:grid-cols-[148px_1fr] items-center h-[60px] lg:h-[68px]">
+                <div class="pr-4">
+                  <div class="v3-label font-mono text-[12px] leading-tight tracking-[-0.02em] text-[#8a8a8a] transition-colors duration-200" data-i={i}>
+                    {entry.company}
+                  </div>
+                </div>
+                <div class="relative h-full border-l border-[#1c1c1c]">
+                  {/* year grid lines */}
+                  {years.slice(1).map((y) => (
+                    <span
+                      class="absolute inset-y-0 border-l border-[#1a1a1a]"
+                      style={`left: ${pct(y)}%`}
+                      aria-hidden="true"
+                    />
+                  ))}
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class:list={[
+                      "v3-bar group absolute top-1/2 -translate-y-1/2 h-9 rounded-md border transition-colors duration-200",
+                      entry.now
+                        ? "border-bio-lime/45 bg-[#1a2013] hover:bg-[#222a18]"
+                        : "border-[#333333] bg-[#1c1c1c] hover:bg-[#262626]",
+                    ]}
+                    style={`left: ${pct(entry.start)}%; width: ${pct(entry.end) - pct(entry.start)}%; --d: ${i * 120}ms`}
+                    data-i={i}
+                    aria-label={`${entry.company}, ${entry.period}`}
+                  >
+                    <span class="absolute inset-y-0 left-3 hidden sm:flex items-center font-mono text-[11px] leading-none tracking-[-0.02em] text-[#a3a3a3] whitespace-nowrap overflow-hidden">
+                      {entry.period}
+                    </span>
+                    {entry.now && (
+                      <span class="absolute right-[-3px] top-1/2 -translate-y-1/2 flex w-[7px] h-[7px]" aria-hidden="true">
+                        <span class="v3-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
+                        <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
+                      </span>
+                    )}
+                  </a>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center gap-2 mt-6 ml-[124px] lg:ml-[148px]">
+          <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true"></span>
+          <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-[#5d5d5d]">
+            Live — currently employed
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- The readouts -->
+    <div class="grid md:grid-cols-2 gap-x-14 gap-y-12 mt-16 lg:mt-24">
+      {
+        entries.map((entry, i) => (
+          <div class="v3-detail border-t border-[#222222] pt-6 transition-colors duration-200" data-i={i}>
+            <div class="flex items-baseline justify-between gap-4">
+              <h3 class="v3-detail-name font-display font-normal leading-[1.05] tracking-[-0.012em] text-[#e6e6e6] text-[clamp(1.5rem,2.4vw,2.125rem)] transition-colors duration-200">
+                {entry.company}
+              </h3>
+              <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#666666] whitespace-nowrap">
+                {entry.period}
+              </span>
+            </div>
+            <div class="font-mono text-[11px] tracking-[-0.02em] uppercase text-[#666666] mt-2">
+              {entry.title}
+            </div>
+            <p class="font-display text-[14px] leading-[1.65] text-[#999999] mt-4">
+              {entry.description}
+            </p>
+            <div class="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+              {entry.tags.map((tag) => (
+                <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-[#555555]">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .v3-dots {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  /* Bars grow in from the left when the chart scrolls into view */
+  @media (prefers-reduced-motion: no-preference) {
+    .v3-bar {
+      transform: translateY(-50%) scaleX(0);
+      transform-origin: left center;
+      transition:
+        transform 0.9s cubic-bezier(0.33, 1, 0.68, 1) var(--d, 0ms),
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    .career-v3 .in .v3-bar {
+      transform: translateY(-50%) scaleX(1);
+    }
+
+    .v3-ping {
+      animation: v3-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes v3-ping {
+      0% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+      75%,
+      100% {
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+  }
+
+  /* Hover sync highlight */
+  .v3-bar.hl {
+    border-color: rgba(206, 247, 158, 0.6);
+  }
+
+  .v3-label.hl {
+    color: #e6e6e6;
+  }
+
+  .v3-detail.hl {
+    border-top-color: rgba(206, 247, 158, 0.4);
+  }
+
+  .v3-detail.hl .v3-detail-name {
+    color: #ffffff;
+  }
+</style>
+
+<script>
+  {
+    const section = document.querySelector<HTMLElement>(".career-v3");
+    if (section) {
+      // Grow-in trigger
+      const chart = section.querySelector<HTMLElement>(".v3-chart");
+      if (chart) {
+        const io = new IntersectionObserver(
+          (obs) => {
+            obs.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add("in");
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.25 },
+        );
+        io.observe(chart);
+      }
+
+      // Hover sync between bars, labels, and readouts
+      const groups = new Map<string, HTMLElement[]>();
+      section.querySelectorAll<HTMLElement>("[data-i]").forEach((el) => {
+        const key = el.dataset.i!;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(el);
+      });
+      groups.forEach((els) => {
+        const toggle = (on: boolean) => () =>
+          els.forEach((el) => el.classList.toggle("hl", on));
+        els.forEach((el) => {
+          el.addEventListener("mouseenter", toggle(true));
+          el.addEventListener("mouseleave", toggle(false));
+        });
+      });
+    }
+  }
+</script>
