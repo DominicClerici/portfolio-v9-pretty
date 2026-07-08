@@ -1,8 +1,264 @@
 ---
+// V3 — "The Desk": screenshots printed out and taped to the page like a
+// working moodboard. Prints sit slightly crooked and overlap; hovering one
+// straightens it and lifts it off the desk. Margin notes in Newsreader
+// italic play the role of handwriting. Featured project gets lime tape.
+const projects = [
+  {
+    index: "01",
+    title: "Dispatch",
+    tech: "Astro · AI pipelines",
+    note: "writes itself every morning, rain or shine",
+    blurb: "The last 24 hours of tech news, compressed into a 10 minute read.",
+    image: "/photos/dispatch.webp",
+    alt: "Dispatch project screenshot",
+    websiteUrl: "https://dispatch.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/dispatch",
+    rotate: "-1.7deg",
+    lime: false,
+  },
+  {
+    index: "02",
+    title: "Meridian",
+    tech: "Vanilla TS · Extensions",
+    note: "zero npm dependencies. zero.",
+    blurb: "A new-tab extension, fully hand-built — nothing ever leaves the browser.",
+    image: "/photos/meridian.webp",
+    alt: "Meridian project screenshot",
+    websiteUrl: "https://meridian.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/meridian",
+    rotate: "2.1deg",
+    lime: false,
+  },
+  {
+    index: "03",
+    title: "Fuzzbox",
+    tech: "Next.js · React Native",
+    note: "the one I'd take to a desert island",
+    blurb: "Guitar tools I wished existed when I was learning — play a chord, understand what you found.",
+    image: "/photos/fuzzbox.webp",
+    alt: "Fuzzbox project screenshot",
+    websiteUrl: "https://fuzzbox.dominicclerici.com/",
+    githubUrl: null,
+    rotate: "-1.2deg",
+    lime: true,
+  },
+];
+
+const placements = [
+  "lg:col-start-1 lg:col-end-8",
+  "lg:col-start-6 lg:col-end-13 lg:-mt-[110px]",
+  "lg:col-start-2 lg:col-end-10 lg:-mt-[70px]",
+];
 ---
 
-<section class="relative bg-background py-16 md:py-32 px-3 sm:px-4 md:px-12 overflow-hidden">
-  <div class="max-w-[1280px] mx-auto flex items-center justify-center min-h-[240px] md:min-h-[400px] border border-dashed border-outline-variant/40">
-    <p class="font-label text-outline-variant text-xs uppercase tracking-widest">Work — Variant 3</p>
+<section class="wv3 relative bg-bone overflow-hidden" aria-label="Selected work">
+  <div class="wv3-grid absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative max-w-[1400px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
+      <div class="flex items-center gap-4">
+        <span
+          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+        >
+          03&hairsp;/&hairsp;04
+        </span>
+        <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+          Selected Work
+        </span>
+      </div>
+      <a
+        href="https://github.com/DominicClerici"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
+      >
+        more on github&nbsp;&nearr;
+      </a>
+    </div>
+
+    <p
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-16 lg:mb-28"
+    >
+      Fresh prints from the workbench.
+      <span class="text-ink/55">Handle with care &mdash; still drying.</span>
+    </p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-y-14 lg:gap-y-0">
+      {
+        projects.map((project, i) => (
+          <div class={`wv3-slot relative ${placements[i]}`} style={`--z: ${i + 1}`}>
+            <figure class="wv3-print group relative bg-paper p-3 sm:p-4" style={`--r: ${project.rotate}`}>
+              <span
+                class:list={["wv3-tape wv3-tape-l", project.lime && "wv3-tape-lime"]}
+                aria-hidden="true"
+              />
+              <span
+                class:list={["wv3-tape wv3-tape-r", project.lime && "wv3-tape-lime"]}
+                aria-hidden="true"
+              />
+
+              <div class="overflow-hidden rounded-[4px]">
+                <img
+                  src={project.image}
+                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                  alt={project.alt}
+                  class="w-full aspect-[16/10] object-cover object-top"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+
+              <figcaption class="px-1 sm:px-2 pt-5 pb-2">
+                <div class="flex items-baseline justify-between gap-4 flex-wrap">
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
+                      {project.index}
+                    </span>
+                    <h3 class="font-display font-normal text-[24px] sm:text-[28px] leading-none tracking-[-0.012em] text-ink">
+                      {project.title}
+                    </h3>
+                    <span class="hidden sm:inline font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/45">
+                      {project.tech}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <a
+                      href={project.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-bio-lime hover:decoration-2 transition-all duration-200"
+                    >
+                      visit&nbsp;&nearr;
+                    </a>
+                    {project.githubUrl && (
+                      <a
+                        href={project.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55 underline decoration-ink/20 underline-offset-4 hover:text-ink hover:decoration-bio-lime hover:decoration-2 transition-all duration-200"
+                      >
+                        code&nbsp;&nearr;
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <p class="font-display text-[14px] sm:text-[15px] leading-[1.55] text-ink/55 mt-3 max-w-[560px]">
+                  {project.blurb}
+                </p>
+              </figcaption>
+            </figure>
+
+            {/* Margin note — the "handwriting" next to the print */}
+            <p
+              class:list={[
+                "wv3-note font-headline italic text-[17px] lg:text-[19px] leading-snug text-ink/60 select-none",
+                i === 0 && "lg:absolute lg:-right-[290px] lg:top-[16%] lg:max-w-[240px]",
+                i === 1 && "lg:absolute lg:-left-[268px] lg:top-[38%] lg:max-w-[220px] lg:text-right",
+                i === 2 && "lg:absolute lg:-right-[286px] lg:bottom-[24%] lg:max-w-[240px]",
+              ]}
+              aria-hidden="true"
+            >
+              <svg
+                class:list={["wv3-arrow-svg hidden lg:block", i === 1 ? "ml-auto -scale-x-100" : ""]}
+                width="52"
+                height="30"
+                viewBox="0 0 52 30"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M50 27C36 24 14 20 4 5M4 5l1.5 9M4 5l9 .5"
+                  stroke="currentColor"
+                  stroke-opacity="0.5"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              {project.note}
+            </p>
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-16 lg:mt-24">
+      yes, the mess is aligned on purpose
+    </p>
   </div>
 </section>
+
+<style>
+  .wv3-grid {
+    background-image: radial-gradient(circle, rgba(34, 47, 48, 0.08) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  .wv3-slot {
+    z-index: var(--z, 1);
+  }
+
+  .wv3-slot:hover {
+    z-index: 20;
+  }
+
+  .wv3-print {
+    transform: rotate(var(--r, 0deg));
+    border: 1px solid rgba(34, 47, 48, 0.08);
+    box-shadow: 0 14px 34px -18px rgba(34, 47, 48, 0.35);
+  }
+
+  .wv3-tape {
+    position: absolute;
+    top: -13px;
+    width: 96px;
+    height: 28px;
+    background: rgba(233, 229, 216, 0.85);
+    border: 1px solid rgba(34, 47, 48, 0.07);
+    box-shadow: 0 1px 3px rgba(34, 47, 48, 0.12);
+    backdrop-filter: blur(1px);
+  }
+
+  .wv3-tape-l {
+    left: 20px;
+    transform: rotate(-5deg);
+  }
+
+  .wv3-tape-r {
+    right: 20px;
+    transform: rotate(4deg);
+  }
+
+  .wv3-tape-lime {
+    background: rgba(206, 247, 158, 0.8);
+  }
+
+  .wv3-note {
+    margin-top: 14px;
+  }
+
+  @media (min-width: 1024px) {
+    .wv3-note {
+      margin-top: 0;
+    }
+  }
+
+  .wv3-arrow-svg {
+    color: var(--color-ink);
+    margin-bottom: 6px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .wv3-print {
+      transition:
+        transform 0.45s cubic-bezier(0.33, 1, 0.68, 1),
+        box-shadow 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    .wv3-print:hover {
+      transform: rotate(0deg) translateY(-8px);
+      box-shadow: 0 30px 50px -20px rgba(34, 47, 48, 0.4);
+    }
+  }
+</style>

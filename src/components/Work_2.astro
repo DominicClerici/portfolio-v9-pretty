@@ -1,8 +1,299 @@
 ---
+// V2 — "The Index": the section is a giant typographic table of contents.
+// On desktop, hovering a row makes the project's screenshot chase the
+// cursor like a photo being slid across a table; the whole row is a link.
+// On mobile the rows unfold into simple stacked cards.
+const projects = [
+  {
+    index: "01",
+    title: "Dispatch",
+    tech: "Astro · AI pipelines",
+    blurb: "The last 24 hours of tech news, compressed into a 10 minute read. Writes itself every morning.",
+    image: "/photos/dispatch.webp",
+    alt: "Dispatch project screenshot",
+    websiteUrl: "https://dispatch.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/dispatch",
+  },
+  {
+    index: "02",
+    title: "Meridian",
+    tech: "Vanilla TS · Extensions",
+    blurb: "A new-tab extension with zero npm dependencies. Eleven modules, all built by hand, nothing leaves the browser.",
+    image: "/photos/meridian.webp",
+    alt: "Meridian project screenshot",
+    websiteUrl: "https://meridian.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/meridian",
+  },
+  {
+    index: "03",
+    title: "Fuzzbox",
+    tech: "Next.js · React Native",
+    featured: true,
+    blurb: "Guitar tools I wished existed when I was learning — play a chord, understand what you found.",
+    image: "/photos/fuzzbox.webp",
+    alt: "Fuzzbox project screenshot",
+    websiteUrl: "https://fuzzbox.dominicclerici.com/",
+    githubUrl: null,
+  },
+];
 ---
 
-<section class="relative bg-background py-16 md:py-32 px-3 sm:px-4 md:px-12 overflow-hidden">
-  <div class="max-w-[1280px] mx-auto flex items-center justify-center min-h-[240px] md:min-h-[400px] border border-dashed border-outline-variant/40">
-    <p class="font-label text-outline-variant text-xs uppercase tracking-widest">Work — Variant 2</p>
+<section class="wv2 relative bg-bone overflow-hidden" aria-label="Selected work">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10 lg:mb-14">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+      >
+        03&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+        Selected Work
+      </span>
+    </div>
+
+    <p
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-20"
+    >
+      The shortlist.
+      <span class="text-ink/55">Everything here is live &mdash; go poke at it.</span>
+    </p>
+
+    <ul class="border-t border-ink/15">
+      {
+        projects.map((project, i) => (
+          <li class="border-b border-ink/15">
+            <a
+              href={project.websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="wv2-row group block py-8 lg:py-10"
+              data-row={i}
+            >
+              <div class="lg:grid lg:grid-cols-[72px_minmax(0,1fr)_auto_64px] lg:items-center lg:gap-8">
+                <span class="hidden lg:block font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40">
+                  {project.index}
+                </span>
+
+                <span class="flex items-center gap-4 min-w-0">
+                  <span
+                    class="wv2-dot w-[8px] h-[8px] rounded-full bg-bio-lime shrink-0 hidden lg:block"
+                    aria-hidden="true"
+                  />
+                  <span class="wv2-title font-display font-normal leading-[0.95] tracking-[-0.02em] text-ink text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.035),5.25rem)]">
+                    {project.title}
+                  </span>
+                  {project.featured && (
+                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2.5 py-1.5 -rotate-3 shrink-0 mt-2">
+                      featured
+                    </span>
+                  )}
+                </span>
+
+                <span class="hidden lg:block font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 text-right">
+                  {project.tech}
+                </span>
+
+                <span
+                  class="wv2-arrow hidden lg:inline-flex w-12 h-12 rounded-full border border-ink/20 items-center justify-center text-ink justify-self-end"
+                  aria-hidden="true"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M2 12 12 2M4.5 2H12v7.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+
+              {/* Mobile: the row unfolds into a card */}
+              <div class="lg:hidden mt-5">
+                <img
+                  src={project.image}
+                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                  alt={project.alt}
+                  class="w-full aspect-[16/10] object-cover object-top rounded-[14px] border border-ink/10"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                  {project.tech}
+                </p>
+                <p class="font-display text-[15px] leading-[1.55] text-ink/60 mt-3">{project.blurb}</p>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="flex items-center justify-between mt-8">
+      <p class="hidden lg:block font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35">
+        hover to peek &middot; click to visit
+      </p>
+      <a
+        href="https://github.com/DominicClerici"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200 ml-auto"
+      >
+        everything else lives on github&nbsp;&nearr;
+      </a>
+    </div>
+  </div>
+
+  <!-- Cursor-chasing preview (desktop only, driven by JS) -->
+  <div class="wv2-float fixed top-0 left-0 z-30 pointer-events-none hidden lg:block" aria-hidden="true">
+    {
+      projects.map((project, i) => (
+        <img
+          src={project.image}
+          srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+          alt=""
+          data-float={i}
+          class="wv2-float-img absolute top-0 left-0 w-[380px] aspect-[16/10] object-cover object-top rounded-[16px] border border-ink/15 shadow-[0_30px_60px_-20px_rgba(34,47,48,0.45)]"
+          loading="lazy"
+          decoding="async"
+        />
+      ))
+    }
   </div>
 </section>
+
+<style>
+  .wv2-dot {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .wv2-row:hover .wv2-dot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .wv2-title {
+    transition:
+      transform 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+      color 0.25s ease;
+  }
+
+  /* Other rows dim while one is hovered */
+  .wv2-hovering .wv2-row .wv2-title {
+    color: rgba(34, 47, 48, 0.3);
+  }
+
+  .wv2-hovering .wv2-row:hover .wv2-title {
+    color: var(--color-ink);
+  }
+
+  .wv2-arrow {
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .wv2-row:hover .wv2-arrow {
+    background-color: var(--color-bio-lime);
+    border-color: transparent;
+    transform: rotate(45deg);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .wv2-row:hover .wv2-title {
+      transform: translateX(14px);
+    }
+  }
+
+  .wv2-float {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .wv2-float-img {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .wv2-float-img[data-on] {
+    opacity: 1;
+  }
+</style>
+
+<script>
+  {
+    const section = document.querySelector<HTMLElement>(".wv2");
+    const float = section?.querySelector<HTMLElement>(".wv2-float");
+    const fine = window.matchMedia("(pointer: fine) and (min-width: 1024px)");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (section && float && fine.matches) {
+      const imgs = float.querySelectorAll<HTMLElement>("[data-float]");
+      const rows = section.querySelectorAll<HTMLElement>("[data-row]");
+
+      let targetX = 0;
+      let targetY = 0;
+      let x = 0;
+      let y = 0;
+      let active = false;
+      let rafId = 0;
+
+      const render = () => {
+        // Lerp toward the cursor; tilt with horizontal velocity for a
+        // "photo sliding across a table" feel.
+        const dx = targetX - x;
+        x += dx * 0.14;
+        y += (targetY - y) * 0.14;
+        const tilt = Math.max(-7, Math.min(7, dx * 0.06));
+        float.style.transform = `translate(${x - 190}px, ${y - 130}px) rotate(${tilt}deg)`;
+        if (active || Math.abs(dx) > 0.5) {
+          rafId = requestAnimationFrame(render);
+        } else {
+          rafId = 0;
+        }
+      };
+
+      section.addEventListener("mousemove", (e) => {
+        targetX = e.clientX;
+        targetY = e.clientY;
+        if (reducedMotion) {
+          x = targetX;
+          y = targetY;
+          float.style.transform = `translate(${x - 190}px, ${y - 130}px)`;
+        } else if (active && !rafId) {
+          rafId = requestAnimationFrame(render);
+        }
+      });
+
+      rows.forEach((row) => {
+        row.addEventListener("mouseenter", () => {
+          active = true;
+          section.classList.add("wv2-hovering");
+          float.style.opacity = "1";
+          imgs.forEach((img) => {
+            if (img.dataset.float === row.dataset.row) img.setAttribute("data-on", "");
+            else img.removeAttribute("data-on");
+          });
+          // Snap into place on first entry so the card doesn't fly in
+          // from the page origin.
+          if (!x && !y) {
+            x = targetX;
+            y = targetY;
+          }
+          if (!rafId && !reducedMotion) rafId = requestAnimationFrame(render);
+        });
+        row.addEventListener("mouseleave", () => {
+          active = false;
+          section.classList.remove("wv2-hovering");
+          float.style.opacity = "0";
+        });
+      });
+    }
+  }
+</script>

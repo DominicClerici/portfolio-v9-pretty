@@ -1,8 +1,198 @@
 ---
+// V1 — "The Stack": each project is a full-width paper dossier card. Cards
+// are sticky, so as you scroll they pile up on top of one another like a
+// deck being dealt — the playfulness is in the scroll itself, the cards
+// stay clean and editorial.
+const projects = [
+  {
+    index: "01",
+    title: "Dispatch",
+    tech: "Astro · TypeScript · AI pipelines",
+    fact: "writes itself every morning",
+    description:
+      "A daily snapshot of the tech industry — the last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
+    image: "/photos/dispatch.webp",
+    alt: "Dispatch project screenshot",
+    stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
+    websiteUrl: "https://dispatch.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/dispatch",
+  },
+  {
+    index: "02",
+    title: "Meridian",
+    tech: "Vanilla TypeScript · Extensions",
+    fact: "0 npm dependencies",
+    description:
+      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a from-scratch component library — plus a recommendation engine that learns from 45 days of history without anything leaving the browser.",
+    image: "/photos/meridian.webp",
+    alt: "Meridian project screenshot",
+    stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
+    websiteUrl: "https://meridian.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/meridian",
+  },
+  {
+    index: "03",
+    title: "Fuzzbox",
+    tech: "Next.js · React Native",
+    fact: "design system: Neon Riff",
+    featured: true,
+    description:
+      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does. Backing track generation is next.",
+    image: "/photos/fuzzbox.webp",
+    alt: "Fuzzbox project screenshot",
+    stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
+    websiteUrl: "https://fuzzbox.dominicclerici.com/",
+    githubUrl: null,
+  },
+];
 ---
 
-<section class="relative bg-background py-16 md:py-32 px-3 sm:px-4 md:px-12 overflow-hidden">
-  <div class="max-w-[1280px] mx-auto flex items-center justify-center min-h-[240px] md:min-h-[400px] border border-dashed border-outline-variant/40">
-    <p class="font-label text-outline-variant text-xs uppercase tracking-widest">Work — Variant 1</p>
+<section class="wv1 relative bg-bone" aria-label="Selected work">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
+      <div class="flex items-center gap-4">
+        <span
+          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+        >
+          03&hairsp;/&hairsp;04
+        </span>
+        <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+          Selected Work
+        </span>
+      </div>
+      <a
+        href="https://github.com/DominicClerici"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
+      >
+        more on github&nbsp;&nearr;
+      </a>
+    </div>
+
+    <p
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-24"
+    >
+      Three projects that started as itches&nbsp;&mdash;
+      <span class="text-ink/55">and got completely out of hand.</span>
+    </p>
+
+    <div class="flex flex-col gap-6 lg:gap-8">
+      {
+        projects.map((project, i) => (
+          <article
+            class="wv1-card sticky overflow-hidden rounded-[24px] border border-ink/10 bg-paper"
+            style={`top: calc(clamp(72px, 9vh, 104px) + ${i * 26}px); z-index: ${i + 1};`}
+          >
+            <div class="grid lg:grid-cols-2">
+              <div class="p-7 sm:p-10 lg:p-14 flex flex-col order-last lg:order-first">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
+                    &numero;&thinsp;{project.index}
+                  </span>
+                  {project.featured && (
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
+                      featured
+                    </span>
+                  )}
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
+                    {project.fact}
+                  </span>
+                </div>
+
+                <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink mt-7 text-[clamp(2.25rem,calc(2.25rem+(100vw-27.5rem)*0.02),3.5rem)]">
+                  {project.title}
+                </h3>
+                <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                  {project.tech}
+                </p>
+
+                <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-ink/60 max-w-[520px] mt-7">
+                  {project.description}
+                </p>
+
+                <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-8">
+                  {project.stack.map((item) => (
+                    <span class="inline-flex items-center gap-2">
+                      <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
+                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">{item}</span>
+                    </span>
+                  ))}
+                </div>
+
+                <div class="flex items-center gap-3 mt-auto pt-10">
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                  >
+                    Visit site
+                  </a>
+                  {project.githubUrl && (
+                    <a
+                      href={project.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 border border-transparent rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
+                    >
+                      GitHub
+                    </a>
+                  )}
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${project.title} in a new tab`}
+                    class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path
+                        d="M2 12 12 2M4.5 2H12v7.5"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+
+              <div class="wv1-shot relative bg-bone lg:border-l border-b lg:border-b-0 border-ink/10 p-5 sm:p-8 lg:p-12 flex items-center">
+                <img
+                  src={project.image}
+                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                  alt={project.alt}
+                  class="w-full aspect-[16/10] object-cover object-top rounded-[14px] border border-ink/10 shadow-[0_18px_40px_-24px_rgba(34,47,48,0.35)]"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-10">
+      neatly stacked, for once
+    </p>
   </div>
 </section>
+
+<style>
+  .wv1-card {
+    box-shadow: 0 -12px 32px -20px rgba(34, 47, 48, 0.25);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .wv1-shot img {
+      transition: transform 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    .wv1-card:hover .wv1-shot img {
+      transform: scale(1.02) rotate(-0.4deg);
+    }
+  }
+</style>
