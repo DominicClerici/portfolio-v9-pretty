@@ -55,6 +55,14 @@ if (!prefersReducedMotion) {
     requestAnimationFrame(tick);
   };
 
+  // Public scroll-to that rides the same easing. Consumers (e.g. the Career
+  // scroll-pin) call this instead of window.scrollTo so programmatic jumps feel
+  // identical to wheel scrolling and don't fight the engine's resync.
+  (window as any).__smoothScrollTo = (y: number) => {
+    target = clamp(y);
+    start();
+  };
+
   window.addEventListener(
     "wheel",
     (e) => {
@@ -103,4 +111,9 @@ if (!prefersReducedMotion) {
   window.addEventListener("resize", () => {
     target = clamp(target);
   });
+} else {
+  // No eased engine under reduced motion — still expose the API so consumers can
+  // navigate; here it's an instant (accessible) jump.
+  (window as any).__smoothScrollTo = (y: number) =>
+    window.scrollTo(0, Math.max(0, y));
 }

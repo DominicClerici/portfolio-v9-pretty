@@ -83,216 +83,256 @@ const orderedEntries = entries
   .map((entry, i) => ({ entry, i }))
   .slice()
   .reverse()
+
+// Scroll-pin choreography ----------------------------------------------------
+// Each entry gets one viewport of scroll, plus one extra "run-out" viewport
+// after the last entry so the marker travels off the final pill to the end of
+// the spine before the scroll releases. Total travel is therefore N viewports
+// (N-1 to step through the entries + 1 to run out), so the section is N+1 tall.
+const N = entries.length
+const stepPct = orderedEntries.map(({ entry }) => yPct(entry.start))
+// Desktop playhead rides the year-scaled positions so it lines up with the bars.
+const railStart = stepPct[0]
+// Mobile markers are evenly spaced, sitting in the first N-1/N of the rail; the
+// trailing segment (last dot -> end) is the run-out, mirroring the desktop spine.
+const evenPct = orderedEntries.map((_, s) => (N > 0 ? (s / N) * 100 : 0))
+// step index (oldest-first) -> original entry index
+const stepMap = orderedEntries.map(({ i }) => i)
+// The section rests on the oldest entry when the pin engages (progress 0).
+const initialIndex = stepMap[0]
 ---
 
 <section
-  class="career-v1 relative bg-[#0a0a0a] overflow-hidden"
+  class="career-v1 relative bg-[#0a0a0a]"
+  style={`height: ${(N + 1) * 100}svh`}
+  data-step-pct={JSON.stringify(stepPct)}
+  data-step-map={JSON.stringify(stepMap)}
   aria-label="Career"
 >
   <div class="v1-dots absolute inset-0 pointer-events-none" aria-hidden="true">
   </div>
 
-  <div
-    class="relative max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]"
-  >
-    <!-- <div class="flex items-center gap-4 mb-10 lg:mb-14">
-      <span
-        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-white/55 border border-white/20 rounded-full px-3.5 py-2"
-      >
-        02&hairsp;/&hairsp;04
-      </span>
-      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55">
-        Career
-      </span>
-    </div> -->
-
-    <p
-      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 mt-12 lg:mb-20"
+  <!-- The pinned frame: everything inside stays in view while the tall section
+       scrolls past, which reads as a scroll-lock without trapping the wheel. -->
+  <div class="v1-pin sticky top-0 h-[100svh] overflow-hidden flex items-center">
+    <div
+      class="relative w-full max-w-[1524px] mx-auto px-6 lg:px-12 py-8 lg:py-0"
     >
-      Time on one axis,
-      <span class="text-white/45">the story on the other.</span>
-    </p>
+      <p
+        class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
+      >
+        Time on one axis,
+        <span class="text-white/45">the story on the other.</span>
+      </p>
 
-    <div class="grid lg:grid-cols-[360px_1fr] gap-8 lg:gap-14 items-start">
-      <!-- Rail: time spine + employer tabs -->
-      <div class="lg:sticky lg:top-24 lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
-        <!-- The spine — V3's chart, rotated vertical -->
-        <div class="v1-spine relative hidden lg:block">
-          <div class="absolute inset-x-0 top-2 bottom-2">
-            {
-              years.map((y) => (
-                <div
-                  class="absolute inset-x-0"
-                  style={`top: ${yPct(y)}%`}
-                  aria-hidden="true"
-                >
-                  <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-[#4d4d4d]">
-                    {`'${String(y).slice(2)}`}
-                  </span>
-                  <span class="absolute left-7 right-0 top-0 border-t border-[#1b1b1b]" />
-                </div>
-              ))
-            }
+      <!-- Mobile: horizontal timeline above the card strip (oldest left). -->
+      <div class="v1-railh lg:hidden relative h-8 mb-5" aria-hidden="true">
+        <div class="v1-railh-inner absolute inset-x-[7px] top-1/2 -translate-y-1/2">
+          <div class="v1-railh-track absolute inset-x-0 top-1/2 -translate-y-1/2">
+          </div>
+          <div class="v1-rail-fill-h absolute left-0 top-1/2 -translate-y-1/2" style="width: 0%">
+          </div>
+          {
+            orderedEntries.map((_, s) => (
+              <span
+                class="v1-rail-marker-h absolute top-1/2"
+                style={`left: ${evenPct[s]}%`}
+              />
+            ))
+          }
+          <div class="v1-rail-tip-h absolute top-1/2" style="left: 0%" />
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-[360px_1fr] gap-8 lg:gap-14 items-start">
+        <!-- Rail: time spine + employer tabs -->
+        <div class="lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
+          <!-- The spine — V3's chart, rotated vertical -->
+          <div class="v1-spine relative hidden lg:block">
+            <div class="absolute inset-x-0 top-2 bottom-2">
+              <!-- Progress playhead: a horizontal marker line that sweeps down the
+                   timeline (top -> bottom), landing on each bar as it's selected. -->
+              <div
+                class="v1-playhead absolute left-0 right-0"
+                style={`top: ${railStart}%`}
+                aria-hidden="true"
+              >
+              </div>
+              {
+                years.map((y) => (
+                  <div
+                    class="absolute inset-x-0"
+                    style={`top: ${yPct(y)}%`}
+                    aria-hidden="true"
+                  >
+                    <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-[#4d4d4d]">
+                      {`'${String(y).slice(2)}`}
+                    </span>
+                    <span class="absolute left-7 right-0 top-0 border-t border-[#1b1b1b]" />
+                  </div>
+                ))
+              }
+              {
+                orderedEntries.map(({ entry, i }) => (
+                  <button
+                    type="button"
+                    class="v1-bar absolute w-[14px] rounded-full border border-[#333333]"
+                    style={`top: ${yPct(entry.start)}%; height: ${yPct(entry.end) - yPct(entry.start)}%; left: ${30 + entry.lane * 20}px; --d: ${i * 120}ms`}
+                    data-select={i}
+                    data-i={i}
+                    data-on={i === initialIndex ? "true" : "false"}
+                    aria-label={`${entry.company}, ${entry.period}`}
+                  >
+                    {entry.now && (
+                      <span
+                        class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]"
+                        aria-hidden="true"
+                      >
+                        <span class="v1-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
+                        <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
+                      </span>
+                    )}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+
+          <!-- Tabs — list rows on desktop, chip strip on mobile -->
+          <div
+            class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+            role="tablist"
+            aria-label="Employers"
+          >
             {
               orderedEntries.map(({ entry, i }) => (
                 <button
                   type="button"
-                  class="v1-bar absolute w-[14px] rounded-full border border-[#333333]"
-                  style={`top: ${yPct(entry.start)}%; height: ${yPct(entry.end) - yPct(entry.start)}%; left: ${30 + entry.lane * 20}px; --d: ${i * 120}ms`}
+                  class="v1-tab group shrink-0 lg:w-full text-left"
+                  role="tab"
+                  aria-selected={i === initialIndex ? "true" : "false"}
                   data-select={i}
                   data-i={i}
-                  data-on={i === 0 ? "true" : "false"}
-                  aria-label={`${entry.company}, ${entry.period}`}
                 >
-                  {entry.now && (
-                    <span
-                      class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]"
-                      aria-hidden="true"
-                    >
-                      <span class="v1-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
-                      <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
+                  <span class="block">
+                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-[#5f5f5f] block">
+                      {entry.period}
                     </span>
-                  )}
+                    <span class="v1-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
+                      <span
+                        class="v1-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0"
+                        aria-hidden="true"
+                      />
+                      {entry.company}
+                    </span>
+                  </span>
                 </button>
               ))
             }
           </div>
         </div>
 
-        <!-- Tabs — list rows on desktop, chip strip on mobile -->
+        <!-- The dossier panel -->
         <div
-          class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
-          role="tablist"
-          aria-label="Employers"
+          class="relative rounded-[20px] border border-[#232323] bg-[#0f0f0f] lg:min-h-[460px] overflow-hidden"
         >
           {
-            orderedEntries.map(({ entry, i }) => (
-              <button
-                type="button"
-                class="v1-tab group shrink-0 lg:w-full text-left"
-                role="tab"
-                aria-selected={i === 0 ? "true" : "false"}
-                data-select={i}
-                data-i={i}
+            entries.map((entry, i) => (
+              <div
+                class="v1-panel relative p-7 sm:p-9 lg:p-12"
+                role="tabpanel"
+                data-panel={i}
+                hidden={i !== initialIndex}
               >
-                <span class="block">
-                  <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-[#5f5f5f] block">
-                    {entry.period}
-                  </span>
-                  <span class="v1-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
+                {/* Ghost year watermark */}
+                <span
+                  class="absolute -top-8 right-2 font-display leading-none tracking-[-0.04em] text-white/[0.035] select-none pointer-events-none text-[clamp(9rem,18vw,15rem)]"
+                  aria-hidden="true"
+                >
+                  {entry.year}
+                </span>
+
+                <div class="relative v1-enter">
+                  <div class="flex items-center gap-2.5">
                     <span
-                      class="v1-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0"
+                      class:list={[
+                        "w-[6px] h-[6px] rounded-full",
+                        entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]",
+                      ]}
                       aria-hidden="true"
                     />
+                    <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-[#8a8a8a]">
+                      {entry.period}&ensp;·&ensp;{entry.title}
+                    </span>
+                  </div>
+
+                  <h3 class="font-display font-normal leading-[0.95] tracking-[-0.02em] text-[#f5f5f5] mt-6 text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.028),4.5rem)]">
                     {entry.company}
-                  </span>
-                </span>
-              </button>
+                  </h3>
+
+                  <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-[#a8a8a8] max-w-[640px] mt-6 lg:mt-8">
+                    {entry.description}
+                  </p>
+
+                  <div class="flex flex-wrap gap-x-6 gap-y-3 mt-8 lg:mt-10">
+                    {entry.skills.map((skill) => (
+                      <span class="inline-flex items-center gap-2">
+                        <span
+                          class="w-[6px] h-[6px] rounded-full bg-bio-lime"
+                          aria-hidden="true"
+                        />
+                        <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-[#c9c9c9]">
+                          {skill}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                  <div class="flex flex-wrap gap-x-4 gap-y-2 mt-5">
+                    {entry.tags.map((tag) => (
+                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#616161]">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div class="flex items-center gap-3 mt-10 lg:mt-12">
+                    <a
+                      href={entry.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-mono text-[13px] tracking-[-0.008em] text-[#f5f5f5] border border-[#3a3a3a] rounded-lg h-10 px-4 inline-flex items-center hover:border-[#8a8a8a] transition-colors duration-200"
+                    >
+                      Visit {entry.company}
+                    </a>
+                    <a
+                      href={entry.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open ${entry.company} in a new tab`}
+                      class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 12 12 2M4.5 2H12v7.5"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
             ))
           }
         </div>
-      </div>
-
-      <!-- The dossier panel -->
-      <div
-        class="relative rounded-[20px] border border-[#232323] bg-[#0f0f0f] min-h-[520px] overflow-hidden"
-      >
-        {
-          entries.map((entry, i) => (
-            <div
-              class="v1-panel relative p-7 sm:p-10 lg:p-14"
-              role="tabpanel"
-              data-panel={i}
-              hidden={i !== 0}
-            >
-              {/* Ghost year watermark */}
-              <span
-                class="absolute -top-8 right-2 font-display leading-none tracking-[-0.04em] text-white/[0.035] select-none pointer-events-none text-[clamp(9rem,18vw,15rem)]"
-                aria-hidden="true"
-              >
-                {entry.year}
-              </span>
-
-              <div class="relative v1-enter">
-                <div class="flex items-center gap-2.5">
-                  <span
-                    class:list={[
-                      "w-[6px] h-[6px] rounded-full",
-                      entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]",
-                    ]}
-                    aria-hidden="true"
-                  />
-                  <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-[#8a8a8a]">
-                    {entry.period}&ensp;·&ensp;{entry.title}
-                  </span>
-                </div>
-
-                <h3 class="font-display font-normal leading-[0.95] tracking-[-0.02em] text-[#f5f5f5] mt-6 text-[clamp(2.75rem,calc(2.75rem+(100vw-27.5rem)*0.03),5rem)]">
-                  {entry.company}
-                </h3>
-
-                <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-[#a8a8a8] max-w-[640px] mt-8">
-                  {entry.description}
-                </p>
-
-                <div class="flex flex-wrap gap-x-6 gap-y-3 mt-10">
-                  {entry.skills.map((skill) => (
-                    <span class="inline-flex items-center gap-2">
-                      <span
-                        class="w-[6px] h-[6px] rounded-full bg-bio-lime"
-                        aria-hidden="true"
-                      />
-                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-[#c9c9c9]">
-                        {skill}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-5">
-                  {entry.tags.map((tag) => (
-                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#616161]">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div class="flex items-center gap-3 mt-12">
-                  <a
-                    href={entry.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-mono text-[13px] tracking-[-0.008em] text-[#f5f5f5] border border-[#3a3a3a] rounded-lg h-10 px-4 inline-flex items-center hover:border-[#8a8a8a] transition-colors duration-200"
-                  >
-                    Visit {entry.company}
-                  </a>
-                  <a
-                    href={entry.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Open ${entry.company} in a new tab`}
-                    class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M2 12 12 2M4.5 2H12v7.5"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))
-        }
       </div>
     </div>
   </div>
@@ -309,6 +349,60 @@ const orderedEntries = entries
     /* Viewport-anchored so the grid lines up seamlessly with the quote
        section directly below (which uses the same fixed grid). */
     background-attachment: fixed;
+  }
+
+  /* Progress playhead — horizontal marker line (desktop), sweeps top -> bottom */
+  .v1-playhead {
+    height: 2px;
+    background: #cef79e;
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px rgba(206, 247, 158, 0.45);
+  }
+
+  .v1-playhead::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: #cef79e;
+    transform: translate(-3px, -50%);
+    box-shadow: 0 0 0 4px rgba(206, 247, 158, 0.18);
+  }
+
+  /* Progress rail — horizontal (mobile) */
+  .v1-railh-track,
+  .v1-rail-fill-h {
+    height: 2px;
+    border-radius: 2px;
+  }
+
+  .v1-railh-track {
+    background: #242424;
+  }
+
+  .v1-rail-fill-h {
+    background: #cef79e;
+  }
+
+  .v1-rail-marker-h {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: #2a2a2a;
+    border: 1px solid #3d3d3d;
+    transform: translate(-50%, -50%);
+  }
+
+  .v1-rail-tip-h {
+    width: 11px;
+    height: 11px;
+    border-radius: 9999px;
+    background: #cef79e;
+    box-shadow: 0 0 0 4px rgba(206, 247, 158, 0.18);
+    transform: translate(-50%, -50%);
   }
 
   /* Spine bars */
@@ -443,6 +537,17 @@ const orderedEntries = entries
       const tabs = section.querySelectorAll<HTMLButtonElement>("[role='tab']")
       const bars = section.querySelectorAll<HTMLButtonElement>(".v1-bar")
       const panels = section.querySelectorAll<HTMLElement>("[data-panel]")
+      const pin = section.querySelector<HTMLElement>(".v1-pin")
+
+      const stepPct: number[] = JSON.parse(section.dataset.stepPct || "[]")
+      const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]")
+      const N = stepPct.length
+
+      // Desktop: horizontal playhead, positioned in the spine's year-% space.
+      const playhead = section.querySelector<HTMLElement>(".v1-playhead")
+      // Mobile: evenly-spaced rail, so the tip travels linearly with progress.
+      const fillH = section.querySelector<HTMLElement>(".v1-rail-fill-h")
+      const tipH = section.querySelector<HTMLElement>(".v1-rail-tip-h")
 
       const select = (id: string | undefined) => {
         if (!id) return
@@ -467,8 +572,87 @@ const orderedEntries = entries
         })
       }
 
+      // Scroll-pin: map scroll progress through the tall section to a travelling
+      // tip (marker to marker) and the active entry (flips when the tip lands on
+      // the next pill).
+      let activeStep = -1
+      const travel = () =>
+        section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight)
+
+      const render = (p: number) => {
+        // pages: 0..N. Pages [0, N-1] step through the entries; the last page
+        // [N-1, N] is the run-out that carries the marker to the spine's end.
+        const pages = p * N
+
+        // Desktop playhead (year-scaled, in the spine's coordinate space).
+        let yearPct: number
+        if (N <= 1) {
+          yearPct = stepPct[0] ?? 0
+        } else if (pages <= N - 1) {
+          // Step phase: travel marker to marker, landing on each bar.
+          const s = Math.max(0, Math.min(Math.floor(pages), N - 2))
+          const f = pages - s
+          yearPct = stepPct[s] + (stepPct[s + 1] - stepPct[s]) * f
+        } else {
+          // Run-out phase: from the last bar down to the end of the spine (100%).
+          const runF = Math.min(pages - (N - 1), 1)
+          yearPct = stepPct[N - 1] + (100 - stepPct[N - 1]) * runF
+        }
+        if (playhead) playhead.style.top = `${yearPct}%`
+
+        // Mobile rail is evenly spaced with a trailing run-out segment, so the
+        // tip is linear across the whole track (last dot at (N-1)/N, end at 1).
+        const linPct = p * 100
+        if (fillH) fillH.style.width = `${linPct}%`
+        if (tipH) tipH.style.left = `${linPct}%`
+
+        // Small bias so arriving at a marker selects it even when the scroll
+        // position lands a sub-pixel short of the exact page boundary.
+        const step = Math.max(0, Math.min(Math.floor(pages + 0.01), N - 1))
+        if (step !== activeStep) {
+          activeStep = step
+          select(String(stepMap[step]))
+        }
+      }
+
+      let ticking = false
+      const onScroll = () => {
+        if (ticking) return
+        ticking = true
+        requestAnimationFrame(() => {
+          ticking = false
+          const rect = section.getBoundingClientRect()
+          const tv = travel()
+          const p = tv > 0 ? Math.max(0, Math.min(-rect.top / tv, 1)) : 0
+          render(p)
+        })
+      }
+
+      window.addEventListener("scroll", onScroll, { passive: true })
+      window.addEventListener("resize", onScroll)
+      onScroll()
+
+      // Clicking a tab / bar selects it and scrolls the page to that entry's slot
+      // in the pin, reusing the site's smooth-scroll easing.
       section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
-        el.addEventListener("click", () => select(el.dataset.select))
+        el.addEventListener("click", () => {
+          const id = el.dataset.select
+          if (id == null) return
+          const step = stepMap.indexOf(Number(id))
+          if (step < 0) return
+          // Selection is driven by the scroll handler as the page eases to the
+          // target, so the panels scrub through en route rather than flashing.
+          const tv = travel()
+          // step k is reached at pages = k, i.e. progress k/N (never in run-out).
+          const targetP = N > 0 ? step / N : 0
+          const y =
+            section.getBoundingClientRect().top + window.scrollY + targetP * tv
+          const smooth = (window as any).__smoothScrollTo as
+            | ((y: number) => void)
+            | undefined
+          if (smooth) smooth(y)
+          else window.scrollTo(0, y)
+        })
       })
 
       // Hover sync between spine bars and tab rows
