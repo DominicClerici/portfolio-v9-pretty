@@ -1,11 +1,12 @@
 ---
-// V1 — "The Glass Bench": V2's left-hand card index drives V4's teardown
-// stage — but the top layer of the stack IS the hero's ribbed glass,
-// rendered per-image in Canvas2D. At rest the glass sits lowered on the
-// screenshot (you see the refraction). Hover the bench and the stack
-// explodes in real 3D: the glass lifts off, the sharp interface and the
-// logic board spread out beneath it. Picking a project lowers the glass
-// onto the new specimen.
+// V1 — "The Bench": V3's layout — a sticky index on the left drives a
+// sticky stage on the right — but the index rows are V2's typographic
+// list, and the stage is V4's three-layer teardown (data dots, logic
+// grid, interface screenshot) held permanently exploded. No hover
+// theatrics: switching projects runs a choreographed swap — the layers
+// stack into one, the screenshot fades to black, the image is exchanged
+// in the dark, the lights come back up, and the stack spreads apart
+// again. V3's spec sheet sits under the stage and swaps with the pick.
 const projects = [
   {
     index: "01",
@@ -13,6 +14,7 @@ const projects = [
     tech: "Astro · TypeScript · AI pipelines",
     fact: "writes itself every morning",
     logicNote: "2 AI pipelines · cron @ 6am",
+    dataNote: "24h of news, triaged",
     description:
       "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
     image: "/photos/dispatch.webp",
@@ -27,6 +29,7 @@ const projects = [
     tech: "Vanilla TypeScript · Extensions",
     fact: "0 npm dependencies",
     logicNote: "11 modules, all hand-built",
+    dataNote: "45 days of history, kept local",
     description:
       "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a from-scratch component library — plus a recommendation engine that never lets data leave the browser.",
     image: "/photos/meridian.webp",
@@ -42,6 +45,7 @@ const projects = [
     fact: "design system: Neon Riff",
     featured: true,
     logicNote: "music theory engine",
+    dataNote: "chords, intervals, voicings",
     description:
       "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
@@ -53,7 +57,7 @@ const projects = [
 ];
 ---
 
-<section class="gw1 relative bg-bone" aria-label="Selected work">
+<section class="wx1 relative bg-bone" aria-label="Selected work">
   <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
     <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
       <div class="flex items-center gap-4">
@@ -79,59 +83,128 @@ const projects = [
     <p
       class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-20"
     >
-      One at a time on the bench, under glass&nbsp;&mdash;
-      <span class="text-ink/55">hover to lift it and take the build apart.</span>
+      One build on the bench at a time&nbsp;&mdash;
+      <span class="text-ink/55">pick from the index and watch it come apart.</span>
     </p>
 
-    <div class="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14 lg:items-start">
-      <!-- Index of cards -->
-      <div class="flex flex-col gap-3.5">
-        {
-          projects.map((project, i) => (
-            <article class="gw1-card rounded-[18px] border border-ink/10 bg-paper overflow-hidden" data-card={i}>
-              <button
-                type="button"
-                class="gw1-head w-full text-left px-5 sm:px-6 py-5 cursor-pointer"
-                data-select={i}
-                aria-expanded={i === 0 ? "true" : "false"}
-              >
-                <span class="flex items-baseline gap-3">
-                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
-                    {project.index}
+    <!-- Desktop: index rail + bench -->
+    <div class="hidden lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:items-start">
+      <!-- Index -->
+      <div class="sticky top-[max(96px,calc(50vh-260px))]">
+        <ul class="border-t border-ink/15">
+          {
+            projects.map((project, i) => (
+              <li class="wx1-item border-b border-ink/15" data-item={i}>
+                <button
+                  type="button"
+                  class="wx1-head w-full text-left py-5 cursor-pointer"
+                  data-select={i}
+                  data-image={project.image}
+                  data-alt={project.alt}
+                  data-logic-note={project.logicNote}
+                  data-data-note={project.dataNote}
+                  aria-pressed={i === 0 ? "true" : "false"}
+                >
+                  <span class="grid grid-cols-[36px_minmax(0,1fr)] items-baseline gap-3">
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
+                      {project.index}
+                    </span>
+                    <span class="min-w-0">
+                      <span class="flex items-center gap-2.5 min-w-0">
+                        <span class="wx1-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true" />
+                        <span class="wx1-title font-display font-normal leading-[1] tracking-[-0.016em] text-ink/45 truncate text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.006),1.75rem)]">
+                          {project.title}
+                        </span>
+                        {project.featured && (
+                          <span class="font-mono text-[10px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2 py-1 shrink-0">
+                            featured
+                          </span>
+                        )}
+                      </span>
+                      <span class="block font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 mt-2.5">
+                        {project.tech}
+                      </span>
+                    </span>
                   </span>
-                  <span class="gw1-title font-display font-normal leading-[1] tracking-[-0.016em] text-ink/45 text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.008),1.875rem)]">
-                    {project.title}
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35 mt-4 pl-1">
+          swaps happen with the lights off
+        </p>
+      </div>
+
+      <!-- Bench + spec sheet -->
+      <div>
+        <div class="wx1-stage relative" data-stage>
+          <div class="wx1-space absolute inset-0">
+            <div class="wx1-stack">
+              <div class="wx1-floor" aria-hidden="true"></div>
+
+              <div class="wx1-plane wx1-plane-data" aria-hidden="true">
+                <span class="wx1-plane-tag font-mono">data · <span data-data-note>{projects[0].dataNote}</span></span>
+              </div>
+
+              <div class="wx1-plane wx1-plane-logic" aria-hidden="true">
+                <span class="wx1-plane-tag font-mono">logic · <span data-logic-note>{projects[0].logicNote}</span></span>
+                <span class="wx1-node" style="left: 26%; top: 30%;"></span>
+                <span class="wx1-node" style="left: 62%; top: 58%;"></span>
+                <span class="wx1-node" style="left: 44%; top: 76%;"></span>
+              </div>
+
+              <div class="wx1-plane wx1-plane-ui">
+                <img
+                  src={projects[0].image}
+                  srcset={`${projects[0].image} 1x, ${projects[0].image.replace(".webp", "-2x.webp")} 2x`}
+                  alt={projects[0].alt}
+                  class="w-full h-full object-cover object-top"
+                  decoding="async"
+                  data-shot
+                />
+                <span class="wx1-plane-tag wx1-plane-tag-ui font-mono">interface</span>
+                <div class="wx1-shutter absolute inset-0" aria-hidden="true"></div>
+              </div>
+            </div>
+          </div>
+          <p class="absolute -bottom-7 right-1 font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35">
+            exploded view &mdash; interface / logic / data
+          </p>
+        </div>
+
+        <!-- Spec sheet -->
+        <div class="mt-16">
+          {
+            projects.map((project, i) => (
+              <div class="wx1-panel" data-panel={i} hidden={i !== 0}>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
+                    fig.&thinsp;{project.index}
                   </span>
                   {project.featured && (
-                    <span class="font-mono text-[10px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2 py-1 shrink-0">
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
                       featured
                     </span>
                   )}
-                  <span class="hidden sm:block font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 ml-auto text-right">
-                    {project.tech}
-                  </span>
-                </span>
-              </button>
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
+                </div>
 
-              <div class="gw1-more" data-more={i}>
-                <div class="overflow-hidden">
-                  <div class="px-5 sm:px-6 pb-6">
-                    <img
-                      src={project.image}
-                      srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                      alt={project.alt}
-                      class="lg:hidden w-full aspect-[16/10] object-cover object-top rounded-[12px] border border-ink/10 mb-5"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
-                      {project.fact}
+                <div class="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12 mt-6">
+                  <div>
+                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,calc(2rem+(100vw-27.5rem)*0.014),2.75rem)]">
+                      {project.title}
+                    </h3>
+                    <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                      {project.tech}
                     </p>
-                    <p class="font-display text-[15px] lg:text-[16px] leading-[1.6] text-ink/60 max-w-[520px] mt-4">
+                    <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-ink/60 max-w-[520px] mt-6">
                       {project.description}
                     </p>
+                  </div>
 
-                    <dl class="mt-6 border-t border-ink/10">
+                  <div>
+                    <dl class="border-t border-ink/10">
                       <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
                         <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
                           stack
@@ -157,7 +230,7 @@ const projects = [
                       </div>
                     </dl>
 
-                    <div class="flex items-center gap-3 mt-6">
+                    <div class="flex items-center gap-3 mt-7">
                       <a
                         href={project.websiteUrl}
                         target="_blank"
@@ -197,179 +270,174 @@ const projects = [
                   </div>
                 </div>
               </div>
-            </article>
-          ))
-        }
-      </div>
-
-      <!-- The bench (desktop only) -->
-      <div class="hidden lg:block sticky top-[max(96px,calc(50vh-300px))]">
-        <div class="gw1-stage relative" data-stage>
-          <div class="gw1-space absolute inset-0">
-            {
-              projects.map((project, i) => (
-                <div class="gw1-specimen absolute inset-0" data-specimen={i} data-active={i === 0 ? "true" : undefined}>
-                  <div class="gw1-stack">
-                    <div class="gw1-floor" aria-hidden="true" />
-
-                    <div class="gw1-plane gw1-board" aria-hidden="true">
-                      <span class="gw1-tag font-mono">logic · {project.logicNote}</span>
-                      <span class="gw1-node" style="left: 26%; top: 30%;" />
-                      <span class="gw1-node" style="left: 62%; top: 58%;" />
-                      <span class="gw1-node" style="left: 44%; top: 76%;" />
-                    </div>
-
-                    <div class="gw1-plane gw1-shot">
-                      <img
-                        src={project.image}
-                        srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                        alt={project.alt}
-                        class="w-full h-full object-cover object-top"
-                        loading="lazy"
-                        decoding="async"
-                        data-glass-img
-                      />
-                      <span class="gw1-tag gw1-tag-lime font-mono">interface</span>
-                    </div>
-
-                    <div class="gw1-plane gw1-glass" aria-hidden="true">
-                      <canvas class="gw1-canvas absolute inset-0 w-full h-full" data-glass-canvas />
-                      <div class="gw1-seams absolute inset-0" />
-                      <span class="gw1-tag font-mono">ribbed glass · ior 1.14</span>
-                      <span class="gw1-tag gw1-tag-rest font-mono">
-                        {project.index} · {project.title} — under glass
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-
-          <button
-            type="button"
-            class="gw1-toggle font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55 bg-paper/90 border border-ink/15 rounded-full px-3.5 py-2 absolute bottom-3 right-3 z-10 cursor-pointer hover:text-ink transition-colors duration-200"
-            data-toggle
-            aria-pressed="false"
-          >
-            lift the glass
-          </button>
+            ))
+          }
         </div>
-        <p class="font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-4">
-          hover the bench &mdash; the glass lifts, the layers spread
-        </p>
       </div>
     </div>
 
+    <!-- Mobile: plain cards -->
+    <div class="lg:hidden flex flex-col gap-8">
+      {
+        projects.map((project) => (
+          <article class="bg-paper rounded-[20px] border border-ink/10 overflow-hidden">
+            <div class="p-4 pb-0">
+              <img
+                src={project.image}
+                srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                alt={project.alt}
+                class="w-full aspect-[16/10] object-cover object-top rounded-[12px] border border-ink/10"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="p-6">
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
+                  fig.&thinsp;{project.index}
+                </span>
+                {project.featured && (
+                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
+                    featured
+                  </span>
+                )}
+                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
+              </div>
+
+              <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink mt-5 text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.014),2.625rem)]">
+                {project.title}
+              </h3>
+              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
+                {project.tech}
+              </p>
+              <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
+
+              <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-6">
+                {project.stack.map((item) => (
+                  <span class="inline-flex items-center gap-2">
+                    <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
+                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">{item}</span>
+                  </span>
+                ))}
+              </div>
+
+              <div class="flex items-center gap-3 mt-8">
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                >
+                  Visit site
+                </a>
+                {project.githubUrl && (
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
+                  >
+                    GitHub
+                  </a>
+                )}
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${project.title} in a new tab`}
+                  class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12 12 2M4.5 2H12v7.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
     <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-12">
-      the glass comes back down between showings
+      no screws were lost during disassembly
     </p>
   </div>
 </section>
 
 <style>
-  .gw1-head:focus-visible,
-  .gw1-toggle:focus-visible {
+  .wx1-head:focus-visible {
     outline: 2px solid var(--color-ink);
-    outline-offset: 3px;
+    outline-offset: 4px;
+    border-radius: 6px;
   }
 
-  .gw1-card {
-    box-shadow: inset 3px 0 0 transparent;
-    transition:
-      border-color 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-
-  .gw1-card[data-open] {
-    border-color: rgba(34, 47, 48, 0.25);
-    box-shadow:
-      inset 3px 0 0 var(--color-bio-lime),
-      0 18px 40px -28px rgba(34, 47, 48, 0.3);
-  }
-
-  .gw1-title {
+  .wx1-title {
     transition: color 0.3s ease;
   }
 
-  .gw1-card[data-open] .gw1-title,
-  .gw1-head:hover .gw1-title {
+  .wx1-item[data-active] .wx1-title,
+  .wx1-head:hover .wx1-title {
     color: var(--color-ink);
   }
 
-  /* Expanding drawer — grid-rows keeps it height-animatable */
-  .gw1-more {
-    display: grid;
-    grid-template-rows: 0fr;
+  /* Lime dot marks the pick; hidden rows keep the slot so text doesn't shift */
+  .wx1-dot {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
   }
 
-  .gw1-more > div {
-    min-height: 0;
-  }
-
-  .gw1-card[data-open] .gw1-more {
-    grid-template-rows: 1fr;
+  .wx1-item[data-active] .wx1-dot {
+    opacity: 1;
+    transform: scale(1);
   }
 
   /* ── The bench ── */
-  .gw1-stage {
-    height: clamp(340px, 40vw, 520px);
+  .wx1-stage {
+    height: clamp(320px, 34vw, 460px);
   }
 
-  .gw1-space {
+  .wx1-space {
     perspective: 1500px;
     display: grid;
     place-items: center;
   }
 
-  .gw1-specimen {
-    display: grid;
-    place-items: center;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .gw1-specimen[data-active] {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .gw1-stack {
+  /* Rest state: exploded. --spread drives the layer gap; the stage's
+     is-flat class (set by the swap choreography) collapses it. */
+  .wx1-stack {
     position: relative;
-    width: min(82%, 560px);
+    width: min(74%, 520px);
     aspect-ratio: 16 / 10;
     transform-style: preserve-3d;
-    /* Rest state: assembled, glass lowered, facing the viewer */
-    transform: rotateX(7deg) rotateZ(0deg);
-    --spread: 0;
-  }
-
-  /* Hover (or the toggle): the teardown */
-  @media (hover: hover) {
-    .gw1-stage:hover .gw1-stack {
-      transform: rotateX(54deg) rotateZ(-30deg) scale(0.9);
-      --spread: 1;
-    }
-  }
-
-  .gw1-stage.gw1-apart .gw1-stack {
-    transform: rotateX(54deg) rotateZ(-30deg) scale(0.9);
+    transform: rotateX(52deg) rotateZ(-30deg) scale(0.94);
     --spread: 1;
   }
 
-  .gw1-floor {
-    position: absolute;
-    left: 6%;
-    right: 6%;
-    bottom: -4%;
-    height: 16%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(34, 47, 48, 0.2), transparent 68%);
-    transform: translateZ(-120px);
+  .wx1-stage.is-flat .wx1-stack {
+    --spread: 0;
   }
 
-  .gw1-plane {
+  .wx1-floor {
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    bottom: -6%;
+    height: 18%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(34, 47, 48, 0.2), transparent 68%);
+    transform: translateZ(-150px);
+  }
+
+  .wx1-plane {
     position: absolute;
     inset: 0;
     border-radius: 14px;
@@ -378,18 +446,26 @@ const projects = [
     backface-visibility: hidden;
   }
 
-  /* Bottom layer — the logic board */
-  .gw1-board {
+  /* Bottom layer — the data bed */
+  .wx1-plane-data {
+    background-color: var(--color-bone);
+    background-image: radial-gradient(circle, rgba(34, 47, 48, 0.22) 1px, transparent 1px);
+    background-size: 22px 22px;
+    transform: translateZ(calc(var(--spread) * -86px));
+    box-shadow: 0 30px 50px -30px rgba(34, 47, 48, 0.45);
+  }
+
+  /* Middle layer — the logic board */
+  .wx1-plane-logic {
     background-color: var(--color-paper);
     background-image:
       linear-gradient(rgba(34, 47, 48, 0.09) 1px, transparent 1px),
       linear-gradient(90deg, rgba(34, 47, 48, 0.09) 1px, transparent 1px);
     background-size: 34px 34px;
-    transform: translateZ(calc(var(--spread) * -84px));
-    box-shadow: 0 30px 50px -30px rgba(34, 47, 48, 0.45);
+    transform: translateZ(0px);
   }
 
-  .gw1-node {
+  .wx1-node {
     position: absolute;
     width: 9px;
     height: 9px;
@@ -398,52 +474,25 @@ const projects = [
     border: 1.5px solid var(--color-ink);
   }
 
-  /* Middle layer — the interface */
-  .gw1-shot {
+  /* Top layer — the interface */
+  .wx1-plane-ui {
     background: var(--color-paper);
-    transform: translateZ(0px);
-    box-shadow: 0 24px 48px -24px rgba(34, 47, 48, 0.4);
+    transform: translateZ(calc(var(--spread) * 86px + 1px));
+    box-shadow: 0 24px 48px -24px rgba(34, 47, 48, 0.5);
   }
 
-  /* Top layer — the glass pane itself. Lowered (spread 0) it sits 2px
-     above the screenshot: all you see is the refraction. Lifted, it turns
-     translucent and floats above the teardown. */
-  .gw1-glass {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateZ(calc(var(--spread) * 110px + 2px));
-    box-shadow: 0 18px 44px -26px rgba(34, 47, 48, 0.45);
+  /* The blackout curtain over the screenshot during a swap */
+  .wx1-shutter {
+    background: #0b0f10;
+    opacity: 0;
+    pointer-events: none;
   }
 
-  .gw1-canvas {
+  .wx1-stage.is-dark .wx1-shutter {
     opacity: 1;
   }
 
-  @media (hover: hover) {
-    .gw1-stage:hover .gw1-canvas {
-      opacity: 0.5;
-    }
-  }
-
-  .gw1-stage.gw1-apart .gw1-canvas {
-    opacity: 0.5;
-  }
-
-  /* Ribbed highlights + seams painted over the refracted canvas. The cell
-     count must match GLASS_CELLS in the script below. */
-  .gw1-seams {
-    background-image: repeating-linear-gradient(
-      90deg,
-      rgba(34, 47, 48, 0.1) 0px,
-      rgba(255, 255, 255, 0.34) 1.5%,
-      rgba(255, 255, 255, 0) 12%,
-      rgba(255, 255, 255, 0) 88%,
-      rgba(255, 255, 255, 0.34) 98.5%,
-      rgba(34, 47, 48, 0.1) 100%
-    );
-    background-size: calc(100% / 16) 100%;
-  }
-
-  .gw1-tag {
+  .wx1-plane-tag {
     position: absolute;
     left: 10px;
     bottom: 10px;
@@ -456,173 +505,152 @@ const projects = [
     border-radius: 999px;
     padding: 6px 10px;
     white-space: nowrap;
+    /* Layer tags only make sense while the stack is apart */
+    opacity: var(--spread);
   }
 
-  .gw1-tag-lime {
+  .wx1-plane-tag-ui {
     background: var(--color-bio-lime);
     border-color: transparent;
   }
 
-  /* Layer tags only make sense once the stack is apart; the rest chip
-     does the opposite — it names what's under the lowered glass. */
-  .gw1-glass .gw1-tag,
-  .gw1-board .gw1-tag,
-  .gw1-shot .gw1-tag {
-    opacity: calc(var(--spread) * 1);
-  }
-
-  .gw1-glass .gw1-tag-rest {
-    left: auto;
-    right: 10px;
-    bottom: auto;
-    top: 10px;
-    opacity: calc(1 - var(--spread));
-  }
-
   @media (prefers-reduced-motion: no-preference) {
-    .gw1-more {
-      transition: grid-template-rows 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+    .wx1-plane {
+      /* Durations here are mirrored by the timing constants in the script */
+      transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
     }
 
-    .gw1-stack,
-    .gw1-plane {
-      transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+    .wx1-plane-data {
+      transition-delay: 0.04s;
     }
 
-    .gw1-canvas {
-      transition: opacity 0.6s ease;
+    .wx1-shutter {
+      transition: opacity 0.3s ease;
     }
 
-    .gw1-tag {
+    .wx1-plane-tag {
       transition: opacity 0.4s ease;
     }
 
-    .gw1-board {
-      transition-delay: 0.06s;
-    }
-
-    .gw1-glass {
-      transition-delay: 0.02s;
-    }
-
-    /* Selecting a project: the specimen settles, then the glass lowers */
-    .gw1-specimen[data-active] {
-      animation: gw1-land 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
-    }
-
-    .gw1-specimen[data-active] .gw1-glass {
-      animation: gw1-lower 0.85s cubic-bezier(0.65, 0, 0.35, 1) 0.15s both;
+    /* Spec sheet settles in when the pick changes (hidden toggle
+       restarts the animation) */
+    .wx1-panel {
+      animation: wx1-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
     }
   }
 
-  @keyframes gw1-land {
+  @keyframes wx1-rise {
     from {
       opacity: 0;
-      transform: translateY(18px);
-    }
-  }
-
-  @keyframes gw1-lower {
-    from {
-      transform: translateZ(180px);
-      opacity: 0;
-    }
-    to {
-      transform: translateZ(calc(var(--spread) * 110px + 2px));
-      opacity: 1;
+      transform: translateY(14px);
     }
   }
 </style>
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".gw1");
+    const section = document.querySelector<HTMLElement>(".wx1");
     if (section) {
-      const cards = section.querySelectorAll<HTMLElement>("[data-card]");
+      const items = section.querySelectorAll<HTMLElement>("[data-item]");
       const heads = section.querySelectorAll<HTMLButtonElement>("[data-select]");
-      const specimens = section.querySelectorAll<HTMLElement>("[data-specimen]");
+      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
       const stage = section.querySelector<HTMLElement>("[data-stage]");
-      const toggle = section.querySelector<HTMLButtonElement>("[data-toggle]");
+      const shot = section.querySelector<HTMLImageElement>("[data-shot]");
+      // Scoped to the stage — the index buttons carry the same data-* attributes
+      const logicNote = stage?.querySelector<HTMLElement>("[data-logic-note]") ?? null;
+      const dataNote = stage?.querySelector<HTMLElement>("[data-data-note]") ?? null;
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      const select = (id: string) => {
-        cards.forEach((card) => {
-          if (card.dataset.card === id) card.setAttribute("data-open", "");
-          else card.removeAttribute("data-open");
+      // Must track the CSS: plane transform 0.65s (+0.04s delay), shutter 0.3s
+      const COLLAPSE_MS = 700;
+      const FADE_MS = 340;
+
+      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+      let current = "0";
+      let target = "0";
+      let animating = false;
+
+      const setIndex = (id: string) => {
+        items.forEach((item) => {
+          if (item.dataset.item === id) item.setAttribute("data-active", "");
+          else item.removeAttribute("data-active");
         });
         heads.forEach((head) => {
-          head.setAttribute("aria-expanded", String(head.dataset.select === id));
+          head.setAttribute("aria-pressed", String(head.dataset.select === id));
         });
-        specimens.forEach((s) => {
-          if (s.dataset.specimen === id) s.setAttribute("data-active", "true");
-          else s.removeAttribute("data-active");
+      };
+
+      const setPanels = (id: string) => {
+        panels.forEach((panel) => {
+          panel.hidden = panel.dataset.panel !== id;
         });
+      };
+
+      const applyShot = async (id: string) => {
+        const head = section.querySelector<HTMLElement>(`[data-select="${id}"]`);
+        if (!head) return;
+        const src = head.dataset.image!;
+        if (shot) {
+          shot.src = src;
+          shot.srcset = `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
+          shot.alt = head.dataset.alt ?? "";
+        }
+        if (logicNote) logicNote.textContent = head.dataset.logicNote ?? "";
+        if (dataNote) dataNote.textContent = head.dataset.dataNote ?? "";
+        // Hold in the dark until the new frame is ready — no half-loaded reveal
+        if (shot) await shot.decode().catch(() => {});
+      };
+
+      /* The swap choreography: stack together → lights off → exchange the
+         specimen → lights on → spread apart. Loops in case the pick
+         changed again mid-sequence — the latest click always wins. */
+      const run = async () => {
+        if (animating || !stage) return;
+        animating = true;
+        while (current !== target) {
+          stage.classList.add("is-flat");
+          await wait(COLLAPSE_MS);
+          stage.classList.add("is-dark");
+          await wait(FADE_MS);
+          const id = target;
+          await applyShot(id);
+          setPanels(id);
+          current = id;
+          stage.classList.remove("is-dark");
+          await wait(FADE_MS);
+          stage.classList.remove("is-flat");
+          await wait(COLLAPSE_MS);
+        }
+        animating = false;
       };
 
       heads.forEach((head) => {
-        head.addEventListener("click", () => select(head.dataset.select!));
+        head.addEventListener("click", () => {
+          const id = head.dataset.select!;
+          if (id === target) return;
+          target = id;
+          setIndex(id);
+          if (reducedMotion || !stage) {
+            applyShot(id);
+            setPanels(id);
+            current = id;
+            return;
+          }
+          run();
+        });
       });
-      select("0");
 
-      toggle?.addEventListener("click", () => {
-        const apart = stage?.classList.toggle("gw1-apart") ?? false;
-        toggle.setAttribute("aria-pressed", String(apart));
-        toggle.textContent = apart ? "lower the glass" : "lift the glass";
-      });
+      setIndex("0");
+      setPanels("0");
 
-      /* The hero's glass, miniaturized: vertical packed cylinders, 2D
-         refraction at the entry interface, sampled from a blurred copy of
-         the screenshot. Rendered once per image — the canvas is just a
-         picture afterwards, zero cost. */
-      const GLASS_CELLS = 16; // must match .gw1-seams background-size
-      const IOR = 1.14;
-      const THICK = 3.4; // displacement scale, in cylinder-diameters
-      const BLUR_FRAC = 0.007; // blur radius as a fraction of internal width
-      const W = 720;
-      const H = 450; // 16/10, matches the plane aspect
-
-      const renderGlass = (canvas: HTMLCanvasElement, img: HTMLImageElement) => {
-        canvas.width = W;
-        canvas.height = H;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        const blur = Math.round(W * BLUR_FRAC);
-        const off = document.createElement("canvas");
-        off.width = W;
-        off.height = H;
-        const octx = off.getContext("2d")!;
-        const pad = blur * 3;
-        // object-fit: cover, object-position: top — mirror the real <img>
-        const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
-        const dw = img.naturalWidth * scale;
-        const dh = img.naturalHeight * scale;
-        octx.filter = `blur(${blur}px)`;
-        octx.drawImage(img, (W - dw) / 2 - pad, -pad, dw + pad * 2, dh + pad * 2);
-        octx.filter = "none";
-
-        const period = W / GLASS_CELLS;
-        const thick = period * THICK;
-        const eta = 1 / IOR;
-        for (let c = 0; c < W; c++) {
-          const nx = ((c % period) / period) * 2 - 1;
-          const ny = Math.sqrt(Math.max(1 - nx * nx, 1e-5));
-          const k = 1 - eta * eta * (1 - ny * ny);
-          const coef = eta * ny - Math.sqrt(Math.max(k, 0));
-          const tx = coef * nx;
-          const ty = -eta + coef * ny;
-          const shift = (tx / Math.max(Math.abs(ty), 0.18)) * thick;
-          const sx = Math.min(Math.max(c + shift, 0), W - 1);
-          ctx.drawImage(off, sx, 0, 1, H, c, 0, 1, H);
-        }
-      };
-
-      specimens.forEach((specimen) => {
-        const img = specimen.querySelector<HTMLImageElement>("[data-glass-img]");
-        const canvas = specimen.querySelector<HTMLCanvasElement>("[data-glass-canvas]");
-        if (!img || !canvas) return;
-        const paint = () => renderGlass(canvas, img);
-        if (img.complete && img.naturalWidth) paint();
-        else img.addEventListener("load", paint, { once: true });
+      // Warm the cache so the in-the-dark swap never waits on the network
+      heads.forEach((head) => {
+        const src = head.dataset.image;
+        if (!src || src === shot?.src) return;
+        const img = new Image();
+        img.srcset = `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
+        img.src = src;
       });
     }
   }
