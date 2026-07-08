@@ -1,8 +1,243 @@
 ---
+// V2 — "In every first language": the quote is retyped, live, as the
+// hello-world of one first language after another — landing on Smalltalk,
+// the one Alan Kay built himself.
+const quote =
+  "The most disastrous thing that you can ever learn is your first programming language.";
+
+// Token classes: kw = keyword (lime), fn = message/function (sage),
+// str = string, num = line number, pun = punctuation, com = comment
+const langs = [
+  {
+    file: "lesson.bas",
+    label: "BASIC · 1964",
+    tokens: [
+      { c: "num", v: "10 " },
+      { c: "kw", v: "PRINT " },
+      { c: "str", v: `"${quote}"` },
+      { c: "pun", v: "\n" },
+      { c: "num", v: "20 " },
+      { c: "kw", v: "END" },
+    ],
+  },
+  {
+    file: "lesson.pas",
+    label: "Pascal · 1970",
+    tokens: [
+      { c: "fn", v: "writeln" },
+      { c: "pun", v: "(" },
+      { c: "str", v: `'${quote}'` },
+      { c: "pun", v: ");" },
+    ],
+  },
+  {
+    file: "lesson.c",
+    label: "C · 1972",
+    tokens: [
+      { c: "fn", v: "printf" },
+      { c: "pun", v: "(" },
+      { c: "str", v: `"${quote}\\n"` },
+      { c: "pun", v: ");" },
+    ],
+  },
+  {
+    file: "lesson.py",
+    label: "Python · 1991",
+    tokens: [
+      { c: "fn", v: "print" },
+      { c: "pun", v: "(" },
+      { c: "str", v: `"${quote}"` },
+      { c: "pun", v: ")" },
+    ],
+  },
+  {
+    file: "Lesson.java",
+    label: "Java · 1995",
+    tokens: [
+      { c: "kw", v: "System" },
+      { c: "pun", v: "." },
+      { c: "fn", v: "out.println" },
+      { c: "pun", v: "(" },
+      { c: "str", v: `"${quote}"` },
+      { c: "pun", v: ");" },
+    ],
+  },
+  {
+    file: "lesson.js",
+    label: "JavaScript · 1995",
+    tokens: [
+      { c: "kw", v: "console" },
+      { c: "pun", v: "." },
+      { c: "fn", v: "log" },
+      { c: "pun", v: "(" },
+      { c: "str", v: `"${quote}"` },
+      { c: "pun", v: ");" },
+    ],
+  },
+  {
+    file: "lesson.st",
+    label: "Smalltalk · 1972",
+    tokens: [
+      { c: "kw", v: "Transcript " },
+      { c: "fn", v: "showln: " },
+      { c: "str", v: `'${quote}'` },
+      { c: "pun", v: ".\n" },
+      { c: "com", v: '"his own. he would know."' },
+    ],
+  },
+];
+
+// Static fallback (no JS / reduced motion): Kay's own language
+const fallback = langs[langs.length - 1];
 ---
 
-<section class="relative bg-section-quote py-24 md:py-48 px-3 sm:px-4 md:px-12 border-y border-outline-variant/20 overflow-hidden">
-  <div class="max-w-5xl mx-auto flex items-center justify-center min-h-[160px] md:min-h-[240px] border border-dashed border-outline-variant/40">
-    <p class="font-label text-outline-variant text-xs uppercase tracking-widest">Quote — Variant 2</p>
+<section
+  class="qv2 relative bg-[#0a0a0a] overflow-hidden py-[clamp(110px,15vh,190px)] px-6 md:px-12"
+  aria-label="Quote"
+>
+  <div class="relative max-w-[1200px] mx-auto grid lg:grid-cols-[1fr_minmax(0,540px)] gap-12 lg:gap-20 items-center">
+    <div>
+      <p class="font-mono text-[11px] md:text-xs uppercase tracking-[0.3em] text-white/40 mb-8 md:mb-12">
+        An interlude &middot; hello, world
+      </p>
+
+      <blockquote
+        class="font-display text-[clamp(1.7rem,3.8vw,2.9rem)] leading-[1.25] tracking-[-0.008em] text-[#f5f5f5] max-w-[560px]"
+      >
+        &ldquo;The most disastrous thing that you can ever learn is your
+        <span class="text-bio-lime">first programming language</span>.&rdquo;
+      </blockquote>
+
+      <cite class="block mt-8 md:mt-10 font-mono not-italic text-[11px] md:text-sm uppercase tracking-[0.25em] text-white/50">
+        <span class="text-bio-lime">Alan Kay</span> &mdash; creator of Smalltalk
+      </cite>
+    </div>
+
+    <!-- Editor card -->
+    <div class="rounded-xl border border-white/10 bg-[#0f110e] shadow-[0_30px_80px_rgba(0,0,0,0.55)] overflow-hidden">
+      <div class="flex items-center gap-3 px-5 py-3.5 border-b border-white/[0.07]">
+        <span class="flex gap-1.5" aria-hidden="true">
+          <span class="w-2.5 h-2.5 rounded-full bg-white/10"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-white/10"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-white/10"></span>
+        </span>
+        <span class="qv2-file font-mono text-xs text-white/55">{fallback.file}</span>
+        <span class="qv2-label ml-auto font-mono text-[10px] uppercase tracking-[0.15em] text-white/35">
+          {fallback.label}
+        </span>
+      </div>
+      <div class="px-5 md:px-6 py-6 min-h-[11.5rem] md:min-h-[12.5rem]">
+        <code class="qv2-code font-mono text-[13px] md:text-sm leading-[1.8] whitespace-pre-wrap break-words">
+          {fallback.tokens.map((t) => <span class={`qv2-t-${t.c}`}>{t.v}</span>)}<span
+            class="qv2-caret"
+            aria-hidden="true"></span>
+        </code>
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute bottom-6 right-6 md:bottom-10 md:right-12">
+    <p class="font-mono text-[10px] md:text-xs text-white/30 tracking-wide">
+      &ldquo;Eh, maybe...&rdquo; &mdash; Dominic Clerici
+    </p>
   </div>
 </section>
+
+<script type="application/json" id="qv2-data" is:inline set:html={JSON.stringify(langs)} />
+
+<style>
+  .qv2 :global(.qv2-t-kw) {
+    color: var(--color-bio-lime);
+  }
+  .qv2 :global(.qv2-t-fn) {
+    color: var(--color-secondary);
+  }
+  .qv2 :global(.qv2-t-str) {
+    color: rgba(245, 245, 245, 0.82);
+  }
+  .qv2 :global(.qv2-t-num),
+  .qv2 :global(.qv2-t-pun) {
+    color: rgba(255, 255, 255, 0.38);
+  }
+  .qv2 :global(.qv2-t-com) {
+    color: rgba(255, 255, 255, 0.32);
+    font-style: italic;
+  }
+  .qv2-caret {
+    display: inline-block;
+    width: 0.55em;
+    height: 1.1em;
+    margin-left: 1px;
+    vertical-align: text-bottom;
+    background: var(--color-bio-lime);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .qv2-caret {
+      animation: qv2-blink 1.1s steps(2, jump-none) infinite;
+    }
+    @keyframes qv2-blink {
+      50% {
+        opacity: 0;
+      }
+    }
+  }
+</style>
+
+<script>
+  type Token = { c: string; v: string };
+  type Lang = { file: string; label: string; tokens: Token[] };
+
+  const section = document.querySelector<HTMLElement>(".qv2");
+  const data = document.getElementById("qv2-data");
+  const motionOK = matchMedia("(prefers-reduced-motion: no-preference)").matches;
+
+  if (section && data && motionOK) {
+    const langs: Lang[] = JSON.parse(data.textContent || "[]");
+    const fileEl = section.querySelector<HTMLElement>(".qv2-file")!;
+    const labelEl = section.querySelector<HTMLElement>(".qv2-label")!;
+    const codeEl = section.querySelector<HTMLElement>(".qv2-code")!;
+    const caret = section.querySelector<HTMLElement>(".qv2-caret")!;
+
+    let visible = false;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const waitVisible = () =>
+      new Promise<void>((r) => {
+        const check = () => (visible ? r() : setTimeout(check, 300));
+        check();
+      });
+
+    const run = async () => {
+      let i = 0;
+      for (;;) {
+        await waitVisible();
+        const lang = langs[i % langs.length];
+        fileEl.textContent = lang.file;
+        labelEl.textContent = lang.label;
+        codeEl.textContent = "";
+        codeEl.appendChild(caret);
+
+        for (const token of lang.tokens) {
+          const span = document.createElement("span");
+          span.className = `qv2-t-${token.c}`;
+          codeEl.insertBefore(span, caret);
+          for (const ch of token.v) {
+            span.textContent += ch;
+            // Punctuation/keywords land in beats; the long string flows fast
+            await sleep(token.c === "str" ? 11 : 38);
+          }
+        }
+        await sleep(2800);
+        i++;
+      }
+    };
+
+    new IntersectionObserver(
+      (entries) => {
+        visible = entries[0].isIntersecting;
+      },
+      { threshold: 0.2 }
+    ).observe(section);
+
+    run();
+  }
+</script>
