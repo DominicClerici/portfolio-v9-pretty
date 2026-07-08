@@ -1,8 +1,8 @@
 ---
-// V1 — "The Stack": each project is a full-width paper dossier card. Cards
-// are sticky, so as you scroll they pile up on top of one another like a
-// deck being dealt — the playfulness is in the scroll itself, the cards
-// stay clean and editorial.
+// V1 — "Under Glass": dense dossier cards, but every screenshot sits behind
+// the hero's ribbed glass — the same cylinder-refraction math, run once per
+// image in Canvas2D (no WebGL, see hero fallback). Hovering a card slides
+// the glass pane away to reveal the sharp screenshot underneath.
 const projects = [
   {
     index: "01",
@@ -47,7 +47,7 @@ const projects = [
 ];
 ---
 
-<section class="wv1 relative bg-bone" aria-label="Selected work">
+<section class="wg1 relative bg-bone" aria-label="Selected work">
   <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
     <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
       <div class="flex items-center gap-4">
@@ -73,19 +73,19 @@ const projects = [
     <p
       class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-24"
     >
-      Three projects that started as itches&nbsp;&mdash;
-      <span class="text-ink/55">and got completely out of hand.</span>
+      Three projects, still under the glass&nbsp;&mdash;
+      <span class="text-ink/55">hover to lift it off.</span>
     </p>
 
-    <div class="flex flex-col gap-6 lg:gap-8">
+    <div class="flex flex-col gap-8 lg:gap-12">
       {
         projects.map((project, i) => (
           <article
-            class="wv1-card sticky overflow-hidden rounded-[24px] border border-ink/10 bg-paper"
-            style={`top: calc(clamp(72px, 9vh, 104px) + ${i * 26}px); z-index: ${i + 1};`}
+            class="wg1-card group overflow-hidden rounded-[24px] border border-ink/10 bg-paper"
+            data-glass-card
           >
-            <div class="grid lg:grid-cols-2">
-              <div class="p-7 sm:p-10 lg:p-14 flex flex-col order-last lg:order-first">
+            <div class:list={["grid lg:grid-cols-2", i % 2 === 1 && "wg1-flip"]}>
+              <div class="p-7 sm:p-10 lg:p-14 flex flex-col order-last lg:order-none">
                 <div class="flex items-center gap-3 flex-wrap">
                   <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
                     &numero;&thinsp;{project.index}
@@ -159,15 +159,31 @@ const projects = [
                 </div>
               </div>
 
-              <div class="wv1-shot relative bg-bone lg:border-l border-b lg:border-b-0 border-ink/10 p-5 sm:p-8 lg:p-12 flex items-center">
-                <img
-                  src={project.image}
-                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                  alt={project.alt}
-                  class="w-full aspect-[16/10] object-cover object-top rounded-[14px] border border-ink/10 shadow-[0_18px_40px_-24px_rgba(34,47,48,0.35)]"
-                  loading="lazy"
-                  decoding="async"
-                />
+              <div
+                class:list={[
+                  "relative bg-bone p-5 sm:p-8 lg:p-12 flex items-center border-b lg:border-b-0 border-ink/10",
+                  i % 2 === 1 ? "lg:border-r" : "lg:border-l",
+                ]}
+              >
+                <div class="wg1-shot relative w-full aspect-[16/10] rounded-[14px] overflow-hidden border border-ink/10 shadow-[0_18px_40px_-24px_rgba(34,47,48,0.35)]">
+                  <img
+                    src={project.image}
+                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                    alt={project.alt}
+                    class="absolute inset-0 w-full h-full object-cover object-top"
+                    loading="lazy"
+                    decoding="async"
+                    data-glass-img
+                  />
+                  <div class="wg1-veil absolute inset-0" aria-hidden="true">
+                    <canvas class="wg1-canvas absolute inset-0 w-full h-full" data-glass-canvas></canvas>
+                    <div class="wg1-seams absolute inset-0"></div>
+                    <span class="wg1-edge"></span>
+                  </div>
+                  <span class="wg1-hint font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/55 bg-paper/85 border border-ink/10 rounded-full px-3 py-1.5 absolute bottom-3 right-3 backdrop-blur-[2px]">
+                    hover to lift the glass
+                  </span>
+                </div>
               </div>
             </div>
           </article>
@@ -176,23 +192,163 @@ const projects = [
     </div>
 
     <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-10">
-      neatly stacked, for once
+      same glass as upstairs — refracted per pixel, no gpu required
     </p>
   </div>
 </section>
 
 <style>
-  .wv1-card {
-    box-shadow: 0 -12px 32px -20px rgba(34, 47, 48, 0.25);
+  /* Flipped rows keep source order for a11y; only the visual order swaps */
+  .wg1-flip > div:first-child {
+    order: 2;
+  }
+
+  @media (min-width: 1024px) {
+    .wg1-flip > div:last-child {
+      order: 1;
+    }
+  }
+
+  .wg1-veil {
+    clip-path: inset(0 0 0 0);
+  }
+
+  /* Ribbed highlights + seams painted over the refracted canvas. The cell
+     count must match GLASS_CELLS in the script below. */
+  .wg1-seams {
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(34, 47, 48, 0.1) 0px,
+      rgba(255, 255, 255, 0.34) 1.5%,
+      rgba(255, 255, 255, 0) 12%,
+      rgba(255, 255, 255, 0) 88%,
+      rgba(255, 255, 255, 0.34) 98.5%,
+      rgba(34, 47, 48, 0.1) 100%
+    );
+    background-size: calc(100% / 16) 100%;
+  }
+
+  .wg1-edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -3px;
+    width: 3px;
+    background: var(--color-bio-lime);
+    opacity: 0;
+  }
+
+  .wg1-hint {
+    transition: opacity 0.3s ease;
+  }
+
+  @media (hover: none) {
+    .wg1-hint {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .wv1-shot img {
-      transition: transform 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    .wg1-veil {
+      transition: clip-path 0.85s cubic-bezier(0.65, 0, 0.35, 1);
     }
 
-    .wv1-card:hover .wv1-shot img {
-      transform: scale(1.02) rotate(-0.4deg);
+    .wg1-edge {
+      transition: opacity 0.2s ease 0.1s;
     }
   }
+
+  /* Hover (fine pointers) or .wg1-open (touch, added on scroll-into-view):
+     the glass pane slides off to the left, lime edge tracking the wipe. */
+  @media (hover: hover) {
+    .wg1-card:hover .wg1-veil {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    .wg1-card:hover .wg1-edge {
+      opacity: 1;
+    }
+
+    .wg1-card:hover .wg1-hint {
+      opacity: 0;
+    }
+  }
+
+  .wg1-card.wg1-open .wg1-veil {
+    clip-path: inset(0 100% 0 0);
+  }
 </style>
+
+<script>
+  {
+    /* The hero's glass, miniaturized: vertical packed cylinders, 2D
+       refraction at the entry interface, sampled from a blurred copy of
+       the screenshot. Rendered once per image at a fixed internal
+       resolution — the canvas is just a picture afterwards, zero cost. */
+    const GLASS_CELLS = 16; // must match .wg1-seams background-size
+    const IOR = 1.14;
+    const THICK = 3.4; // displacement scale, in cylinder-diameters
+    const BLUR_FRAC = 0.014; // blur radius as a fraction of internal width
+    const W = 720;
+    const H = 450; // 16/10, matches the aspect box
+
+    const renderGlass = (canvas: HTMLCanvasElement, img: HTMLImageElement) => {
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Blurred scene, drawn oversized so filter edges never show through
+      const blur = Math.round(W * BLUR_FRAC);
+      const off = document.createElement("canvas");
+      off.width = W;
+      off.height = H;
+      const octx = off.getContext("2d")!;
+      const pad = blur * 3;
+      // object-fit: cover, object-position: top — mirror the real <img>
+      const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      const dw = img.naturalWidth * scale;
+      const dh = img.naturalHeight * scale;
+      octx.filter = `blur(${blur}px)`;
+      octx.drawImage(img, (W - dw) / 2 - pad, -pad, dw + pad * 2, dh + pad * 2);
+      octx.filter = "none";
+
+      const period = W / GLASS_CELLS;
+      const thick = period * THICK;
+      const eta = 1 / IOR;
+      for (let c = 0; c < W; c++) {
+        const nx = ((c % period) / period) * 2 - 1;
+        const ny = Math.sqrt(Math.max(1 - nx * nx, 1e-5));
+        const k = 1 - eta * eta * (1 - ny * ny);
+        const coef = eta * ny - Math.sqrt(Math.max(k, 0));
+        const tx = coef * nx;
+        const ty = -eta + coef * ny;
+        const shift = (tx / Math.max(Math.abs(ty), 0.18)) * thick;
+        const sx = Math.min(Math.max(c + shift, 0), W - 1);
+        ctx.drawImage(off, sx, 0, 1, H, c, 0, 1, H);
+      }
+    };
+
+    document.querySelectorAll<HTMLElement>("[data-glass-card]").forEach((card) => {
+      const img = card.querySelector<HTMLImageElement>("[data-glass-img]");
+      const canvas = card.querySelector<HTMLCanvasElement>("[data-glass-canvas]");
+      if (!img || !canvas) return;
+      const paint = () => renderGlass(canvas, img);
+      if (img.complete && img.naturalWidth) paint();
+      else img.addEventListener("load", paint, { once: true });
+    });
+
+    // No hover on touch — the glass lifts on its own as each card arrives
+    if (window.matchMedia("(hover: none)").matches) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            entry.target.classList.toggle("wg1-open", entry.isIntersecting);
+          });
+        },
+        { threshold: 0.45 },
+      );
+      document.querySelectorAll("[data-glass-card]").forEach((card) => io.observe(card));
+    }
+  }
+</script>

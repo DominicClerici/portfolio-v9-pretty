@@ -1,16 +1,22 @@
 ---
-// V2 — "The Index": the section is a giant typographic table of contents.
-// On desktop, hovering a row makes the project's screenshot chase the
-// cursor like a photo being slid across a table; the whole row is a link.
-// On mobile the rows unfold into simple stacked cards.
+// V2 — "The Stage": a clean typographic index on the left drives a sticky
+// 3D stage on the right. The active project's screenshot floats as a pane
+// in real perspective — spec chips hover at different depths above it and
+// the whole assembly tilts to follow the cursor. Selecting a row swaps the
+// specimen with a settle animation.
 const projects = [
   {
     index: "01",
     title: "Dispatch",
     tech: "Astro · AI pipelines",
-    blurb: "The last 24 hours of tech news, compressed into a 10 minute read. Writes itself every morning.",
+    fact: "writes itself every morning",
+    chip: "2 AI pipelines",
+    description:
+      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs it while I sleep.",
     image: "/photos/dispatch.webp",
     alt: "Dispatch project screenshot",
+    stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
+    url: "dispatch.dominicclerici.com",
     websiteUrl: "https://dispatch.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/dispatch",
   },
@@ -18,9 +24,14 @@ const projects = [
     index: "02",
     title: "Meridian",
     tech: "Vanilla TS · Extensions",
-    blurb: "A new-tab extension with zero npm dependencies. Eleven modules, all built by hand, nothing leaves the browser.",
+    fact: "0 npm dependencies",
+    chip: "11 hand-built modules",
+    description:
+      "A new-tab extension for Chrome and Firefox with zero npm dependencies — a reactive storage layer, a from-scratch component library, and a recommendation engine that never lets data leave the browser.",
     image: "/photos/meridian.webp",
     alt: "Meridian project screenshot",
+    stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
+    url: "meridian.dominicclerici.com",
     websiteUrl: "https://meridian.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/meridian",
   },
@@ -28,272 +39,414 @@ const projects = [
     index: "03",
     title: "Fuzzbox",
     tech: "Next.js · React Native",
+    fact: "design system: Neon Riff",
+    chip: "interactive fretboard",
     featured: true,
-    blurb: "Guitar tools I wished existed when I was learning — play a chord, understand what you found.",
+    description:
+      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
     alt: "Fuzzbox project screenshot",
+    stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
+    url: "fuzzbox.dominicclerici.com",
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
   },
 ];
 ---
 
-<section class="wv2 relative bg-bone overflow-hidden" aria-label="Selected work">
+<section class="ws2 relative bg-bone" aria-label="Selected work">
   <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
-    <div class="flex items-center gap-4 mb-10 lg:mb-14">
-      <span
-        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+    <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
+      <div class="flex items-center gap-4">
+        <span
+          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+        >
+          03&hairsp;/&hairsp;04
+        </span>
+        <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+          Selected Work
+        </span>
+      </div>
+      <a
+        href="https://github.com/DominicClerici"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
       >
-        03&hairsp;/&hairsp;04
-      </span>
-      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-        Selected Work
-      </span>
+        more on github&nbsp;&nearr;
+      </a>
     </div>
 
     <p
       class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-20"
     >
-      The shortlist.
+      The shortlist, on the stage.
       <span class="text-ink/55">Everything here is live &mdash; go poke at it.</span>
     </p>
 
-    <ul class="border-t border-ink/15">
-      {
-        projects.map((project, i) => (
-          <li class="border-b border-ink/15">
-            <a
-              href={project.websiteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="wv2-row group block py-8 lg:py-10"
-              data-row={i}
-            >
-              <div class="lg:grid lg:grid-cols-[72px_minmax(0,1fr)_auto_64px] lg:items-center lg:gap-8">
-                <span class="hidden lg:block font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40">
-                  {project.index}
-                </span>
-
-                <span class="flex items-center gap-4 min-w-0">
-                  <span
-                    class="wv2-dot w-[8px] h-[8px] rounded-full bg-bio-lime shrink-0 hidden lg:block"
-                    aria-hidden="true"
-                  />
-                  <span class="wv2-title font-display font-normal leading-[0.95] tracking-[-0.02em] text-ink text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.035),5.25rem)]">
-                    {project.title}
+    <div class="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:items-start">
+      <!-- Index -->
+      <ul class="border-t border-ink/15">
+        {
+          projects.map((project, i) => (
+            <li class="ws2-item border-b border-ink/15" data-item={i}>
+              <button
+                type="button"
+                class="ws2-head w-full text-left py-6 lg:py-7 cursor-pointer"
+                data-select={i}
+                aria-expanded={i === 0 ? "true" : "false"}
+              >
+                <span class="grid grid-cols-[44px_minmax(0,1fr)_auto] items-baseline gap-3">
+                  <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40">
+                    {project.index}
                   </span>
-                  {project.featured && (
-                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2.5 py-1.5 -rotate-3 shrink-0 mt-2">
-                      featured
+                  <span class="flex items-center gap-3 min-w-0">
+                    <span class="ws2-title font-display font-normal leading-[0.95] tracking-[-0.018em] text-ink/45 text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.014),2.625rem)]">
+                      {project.title}
                     </span>
-                  )}
+                    {project.featured && (
+                      <span class="font-mono text-[10px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2 py-1 shrink-0">
+                        featured
+                      </span>
+                    )}
+                  </span>
+                  <span class="hidden sm:block font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/40 text-right">
+                    {project.tech}
+                  </span>
                 </span>
+              </button>
 
-                <span class="hidden lg:block font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 text-right">
-                  {project.tech}
-                </span>
-
-                <span
-                  class="wv2-arrow hidden lg:inline-flex w-12 h-12 rounded-full border border-ink/20 items-center justify-center text-ink justify-self-end"
-                  aria-hidden="true"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2 12 12 2M4.5 2H12v7.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+              <div class="ws2-more" data-more={i}>
+                <div class="overflow-hidden">
+                  <div class="pb-7 pl-0 sm:pl-[56px]">
+                    <img
+                      src={project.image}
+                      srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                      alt={project.alt}
+                      class="lg:hidden w-full aspect-[16/10] object-cover object-top rounded-[14px] border border-ink/10 mb-5"
+                      loading="lazy"
+                      decoding="async"
                     />
-                  </svg>
-                </span>
+                    <p class="font-display text-[15px] lg:text-[16px] leading-[1.6] text-ink/60 max-w-[520px]">
+                      {project.description}
+                    </p>
+                    <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-5">
+                      {project.stack.map((item) => (
+                        <span class="inline-flex items-center gap-2">
+                          <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
+                          <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
+                            {item}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                    <div class="flex items-center gap-3 mt-7">
+                      <a
+                        href={project.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                      >
+                        Visit site
+                      </a>
+                      {project.githubUrl && (
+                        <a
+                          href={project.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
+                        >
+                          GitHub
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
+            </li>
+          ))
+        }
+      </ul>
 
-              {/* Mobile: the row unfolds into a card */}
-              <div class="lg:hidden mt-5">
-                <img
-                  src={project.image}
-                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                  alt={project.alt}
-                  class="w-full aspect-[16/10] object-cover object-top rounded-[14px] border border-ink/10"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
-                  {project.tech}
-                </p>
-                <p class="font-display text-[15px] leading-[1.55] text-ink/60 mt-3">{project.blurb}</p>
-              </div>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+      <!-- Stage (desktop only) -->
+      <div class="hidden lg:block sticky top-[max(96px,calc(50vh-270px))]" aria-hidden="true">
+        <div class="ws2-stage relative w-full aspect-[7/5]" data-stage>
+          <div class="ws2-space absolute inset-0">
+            <div class="ws2-rig absolute inset-0" data-rig>
+              <!-- floor shadow -->
+              <div class="ws2-floor absolute left-[8%] right-[8%] bottom-[2%] h-[12%]"></div>
+              <!-- lime aura behind the pane -->
+              <div class="ws2-aura absolute inset-[10%]"></div>
 
-    <div class="flex items-center justify-between mt-8">
-      <p class="hidden lg:block font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35">
-        hover to peek &middot; click to visit
-      </p>
-      <a
-        href="https://github.com/DominicClerici"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200 ml-auto"
-      >
-        everything else lives on github&nbsp;&nearr;
-      </a>
+              {
+                projects.map((project, i) => (
+                  <div class="ws2-specimen absolute inset-x-[6%] inset-y-[4%]" data-specimen={i} data-active={i === 0 ? "true" : undefined}>
+                    <div class="ws2-pane absolute left-0 right-0 top-[6%] bottom-[14%] rounded-[18px] overflow-hidden border border-ink/12 bg-paper">
+                      <img
+                        src={project.image}
+                        srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                        alt=""
+                        class="w-full h-full object-cover object-top"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <span class="ws2-sheen absolute inset-0" />
+                    </div>
+                    <span class="ws2-chip ws2-chip-url font-mono text-[12px] leading-none tracking-[-0.02em] text-ink bg-paper border border-ink/12 rounded-full px-3.5 py-2 absolute top-0 left-[4%] inline-flex items-center gap-2">
+                      <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" />
+                      {project.url}
+                    </span>
+                    <span class="ws2-chip ws2-chip-fact font-mono text-[12px] leading-none tracking-[-0.02em] text-ink bg-bio-lime rounded-full px-3.5 py-2 absolute bottom-[6%] right-[2%]">
+                      {project.fact}
+                    </span>
+                    <span class="ws2-chip ws2-chip-stat font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/70 bg-bone border border-ink/12 rounded-full px-3.5 py-2 absolute top-[38%] right-[-2%]">
+                      {project.chip}
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+          <p class="absolute -bottom-8 right-1 font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35">
+            exhibit {projects.map((p) => p.index)[0]}&ndash;{projects[projects.length - 1].index} · it follows the cursor
+          </p>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <!-- Cursor-chasing preview (desktop only, driven by JS) -->
-  <div class="wv2-float fixed top-0 left-0 z-30 pointer-events-none hidden lg:block" aria-hidden="true">
-    {
-      projects.map((project, i) => (
-        <img
-          src={project.image}
-          srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-          alt=""
-          data-float={i}
-          class="wv2-float-img absolute top-0 left-0 w-[380px] aspect-[16/10] object-cover object-top rounded-[16px] border border-ink/15 shadow-[0_30px_60px_-20px_rgba(34,47,48,0.45)]"
-          loading="lazy"
-          decoding="async"
-        />
-      ))
-    }
   </div>
 </section>
 
 <style>
-  .wv2-dot {
-    opacity: 0;
-    transform: scale(0.4);
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease;
+  .ws2-head:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 4px;
+    border-radius: 6px;
   }
 
-  .wv2-row:hover .wv2-dot {
-    opacity: 1;
-    transform: scale(1);
+  .ws2-title {
+    transition: color 0.3s ease;
   }
 
-  .wv2-title {
-    transition:
-      transform 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-      color 0.25s ease;
-  }
-
-  /* Other rows dim while one is hovered */
-  .wv2-hovering .wv2-row .wv2-title {
-    color: rgba(34, 47, 48, 0.3);
-  }
-
-  .wv2-hovering .wv2-row:hover .wv2-title {
+  .ws2-item[data-open] .ws2-title,
+  .ws2-head:hover .ws2-title {
     color: var(--color-ink);
   }
 
-  .wv2-arrow {
-    transition:
-      background-color 0.25s ease,
-      border-color 0.25s ease,
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Expanding drawer — grid-rows keeps it height-animatable */
+  .ws2-more {
+    display: grid;
+    grid-template-rows: 0fr;
   }
 
-  .wv2-row:hover .wv2-arrow {
-    background-color: var(--color-bio-lime);
-    border-color: transparent;
-    transform: rotate(45deg);
+  .ws2-more > div {
+    min-height: 0;
+  }
+
+  .ws2-item[data-open] .ws2-more {
+    grid-template-rows: 1fr;
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .wv2-row:hover .wv2-title {
-      transform: translateX(14px);
+    .ws2-more {
+      transition: grid-template-rows 0.55s cubic-bezier(0.65, 0, 0.35, 1);
     }
   }
 
-  .wv2-float {
-    opacity: 0;
-    transition: opacity 0.3s ease;
+  /* ── Stage ── */
+  .ws2-space {
+    perspective: 1300px;
   }
 
-  .wv2-float-img {
-    opacity: 0;
-    transition: opacity 0.3s ease;
+  .ws2-rig {
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   }
 
-  .wv2-float-img[data-on] {
+  .ws2-floor {
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(34, 47, 48, 0.22), transparent 68%);
+    transform: translateZ(-90px);
+  }
+
+  .ws2-aura {
+    border-radius: 40px;
+    background: radial-gradient(ellipse at 60% 40%, rgba(206, 247, 158, 0.55), transparent 62%);
+    filter: blur(24px);
+    transform: translateZ(-70px);
+  }
+
+  .ws2-specimen {
+    transform-style: preserve-3d;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .ws2-specimen[data-active] {
     opacity: 1;
+    visibility: visible;
+  }
+
+  .ws2-pane {
+    box-shadow: 0 40px 80px -32px rgba(34, 47, 48, 0.45);
+    transform: translateZ(10px);
+  }
+
+  .ws2-sheen {
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.35) 50%, transparent 58%);
+    background-size: 260% 100%;
+    background-position: 110% 0;
+  }
+
+  .ws2-chip {
+    box-shadow: 0 10px 24px -12px rgba(34, 47, 48, 0.35);
+  }
+
+  .ws2-chip-url {
+    transform: translateZ(72px);
+  }
+
+  .ws2-chip-fact {
+    transform: translateZ(104px);
+  }
+
+  .ws2-chip-stat {
+    transform: translateZ(52px);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ws2-specimen[data-active] .ws2-pane {
+      animation: ws2-settle 0.7s cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+
+    .ws2-specimen[data-active] .ws2-sheen {
+      animation: ws2-sweep 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.25s both;
+    }
+
+    .ws2-specimen[data-active] .ws2-chip {
+      animation: ws2-chip-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .ws2-specimen[data-active] .ws2-chip-fact {
+      animation-delay: 0.12s;
+    }
+
+    .ws2-specimen[data-active] .ws2-chip-stat {
+      animation-delay: 0.2s;
+    }
+  }
+
+  @keyframes ws2-settle {
+    from {
+      transform: translateZ(160px) translateY(26px);
+      opacity: 0;
+    }
+    to {
+      transform: translateZ(10px) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes ws2-sweep {
+    to {
+      background-position: -30% 0;
+    }
+  }
+
+  @keyframes ws2-chip-in {
+    from {
+      opacity: 0;
+      transform: translateZ(var(--chip-z, 72px)) translateY(14px) scale(0.85);
+    }
+  }
+
+  .ws2-chip-url {
+    --chip-z: 72px;
+  }
+
+  .ws2-chip-fact {
+    --chip-z: 104px;
+  }
+
+  .ws2-chip-stat {
+    --chip-z: 52px;
   }
 </style>
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".wv2");
-    const float = section?.querySelector<HTMLElement>(".wv2-float");
-    const fine = window.matchMedia("(pointer: fine) and (min-width: 1024px)");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const section = document.querySelector<HTMLElement>(".ws2");
+    if (section) {
+      const items = section.querySelectorAll<HTMLElement>("[data-item]");
+      const heads = section.querySelectorAll<HTMLButtonElement>("[data-select]");
+      const specimens = section.querySelectorAll<HTMLElement>("[data-specimen]");
+      const rig = section.querySelector<HTMLElement>("[data-rig]");
+      const stage = section.querySelector<HTMLElement>("[data-stage]");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (section && float && fine.matches) {
-      const imgs = float.querySelectorAll<HTMLElement>("[data-float]");
-      const rows = section.querySelectorAll<HTMLElement>("[data-row]");
-
-      let targetX = 0;
-      let targetY = 0;
-      let x = 0;
-      let y = 0;
-      let active = false;
-      let rafId = 0;
-
-      const render = () => {
-        // Lerp toward the cursor; tilt with horizontal velocity for a
-        // "photo sliding across a table" feel.
-        const dx = targetX - x;
-        x += dx * 0.14;
-        y += (targetY - y) * 0.14;
-        const tilt = Math.max(-7, Math.min(7, dx * 0.06));
-        float.style.transform = `translate(${x - 190}px, ${y - 130}px) rotate(${tilt}deg)`;
-        if (active || Math.abs(dx) > 0.5) {
-          rafId = requestAnimationFrame(render);
-        } else {
-          rafId = 0;
-        }
+      const select = (id: string) => {
+        items.forEach((item) => {
+          if (item.dataset.item === id) item.setAttribute("data-open", "");
+          else item.removeAttribute("data-open");
+        });
+        heads.forEach((head) => {
+          head.setAttribute("aria-expanded", String(head.dataset.select === id));
+        });
+        specimens.forEach((s) => {
+          if (s.dataset.specimen === id) s.setAttribute("data-active", "true");
+          else s.removeAttribute("data-active");
+        });
       };
 
-      section.addEventListener("mousemove", (e) => {
-        targetX = e.clientX;
-        targetY = e.clientY;
-        if (reducedMotion) {
-          x = targetX;
-          y = targetY;
-          float.style.transform = `translate(${x - 190}px, ${y - 130}px)`;
-        } else if (active && !rafId) {
-          rafId = requestAnimationFrame(render);
-        }
+      heads.forEach((head) => {
+        head.addEventListener("click", () => select(head.dataset.select!));
       });
+      select("0");
 
-      rows.forEach((row) => {
-        row.addEventListener("mouseenter", () => {
-          active = true;
-          section.classList.add("wv2-hovering");
-          float.style.opacity = "1";
-          imgs.forEach((img) => {
-            if (img.dataset.float === row.dataset.row) img.setAttribute("data-on", "");
-            else img.removeAttribute("data-on");
-          });
-          // Snap into place on first entry so the card doesn't fly in
-          // from the page origin.
-          if (!x && !y) {
-            x = targetX;
-            y = targetY;
+      // Cursor tilt — the whole rig leans toward the pointer, lerped
+      if (rig && stage && !reducedMotion && window.matchMedia("(pointer: fine)").matches) {
+        let trx = 0;
+        let try_ = 0;
+        let rx = 0;
+        let ry = 0;
+        let rafId = 0;
+
+        const render = () => {
+          rx += (trx - rx) * 0.08;
+          ry += (try_ - ry) * 0.08;
+          rig.style.setProperty("--rx", `${rx.toFixed(3)}deg`);
+          rig.style.setProperty("--ry", `${ry.toFixed(3)}deg`);
+          if (Math.abs(trx - rx) > 0.01 || Math.abs(try_ - ry) > 0.01) {
+            rafId = requestAnimationFrame(render);
+          } else {
+            rafId = 0;
           }
-          if (!rafId && !reducedMotion) rafId = requestAnimationFrame(render);
+        };
+
+        const kick = () => {
+          if (!rafId) rafId = requestAnimationFrame(render);
+        };
+
+        section.addEventListener(
+          "mousemove",
+          (e) => {
+            const rect = stage.getBoundingClientRect();
+            if (!rect.width) return;
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            trx = Math.max(-9, Math.min(9, -y * 10));
+            try_ = Math.max(-12, Math.min(12, x * 12));
+            kick();
+          },
+          { passive: true },
+        );
+
+        section.addEventListener("mouseleave", () => {
+          trx = 0;
+          try_ = 0;
+          kick();
         });
-        row.addEventListener("mouseleave", () => {
-          active = false;
-          section.classList.remove("wv2-hovering");
-          float.style.opacity = "0";
-        });
-      });
+      }
     }
   }
 </script>
