@@ -13,7 +13,7 @@ const navLinks = [
       rel="noopener noreferrer"
       data-terminal="header"
       aria-label="Open developer terminal"
-      class="hidden md:inline-flex font-mono text-[14px] text-paper py-1.5"
+      class="hidden md:inline-flex font-mono text-[14px] text-ink py-1.5"
     >
       <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
     </a>
@@ -23,7 +23,7 @@ const navLinks = [
         navLinks.map((link) => (
           <a
             href={link.href}
-            class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper/70 hover:text-paper transition-colors duration-150"
+            class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/70 hover:text-ink transition-colors duration-150"
             {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           >
             {link.label}
@@ -32,7 +32,7 @@ const navLinks = [
       }
       <a
         href="/DominicClerici_CV.pdf"
-        class="font-mono text-[13px] tracking-[-0.02em] uppercase text-paper border border-paper/35 rounded-xl px-4 py-1.5 hover:bg-bio-lime hover:text-ink hover:border-bio-lime transition-colors duration-150"
+        class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink border border-ink/35 rounded-xl px-4 py-1.5 hover:bg-bio-lime hover:text-ink hover:border-bio-lime transition-colors duration-150"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -47,13 +47,13 @@ const navLinks = [
       aria-expanded="false"
     >
       <span
-        class="block w-full h-[1px] bg-paper transition-all duration-200 origin-center group-aria-expanded:translate-y-[5px] group-aria-expanded:rotate-45"
+        class="block w-full h-[1px] bg-ink transition-all duration-200 origin-center group-aria-expanded:translate-y-[5px] group-aria-expanded:rotate-45"
       ></span>
       <span
-        class="block w-full h-[1px] bg-paper transition-all duration-200 group-aria-expanded:opacity-0"
+        class="block w-full h-[1px] bg-ink transition-all duration-200 group-aria-expanded:opacity-0"
       ></span>
       <span
-        class="block w-full h-[1px] bg-paper transition-all duration-200 origin-center group-aria-expanded:-translate-y-[5px] group-aria-expanded:-rotate-45"
+        class="block w-full h-[1px] bg-ink transition-all duration-200 origin-center group-aria-expanded:-translate-y-[5px] group-aria-expanded:-rotate-45"
       ></span>
     </button>
   </div>

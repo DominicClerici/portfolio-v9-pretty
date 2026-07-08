@@ -74,13 +74,10 @@
 @theme {
   /* Primary palette */
   --color-primary: #e2c28f;
-  --color-primary-container: #b89a6a;
   --color-on-primary: #412d06;
 
   /* Secondary palette */
   --color-secondary: #a9cfb8;
-  --color-secondary-container: #2b4e3c;
-  --color-on-secondary: #143726;
 
   /* Surface / Background */
   --color-background: #111412;
@@ -90,7 +87,6 @@
   --color-surface-container-low: #191c1a;
   --color-surface-container: #1d201e;
   --color-surface-container-high: #282b28;
-  --color-surface-container-highest: #323533;
 
   /* On-colors */
   --color-on-surface: #e1e3df;
@@ -101,9 +97,7 @@
   --color-outline-variant: #4d463b;
 
   /* Section backgrounds */
-  --color-section-about: #1a1c1a;
   --color-section-quote: #181a17;
-  --color-section-work: #1b1d1b;
 
   /* Font families */
   --font-headline: "Newsreader", serif;
@@ -117,10 +111,6 @@
   --color-ink: #222f30;
   --color-bone: #f7f7f5;
   --color-paper: #ffffff;
-  --color-graphite: #4d5757;
-  --color-lichen: #c9cbbe;
-  --color-tissue: #e7e8e1;
-  --color-void: #000000;
 
   /* Fonts */
   --font-display: "Aspekta", "Inter Tight", ui-sans-serif, system-ui,
@@ -161,18 +151,19 @@ body {
 }
 
 /* ── Hero: framed viewport ──
-   The frame is full-bleed at all times; the bone gutter and its collapse
-   (--recess 0 → 1, driven by scroll) are painted on top of the canvas,
-   so the border leaving the viewport is purely cosmetic — it never
-   resizes the canvas or reflows content. */
+   The frame is full-bleed at all times; the bone gutter and its arrival
+   (--frame 0 → 1, driven by scroll over the last stretch of the pinned
+   range) are painted on top of the canvas, so the border entering the
+   viewport is purely cosmetic — it never resizes the canvas or reflows
+   content. The page loads borderless (--frame: 0). */
 .hero-frame {
-  --recess: 0;
+  --frame: 0;
   --inset-max: 8px;
   position: absolute;
   inset: 0;
-  /* outer radius = 20px + gutter width, so the visible dark corner
-     inside the painted ring keeps a 20px radius */
-  border-radius: calc((20px + var(--inset-max)) * (1 - var(--recess)));
+  /* outer radius = 20px + gutter width, so the visible corner inside the
+     painted ring keeps a 20px radius once the frame is fully in */
+  border-radius: calc((20px + var(--inset-max)) * var(--frame));
   overflow: hidden;
   /* isolate so the inner clip-path animation composites cleanly */
   isolation: isolate;
@@ -186,7 +177,7 @@ body {
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  border: calc(var(--inset-max) * (1 - var(--recess))) solid var(--color-bone);
+  border: calc(var(--inset-max) * var(--frame)) solid var(--color-bone);
 }
 
 @media (min-width: 1024px) {
@@ -199,7 +190,7 @@ body {
   --iris-r: 100px;
   position: absolute;
   inset: 0;
-  background-color: var(--color-ink);
+  background-color: var(--color-bone);
 }
 
 @media (min-width: 1025px) {
@@ -208,23 +199,17 @@ body {
   }
 }
 
-/* Rendered at low resolution and upscaled in two smoothing passes: the
-   cheap route to the soft depth-of-field look of the reference render
-   (a CSS blur here costs ~25ms/frame without GPU compositing). Scroll
-   drives the scale further via inline style. */
 .hero-canvas-wrap canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  transform: scale(1.06);
-  transform-origin: center;
 }
 
 /* Iris-open on load: the canvas dilates from a rounded point at the center
-   of the viewport — inset(50% round R) → inset(0 round outer-radius),
-   matching integratedbio.com (2s expo.inOut, 0.3s delay). The end radius
-   matches the frame's outer radius so the painted gutter ring lines up. */
+   of the viewport — inset(50% round R) → inset(0 round 0), matching
+   integratedbio.com (2s expo.inOut, 0.3s delay). The end state is fully
+   borderless — the frame only arrives later, driven by scroll. */
 @media (prefers-reduced-motion: no-preference) {
   .hero-canvas-wrap {
     animation: hero-iris-open 2s cubic-bezier(0.87, 0, 0.13, 1) 0.3s both;
@@ -235,7 +220,7 @@ body {
       clip-path: inset(50% 50% 50% 50% round var(--iris-r, 100px));
     }
     to {
-      clip-path: inset(0% 0% 0% 0% round calc(20px + var(--inset-max, 8px)));
+      clip-path: inset(0% 0% 0% 0% round 0px);
     }
   }
 
