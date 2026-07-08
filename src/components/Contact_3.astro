@@ -1,8 +1,440 @@
 ---
+// V3 — "The Conversation": the contact form as a chat thread. Dominic's
+// messages type themselves in when the section scrolls into view (the quote
+// arrives as one of them, lowercase, conversational), quick-reply chips
+// prefill the composer, and your message lands in the thread as a lime
+// bubble before the mailto hands off to the reader's mail app.
+const incoming = [
+  "hey — you made it to the bottom of the site.",
+  "the first language was a disaster. everything since has been <span class='text-bio-lime'>on purpose</span>.",
+  "your turn. what's on your mind?",
+];
+
+const chips = [
+  { label: "I'm hiring", prefill: "I'm hiring, and you might be a fit — " },
+  { label: "I'm building something", prefill: "I'm building something and want to talk it through — " },
+  { label: "found a bug", prefill: "Found a bug on this site: " },
+  { label: "just saying hi", prefill: "hi." },
+];
 ---
 
-<section class="relative bg-surface-dim py-24 md:py-48 px-3 sm:px-4 md:px-12 border-t border-outline-variant/20 overflow-hidden">
-  <div class="max-w-4xl mx-auto flex items-center justify-center min-h-[160px] md:min-h-[240px] border border-dashed border-outline-variant/40">
-    <p class="font-label text-outline-variant text-xs uppercase tracking-widest">Contact — Variant 3</p>
+<section class="cv3 relative bg-[#0a0a0a] overflow-hidden" aria-label="Contact">
+  <div class="relative max-w-[680px] mx-auto px-6 md:px-10 py-[clamp(100px,14vh,180px)]">
+    <h2 class="sr-only">Contact</h2>
+
+    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-white/45 mb-12 md:mb-16">
+      04&hairsp;/&hairsp;04 &middot; Direct line
+    </p>
+
+    <!-- Thread header -->
+    <div class="flex items-center gap-4 pb-6 border-b border-[#1e1e1e]">
+      <span class="relative flex items-center justify-center w-10 h-10 rounded-full bg-bio-lime shrink-0" aria-hidden="true">
+        <span class="font-mono text-[13px] tracking-[-0.02em] text-ink">DC</span>
+        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-bio-lime border-[3px] border-[#0a0a0a]"></span>
+      </span>
+      <div>
+        <p class="font-display text-[15px] leading-tight text-[#f5f5f5]">Dominic Clerici</p>
+        <p class="font-mono text-[11px] tracking-[-0.02em] text-[#8a8a8a] mt-1">usually replies within 48h</p>
+      </div>
+    </div>
+
+    <!-- The thread -->
+    <div class="cv3-thread flex flex-col gap-3 pt-10" aria-live="polite">
+      <p class="font-mono text-[10px] tracking-[0.06em] uppercase text-white/25 text-center mb-3">today</p>
+      {
+        incoming.map((html) => (
+          <div class="cv3-msg">
+            <span class="cv3-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span class="cv3-text" set:html={html} />
+          </div>
+        ))
+      }
+    </div>
+
+    <!-- Quick replies -->
+    <div class="cv3-late flex flex-wrap gap-2 mt-8" role="group" aria-label="Quick replies">
+      {
+        chips.map((chip) => (
+          <button type="button" data-prefill={chip.prefill} class="cv3-chip">
+            {chip.label}
+          </button>
+        ))
+      }
+    </div>
+
+    <!-- Composer -->
+    <form class="cv3-form cv3-late mt-4" novalidate>
+      <div class="cv3-composer flex items-end gap-2 rounded-[24px] border border-white/12 bg-white/[0.045] p-2 pl-5 transition-colors duration-200 focus-within:border-bio-lime/50">
+        <label for="cv3-message" class="sr-only">Your message (required)</label>
+        <textarea
+          id="cv3-message"
+          name="message"
+          rows="1"
+          required
+          placeholder="say anything — &ldquo;hi&rdquo; counts"
+          class="flex-1 bg-transparent border-none outline-none resize-none font-display text-[16px] leading-[1.5] text-[#f5f5f5] placeholder:text-white/30 py-2.5 max-h-40"></textarea>
+        <button
+          type="submit"
+          aria-label="Send message"
+          class="cv3-send shrink-0 w-11 h-11 rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bio-lime"
+        >
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 12V2M2.5 6.5 7 2l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+      </div>
+
+      <p class="cv3-error hidden font-mono text-[11px] tracking-[-0.02em] text-[#e0a68b] mt-3" role="alert">
+        an empty message is a hard read — type something first.
+      </p>
+
+      <div class="flex flex-wrap gap-x-8 gap-y-4 mt-7">
+        <div class="flex-1 min-w-[180px]">
+          <label for="cv3-name" class="cv3-small-label">your name <span class="text-white/25">/ optional</span></label>
+          <input id="cv3-name" name="name" type="text" autocomplete="name" class="cv3-small-input" />
+        </div>
+        <div class="flex-1 min-w-[180px]">
+          <label for="cv3-email" class="cv3-small-label">email, if you want a reply</label>
+          <input id="cv3-email" name="email" type="email" autocomplete="email" class="cv3-small-input" />
+        </div>
+      </div>
+
+      <p class="font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-7">
+        sends through your mail app — nothing weird happens to your words.
+      </p>
+    </form>
+
+    <div class="cv3-late flex flex-wrap gap-x-8 gap-y-3 mt-14 pt-8 border-t border-[#1e1e1e]">
+      <a href="https://github.com/DominicClerici" target="_blank" rel="noopener noreferrer" class="cv3-link">GitHub</a>
+      <a href="https://www.linkedin.com/in/dominic-clerici/" target="_blank" rel="noopener noreferrer" class="cv3-link">LinkedIn</a>
+      <a href="mailto:contact@dominicclerici.com" class="cv3-link">contact@dominicclerici.com</a>
+    </div>
   </div>
 </section>
+
+<style>
+  .cv3-msg {
+    align-self: flex-start;
+    max-width: 82%;
+    background: #161616;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 18px 18px 18px 5px;
+    padding: 11px 16px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.55;
+    color: #e9e9e6;
+  }
+
+  /* Sequenced states: hidden → typing dots → sent text */
+  .cv3-msg {
+    display: none;
+  }
+
+  .cv3-msg.is-typing,
+  .cv3-msg.is-sent {
+    display: block;
+  }
+
+  .cv3-msg .cv3-text {
+    display: none;
+  }
+
+  .cv3-msg.is-sent .cv3-text {
+    display: inline;
+  }
+
+  .cv3-msg.is-sent .cv3-dots {
+    display: none;
+  }
+
+  .cv3-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 1.55em;
+    vertical-align: middle;
+  }
+
+  .cv3-dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Your sent message, appended by the script */
+  .cv3-thread :global(.cv3-msg-out) {
+    align-self: flex-end;
+    max-width: 82%;
+    background: var(--color-bio-lime);
+    border-radius: 18px 18px 5px 18px;
+    padding: 11px 16px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--color-ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .cv3-thread :global(.cv3-msg-out-meta) {
+    align-self: flex-end;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+    margin-top: 2px;
+  }
+
+  /* Chips + composer + links hold back until the thread finishes */
+  .cv3-late {
+    opacity: 1;
+  }
+
+  .cv3.cv3-sequencing .cv3-late {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .cv3-chip {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: -0.02em;
+    color: #b5b5b5;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9999px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .cv3-chip:hover {
+    color: var(--color-bio-lime);
+    border-color: rgba(206, 247, 158, 0.45);
+  }
+
+  .cv3-chip:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 2px;
+  }
+
+  .cv3-small-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: -0.02em;
+    color: #8a8a8a;
+    margin-bottom: 7px;
+  }
+
+  .cv3-small-input {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #2a2a2a;
+    border-radius: 0;
+    outline: none;
+    padding: 0 0 8px;
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: #f5f5f5;
+    caret-color: var(--color-bio-lime);
+    transition: border-color 0.2s ease;
+  }
+
+  .cv3-small-input:focus {
+    border-bottom-color: var(--color-bio-lime);
+  }
+
+  .cv3-link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+    transition: color 0.2s ease;
+  }
+
+  .cv3-link:hover {
+    color: var(--color-bio-lime);
+  }
+
+  .cv3-link:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 4px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cv3-msg.is-typing,
+    .cv3-msg.is-sent,
+    .cv3-thread :global(.cv3-msg-out) {
+      animation: cv3-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .cv3-late {
+      transition: opacity 0.5s ease;
+    }
+
+    .cv3-dots i {
+      animation: cv3-bounce 1.1s ease-in-out infinite;
+    }
+
+    .cv3-dots i:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .cv3-dots i:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .cv3-send {
+      transition: transform 0.2s ease;
+    }
+
+    .cv3-send:hover {
+      transform: scale(1.06);
+    }
+
+    @keyframes cv3-pop {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes cv3-bounce {
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+      30% {
+        transform: translateY(-3px);
+        opacity: 1;
+      }
+    }
+  }
+</style>
+
+<script>
+  {
+    const section = document.querySelector<HTMLElement>(".cv3");
+    const motionOk = window.matchMedia("(prefers-reduced-motion: no-preference)").matches;
+    const messages = [...(section?.querySelectorAll<HTMLElement>(".cv3-msg") ?? [])];
+
+    const finishThread = () => {
+      messages.forEach((m) => m.classList.add("is-sent"));
+      section?.classList.remove("cv3-sequencing");
+    };
+
+    // Messages arrive one at a time: typing dots, then the text
+    if (section && messages.length) {
+      if (!motionOk || !("IntersectionObserver" in window)) {
+        finishThread();
+      } else {
+        section.classList.add("cv3-sequencing");
+        const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+        const play = async () => {
+          for (const msg of messages) {
+            msg.classList.add("is-typing");
+            const len = msg.querySelector(".cv3-text")?.textContent?.length ?? 30;
+            await wait(Math.min(1400, 450 + len * 9));
+            msg.classList.add("is-sent");
+            await wait(420);
+          }
+          section.classList.remove("cv3-sequencing");
+        };
+
+        const io = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              io.disconnect();
+              play();
+            }
+          },
+          { threshold: 0.35 },
+        );
+        io.observe(section.querySelector(".cv3-thread") ?? section);
+      }
+    }
+
+    const form = section?.querySelector<HTMLFormElement>(".cv3-form");
+    if (form && section) {
+      const message = form.querySelector<HTMLTextAreaElement>("#cv3-message");
+      const error = form.querySelector<HTMLElement>(".cv3-error");
+      const thread = section.querySelector<HTMLElement>(".cv3-thread");
+
+      if (message) {
+        message.addEventListener("input", () => {
+          message.style.height = "auto";
+          message.style.height = `${message.scrollHeight}px`;
+          error?.classList.add("hidden");
+        });
+      }
+
+      // Quick replies drop a starter into the composer
+      section.querySelectorAll<HTMLButtonElement>(".cv3-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          if (message) {
+            message.value = chip.dataset.prefill ?? "";
+            message.dispatchEvent(new Event("input"));
+            message.focus();
+            message.setSelectionRange(message.value.length, message.value.length);
+          }
+        });
+      });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const data = new FormData(form);
+        const name = String(data.get("name") || "").trim();
+        const email = String(data.get("email") || "").trim();
+        const body = String(data.get("message") || "").trim();
+
+        if (!body) {
+          error?.classList.remove("hidden");
+          message?.focus();
+          return;
+        }
+
+        // Land the bubble in the thread, then hand off to the mail app
+        if (thread) {
+          const bubble = document.createElement("div");
+          bubble.className = "cv3-msg-out";
+          bubble.textContent = body;
+          const meta = document.createElement("p");
+          meta.className = "cv3-msg-out-meta";
+          meta.textContent = "handing off to your mail app…";
+          thread.append(bubble, meta);
+        }
+        if (message) {
+          message.value = "";
+          message.style.height = "auto";
+        }
+
+        const subject = name ? `Message from ${name}` : "Message from your portfolio";
+        const lines = [body, "", name ? `— ${name}` : "", email ? `Reply to: ${email}` : ""].filter(Boolean);
+        const href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+        setTimeout(() => {
+          window.location.href = href;
+        }, 350);
+      });
+    }
+  }
+</script>
