@@ -6,9 +6,9 @@
 // and doubles as the tab indicator; hovering a bar highlights its tab and
 // vice versa. The right side stays a full dossier panel with a ghost year
 // watermark. Dot-grid canvas carries over from the instrument.
-const RANGE_START = 2019;
-const RANGE_END = 2027;
-const SPAN = RANGE_END - RANGE_START;
+const RANGE_START = 2019
+const RANGE_END = 2027
+const SPAN = RANGE_END - RANGE_START
 
 const entries = [
   {
@@ -23,7 +23,14 @@ const entries = [
     description:
       "Building the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time goes toward the host dashboard and mobile apps, everything from event creation and guest management to real-time analytics. Small team, so I touch most of the stack, from the database layer up to what users see on their phones.",
     skills: ["Full Stack", "Mobile", "Cloud Infrastructure"],
-    tags: ["TypeScript", "PostgreSQL", "AWS Lambda", "Next.js", "React Native", "Swift"],
+    tags: [
+      "TypeScript",
+      "PostgreSQL",
+      "AWS Lambda",
+      "Next.js",
+      "React Native",
+      "Swift",
+    ],
     url: "https://www.therumor.com/",
   },
   {
@@ -71,28 +78,39 @@ const entries = [
     tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
     url: "https://www.mcdonalds.com/us/en-us.html",
   },
-];
+]
 
 // Vertical axis: oldest at the top, so a year maps to distance from RANGE_START
-const yPct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
-const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
+const yPct = (v: number) => ((v - RANGE_START) / SPAN) * 100
+const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i)
 
 // Render order oldest-first while keeping each entry's original index for
 // selection/hover-sync wiring (data-select/data-i key off the original i).
-const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse();
+const orderedEntries = entries
+  .map((entry, i) => ({ entry, i }))
+  .slice()
+  .reverse()
 ---
 
-<section class="career-v1 relative bg-[#0a0a0a] overflow-hidden" aria-label="Career">
-  <div class="v1-dots absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+<section
+  class="career-v1 relative bg-[#0a0a0a] overflow-hidden"
+  aria-label="Career"
+>
+  <div class="v1-dots absolute inset-0 pointer-events-none" aria-hidden="true">
+  </div>
 
-  <div class="relative max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+  <div
+    class="relative max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]"
+  >
     <div class="flex items-center gap-4 mb-10 lg:mb-14">
       <span
         class="font-mono text-[13px] leading-none tracking-[-0.02em] text-white/55 border border-white/20 rounded-full px-3.5 py-2"
       >
         02&hairsp;/&hairsp;04
       </span>
-      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-white/55"
+      >
         Career
       </span>
     </div>
@@ -112,7 +130,11 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
           <div class="absolute inset-x-0 top-2 bottom-2">
             {
               years.map((y) => (
-                <div class="absolute inset-x-0" style={`top: ${yPct(y)}%`} aria-hidden="true">
+                <div
+                  class="absolute inset-x-0"
+                  style={`top: ${yPct(y)}%`}
+                  aria-hidden="true"
+                >
                   <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-[#4d4d4d]">
                     {`'${String(y).slice(2)}`}
                   </span>
@@ -132,7 +154,10 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
                   aria-label={`${entry.company}, ${entry.period}`}
                 >
                   {entry.now && (
-                    <span class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]" aria-hidden="true">
+                    <span
+                      class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]"
+                      aria-hidden="true"
+                    >
                       <span class="v1-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
                       <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
                     </span>
@@ -164,7 +189,10 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
                     {entry.period}
                   </span>
                   <span class="v1-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
-                    <span class="v1-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true" />
+                    <span
+                      class="v1-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0"
+                      aria-hidden="true"
+                    />
                     {entry.company}
                   </span>
                 </span>
@@ -175,7 +203,9 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
       </div>
 
       <!-- The dossier panel -->
-      <div class="relative rounded-[20px] border border-[#232323] bg-[#0f0f0f] min-h-[520px] overflow-hidden">
+      <div
+        class="relative rounded-[20px] border border-[#232323] bg-[#0f0f0f] min-h-[520px] overflow-hidden"
+      >
         {
           entries.map((entry, i) => (
             <div
@@ -195,7 +225,10 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
               <div class="relative v1-enter">
                 <div class="flex items-center gap-2.5">
                   <span
-                    class:list={["w-[6px] h-[6px] rounded-full", entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]"]}
+                    class:list={[
+                      "w-[6px] h-[6px] rounded-full",
+                      entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]",
+                    ]}
                     aria-hidden="true"
                   />
                   <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-[#8a8a8a]">
@@ -214,7 +247,10 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
                 <div class="flex flex-wrap gap-x-6 gap-y-3 mt-10">
                   {entry.skills.map((skill) => (
                     <span class="inline-flex items-center gap-2">
-                      <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true" />
+                      <span
+                        class="w-[6px] h-[6px] rounded-full bg-bio-lime"
+                        aria-hidden="true"
+                      />
                       <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-[#c9c9c9]">
                         {skill}
                       </span>
@@ -245,7 +281,13 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
                     aria-label={`Open ${entry.company} in a new tab`}
                     class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200"
                   >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      aria-hidden="true"
+                    >
                       <path
                         d="M2 12 12 2M4.5 2H12v7.5"
                         stroke="currentColor"
@@ -267,7 +309,11 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
 
 <style>
   .v1-dots {
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-image: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    );
     background-size: 26px 26px;
   }
 
@@ -398,66 +444,70 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".career-v1");
+    const section = document.querySelector<HTMLElement>(".career-v1")
     if (section) {
-      const tabs = section.querySelectorAll<HTMLButtonElement>("[role='tab']");
-      const bars = section.querySelectorAll<HTMLButtonElement>(".v1-bar");
-      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
+      const tabs = section.querySelectorAll<HTMLButtonElement>("[role='tab']")
+      const bars = section.querySelectorAll<HTMLButtonElement>(".v1-bar")
+      const panels = section.querySelectorAll<HTMLElement>("[data-panel]")
 
       const select = (id: string | undefined) => {
-        if (!id) return;
-        tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.select === id)));
-        bars.forEach((b) => b.setAttribute("data-on", String(b.dataset.select === id)));
+        if (!id) return
+        tabs.forEach((t) =>
+          t.setAttribute("aria-selected", String(t.dataset.select === id)),
+        )
+        bars.forEach((b) =>
+          b.setAttribute("data-on", String(b.dataset.select === id)),
+        )
         panels.forEach((panel) => {
-          const show = panel.dataset.panel === id;
-          panel.hidden = !show;
+          const show = panel.dataset.panel === id
+          panel.hidden = !show
           if (show) {
             // retrigger the entrance animation
-            const inner = panel.querySelector<HTMLElement>(".v1-enter");
+            const inner = panel.querySelector<HTMLElement>(".v1-enter")
             if (inner) {
-              inner.style.animation = "none";
-              void inner.offsetWidth;
-              inner.style.animation = "";
+              inner.style.animation = "none"
+              void inner.offsetWidth
+              inner.style.animation = ""
             }
           }
-        });
-      };
+        })
+      }
 
       section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
-        el.addEventListener("click", () => select(el.dataset.select));
-      });
+        el.addEventListener("click", () => select(el.dataset.select))
+      })
 
       // Hover sync between spine bars and tab rows
-      const groups = new Map<string, HTMLElement[]>();
+      const groups = new Map<string, HTMLElement[]>()
       section.querySelectorAll<HTMLElement>("[data-i]").forEach((el) => {
-        const key = el.dataset.i!;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(el);
-      });
+        const key = el.dataset.i!
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key)!.push(el)
+      })
       groups.forEach((els) => {
         const toggle = (on: boolean) => () =>
-          els.forEach((el) => el.classList.toggle("hl", on));
+          els.forEach((el) => el.classList.toggle("hl", on))
         els.forEach((el) => {
-          el.addEventListener("mouseenter", toggle(true));
-          el.addEventListener("mouseleave", toggle(false));
-        });
-      });
+          el.addEventListener("mouseenter", toggle(true))
+          el.addEventListener("mouseleave", toggle(false))
+        })
+      })
 
       // Grow-in trigger
-      const spine = section.querySelector<HTMLElement>(".v1-spine");
+      const spine = section.querySelector<HTMLElement>(".v1-spine")
       if (spine) {
         const io = new IntersectionObserver(
           (obs) => {
             obs.forEach((e) => {
               if (e.isIntersecting) {
-                e.target.classList.add("in");
-                io.unobserve(e.target);
+                e.target.classList.add("in")
+                io.unobserve(e.target)
               }
-            });
+            })
           },
           { threshold: 0.25 },
-        );
-        io.observe(spine);
+        )
+        io.observe(spine)
       }
     }
   }

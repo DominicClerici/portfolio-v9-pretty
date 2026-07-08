@@ -1,21 +1,13 @@
 ---
-// Variant 2 — "The Dossier, Ruled"
-// V4's personnel file with V3's instrument flattened into a thin ruler
-// above the two columns: a single inline track on a year scale, no company
-// labels, translucent segments that simply overlap where tenures did (the
-// overlap reads brighter). Each segment is a tab control — clicking one is
-// the same as clicking the rail on the left; the selected segment fills lime.
-const RANGE_START = 2019;
-const RANGE_END = 2027;
-const SPAN = RANGE_END - RANGE_START;
-
+// Variant 4 — "The Dossier"
+// A personnel file: a sticky rail of roles on the left, a spec-sheet panel
+// on the right with a ghost year watermark, mono metadata, and a lime
+// arrow CTA. Tabs swap the open file. On mobile the rail becomes a
+// horizontal chip strip.
 const entries = [
   {
     period: "2025 — Now",
     year: "2025",
-    start: 2025,
-    end: 2026.5,
-    lane: 0,
     now: true,
     company: "Rumor",
     title: "Full Stack Developer",
@@ -28,9 +20,6 @@ const entries = [
   {
     period: "2024 — 2026",
     year: "2024",
-    start: 2024,
-    end: 2026,
-    lane: 1,
     now: false,
     company: "Squib",
     title: "Founding Engineer",
@@ -43,9 +32,6 @@ const entries = [
   {
     period: "2021 — 2022",
     year: "2021",
-    start: 2021,
-    end: 2022,
-    lane: 0,
     now: false,
     company: "Artesian Builds",
     title: "Full Stack Developer",
@@ -58,9 +44,6 @@ const entries = [
   {
     period: "2019",
     year: "2019",
-    start: 2019.05,
-    end: 2019.85,
-    lane: 0,
     now: false,
     company: "McDonald's",
     title: "Crew Member",
@@ -71,16 +54,9 @@ const entries = [
     url: "https://www.mcdonalds.com/us/en-us.html",
   },
 ];
-
-const pct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
-const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
-
-// Rail render order oldest-first, keeping each entry's original index for
-// selection/hover-sync wiring (data-tab/data-i key off the original i).
-const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse();
 ---
 
-<section class="career-v2 relative bg-[#101010] overflow-hidden" aria-label="Career">
+<section class="career-v4 relative bg-[#101010] overflow-hidden" aria-label="Career">
   <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
     <div class="flex items-center gap-4 mb-10 lg:mb-14">
       <span
@@ -94,84 +70,34 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
     </div>
 
     <p
-      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-16"
+      class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-20"
     >
-      The personnel file,
-      <span class="text-white/45">drawn to scale.</span>
+      The personnel file.
+      <span class="text-white/45">Employment record, 2019 to present.</span>
     </p>
-
-    <!-- The ruler — V3's timeline, flattened to one inline track -->
-    <div class="v2-strip mb-8 lg:mb-12 overflow-x-auto lg:overflow-visible -mx-6 px-6 lg:mx-0 lg:px-0">
-      <div class="min-w-[520px]">
-        <div class="relative h-4 mb-2">
-          {
-            years.map((y) => (
-              <span
-                class="absolute -translate-x-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-[#4d4d4d]"
-                style={`left: ${pct(y)}%`}
-              >
-                {`'${String(y).slice(2)}`}
-              </span>
-            ))
-          }
-        </div>
-        <div class="relative h-12">
-          {
-            years.map((y) => (
-              <span
-                class="absolute inset-y-0 border-l border-[#1d1d1d]"
-                style={`left: ${pct(y)}%`}
-                aria-hidden="true"
-              />
-            ))
-          }
-          {
-            entries.map((entry, i) => (
-              <button
-                type="button"
-                class="v2-seg absolute h-[10px] rounded-full"
-                style={`left: ${pct(entry.start)}%; width: ${pct(entry.end) - pct(entry.start)}%; top: ${entry.lane === 0 ? 25 : 75}%; --d: ${i * 110}ms`}
-                data-seg={i}
-                data-i={i}
-                data-on={i === 0 ? "true" : "false"}
-                aria-label={`${entry.company}, ${entry.period}`}
-              >
-                {entry.now && (
-                  <span class="absolute right-[-3px] top-1/2 -translate-y-1/2 flex w-[7px] h-[7px]" aria-hidden="true">
-                    <span class="v2-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
-                    <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
-                  </span>
-                )}
-              </button>
-            ))
-          }
-        </div>
-      </div>
-    </div>
 
     <div class="grid lg:grid-cols-[300px_1fr] gap-8 lg:gap-14 items-start">
       <!-- Rail -->
       <div
-        class="v2-rail lg:sticky lg:top-24 flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+        class="v4-rail lg:sticky lg:top-24 flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
         role="tablist"
         aria-label="Employers"
       >
         {
-          orderedEntries.map(({ entry, i }) => (
+          entries.map((entry, i) => (
             <button
               type="button"
-              class="v2-tab group shrink-0 lg:w-full text-left"
+              class="v4-tab group shrink-0 lg:w-full text-left"
               role="tab"
               aria-selected={i === 0 ? "true" : "false"}
               data-tab={i}
-              data-i={i}
             >
-              <span class="v2-tab-inner">
+              <span class="v4-tab-inner">
                 <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-[#5f5f5f] block">
                   {entry.period}
                 </span>
-                <span class="v2-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[22px] lg:text-[26px] mt-1.5 inline-flex items-center gap-2.5">
-                  <span class="v2-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true"></span>
+                <span class="v4-tab-name font-display font-normal leading-tight tracking-[-0.012em] text-[22px] lg:text-[26px] mt-1.5 inline-flex items-center gap-2.5">
+                  <span class="v4-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true"></span>
                   {entry.company}
                 </span>
               </span>
@@ -185,7 +111,7 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
         {
           entries.map((entry, i) => (
             <div
-              class="v2-panel relative p-7 sm:p-10 lg:p-14"
+              class="v4-panel relative p-7 sm:p-10 lg:p-14"
               role="tabpanel"
               data-panel={i}
               hidden={i !== 0}
@@ -198,7 +124,7 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
                 {entry.year}
               </span>
 
-              <div class="relative v2-enter">
+              <div class="relative v4-enter">
                 <div class="flex items-center gap-2.5">
                   <span
                     class:list={["w-[6px] h-[6px] rounded-full", entry.now ? "bg-bio-lime" : "bg-[#4a4a4a]"]}
@@ -269,44 +195,25 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
 </section>
 
 <style>
-  /* Ruler segments — translucent so overlapping tenures read brighter */
-  .v2-seg {
-    background: rgba(255, 255, 255, 0.14);
-    cursor: pointer;
-    transform: translateY(-50%);
-    transition: background-color 0.2s ease;
-  }
-
-  .v2-seg:hover,
-  .v2-seg.hl {
-    background: rgba(255, 255, 255, 0.32);
-  }
-
-  .v2-seg[data-on="true"] {
-    background: #cef79e;
-    z-index: 2;
-  }
-
   /* Rail tabs — list rows on desktop, chip strip on mobile */
-  .v2-tab-inner {
+  .v4-tab-inner {
     display: block;
   }
 
-  .v2-tab-name {
+  .v4-tab-name {
     color: #6e6e6e;
     transition: color 0.2s ease;
   }
 
-  .v2-tab:hover .v2-tab-name,
-  .v2-tab.hl .v2-tab-name {
+  .v4-tab:hover .v4-tab-name {
     color: #bdbdbd;
   }
 
-  .v2-tab[aria-selected="true"] .v2-tab-name {
+  .v4-tab[aria-selected="true"] .v4-tab-name {
     color: #f5f5f5;
   }
 
-  .v2-tab-dot {
+  .v4-tab-dot {
     opacity: 0;
     transform: scale(0.4);
     transition:
@@ -314,25 +221,25 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
       transform 0.25s ease;
   }
 
-  .v2-tab[aria-selected="true"] .v2-tab-dot {
+  .v4-tab[aria-selected="true"] .v4-tab-dot {
     opacity: 1;
     transform: scale(1);
   }
 
   @media (min-width: 1024px) {
-    .v2-tab {
+    .v4-tab {
       padding: 22px 0;
       border-top: 1px solid #242424;
       cursor: pointer;
     }
 
-    .v2-tab:last-child {
+    .v4-tab:last-child {
       border-bottom: 1px solid #242424;
     }
   }
 
   @media (max-width: 1023px) {
-    .v2-tab {
+    .v4-tab {
       border: 1px solid #2a2a2a;
       border-radius: 14px;
       padding: 12px 18px;
@@ -341,48 +248,19 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
       white-space: nowrap;
     }
 
-    .v2-tab[aria-selected="true"] {
+    .v4-tab[aria-selected="true"] {
       border-color: #4a4a4a;
       background: #1b1b1b;
     }
   }
 
+  /* Panel content entrance on tab switch */
   @media (prefers-reduced-motion: no-preference) {
-    /* Segments grow in from the left when the ruler scrolls into view */
-    .v2-seg {
-      transform: translateY(-50%) scaleX(0);
-      transform-origin: left center;
-      transition:
-        transform 0.9s cubic-bezier(0.33, 1, 0.68, 1) var(--d, 0ms),
-        background-color 0.2s ease;
+    .v4-enter {
+      animation: v4-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
     }
 
-    .v2-strip.in .v2-seg {
-      transform: translateY(-50%) scaleX(1);
-    }
-
-    .v2-ping {
-      animation: v2-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-
-    @keyframes v2-ping {
-      0% {
-        transform: scale(1);
-        opacity: 0.7;
-      }
-      75%,
-      100% {
-        transform: scale(3);
-        opacity: 0;
-      }
-    }
-
-    /* Panel content entrance on tab switch */
-    .v2-enter {
-      animation: v2-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
-    }
-
-    @keyframes v2-rise {
+    @keyframes v4-rise {
       from {
         opacity: 0;
         transform: translateY(16px);
@@ -397,66 +275,32 @@ const orderedEntries = entries.map((entry, i) => ({ entry, i })).slice().reverse
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".career-v2");
+    const section = document.querySelector<HTMLElement>(".career-v4");
     if (section) {
       const tabs = section.querySelectorAll<HTMLButtonElement>("[data-tab]");
-      const segs = section.querySelectorAll<HTMLButtonElement>("[data-seg]");
       const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
 
-      const select = (id: string | undefined) => {
-        if (!id) return;
-        tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === id)));
-        segs.forEach((s) => s.setAttribute("data-on", String(s.dataset.seg === id)));
-        panels.forEach((panel) => {
-          const show = panel.dataset.panel === id;
-          panel.hidden = !show;
-          if (show) {
-            // retrigger the entrance animation
-            const inner = panel.querySelector<HTMLElement>(".v2-enter");
-            if (inner) {
-              inner.style.animation = "none";
-              void inner.offsetWidth;
-              inner.style.animation = "";
-            }
-          }
-        });
-      };
-
-      tabs.forEach((tab) => tab.addEventListener("click", () => select(tab.dataset.tab)));
-      segs.forEach((seg) => seg.addEventListener("click", () => select(seg.dataset.seg)));
-
-      // Hover sync between ruler segments and rail tabs
-      const groups = new Map<string, HTMLElement[]>();
-      section.querySelectorAll<HTMLElement>("[data-i]").forEach((el) => {
-        const key = el.dataset.i!;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(el);
-      });
-      groups.forEach((els) => {
-        const toggle = (on: boolean) => () =>
-          els.forEach((el) => el.classList.toggle("hl", on));
-        els.forEach((el) => {
-          el.addEventListener("mouseenter", toggle(true));
-          el.addEventListener("mouseleave", toggle(false));
-        });
-      });
-
-      // Grow-in trigger
-      const strip = section.querySelector<HTMLElement>(".v2-strip");
-      if (strip) {
-        const io = new IntersectionObserver(
-          (obs) => {
-            obs.forEach((e) => {
-              if (e.isIntersecting) {
-                e.target.classList.add("in");
-                io.unobserve(e.target);
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const id = tab.dataset.tab;
+          tabs.forEach((t) =>
+            t.setAttribute("aria-selected", String(t.dataset.tab === id)),
+          );
+          panels.forEach((panel) => {
+            const show = panel.dataset.panel === id;
+            panel.hidden = !show;
+            if (show) {
+              // retrigger the entrance animation
+              const inner = panel.querySelector<HTMLElement>(".v4-enter");
+              if (inner) {
+                inner.style.animation = "none";
+                void inner.offsetWidth;
+                inner.style.animation = "";
               }
-            });
-          },
-          { threshold: 0.25 },
-        );
-        io.observe(strip);
-      }
+            }
+          });
+        });
+      });
     }
   }
 </script>
