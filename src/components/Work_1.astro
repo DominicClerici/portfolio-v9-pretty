@@ -127,6 +127,14 @@ const projects = [
                     </span>
                   </span>
                 </button>
+
+                <div class="wx1-more" data-more={i}>
+                  <div class="overflow-hidden">
+                    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/50 pt-0.5 pb-5 pl-[48px]">
+                      {project.fact}
+                    </p>
+                  </div>
+                </div>
               </li>
             ))
           }
@@ -398,6 +406,26 @@ const projects = [
   .wx1-item[data-active] .wx1-dot {
     opacity: 1;
     transform: scale(1);
+  }
+
+  /* Expanding drawer — grid-rows keeps it height-animatable */
+  .wx1-more {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .wx1-more > div {
+    min-height: 0;
+  }
+
+  .wx1-item[data-active] .wx1-more {
+    grid-template-rows: 1fr;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .wx1-more {
+      transition: grid-template-rows 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+    }
   }
 
   /* ── The bench ── */
