@@ -114,9 +114,9 @@ const initialIndex = stepMap[0]
 
   <!-- The pinned frame: everything inside stays in view while the tall section
        scrolls past, which reads as a scroll-lock without trapping the wheel. -->
-  <div class="v1-pin sticky top-0 h-[100svh] overflow-hidden flex items-center">
+  <div class="v1-pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
     <div
-      class="relative w-full max-w-[1524px] mx-auto px-6 lg:px-12 py-8 lg:py-0"
+      class="relative w-full max-w-[1524px] mx-auto px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
       <p
         class="font-display font-normal text-[#f5f5f5] leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
@@ -640,7 +640,12 @@ const initialIndex = stepMap[0]
           ticking = false
           const rect = section.getBoundingClientRect()
           const tv = travel()
-          const p = tv > 0 ? Math.max(0, Math.min(-rect.top / tv, 1)) : 0
+          // entryLead (px) is progress the smooth-scroll engine has advanced
+          // ahead of the real scroll while braking into the lock, so the pin
+          // scrubs *during* the entry deceleration instead of dwelling at zero.
+          const lead =
+            ((window as any).__scrollProgressLead as (() => number) | undefined)?.() ?? 0
+          const p = tv > 0 ? Math.max(0, Math.min((-rect.top + lead) / tv, 1)) : 0
           registerBarriers(rect.top, tv)
           render(p)
         })
