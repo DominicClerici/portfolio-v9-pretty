@@ -35,22 +35,22 @@ const prefersReducedMotion = window.matchMedia(
 if (!prefersReducedMotion) {
   // Fraction of the remaining distance covered per 60fps frame, expressed as a
   // continuous rate so the feel is identical at 60Hz, 120Hz, or any refresh.
-  const LERP = 0.1
+  const LERP = 0.15
   const LAMBDA = -Math.log(1 - LERP) * 60
-  const WHEEL_MULTIPLIER = 1
+  const WHEEL_MULTIPLIER = 0.75
 
   // Soft-barrier tuning.
   // Fraction of the incoming inertia carried past a barrier. On entry it's what
   // survives the brake; on exit it's the fraction of the impact speed you launch
   // away with. Both keep a quarter (a 0.75 inertia loss at the boundary).
   const RETENTION_ENTRY = 1
-  const RETENTION_EXIT = 0.25
+  const RETENTION_EXIT = 0.3
   // Below this overshoot past a barrier a crossing is ignored — slow/gentle
   // scrolls pass straight through; only fast flicks get caught and eased.
-  const MIN_OVERSHOOT = 4
+  const MIN_OVERSHOOT = 40
   // How close current must get to the barrier before the brake hands off to the
   // launch. Small enough that velocity has decayed to ~0 (the "stop").
-  const BRAKE_EPS = 0.5
+  const BRAKE_EPS = 1
 
   const maxScroll = () =>
     document.documentElement.scrollHeight - window.innerHeight
