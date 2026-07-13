@@ -1,10 +1,11 @@
 ---
-// V4 — "The Line": neumorphic, scroll-driven sideways. The section pins
-// and vertical scroll becomes horizontal travel — three porcelain plates
-// ride a conveyor past the viewport while a giant gradient numeral keeps
-// count behind them. A gradient-filled groove at the bottom is the
-// progress readout (and its stations jump the scroll). V3's stick, V4's
-// old gradients, a brand-new axis.
+// V4 — "The Aurora": V2's strata pile under moving weather. Everything V1's
+// seam carries (the buried dial, the plumb line, the mineral glows) plus a
+// full ambient aurora that cross-fades lime → indigo → neon as the layers
+// seat, per-build gauge bars on the top shelf, a giant engraved counter
+// drifting behind the pile, an orbit arc counter-rotating around the dial,
+// and parallax pellets in the gutters. The porcelain stays light enough for
+// the shadows to read — the sky does the talking.
 const projects = [
   {
     index: "01",
@@ -47,182 +48,225 @@ const projects = [
     githubUrl: null,
   },
 ];
+
+// Stair offset per layer — mirrored by STICK_TOP/STICK_STEP in the script
+const STICK_TOP = 88;
+const STICK_STEP = 26;
+
+// Parallax pellet scatter: two depth groups, positions in % of the pin
+const PELLETS_A = [
+  { x: 5, y: 30 },
+  { x: 93, y: 24 },
+  { x: 9, y: 80 },
+  { x: 89, y: 68 },
+];
+const PELLETS_B = [
+  { x: 3.5, y: 56 },
+  { x: 95.5, y: 46 },
+  { x: 7, y: 13 },
+];
 ---
 
-<section class="wl4 relative" aria-label="Selected work">
-  <!-- Desktop: the pinned conveyor -->
-  <div class="hidden lg:block relative lg:h-[320vh]" data-rig>
-    <div class="sticky top-0 h-screen overflow-hidden flex flex-col">
-      <div class="relative z-10 max-w-[1524px] w-full mx-auto px-12 pt-12 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <span class="wl4-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
-            03&hairsp;/&hairsp;04
-          </span>
-          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-            Selected Work
-          </span>
-          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40 ml-4">
-            scroll to advance the line
-          </span>
-        </div>
-        <a
-          href="https://github.com/DominicClerici"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
-        >
-          more on github&nbsp;&nearr;
-        </a>
+<section class="wa4 relative" aria-label="Selected work">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
+      <div class="flex items-center gap-4">
+        <span class="wa4-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
+          03&hairsp;/&hairsp;04
+        </span>
+        <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+          Selected Work
+        </span>
       </div>
-
-      <!-- The counter that lives behind the line -->
-      <span
-        class="wl4-big absolute right-[-1vw] top-1/2 -translate-y-1/2 font-display font-normal leading-none tracking-[-0.05em] select-none pointer-events-none"
-        data-big
-        aria-hidden="true"
+      <a
+        href="https://github.com/DominicClerici"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
       >
-        01
-      </span>
+        more on github&nbsp;&nearr;
+      </a>
+    </div>
 
-      <div class="relative z-10 flex-1 min-h-0 flex items-center">
-        <div class="wl4-track flex items-center gap-12 w-max" data-track>
-          {
-            projects.map((project, i) => (
-              <article class="wl4-car rounded-[30px] p-5" data-car={i} data-on={i === 0 ? "" : undefined}>
-                <div class="wl4-well rounded-[20px] p-3">
-                  <img
-                    src={project.image}
-                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                    alt={project.alt}
-                    class="w-full aspect-[16/8] object-cover object-top rounded-[12px]"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
+    <p
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-4 lg:mb-6"
+    >
+      Three builds under one sky&nbsp;&mdash;
+      <span class="text-ink/55">the weather turns with every layer.</span>
+    </p>
+  </div>
 
-                <div class="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-10 items-start px-2 pb-2 pt-6">
-                  <div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                      <span class="wl4-num font-display font-normal leading-none tracking-[-0.03em] text-[1.75rem]">
-                        {project.index}
-                      </span>
-                      <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(1.75rem,2.2vw,2.25rem)]">
-                        {project.title}
-                      </h3>
-                      {project.featured && (
-                        <span class="wl4-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
-                          featured
-                        </span>
-                      )}
-                    </div>
-                    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
-                      {project.tech}
-                    </p>
-                    <p class="font-display text-[14px] leading-[1.55] text-ink/60 mt-4">{project.description}</p>
-                  </div>
+  <!-- Desktop: the sticky pile under the aurora -->
+  <div class="relative" data-zone>
+    <!-- The sky: every scroll-lit accent lives on this pinned backdrop -->
+    <div class="absolute inset-0 hidden lg:block pointer-events-none" aria-hidden="true">
+      <div class="sticky top-0 h-screen overflow-hidden">
+        <span class="wa4-aur wa4-aur-0 absolute"></span>
+        <span class="wa4-aur wa4-aur-1 absolute"></span>
+        <span class="wa4-aur wa4-aur-2 absolute"></span>
 
-                  <div>
-                    <div class="flex flex-wrap gap-2.5">
-                      {project.stack.map((item) => (
-                        <span class="wl4-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                    <div class="flex items-center gap-4 mt-6">
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="wl4-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
-                      >
-                        Visit site
-                      </a>
-                      {project.githubUrl && (
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
-                        >
-                          GitHub
-                        </a>
-                      )}
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Open ${project.title} in a new tab`}
-                        class="wl4-btn wl4-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                          <path
-                            d="M2 12 12 2M4.5 2H12v7.5"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))
-          }
+        <span class="wa4-glow wa4-glow-0 absolute inset-0"></span>
+        <span class="wa4-glow wa4-glow-1 absolute inset-0"></span>
+        <span class="wa4-glow wa4-glow-2 absolute inset-0"></span>
+
+        <span class="wa4-count wa4-ct-0 font-display font-normal">01</span>
+        <span class="wa4-count wa4-ct-1 font-display font-normal">02</span>
+        <span class="wa4-count wa4-ct-2 font-display font-normal">03</span>
+
+        <div class="wa4-pell wa4-pell-a absolute inset-0">
+          {PELLETS_A.map((d) => <span style={`left: ${d.x}%; top: ${d.y}%;`} />)}
         </div>
-      </div>
+        <div class="wa4-pell wa4-pell-b absolute inset-0">
+          {PELLETS_B.map((d) => <span style={`left: ${d.x}%; top: ${d.y}%;`} />)}
+        </div>
 
-      <div class="relative z-10 w-full pb-9 flex flex-col items-center gap-4">
-        <div class="wl4-groove relative w-[380px] h-[16px] rounded-full">
-          <span class="wl4-fill absolute rounded-full" data-fill aria-hidden="true"></span>
+        <div class="wa4-dial absolute rounded-full">
+          <span class="wa4-orbit absolute rounded-full"></span>
+          <span class="wa4-arc wa4-arc-0 absolute rounded-full"></span>
+          <span class="wa4-arc wa4-arc-1 absolute rounded-full"></span>
+          <span class="wa4-arc wa4-arc-2 absolute rounded-full"></span>
+        </div>
+
+        <div class="wa4-plumb absolute rounded-full">
+          <span class="wa4-plumb-fill absolute"></span>
           {
-            projects.map((project, i) => (
-              <button
-                type="button"
-                class="wl4-station absolute top-1/2 cursor-pointer"
-                style={`left: calc(8px + (100% - 16px) * ${i / (projects.length - 1)});`}
-                data-station={i}
-                aria-label={`Scroll to ${project.title}`}
+            projects.map((_, i) => (
+              <span
+                class={`wa4-plumb-dot wa4-pd-${i} absolute rounded-full`}
+                style={`top: ${(((i + 0.5) / projects.length) * 100).toFixed(2)}%;`}
               />
             ))
           }
         </div>
-        <span class="wl4-engraved font-mono text-[12px] leading-none tracking-[-0.02em] tabular-nums" data-count>
-          01&hairsp;/&hairsp;03
-        </span>
-      </div>
 
-      <p class="absolute bottom-9 right-12 z-10 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35">
-        the line never stops moving
-      </p>
+        <!-- Chapter gauges on the top shelf: each bar fills during its own build -->
+        <div class="wa4-gauges absolute flex flex-col gap-[7px]">
+          {
+            projects.map((project, i) => (
+              <div class="flex items-center gap-2.5">
+                <span class="wa4-engraved font-mono text-[10px] leading-none tracking-[0.08em]">{project.index}</span>
+                <span class="wa4-groove relative block rounded-full">
+                  <span class={`wa4-gfill wa4-gf-${i} absolute rounded-full`} />
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="hidden lg:block max-w-[1360px] mx-auto px-16 xl:px-20 pb-24 relative z-[1]" data-pile>
+      {
+        projects.map((project, i) => (
+          <div class="wa4-layer" data-layer={i}>
+            <article
+              class="wa4-card relative rounded-[36px] p-8 xl:p-10 overflow-hidden"
+              data-card={i}
+              style={`--i: ${i}; top: ${STICK_TOP + i * STICK_STEP}px;`}
+            >
+              <span class="wa4-hair absolute top-0 left-[8%] right-[8%]" aria-hidden="true" />
+              <span class={`wa4-hairp wa4-hp-${i} absolute top-0 left-[8%] right-[8%]`} aria-hidden="true" />
+
+              <div class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 items-center">
+                <div class={i % 2 === 1 ? "order-last" : ""}>
+                  <span
+                    class={`wa4-num wa4-np-${i} font-display font-normal leading-[0.85] tracking-[-0.04em] block text-[clamp(5rem,8vw,8rem)]`}
+                  >
+                    {project.index}
+                  </span>
+                  <div class="flex items-center gap-3 flex-wrap mt-5">
+                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,2.6vw,2.75rem)]">
+                      {project.title}
+                    </h3>
+                    {project.featured && (
+                      <span class="wa4-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
+                        featured
+                      </span>
+                    )}
+                  </div>
+                  <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                    {project.tech}
+                    <span class="text-ink/30 normal-case">&nbsp;&middot;&nbsp;{project.fact}</span>
+                  </p>
+                  <p class="font-display text-[15px] leading-[1.6] text-ink/60 max-w-[460px] mt-6">
+                    {project.description}
+                  </p>
+
+                  <div class="flex flex-wrap gap-2.5 mt-7">
+                    {project.stack.map((item) => (
+                      <span class="wa4-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div class="flex items-center gap-4 mt-9 max-w-[460px]">
+                    <a
+                      href={project.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="wa4-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                    >
+                      Visit site
+                    </a>
+                    {project.githubUrl && (
+                      <a
+                        href={project.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
+                      >
+                        GitHub
+                      </a>
+                    )}
+                    <a
+                      href={project.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open ${project.title} in a new tab`}
+                      class="wa4-btn wa4-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <path
+                          d="M2 12 12 2M4.5 2H12v7.5"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+
+                <div class={`wa4-well wa4-wp-${i} rounded-[24px] p-4`}>
+                  <img
+                    src={project.image}
+                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                    alt={project.alt}
+                    class="w-full aspect-[16/9] object-cover object-top rounded-[14px]"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </div>
+
+              <span class="wa4-veil absolute inset-0 rounded-[inherit]" aria-hidden="true" />
+            </article>
+          </div>
+        ))
+      }
     </div>
   </div>
 
-  <!-- Mobile: molded cards, no conveyor -->
-  <div class="lg:hidden max-w-[1524px] mx-auto px-6 py-[clamp(96px,14vh,180px)]">
-    <div class="flex items-center gap-4 mb-10">
-      <span class="wl4-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
-        03&hairsp;/&hairsp;04
-      </span>
-      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-        Selected Work
-      </span>
-    </div>
-
-    <p
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12"
-    >
-      Three builds on one line&nbsp;&mdash;
-      <span class="text-ink/55">mind the gap between them.</span>
-    </p>
-
+  <!-- Mobile: molded cards with static weather, no pile -->
+  <div class="lg:hidden max-w-[1524px] mx-auto px-6 pb-[clamp(96px,14vh,180px)] pt-8">
     <div class="flex flex-col gap-10">
       {
-        projects.map((project) => (
-          <article class="wl4-car rounded-[26px] p-5" data-on>
-            <div class="wl4-well rounded-[18px] p-2.5">
+        projects.map((project, i) => (
+          <article class="wa4-card relative rounded-[26px] p-5 overflow-hidden">
+            <span class={`wa4-hairp wa4-hm-${i} absolute top-0 left-[12%] right-[12%]`} aria-hidden="true" />
+            <div class={`wa4-well wa4-wp-${i} rounded-[18px] p-2.5`}>
               <img
                 src={project.image}
                 srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
@@ -234,14 +278,14 @@ const projects = [
             </div>
             <div class="p-2 pt-6">
               <div class="flex items-center gap-3 flex-wrap">
-                <span class="wl4-num font-display font-normal leading-none tracking-[-0.03em] text-[1.5rem]">
+                <span class={`wa4-num wa4-np-${i} font-display font-normal leading-none tracking-[-0.03em] text-[2.25rem]`}>
                   {project.index}
                 </span>
                 <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)]">
                   {project.title}
                 </h3>
                 {project.featured && (
-                  <span class="wl4-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
+                  <span class="wa4-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
                     featured
                   </span>
                 )}
@@ -253,7 +297,7 @@ const projects = [
 
               <div class="flex flex-wrap gap-3 mt-6">
                 {project.stack.map((item) => (
-                  <span class="wl4-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                  <span class="wa4-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
                     {item}
                   </span>
                 ))}
@@ -264,7 +308,7 @@ const projects = [
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="wl4-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                  class="wa4-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
                 >
                   Visit site
                 </a>
@@ -283,7 +327,7 @@ const projects = [
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Open ${project.title} in a new tab`}
-                  class="wl4-btn wl4-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                  class="wa4-btn wa4-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path
@@ -302,148 +346,458 @@ const projects = [
       }
     </div>
   </div>
+
+  <p
+    class="max-w-[1524px] mx-auto px-6 lg:px-12 pb-12 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right"
+  >
+    forecast: lime, clearing to indigo &mdash; neon by nightfall
+  </p>
 </section>
 
 <style>
-  /* Cool porcelain (V3's clean palette); the gradient does the moving */
-  .wl4 {
-    --por: #e8ebef;
-    --por-dark: rgba(149, 161, 178, 0.55);
-    --por-darker: rgba(149, 161, 178, 0.72);
+  /* Cool porcelain under moving weather. --w0/--w1/--w2 are per-build blend
+     weights, --f0/--f1/--f2 are per-chapter fills, --p is total pile
+     progress — all set from scroll. Defaults read as "Dispatch seated,
+     nothing scrolled" so the section renders sane without JS. */
+  .wa4 {
+    --por: #eaedf1;
+    --por-dark: rgba(151, 163, 180, 0.55);
+    --por-darker: rgba(151, 163, 180, 0.72);
     --por-light: rgba(255, 255, 255, 0.95);
     --grad: linear-gradient(120deg, #cef79e, #9fe8cf 48%, #9cc2ff);
+    /* Weather systems: 0 dispatch lime, 1 meridian indigo, 2 fuzzbox neon */
+    --pg0: linear-gradient(120deg, #d3f89f, #a5e85c);
+    --pg1: linear-gradient(120deg, #7c8ff7, #a78bfa);
+    --pg2: linear-gradient(120deg, #ff6ec7, #3ee8a7 52%, #4dc9ff);
     background: var(--por);
   }
 
-  .wl4-pill {
+  .wa4-pill {
     box-shadow:
       inset 3px 3px 6px var(--por-dark),
       inset -3px -3px 6px var(--por-light);
   }
 
-  /* ── The counter ── */
-  .wl4-big {
-    font-size: clamp(280px, 34vw, 520px);
-    background: var(--grad);
+  /* ── Layers (V2's pile, verbatim) ── */
+  .wa4-layer {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .wa4-card {
+    position: sticky;
+    width: 100%;
+    background: var(--por);
+    box-shadow:
+      14px 14px 34px var(--por-dark),
+      -14px -14px 34px var(--por-light);
+    transform: scale(calc(1 - var(--cover, 0) * 0.05));
+    transform-origin: 50% 0;
+  }
+
+  @media (max-width: 1023px) {
+    .wa4-card {
+      position: relative;
+      top: auto !important;
+      transform: none;
+    }
+  }
+
+  .wa4-veil {
+    background: var(--por);
+    opacity: calc(var(--cover, 0) * 0.55);
+    pointer-events: none;
+  }
+
+  /* ── The aurora: three weather systems cross-fading with the pile,
+     each drifting on its own vector as the page scrolls ── */
+  .wa4-aur {
+    inset: -12%;
+    will-change: transform, opacity;
+  }
+
+  .wa4-aur-0 {
+    background:
+      radial-gradient(52% 44% at 16% 18%, rgba(165, 232, 92, 0.4), transparent 68%),
+      radial-gradient(46% 40% at 84% 76%, rgba(206, 247, 158, 0.34), transparent 66%);
+    opacity: calc(var(--w0, 1) * 0.8);
+    transform: translate3d(0, calc(var(--p, 0) * -4vh), 0);
+  }
+
+  .wa4-aur-1 {
+    background:
+      radial-gradient(50% 44% at 20% 78%, rgba(124, 143, 247, 0.36), transparent 68%),
+      radial-gradient(46% 40% at 82% 22%, rgba(167, 139, 250, 0.32), transparent 66%);
+    opacity: calc(var(--w1, 0) * 0.8);
+    transform: translate3d(calc(var(--p, 0) * 3vw), calc(var(--p, 0) * -7vh), 0);
+  }
+
+  .wa4-aur-2 {
+    background:
+      radial-gradient(44% 40% at 14% 24%, rgba(255, 110, 199, 0.32), transparent 66%),
+      radial-gradient(40% 36% at 52% 88%, rgba(62, 232, 167, 0.26), transparent 64%),
+      radial-gradient(44% 40% at 88% 30%, rgba(77, 201, 255, 0.32), transparent 66%);
+    opacity: calc(var(--w2, 0) * 0.85);
+    transform: translate3d(calc(var(--p, 0) * -3vw), calc(var(--p, 0) * -9vh), 0);
+  }
+
+  /* Weather glow bleeding past the seated card's edges */
+  .wa4-glow-0 {
+    background: radial-gradient(58% 46% at 50% 56%, rgba(165, 232, 92, 0.32), transparent 72%);
+    opacity: calc(var(--w0, 1) * 0.7);
+  }
+
+  .wa4-glow-1 {
+    background: radial-gradient(58% 46% at 50% 56%, rgba(139, 124, 250, 0.3), transparent 72%);
+    opacity: calc(var(--w1, 0) * 0.7);
+  }
+
+  .wa4-glow-2 {
+    background:
+      radial-gradient(44% 38% at 38% 60%, rgba(255, 110, 199, 0.26), transparent 70%),
+      radial-gradient(44% 38% at 66% 48%, rgba(77, 201, 255, 0.26), transparent 70%);
+    opacity: calc(var(--w2, 0) * 0.7);
+  }
+
+  /* ── The counter: a giant engraved numeral keeping count behind the
+     pile's bottom-left shoulder ── */
+  .wa4-count {
+    position: absolute;
+    left: -1vw;
+    bottom: -3vh;
+    font-size: clamp(240px, 26vw, 440px);
+    line-height: 0.8;
+    letter-spacing: -0.05em;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    opacity: 0.4;
     filter: saturate(0.85);
+    transform: translate3d(0, calc(var(--p, 0) * -6vh), 0);
+    will-change: transform, opacity;
   }
 
-  /* ── The track ── */
-  /* Car width doubles as the height budget so the whole plate fits the pin
-     on short screens */
-  @media (min-width: 1024px) {
-    .wl4 {
-      --carw: min(56vw, 760px, calc((100vh - 468px) * 2));
-    }
-
-    .wl4-car {
-      width: var(--carw);
-    }
+  .wa4-ct-0 {
+    background-image: var(--pg0);
+    opacity: calc(var(--w0, 1) * 0.5);
   }
 
-  .wl4-track {
-    /* Seats the first/last car at viewport center at either end of travel */
-    padding-inline: calc(50vw - var(--carw, 760px) / 2);
+  .wa4-ct-1 {
+    background-image: var(--pg1);
+    opacity: calc(var(--w1, 0) * 0.45);
+  }
+
+  .wa4-ct-2 {
+    background-image: var(--pg2);
+    opacity: calc(var(--w2, 0) * 0.5);
+  }
+
+  /* ── Parallax pellets: molded dimples drifting at two depths ── */
+  .wa4-pell span {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--por);
+    box-shadow:
+      inset 2px 2px 3px var(--por-darker),
+      inset -2px -2px 3px var(--por-light);
+  }
+
+  .wa4-pell-b span {
+    width: 7px;
+    height: 7px;
+  }
+
+  .wa4-pell-a {
+    transform: translate3d(0, calc(var(--p, 0) * -10vh), 0);
     will-change: transform;
   }
 
-  .wl4-car {
+  .wa4-pell-b {
+    transform: translate3d(0, calc(var(--p, 0) * -22vh), 0);
+    will-change: transform;
+  }
+
+  /* ── The buried dial + counter-rotating orbit ── */
+  .wa4-dial {
+    --dial: 86vmin;
+    width: var(--dial);
+    height: var(--dial);
+    top: calc(var(--dial) * -0.3);
+    right: calc(var(--dial) * -0.3);
     background: var(--por);
     box-shadow:
-      10px 10px 24px var(--por-dark),
-      -10px -10px 24px var(--por-light);
-    opacity: 0.55;
-    transform: scale(0.965);
+      inset 10px 10px 26px var(--por-darker),
+      inset -10px -10px 26px var(--por-light);
   }
 
-  .wl4-car[data-on] {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow:
-      16px 16px 38px var(--por-darker),
-      -14px -14px 34px var(--por-light);
+  .wa4-orbit {
+    inset: -3.5vmin;
+    background: conic-gradient(from 0deg, #a5e85c 0deg, #7c8ff7 34deg, #ff6ec7 68deg, transparent 68deg);
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    transform: rotate(calc(var(--p, 0) * -200deg));
+    opacity: 0.8;
+    will-change: transform;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .wl4-car {
-      transition:
-        opacity 0.45s ease,
-        transform 0.45s ease,
-        box-shadow 0.45s ease;
-    }
+  .wa4-arc {
+    inset: 3.5vmin;
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 30px), #000 calc(100% - 29px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 30px), #000 calc(100% - 29px));
   }
 
-  .wl4-well {
+  .wa4-arc-0 {
+    background: conic-gradient(
+      from 135deg,
+      #d3f89f 0deg,
+      #a5e85c calc(var(--p, 0) * 300deg),
+      transparent calc(var(--p, 0) * 300deg)
+    );
+    opacity: var(--w0, 1);
+  }
+
+  .wa4-arc-1 {
+    background: conic-gradient(
+      from 135deg,
+      #7c8ff7 0deg,
+      #a78bfa calc(var(--p, 0) * 300deg),
+      transparent calc(var(--p, 0) * 300deg)
+    );
+    opacity: var(--w1, 0);
+  }
+
+  .wa4-arc-2 {
+    background: conic-gradient(
+      from 135deg,
+      #ff6ec7 0deg,
+      #3ee8a7 calc(var(--p, 0) * 150deg),
+      #4dc9ff calc(var(--p, 0) * 300deg),
+      transparent calc(var(--p, 0) * 300deg)
+    );
+    opacity: var(--w2, 0);
+  }
+
+  /* ── The plumb line: strata core sample down the left gutter ── */
+  .wa4-plumb {
+    left: max(15px, calc((100vw - 1524px) / 2 + 15px));
+    top: 16vh;
+    width: 6px;
+    height: 68vh;
     background: var(--por);
     box-shadow:
-      inset 8px 8px 18px var(--por-dark),
-      inset -8px -8px 18px var(--por-light);
+      inset 2px 2px 4px var(--por-darker),
+      inset -2px -2px 4px var(--por-light);
   }
 
-  .wl4-num {
+  .wa4-plumb-fill {
+    inset: 1px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to bottom,
+      #a5e85c,
+      #cef79e 20%,
+      #7c8ff7 42%,
+      #a78bfa 58%,
+      #ff6ec7 82%,
+      #4dc9ff
+    );
+    clip-path: inset(0 0 calc((1 - var(--p, 0)) * 100%) 0 round 999px);
+  }
+
+  .wa4-plumb-dot {
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translate(-50%, -50%);
+    background: var(--por);
+    box-shadow:
+      inset 2px 2px 3px var(--por-darker),
+      inset -2px -2px 3px var(--por-light);
+  }
+
+  .wa4-plumb-dot::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 999px;
+  }
+
+  .wa4-pd-0::after {
+    background: #a5e85c;
+    box-shadow: 0 0 8px 1px rgba(165, 232, 92, 0.9);
+    opacity: var(--w0, 1);
+  }
+
+  .wa4-pd-1::after {
+    background: #8b7cf8;
+    box-shadow: 0 0 8px 1px rgba(139, 124, 250, 0.9);
+    opacity: var(--w1, 0);
+  }
+
+  .wa4-pd-2::after {
+    background: linear-gradient(135deg, #ff6ec7, #4dc9ff);
+    box-shadow: 0 0 8px 1px rgba(255, 110, 199, 0.8);
+    opacity: var(--w2, 0);
+  }
+
+  /* ── Chapter gauges: three grooves on the always-visible top shelf,
+     each filling only during its own build's stretch of the scroll ── */
+  .wa4-gauges {
+    left: max(48px, calc((100vw - 1524px) / 2 + 48px));
+    top: 24px;
+  }
+
+  .wa4-groove {
+    width: 120px;
+    height: 8px;
+    background: var(--por);
+    box-shadow:
+      inset 2px 2px 4px var(--por-darker),
+      inset -2px -2px 4px var(--por-light);
+  }
+
+  .wa4-gfill {
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+  }
+
+  .wa4-gf-0 {
+    width: calc(6px + (100% - 10px) * var(--f0, 0));
+    background: var(--pg0);
+    box-shadow: 0 0 6px rgba(165, 232, 92, 0.7);
+  }
+
+  .wa4-gf-1 {
+    width: calc(6px + (100% - 10px) * var(--f1, 0));
+    background: var(--pg1);
+    box-shadow: 0 0 6px rgba(139, 124, 250, 0.7);
+  }
+
+  .wa4-gf-2 {
+    width: calc(6px + (100% - 10px) * var(--f2, 0));
+    background: var(--pg2);
+    box-shadow: 0 0 6px rgba(255, 110, 199, 0.6);
+  }
+
+  .wa4-engraved {
+    color: rgba(34, 47, 48, 0.45);
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  /* ── Hairlines: shared seam under a weather overlay that lights as the
+     build seats (mobile gets the static wa4-hm-* tints instead) ── */
+  .wa4-hair,
+  .wa4-hairp {
+    height: 2px;
+    border-radius: 999px;
+  }
+
+  .wa4-hair {
     background: var(--grad);
+    opacity: 0.85;
+  }
+
+  .wa4-hp-0 {
+    background: var(--pg0);
+    opacity: calc(var(--w0, 1) * 0.95);
+  }
+
+  .wa4-hp-1 {
+    background: var(--pg1);
+    opacity: calc(var(--w1, 0) * 0.95);
+  }
+
+  .wa4-hp-2 {
+    background: var(--pg2);
+    opacity: calc(var(--w2, 0) * 0.95);
+  }
+
+  .wa4-hm-0 {
+    background: var(--pg0);
+    opacity: 0.9;
+  }
+
+  .wa4-hm-1 {
+    background: var(--pg1);
+    opacity: 0.9;
+  }
+
+  .wa4-hm-2 {
+    background: var(--pg2);
+    opacity: 0.9;
+  }
+
+  /* Gradient-clipped numeral in the build's own weather */
+  .wa4-num {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     filter: saturate(0.9) brightness(0.74);
   }
 
-  /* ── The groove ── */
-  .wl4-groove {
+  .wa4-np-0 {
+    background-image: var(--pg0);
+  }
+
+  .wa4-np-1 {
+    background-image: var(--pg1);
+  }
+
+  .wa4-np-2 {
+    background-image: var(--pg2);
+  }
+
+  /* Image wells pooled with each build's own palette */
+  .wa4-well {
     background: var(--por);
     box-shadow:
-      inset 4px 4px 9px var(--por-darker),
-      inset -4px -4px 9px var(--por-light);
+      inset 8px 8px 18px var(--por-dark),
+      inset -8px -8px 18px var(--por-light);
   }
 
-  /* --p (0→1) is travel, set from scroll */
-  .wl4-fill {
-    top: 4px;
-    bottom: 4px;
-    left: 4px;
-    width: calc(12px + (100% - 20px) * var(--p, 0));
-    background: var(--grad);
-    box-shadow: 0 0 10px 1px rgba(159, 232, 207, 0.7);
+  .wa4-wp-0 {
+    background:
+      radial-gradient(120% 90% at 10% 6%, rgba(206, 247, 158, 0.55), transparent 55%),
+      radial-gradient(110% 90% at 90% 94%, rgba(165, 232, 92, 0.38), transparent 55%),
+      var(--por);
   }
 
-  .wl4-station {
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: var(--por);
-    box-shadow:
-      inset 2px 2px 3px var(--por-darker),
-      inset -2px -2px 3px var(--por-light);
-    transform: translate(-50%, -50%);
+  .wa4-wp-1 {
+    background:
+      radial-gradient(120% 90% at 10% 6%, rgba(124, 143, 247, 0.42), transparent 55%),
+      radial-gradient(110% 90% at 90% 94%, rgba(167, 139, 250, 0.4), transparent 55%),
+      var(--por);
   }
 
-  .wl4-station:focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 3px;
+  .wa4-wp-2 {
+    background:
+      radial-gradient(110% 85% at 10% 6%, rgba(255, 110, 199, 0.38), transparent 55%),
+      radial-gradient(90% 80% at 50% 100%, rgba(62, 232, 167, 0.3), transparent 55%),
+      radial-gradient(110% 85% at 90% 8%, rgba(77, 201, 255, 0.4), transparent 55%),
+      var(--por);
   }
 
-  .wl4-engraved {
-    color: rgba(34, 47, 48, 0.45);
-    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
+  .wa4-well img {
+    box-shadow: 0 10px 26px -14px rgba(34, 47, 48, 0.45);
   }
 
   /* ── Fittings ── */
-  .wl4-feat {
-    background: var(--grad);
+  /* Fuzzbox's badge wears its own neon, lightened for the ink text */
+  .wa4-feat {
+    background: linear-gradient(120deg, #ffa1d9, #8ff0c9 52%, #9dd7ff);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 
-  .wl4-chip {
+  .wa4-chip {
     box-shadow:
       inset 3px 3px 7px var(--por-dark),
       inset -3px -3px 7px var(--por-light);
   }
 
-  .wl4-btn {
+  .wa4-btn {
     background: var(--por);
     box-shadow:
       6px 6px 14px var(--por-dark),
@@ -453,23 +807,23 @@ const projects = [
       transform 0.2s ease;
   }
 
-  .wl4-btn:hover {
+  .wa4-btn:hover {
     transform: translateY(-1px);
   }
 
-  .wl4-btn:active {
+  .wa4-btn:active {
     transform: translateY(0);
     box-shadow:
       inset 4px 4px 10px var(--por-dark),
       inset -4px -4px 10px var(--por-light);
   }
 
-  .wl4-btn:focus-visible {
+  .wa4-btn:focus-visible {
     outline: 2px solid var(--color-ink);
     outline-offset: 3px;
   }
 
-  .wl4-btn-go {
+  .wa4-btn-go {
     background: var(--grad);
     box-shadow:
       6px 6px 14px var(--por-dark),
@@ -477,7 +831,7 @@ const projects = [
       inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 
-  .wl4-btn-go:active {
+  .wa4-btn-go:active {
     box-shadow:
       inset 4px 4px 10px rgba(110, 150, 120, 0.5),
       inset -2px -2px 6px rgba(255, 255, 255, 0.6);
@@ -486,46 +840,45 @@ const projects = [
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".wl4");
-    if (section) {
-      const rig = section.querySelector<HTMLElement>("[data-rig]");
-      const track = section.querySelector<HTMLElement>("[data-track]");
-      const fill = section.querySelector<HTMLElement>("[data-fill]");
-      const big = section.querySelector<HTMLElement>("[data-big]");
-      const count = section.querySelector<HTMLElement>("[data-count]");
-      const cars = rig ? rig.querySelectorAll<HTMLElement>("[data-car]") : [];
-      const stations = section.querySelectorAll<HTMLButtonElement>("[data-station]");
-      const total = cars.length;
+    const section = document.querySelector<HTMLElement>(".wa4");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (section && !reducedMotion) {
+      const zone = section.querySelector<HTMLElement>("[data-zone]");
+      const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-card]"));
 
-      let currentIdx = 0;
-
-      const select = (i: number) => {
-        if (i === currentIdx) return;
-        currentIdx = i;
-        const id = String(i);
-        cars.forEach((car) => {
-          if (car.dataset.car === id) car.setAttribute("data-on", "");
-          else car.removeAttribute("data-on");
-        });
-        if (big) big.textContent = `0${i + 1}`;
-        if (count) count.innerHTML = `0${i + 1}&hairsp;/&hairsp;0${total}`;
-      };
+      // Must track the inline sticky tops: 88px base, 26px stair
+      const STICK_TOP = 88;
+      const STICK_STEP = 26;
 
       let ticking = false;
 
       const update = () => {
         ticking = false;
-        if (!rig || !track) return;
-        const rect = rig.getBoundingClientRect();
+        if (!zone) return;
+        const rect = zone.getBoundingClientRect();
         // Hidden variant panel (display: none) or mobile layout — nothing to drive
         if (!rect.height) return;
+
+        // Total pile progress, per-build blend weights, per-chapter fills
         const range = rect.height - window.innerHeight;
-        if (range <= 0) return;
-        const p = Math.min(1, Math.max(0, -rect.top / range));
-        const travel = track.scrollWidth - window.innerWidth;
-        track.style.transform = `translate3d(${(-p * Math.max(0, travel)).toFixed(1)}px, 0, 0)`;
-        if (fill) fill.style.setProperty("--p", p.toFixed(4));
-        select(Math.round(p * (total - 1)));
+        if (range > 0) {
+          const p = Math.min(1, Math.max(0, -rect.top / range));
+          const s = p * (cards.length - 1);
+          section.style.setProperty("--p", p.toFixed(4));
+          for (let i = 0; i < cards.length; i++) {
+            section.style.setProperty(`--w${i}`, Math.max(0, 1 - Math.abs(s - i)).toFixed(3));
+            section.style.setProperty(`--f${i}`, Math.min(1, Math.max(0, p * cards.length - i)).toFixed(3));
+          }
+        }
+
+        // i's cover is driven by how far card i+1 has climbed toward its
+        // own sticky seat; the last card is never covered
+        for (let i = 0; i < cards.length - 1; i++) {
+          const next = cards[i + 1].getBoundingClientRect();
+          const seat = STICK_TOP + (i + 1) * STICK_STEP;
+          const cover = Math.min(1, Math.max(0, 1 - (next.top - seat) / (window.innerHeight - seat)));
+          cards[i].style.setProperty("--cover", cover.toFixed(3));
+        }
       };
 
       const onScroll = () => {
@@ -538,18 +891,6 @@ const projects = [
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onScroll, { passive: true });
       update();
-
-      // Stations jump the page scroll to that car's seat on the line
-      stations.forEach((station) => {
-        station.addEventListener("click", () => {
-          if (!rig) return;
-          const rect = rig.getBoundingClientRect();
-          const range = rect.height - window.innerHeight;
-          const i = Number(station.dataset.station);
-          const top = window.scrollY + rect.top + range * (i / (total - 1));
-          window.scrollTo({ top, behavior: "smooth" });
-        });
-      });
     }
   }
 </script>

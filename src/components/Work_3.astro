@@ -1,10 +1,11 @@
 ---
-// V3 — "The Fader": neumorphic, scroll-driven, big. The section pins for
-// ~3 screens and scrolling drags a physical fader thumb down an inset
-// groove — each third of the travel slides a build onto the stage. Cool
-// porcelain instead of V2's warm clay: same molded logic, different slab.
-// No clicking required (V4's best idea), though the groove's notches are
-// buttons that jump the scroll.
+// V3 — "The Chronometer": V1/V4's strata pile, re-machined to tolerance.
+// Same sticky slabs, same cover mechanic, same one-mineral-per-build logic —
+// but the minerals are fired down to enamel (sage, iris, rose) and the
+// instrument wall keeps only two pieces, both watch-grade: a buried dial
+// with machined ticks and a 3px arc whose bead rides the tip as you scroll,
+// and a 4px plumb thread down the left gutter. Color never fills a surface;
+// it is inlaid — a hairline, a tick, a jewel. The porcelain does the rest.
 const projects = [
   {
     index: "01",
@@ -47,191 +48,216 @@ const projects = [
     githubUrl: null,
   },
 ];
+
+// Stair offset per layer — mirrored by STICK_TOP/STICK_STEP in the script
+const STICK_TOP = 88;
+const STICK_STEP = 26;
 ---
 
-<section class="wn3 relative" aria-label="Selected work">
-  <!-- Desktop: the pinned fader rig -->
-  <div class="hidden lg:block relative lg:h-[280vh]" data-rig>
-    <div class="sticky top-0 h-screen overflow-hidden flex flex-col">
-      <div class="max-w-[1524px] w-full mx-auto px-12 pt-12 flex items-center justify-between gap-4">
+<section class="wc3 relative" aria-label="Selected work">
+  <!-- Stage: header and pile share one relative box so the chronometer wall
+       spans both and the dial is never clipped at the header seam -->
+  <div class="relative">
+    <div class="max-w-[1524px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)] relative z-[2]">
+      <!-- Porcelain fade over the header: masks the dial's top, then clears
+           as the header scrolls away before the pile goes sticky -->
+      <span class="wc3-headfade absolute inset-y-0 hidden lg:block" aria-hidden="true"></span>
+      <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14 relative">
         <div class="flex items-center gap-4">
-          <span class="wn3-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
+          <span class="wc3-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
             03&hairsp;/&hairsp;04
           </span>
           <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
             Selected Work
-          </span>
-          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40 ml-4">
-            scroll to slide the fader
           </span>
         </div>
         <a
           href="https://github.com/DominicClerici"
           target="_blank"
           rel="noopener noreferrer"
-          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
+          class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
         >
           more on github&nbsp;&nearr;
         </a>
       </div>
 
-      <div class="flex-1 min-h-0 max-w-[1524px] w-full mx-auto px-12 grid content-center">
-        <div class="grid grid-cols-[96px_minmax(0,1fr)] gap-12 items-center">
-          <!-- Fader -->
-          <div class="flex flex-col items-center gap-5">
-            <span class="wn3-engraved font-mono text-[11px] leading-none tracking-[0.08em] uppercase">sel</span>
-            <div class="wn3-track relative w-[52px] h-[min(54vh,460px)] rounded-full" data-track>
-              {
-                projects.map((project, i) => (
-                  <button
-                    type="button"
-                    class="wn3-notch absolute left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-                    style={`top: ${((i + 0.5) / projects.length) * 100}%;`}
-                    data-notch={i}
-                    aria-label={`Scroll to ${project.title}`}
-                  />
-                ))
-              }
-              <div class="wn3-thumb absolute left-1/2 top-0 w-[38px] h-[64px] rounded-full" data-thumb>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-              </div>
-            </div>
-            <span class="wn3-engraved font-mono text-[12px] leading-none tracking-[-0.02em] tabular-nums" data-progress>
-              0%
-            </span>
-          </div>
-
-          <!-- Stage -->
-          <div class="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-14 items-center">
-            <div class="wn3-plate rounded-[30px] p-5">
-              <div class="wn3-well rounded-[20px] p-3">
-                <div class="relative rounded-[12px] overflow-hidden aspect-[16/10] bg-ink/5">
-                  {
-                    projects.map((project, i) => (
-                      <img
-                        src={project.image}
-                        srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                        alt={project.alt}
-                        class="wn3-shot absolute inset-0 w-full h-full object-cover object-top"
-                        data-shot={i}
-                        data-on={i === 0 ? "" : undefined}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ))
-                  }
-                </div>
-              </div>
-            </div>
-
-            <div class="relative">
-              {
-                projects.map((project, i) => (
-                  <div class="wn3-panel" data-panel={i} hidden={i !== 0}>
-                    <span class="wn3-index font-display font-normal leading-none tracking-[-0.03em] block">
-                      {project.index}
-                    </span>
-                    <div class="flex items-center gap-3 flex-wrap mt-3">
-                      <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2.25rem,3.2vw,3.25rem)]">
-                        {project.title}
-                      </h3>
-                      {project.featured && (
-                        <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2.5 py-1.5">
-                          featured
-                        </span>
-                      )}
-                    </div>
-                    <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
-                      {project.tech}
-                    </p>
-                    <p class="font-display text-[16px] leading-[1.6] text-ink/60 max-w-[440px] mt-6">
-                      {project.description}
-                    </p>
-
-                    <div class="flex flex-wrap gap-3 mt-7">
-                      {project.stack.map((item) => (
-                        <span class="wn3-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div class="flex items-center gap-4 mt-9">
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="wn3-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
-                      >
-                        Visit site
-                      </a>
-                      {project.githubUrl && (
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
-                        >
-                          GitHub
-                        </a>
-                      )}
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Open ${project.title} in a new tab`}
-                        class="wn3-btn wn3-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                          <path
-                            d="M2 12 12 2M4.5 2H12v7.5"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </a>
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p class="max-w-[1524px] w-full mx-auto px-12 pb-8 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right">
-        the fader is load-bearing
+      <p
+        class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-4 lg:mb-6 relative"
+      >
+        Three builds, machined to fit&nbsp;&mdash;
+        <span class="text-ink/55">the dial keeps the count.</span>
       </p>
     </div>
-  </div>
 
-  <!-- Mobile: molded cards, no rig -->
-  <div class="lg:hidden max-w-[1524px] mx-auto px-6 py-[clamp(96px,14vh,180px)]">
-    <div class="flex items-center gap-4 mb-10">
-      <span class="wn3-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
-        03&hairsp;/&hairsp;04
-      </span>
-      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-        Selected Work
-      </span>
+    <!-- Desktop: the sticky pile over the chronometer wall. data-zone is the
+         wall's positioning + sticky context, so it pins with the pile — never
+         earlier — while the dial still rises up behind the header above it -->
+    <div class="relative" data-zone>
+      <!-- Chronometer wall: no top clip, so the dial reads as a whole disk
+           rising behind the header instead of a hard cut line. Its off-screen
+           right edge is contained by the global body { overflow-x: hidden } -->
+      <div class="absolute inset-0 hidden lg:block pointer-events-none z-0" aria-hidden="true">
+      <div class="sticky top-0 h-screen">
+        <span class="wc3-wash wc3-wash-0 absolute inset-0"></span>
+        <span class="wc3-wash wc3-wash-1 absolute inset-0"></span>
+        <span class="wc3-wash wc3-wash-2 absolute inset-0"></span>
+
+        <div class="wc3-dial absolute rounded-full">
+          <span class="wc3-ticks absolute rounded-full"></span>
+          <span class="wc3-ring absolute rounded-full"></span>
+          <span class="wc3-arc wc3-arc-0 absolute rounded-full"></span>
+          <span class="wc3-arc wc3-arc-1 absolute rounded-full"></span>
+          <span class="wc3-arc wc3-arc-2 absolute rounded-full"></span>
+          <span class="wc3-hand absolute rounded-full">
+            <span class="wc3-bead absolute rounded-full">
+              <i class="wc3-bd wc3-bd-0"></i>
+              <i class="wc3-bd wc3-bd-1"></i>
+              <i class="wc3-bd wc3-bd-2"></i>
+            </span>
+          </span>
+        </div>
+
+        <div class="wc3-plumb absolute rounded-full">
+          <span class="wc3-plumb-fill absolute"></span>
+          {
+            projects.map((_, i) => (
+              <span
+                class={`wc3-plumb-dot wc3-pd-${i} absolute rounded-full`}
+                style={`top: ${(((i + 0.5) / projects.length) * 100).toFixed(2)}%;`}
+              />
+            ))
+          }
+        </div>
+
+        <!-- Chapter gauges in the bottom-right: three vertical grooves,
+             left → middle → right, each filling during its own build -->
+        <div class="wc3-gauges absolute flex items-end gap-3">
+          {
+            projects.map((project, i) => (
+              <div class="flex flex-col items-center gap-2.5">
+                <span class="wc3-groove relative block rounded-full">
+                  <span class={`wc3-gfill wc3-gf-${i} absolute rounded-full`} />
+                </span>
+                <span class="wc3-engraved font-mono text-[10px] leading-none tracking-[0.08em]">{project.index}</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
     </div>
 
-    <p
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12"
-    >
-      Three builds, brought to eye level&nbsp;&mdash;
-      <span class="text-ink/55">one shelf at a time.</span>
-    </p>
+    <div class="hidden lg:block max-w-[1360px] mx-auto px-16 xl:px-20 pb-24 relative z-[1]" data-pile>
+      {
+        projects.map((project, i) => (
+          <div class="wc3-layer" data-layer={i}>
+            <article
+              class="wc3-card relative rounded-[32px] p-8 xl:p-10 overflow-hidden"
+              data-card={i}
+              style={`--en: var(--e${i}); --eng: var(--g${i}); top: ${STICK_TOP + i * STICK_STEP}px;`}
+            >
+              <div class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 items-center">
+                <div class={i % 2 === 1 ? "order-last" : ""}>
+                  <span class="wc3-num font-display font-normal leading-[0.85] tracking-[-0.03em] block text-[clamp(4rem,5.5vw,5.5rem)]">
+                    {project.index}
+                  </span>
+                  <span class="wc3-tick block mt-4" aria-hidden="true" />
+                  <div class="flex items-center gap-3 flex-wrap mt-5">
+                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,2.6vw,2.75rem)]">
+                      {project.title}
+                    </h3>
+                    {project.featured && (
+                      <span class="wc3-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/70 rounded-full px-3 py-2 inline-flex items-center gap-1.5">
+                        <i class="wc3-feat-dot" aria-hidden="true" />
+                        featured
+                      </span>
+                    )}
+                  </div>
+                  <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                    {project.tech}
+                    <span class="text-ink/30 normal-case">&nbsp;&middot;&nbsp;{project.fact}</span>
+                  </p>
+                  <p class="font-display text-[15px] leading-[1.6] text-ink/60 max-w-[460px] mt-6">
+                    {project.description}
+                  </p>
 
+                  <div class="flex flex-wrap gap-2.5 mt-7">
+                    {project.stack.map((item) => (
+                      <span class="wc3-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div class="flex items-center gap-4 mt-9 max-w-[460px]">
+                    <a
+                      href={project.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="wc3-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                    >
+                      Visit site
+                    </a>
+                    {project.githubUrl && (
+                      <a
+                        href={project.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
+                      >
+                        GitHub
+                      </a>
+                    )}
+                    <a
+                      href={project.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open ${project.title} in a new tab`}
+                      class="wc3-btn wc3-btn-go w-11 h-11 rounded-[14px] inline-flex items-center justify-center ml-auto"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <path
+                          d="M2 12 12 2M4.5 2H12v7.5"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+
+                <div class={`wc3-well wc3-wp-${i} rounded-[22px] p-4`}>
+                  <img
+                    src={project.image}
+                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                    alt={project.alt}
+                    class="w-full aspect-[16/9] object-cover object-top rounded-[12px]"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </div>
+
+              <span class="wc3-veil absolute inset-0 rounded-[inherit]" aria-hidden="true" />
+            </article>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+  </div>
+
+  <!-- Mobile: molded cards, static enamel inlays, no pile -->
+  <div class="lg:hidden max-w-[1524px] mx-auto px-6 pb-[clamp(96px,14vh,180px)] pt-8">
     <div class="flex flex-col gap-10">
       {
-        projects.map((project) => (
-          <article class="wn3-plate rounded-[26px] p-5">
-            <div class="wn3-well rounded-[18px] p-2.5">
+        projects.map((project, i) => (
+          <article
+            class="wc3-card relative rounded-[24px] p-5 overflow-hidden"
+            style={`--en: var(--e${i}); --eng: var(--g${i});`}
+          >
+            <div class={`wc3-well wc3-wp-${i} rounded-[16px] p-2.5`}>
               <img
                 src={project.image}
                 srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
@@ -243,23 +269,28 @@ const projects = [
             </div>
             <div class="p-2 pt-6">
               <div class="flex items-center gap-3 flex-wrap">
+                <span class="wc3-num font-display font-normal leading-none tracking-[-0.03em] text-[2.25rem]">
+                  {project.index}
+                </span>
                 <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)]">
                   {project.title}
                 </h3>
                 {project.featured && (
-                  <span class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2.5 py-1.5">
+                  <span class="wc3-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/70 rounded-full px-3 py-2 inline-flex items-center gap-1.5">
+                    <i class="wc3-feat-dot" aria-hidden="true" />
                     featured
                   </span>
                 )}
               </div>
-              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
+              <span class="wc3-tick block mt-4" aria-hidden="true" />
+              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
                 {project.tech}
               </p>
               <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
 
               <div class="flex flex-wrap gap-3 mt-6">
                 {project.stack.map((item) => (
-                  <span class="wn3-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                  <span class="wc3-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
                     {item}
                   </span>
                 ))}
@@ -270,7 +301,7 @@ const projects = [
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="wn3-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                  class="wc3-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
                 >
                   Visit site
                 </a>
@@ -289,7 +320,7 @@ const projects = [
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Open ${project.title} in a new tab`}
-                  class="wn3-btn wn3-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                  class="wc3-btn wc3-btn-go w-11 h-11 rounded-[14px] inline-flex items-center justify-center ml-auto"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path
@@ -308,225 +339,448 @@ const projects = [
       }
     </div>
   </div>
+
+  <p
+    class="max-w-[1524px] mx-auto px-6 lg:px-12 pb-12 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right"
+  >
+    calibration record: sage, iris, rose &mdash; all within tolerance
+  </p>
 </section>
 
 <style>
-  /* Cool porcelain — V2's molded logic on a different slab */
-  .wn3 {
-    --por: #e7eaee;
-    --por-dark: rgba(155, 166, 180, 0.55);
-    --por-darker: rgba(155, 166, 180, 0.75);
+  /* Cool porcelain, enamel inlays. --w0/--w1/--w2 are per-build blend
+     weights and --p is total pile progress, both set from scroll. Defaults
+     read as "Dispatch seated, nothing scrolled" so the section renders
+     sane without JS. Cards carry their own --en (solid) / --eng (gradient)
+     enamel via inline style. */
+  .wc3 {
+    --por: #eaedf1;
+    --por-dark: rgba(151, 163, 180, 0.5);
+    --por-darker: rgba(151, 163, 180, 0.68);
     --por-light: rgba(255, 255, 255, 0.95);
+    /* Fired enamels: 0 dispatch sage, 1 meridian iris, 2 fuzzbox rose */
+    --e0: #8aa55f;
+    --e1: #7f89d4;
+    --e2: #c778a8;
+    --g0: linear-gradient(120deg, #b0c688, #8aa55f);
+    --g1: linear-gradient(120deg, #8d97dd, #a595d6);
+    --g2: linear-gradient(120deg, #d38ab7, #8fa9d6);
     background: var(--por);
   }
 
-  .wn3-pill {
+  .wc3-pill {
     box-shadow:
       inset 3px 3px 6px var(--por-dark),
       inset -3px -3px 6px var(--por-light);
   }
 
-  .wn3-plate {
-    background: var(--por);
-    box-shadow:
-      12px 12px 28px var(--por-dark),
-      -12px -12px 28px var(--por-light);
+  /* ── Layers (V1/V4's pile, verbatim) ── */
+  .wc3-layer {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
   }
 
-  .wn3-well {
+  .wc3-card {
+    position: sticky;
+    width: 100%;
     background: var(--por);
+    box-shadow:
+      16px 16px 40px var(--por-dark),
+      -16px -16px 40px var(--por-light);
+    transform: scale(calc(1 - var(--cover, 0) * 0.04));
+    transform-origin: 50% 0;
+  }
+
+  @media (max-width: 1023px) {
+    .wc3-card {
+      position: relative;
+      top: auto !important;
+      transform: none;
+    }
+  }
+
+  .wc3-veil {
+    background: var(--por);
+    opacity: calc(var(--cover, 0) * 0.5);
+    pointer-events: none;
+  }
+
+  /* ── Ambient washes: one whisper of enamel behind the seated card ── */
+  .wc3-wash-0 {
+    background: radial-gradient(58% 46% at 50% 56%, rgba(138, 165, 95, 0.17), transparent 72%);
+    opacity: var(--w0, 1);
+  }
+
+  .wc3-wash-1 {
+    background: radial-gradient(58% 46% at 50% 56%, rgba(127, 137, 212, 0.17), transparent 72%);
+    opacity: var(--w1, 0);
+  }
+
+  .wc3-wash-2 {
+    background:
+      radial-gradient(46% 40% at 40% 58%, rgba(211, 138, 183, 0.14), transparent 70%),
+      radial-gradient(46% 40% at 64% 50%, rgba(143, 169, 214, 0.14), transparent 70%);
+    opacity: var(--w2, 0);
+  }
+
+  /* ── The chronometer: V1's buried dial machined down to a tick band,
+     a 3px arc, and a bead that rides the arc tip with total scroll ── */
+  .wc3-dial {
+    --dial: 78vmin;
+    width: var(--dial);
+    height: var(--dial);
+    top: calc(var(--dial) * -0.32);
+    right: calc(var(--dial) * -0.32);
+    background: var(--por);
+    box-shadow:
+      inset 7px 7px 20px var(--por-darker),
+      inset -7px -7px 20px var(--por-light);
+  }
+
+  /* Porcelain fade filling the header box: opaque over the pill and title,
+     dissolving to clear where the pile meets the header so the dial reads
+     unclipped. It scrolls off with the header before the pile goes sticky. */
+  .wc3-headfade {
+    left: 50%;
+    width: 100vw;
+    transform: translateX(-50%);
+    background: linear-gradient(to bottom, var(--por) 45%, transparent);
+  }
+
+  .wc3-ticks {
+    inset: 4.5vmin;
+    background: repeating-conic-gradient(rgba(34, 47, 48, 0.18) 0deg 0.5deg, transparent 0.5deg 6deg);
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
+    opacity: 0.55;
+  }
+
+  /* The groove the arc runs in */
+  .wc3-ring {
+    inset: 8vmin;
+    background: rgba(151, 163, 180, 0.32);
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  }
+
+  .wc3-arc {
+    inset: 8vmin;
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  }
+
+  .wc3-arc-0 {
+    background: conic-gradient(
+      from 135deg,
+      var(--e0) 0deg,
+      var(--e0) calc(var(--p, 0) * 300deg),
+      transparent calc(var(--p, 0) * 300deg)
+    );
+    opacity: var(--w0, 1);
+  }
+
+  .wc3-arc-1 {
+    background: conic-gradient(
+      from 135deg,
+      var(--e1) 0deg,
+      var(--e1) calc(var(--p, 0) * 300deg),
+      transparent calc(var(--p, 0) * 300deg)
+    );
+    opacity: var(--w1, 0);
+  }
+
+  .wc3-arc-2 {
+    background: conic-gradient(
+      from 135deg,
+      var(--e2) 0deg,
+      var(--e2) calc(var(--p, 0) * 300deg),
+      transparent calc(var(--p, 0) * 300deg)
+    );
+    opacity: var(--w2, 0);
+  }
+
+  /* The hand: a rotating carrier whose bead sits exactly on the arc's
+     radius, so it tracks the tip of the sweep */
+  .wc3-hand {
+    inset: 8vmin;
+    transform: rotate(calc(135deg + var(--p, 0) * 300deg));
+    will-change: transform;
+  }
+
+  .wc3-bead {
+    left: 50%;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    transform: translate(-50%, -50%) translateY(1.5px);
+    background: var(--por);
+    box-shadow:
+      2px 2px 5px var(--por-darker),
+      -2px -2px 5px var(--por-light);
+  }
+
+  .wc3-bd {
+    position: absolute;
+    inset: 2.5px;
+    border-radius: 999px;
+  }
+
+  .wc3-bd-0 {
+    background: var(--e0);
+    opacity: var(--w0, 1);
+  }
+
+  .wc3-bd-1 {
+    background: var(--e1);
+    opacity: var(--w1, 0);
+  }
+
+  .wc3-bd-2 {
+    background: var(--e2);
+    opacity: var(--w2, 0);
+  }
+
+  /* ── The plumb thread: a 4px core sample down the left gutter ── */
+  .wc3-plumb {
+    left: max(16px, calc((100vw - 1524px) / 2 + 16px));
+    top: 18vh;
+    width: 4px;
+    height: 64vh;
+    background: var(--por);
+    box-shadow:
+      inset 1.5px 1.5px 3px var(--por-darker),
+      inset -1.5px -1.5px 3px var(--por-light);
+  }
+
+  .wc3-plumb-fill {
+    inset: 1px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, var(--e0), var(--e1) 50%, var(--e2));
+    clip-path: inset(0 0 calc((1 - var(--p, 0)) * 100%) 0 round 999px);
+    opacity: 0.9;
+  }
+
+  .wc3-plumb-dot {
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    transform: translate(-50%, -50%);
+    background: var(--por);
+    box-shadow:
+      inset 1.5px 1.5px 3px var(--por-darker),
+      inset -1.5px -1.5px 3px var(--por-light);
+  }
+
+  .wc3-plumb-dot::after {
+    content: "";
+    position: absolute;
+    inset: 2.5px;
+    border-radius: 999px;
+  }
+
+  .wc3-pd-0::after {
+    background: var(--e0);
+    opacity: var(--w0, 1);
+  }
+
+  .wc3-pd-1::after {
+    background: var(--e1);
+    opacity: var(--w1, 0);
+  }
+
+  .wc3-pd-2::after {
+    background: var(--e2);
+    opacity: var(--w2, 0);
+  }
+
+  /* ── Chapter gauges: three vertical grooves in the bottom-right, each
+     filling bottom-up only during its own build's stretch of the scroll ── */
+  .wc3-gauges {
+    right: max(48px, calc((100vw - 1524px) / 2 + 48px));
+    bottom: 40px;
+  }
+
+  .wc3-groove {
+    width: 8px;
+    height: 120px;
+    background: var(--por);
+    box-shadow:
+      inset 2px 2px 4px var(--por-darker),
+      inset -2px -2px 4px var(--por-light);
+  }
+
+  .wc3-gfill {
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+  }
+
+  .wc3-gf-0 {
+    height: calc(4px + (100% - 8px) * var(--f0, 0));
+    background: var(--e0);
+  }
+
+  .wc3-gf-1 {
+    height: calc(4px + (100% - 8px) * var(--f1, 0));
+    background: var(--e1);
+  }
+
+  .wc3-gf-2 {
+    height: calc(4px + (100% - 8px) * var(--f2, 0));
+    background: var(--e2);
+  }
+
+  .wc3-engraved {
+    color: rgba(34, 47, 48, 0.42);
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  /* Engraved numeral — pressed into the porcelain, no candy */
+  .wc3-num {
+    color: transparent;
+    background: linear-gradient(145deg, rgba(151, 163, 180, 0.62), rgba(255, 255, 255, 0.95));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  /* The one place the build's enamel touches the card body */
+  .wc3-tick {
+    width: 44px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--eng, var(--g0));
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  /* Image wells: barely pooled with the build's enamel */
+  .wc3-well {
     box-shadow:
       inset 8px 8px 18px var(--por-dark),
       inset -8px -8px 18px var(--por-light);
   }
 
-  /* ── The fader ── */
-  .wn3-track {
-    background: var(--por);
-    box-shadow:
-      inset 6px 6px 14px var(--por-darker),
-      inset -6px -6px 14px var(--por-light);
+  .wc3-wp-0 {
+    background:
+      radial-gradient(120% 90% at 12% 8%, rgba(138, 165, 95, 0.2), transparent 55%),
+      var(--por);
   }
 
-  .wn3-notch {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--por);
-    box-shadow:
-      inset 2px 2px 3px var(--por-darker),
-      inset -2px -2px 3px var(--por-light);
+  .wc3-wp-1 {
+    background:
+      radial-gradient(120% 90% at 12% 8%, rgba(127, 137, 212, 0.18), transparent 55%),
+      var(--por);
   }
 
-  .wn3-notch:focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 3px;
+  .wc3-wp-2 {
+    background:
+      radial-gradient(110% 85% at 12% 8%, rgba(211, 138, 183, 0.16), transparent 55%),
+      radial-gradient(110% 85% at 88% 92%, rgba(143, 169, 214, 0.16), transparent 55%),
+      var(--por);
   }
 
-  .wn3-thumb {
-    background: var(--por);
-    margin-left: -19px; /* centers the 38px thumb on the groove */
-    box-shadow:
-      6px 6px 14px var(--por-darker),
-      -6px -6px 14px var(--por-light),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    will-change: transform;
+  .wc3-well img {
+    box-shadow: 0 10px 26px -14px rgba(34, 47, 48, 0.4);
   }
 
-  /* Grip ridges; the middle one is the lime index line */
-  .wn3-thumb span {
-    width: 16px;
-    height: 2px;
-    border-radius: 999px;
-    background: var(--por-darker);
-  }
-
-  .wn3-thumb span:nth-child(2) {
-    background: var(--color-bio-lime);
-    box-shadow: 0 0 8px 1px rgba(206, 247, 158, 0.9);
-    height: 3px;
-  }
-
-  .wn3-engraved {
-    color: rgba(34, 47, 48, 0.45);
-    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
-  }
-
-  /* Giant engraved index behind the title */
-  .wn3-index {
-    font-size: clamp(4rem, 6vw, 6rem);
-    color: transparent;
-    background: linear-gradient(145deg, rgba(155, 166, 180, 0.5), rgba(255, 255, 255, 0.9));
-    -webkit-background-clip: text;
-    background-clip: text;
-  }
-
-  /* ── Stage swaps ── */
-  .wn3-shot {
-    opacity: 0;
-    transform: translateY(3%);
-  }
-
-  .wn3-shot[data-on] {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .wn3-shot {
-      transition:
-        opacity 0.45s ease,
-        transform 0.45s ease;
-    }
-
-    .wn3-panel {
-      animation: wn3-rise 0.45s cubic-bezier(0.33, 1, 0.68, 1) both;
-    }
-  }
-
-  @keyframes wn3-rise {
-    from {
-      opacity: 0;
-      transform: translateY(14px);
-    }
-  }
-
-  /* ── Chips & buttons (same molding as V2, cooler slab) ── */
-  .wn3-chip {
+  /* ── Fittings ── */
+  .wc3-feat {
     box-shadow:
       inset 3px 3px 7px var(--por-dark),
       inset -3px -3px 7px var(--por-light);
   }
 
-  .wn3-btn {
+  .wc3-feat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--eng, var(--g2));
+  }
+
+  .wc3-chip {
+    box-shadow:
+      inset 3px 3px 7px var(--por-dark),
+      inset -3px -3px 7px var(--por-light);
+  }
+
+  .wc3-btn {
     background: var(--por);
     box-shadow:
       6px 6px 14px var(--por-dark),
       -6px -6px 14px var(--por-light);
     transition:
       box-shadow 0.2s ease,
-      transform 0.2s ease;
+      transform 0.2s ease,
+      color 0.2s ease;
   }
 
-  .wn3-btn:hover {
+  .wc3-btn:hover {
     transform: translateY(-1px);
   }
 
-  .wn3-btn:active {
+  .wc3-btn:active {
     transform: translateY(0);
     box-shadow:
       inset 4px 4px 10px var(--por-dark),
       inset -4px -4px 10px var(--por-light);
   }
 
-  .wn3-btn:focus-visible {
+  .wc3-btn:focus-visible {
     outline: 2px solid var(--color-ink);
     outline-offset: 3px;
   }
 
-  .wn3-btn-go {
-    background: var(--color-bio-lime);
-    box-shadow:
-      6px 6px 14px var(--por-dark),
-      -6px -6px 14px var(--por-light),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  /* The go button's arrow wears the build's enamel; ink on hover */
+  .wc3-btn-go {
+    color: var(--en, var(--color-ink));
   }
 
-  .wn3-btn-go:active {
-    box-shadow:
-      inset 4px 4px 10px rgba(120, 150, 70, 0.5),
-      inset -2px -2px 6px rgba(255, 255, 255, 0.6);
+  .wc3-btn-go:hover {
+    color: var(--color-ink);
   }
 </style>
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".wn3");
-    if (section) {
-      const rig = section.querySelector<HTMLElement>("[data-rig]");
-      const track = section.querySelector<HTMLElement>("[data-track]");
-      const thumb = section.querySelector<HTMLElement>("[data-thumb]");
-      const progress = section.querySelector<HTMLElement>("[data-progress]");
-      const shots = section.querySelectorAll<HTMLElement>("[data-shot]");
-      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
-      const notches = section.querySelectorAll<HTMLButtonElement>("[data-notch]");
-      const count = shots.length;
+    const section = document.querySelector<HTMLElement>(".wc3");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (section && !reducedMotion) {
+      const zone = section.querySelector<HTMLElement>("[data-zone]");
+      const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-card]"));
 
-      let currentIdx = 0;
-
-      const select = (idx: number) => {
-        if (idx === currentIdx) return;
-        currentIdx = idx;
-        const id = String(idx);
-        shots.forEach((shot) => {
-          if (shot.dataset.shot === id) shot.setAttribute("data-on", "");
-          else shot.removeAttribute("data-on");
-        });
-        panels.forEach((panel) => {
-          panel.hidden = panel.dataset.panel !== id;
-        });
-      };
+      // Must track the inline sticky tops: 88px base, 26px stair
+      const STICK_TOP = 88;
+      const STICK_STEP = 26;
 
       let ticking = false;
 
       const update = () => {
         ticking = false;
-        if (!rig || !track || !thumb) return;
-        const rect = rig.getBoundingClientRect();
+        if (!zone) return;
+        const rect = zone.getBoundingClientRect();
         // Hidden variant panel (display: none) or mobile layout — nothing to drive
         if (!rect.height) return;
+
+        // Total pile progress + per-build blend weights for the instruments
         const range = rect.height - window.innerHeight;
-        if (range <= 0) return;
-        const p = Math.min(1, Math.max(0, -rect.top / range));
-        const travel = track.clientHeight - thumb.offsetHeight;
-        thumb.style.transform = `translateY(${(p * travel).toFixed(1)}px)`;
-        if (progress) progress.textContent = `${Math.round(p * 100)}%`;
-        select(Math.min(count - 1, Math.floor(p * count)));
+        if (range > 0) {
+          const p = Math.min(1, Math.max(0, -rect.top / range));
+          const s = p * (cards.length - 1);
+          section.style.setProperty("--p", p.toFixed(4));
+          for (let i = 0; i < cards.length; i++) {
+            section.style.setProperty(`--w${i}`, Math.max(0, 1 - Math.abs(s - i)).toFixed(3));
+            section.style.setProperty(`--f${i}`, Math.min(1, Math.max(0, p * cards.length - i)).toFixed(3));
+          }
+        }
+
+        // i's cover is driven by how far card i+1 has climbed toward its
+        // own sticky seat; the last card is never covered
+        for (let i = 0; i < cards.length - 1; i++) {
+          const next = cards[i + 1].getBoundingClientRect();
+          const seat = STICK_TOP + (i + 1) * STICK_STEP;
+          const cover = Math.min(1, Math.max(0, 1 - (next.top - seat) / (window.innerHeight - seat)));
+          cards[i].style.setProperty("--cover", cover.toFixed(3));
+        }
       };
 
       const onScroll = () => {
@@ -539,18 +793,6 @@ const projects = [
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onScroll, { passive: true });
       update();
-
-      // Notches jump the page scroll to the middle of that build's segment
-      notches.forEach((notch) => {
-        notch.addEventListener("click", () => {
-          if (!rig) return;
-          const rect = rig.getBoundingClientRect();
-          const range = rect.height - window.innerHeight;
-          const i = Number(notch.dataset.notch);
-          const top = window.scrollY + rect.top + range * ((i + 0.5) / count);
-          window.scrollTo({ top, behavior: "smooth" });
-        });
-      });
     }
   }
 </script>
