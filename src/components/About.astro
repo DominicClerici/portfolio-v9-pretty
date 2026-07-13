@@ -1,20 +1,38 @@
 ---
 const conceptualSkills = [
-  "Full Stack", "Mobile Development", "Cloud Infrastructure",
-  "AI/ML", "Autonomous Agents", "Growth Engineering",
-  "Internal Tooling", "SEO", "Data Analysis",
-];
+  "Full Stack",
+  "Mobile Development",
+  "Cloud Infrastructure",
+  "AI/ML",
+  "Autonomous Agents",
+  "Growth Engineering",
+  "Internal Tooling",
+  "SEO",
+  "Data Analysis",
+]
 
 const technicalSkills = [
-  "TypeScript", "Go", "Python", "React", "Next.js",
-  "React Native", "Swift", "Node.js", "PostgreSQL",
-  "AWS Lambda", "Electron", "WordPress", "Elementor",
-];
+  "TypeScript",
+  "Go",
+  "Python",
+  "React",
+  "Next.js",
+  "React Native",
+  "Swift",
+  "Node.js",
+  "PostgreSQL",
+  "AWS Lambda",
+  "Electron",
+  "WordPress",
+  "Elementor",
+]
 ---
 
 <!-- Scrolls over the pinned hero canvas — no background of its own -->
 <section id="about" class="relative">
-  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(120px,18vh,200px)]">
+  <div
+    class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(120px,18vh,200px)]"
+  >
     <h2 class="sr-only">About</h2>
 
     <div class="flex items-center gap-4 mb-10 lg:mb-14">
@@ -23,55 +41,85 @@ const technicalSkills = [
       >
         01&hairsp;/&hairsp;04
       </span>
-      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+      <span
+        class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60"
+      >
         About
       </span>
     </div>
 
     <p
+      id="about-intro"
       class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)]"
     >
-      CS student at Indiana University, full-stack engineer at Rumor. I&rsquo;ve been programming
-      since before I had any business doing so&nbsp;&mdash;
+      CS student at Indiana University, full-stack engineer at Rumor. I&rsquo;ve
+      been programming since before I had any business doing so&nbsp;&mdash;
       <span class="text-ink/55">
-        I care about speed, clean interfaces, and code I won&rsquo;t hate in six months.
+        I care about speed, clean interfaces, and code I won&rsquo;t hate in six
+        months.
       </span>
     </p>
 
     <div
       class="mt-16 lg:mt-24 pt-8 lg:pt-10 border-t border-ink/20 grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-10"
     >
-      <div class="md:col-span-3">
-        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3">
+      <div class="md:col-span-3" data-reveal-col>
+        <div
+          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3"
+          data-reveal="label"
+        >
           Location
         </div>
-        <div class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink">
+        <div
+          class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink"
+          data-reveal="value"
+        >
           New York
         </div>
-        <div class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2">EST. 2004</div>
+        <div
+          class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2"
+          data-reveal="sub"
+        >
+          EST. 2004
+        </div>
       </div>
 
-      <div class="md:col-span-3">
-        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3">
+      <div class="md:col-span-3" data-reveal-col>
+        <div
+          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3"
+          data-reveal="label"
+        >
           Experience
         </div>
-        <div class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink">
+        <div
+          class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink"
+          data-reveal="value"
+        >
           5+ years
         </div>
-        <div class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2">
+        <div
+          class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2"
+          data-reveal="sub"
+        >
           9+ years programming
         </div>
       </div>
 
-      <div class="col-span-2 md:col-span-6">
-        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4">
+      <div class="col-span-2 md:col-span-6" data-reveal-col>
+        <div
+          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4"
+          data-reveal="label"
+        >
           Focus
         </div>
         <div class="flex flex-wrap gap-x-6 gap-y-3">
           {
             conceptualSkills.map((skill) => (
-              <span class="inline-flex items-center gap-2">
-                <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" aria-hidden="true" />
+              <span class="inline-flex items-center gap-2" data-reveal="item">
+                <span
+                  class="w-[6px] h-[6px] rounded-full bg-bio-lime"
+                  aria-hidden="true"
+                />
                 <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/80">
                   {skill}
                 </span>
@@ -82,7 +130,10 @@ const technicalSkills = [
         <div class="flex flex-wrap gap-x-4 gap-y-2 mt-6">
           {
             technicalSkills.map((skill) => (
-              <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45">
+              <span
+                class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45"
+                data-reveal="item"
+              >
                 {skill}
               </span>
             ))
@@ -92,3 +143,199 @@ const technicalSkills = [
     </div>
   </div>
 </section>
+
+<script>
+  {
+    /* ══ Scroll-driven typewriter ══════════════════════════════════════════
+       Scroll only *triggers* each chunk. Every character you scroll past costs
+       PX_PER_CHAR pixels, and once a chunk's trigger point is reached it plays
+       its own fixed-duration transition (TRANSITION_MS) — the scroll position
+       does not scrub the motion, it just fires it. Scrolling back past a
+       chunk's trigger reverses it. All the feel knobs live here. */
+
+    // Max characters per chunk. Chunks never span two words — a word longer
+    // than this is split into pieces, and each word starts a fresh chunk, so
+    // e.g. "…ing a…" reveals as "ing" then "a…", never "ing a".
+    const CHUNK_SIZE = 4
+    // How far you scroll (px) to advance one character's worth of triggers —
+    // the pacing knob. Larger = more scrolling between chunks firing.
+    const PX_PER_CHAR = 3.5
+    // The effect only starts once the top of the text crosses this fraction
+    // of the viewport height (0.8 = the top edge of the bottom 20%).
+    const START_VP_FRACTION = 0.9
+    // How long each chunk takes to transition in once triggered.
+    const TRANSITION_MS = 250
+    const TRANSITION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)"
+    // Per-chunk animation start state (end state is translateY(0) / opacity 1).
+    const FROM_Y = 6 // px of vertical offset before a chunk is triggered
+    const FROM_OPACITY = 0.1 // opacity before a chunk is triggered
+
+    const el = document.getElementById("about-intro")
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+
+    // No JS reveal under reduced motion — the text just stays fully visible.
+    if (el && !reducedMotion) {
+      /* Split the paragraph into chunk <span>s in place, preserving nested
+         markup (e.g. the muted second-sentence span) and whitespace. Words
+         become one-or-more chunk spans; whitespace stays as plain text nodes
+         so line-wrapping and spacing behave normally. */
+      const chunks: { node: HTMLSpanElement; trigger: number; on: boolean }[] =
+        []
+      let cursor = 0
+
+      const textNodes: Text[] = []
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      while (walker.nextNode()) textNodes.push(walker.currentNode as Text)
+
+      for (const node of textNodes) {
+        const tokens = (node.textContent || "").match(/\S+|\s+/g)
+        if (!tokens) continue
+        const frag = document.createDocumentFragment()
+        for (const token of tokens) {
+          if (/^\s+$/.test(token)) {
+            frag.appendChild(document.createTextNode(token))
+            continue
+          }
+          for (let i = 0; i < token.length; i += CHUNK_SIZE) {
+            const piece = token.slice(i, i + CHUNK_SIZE)
+            const span = document.createElement("span")
+            span.textContent = piece
+            span.style.display = "inline-block"
+            span.style.willChange = "transform, opacity"
+            span.style.transition = `transform ${TRANSITION_MS}ms ${TRANSITION_EASE}, opacity ${TRANSITION_MS}ms ${TRANSITION_EASE}`
+            span.style.opacity = String(FROM_OPACITY)
+            span.style.transform = `translateY(${FROM_Y}px)`
+            frag.appendChild(span)
+            chunks.push({ node: span, trigger: cursor, on: false })
+            cursor += piece.length
+          }
+        }
+        node.parentNode!.replaceChild(frag, node)
+      }
+
+      function update() {
+        const line = START_VP_FRACTION * window.innerHeight
+        // Characters worth of scroll past the trigger line (0 until crossed).
+        const revealed = Math.max(
+          0,
+          (line - el!.getBoundingClientRect().top) / PX_PER_CHAR,
+        )
+        for (const c of chunks) {
+          // Fire once scroll has advanced past this chunk's trigger point;
+          // the CSS transition on the span animates the actual motion.
+          const on = revealed > c.trigger
+          if (on === c.on) continue
+          c.on = on
+          c.node.style.opacity = on ? "1" : String(FROM_OPACITY)
+          c.node.style.transform = on
+            ? "translateY(0px)"
+            : `translateY(${FROM_Y}px)`
+        }
+      }
+
+      let queued = false
+      function onScroll() {
+        if (queued) return
+        queued = true
+        requestAnimationFrame(() => {
+          queued = false
+          update()
+        })
+      }
+
+      update()
+      window.addEventListener("scroll", onScroll, { passive: true })
+      window.addEventListener("resize", onScroll, { passive: true })
+    }
+  }
+</script>
+
+<script>
+  {
+    /* ══ Scroll-triggered reveal for the stats row ═════════════════════════
+       Each column (Location / Experience / Focus) fades + rises into place —
+       same easing/duration as the hero "Dominic Clerici" line-rise — the
+       moment its top scrolls past the bottom 20% of the viewport. Within a
+       column the label, value and sub-label cascade; the Focus chips stagger
+       one after another. All the feel knobs live here. */
+
+    const REVEAL_MS = 650 // duration — matches the hero line-rise
+    const REVEAL_EASE = "cubic-bezier(0.33, 1, 0.68, 1)" // hero line-rise curve
+    // Trigger once the element's top crosses this fraction of the viewport
+    // height (0.8 = the top edge of the bottom 20%).
+    const START_VP_FRACTION = 0.8
+    const FROM_OPACITY = 0.1
+
+    // Per-role start offset (px) and stagger delay (s) within a column.
+    const ROLE = {
+      label: { y: -4, delay: 0 },
+      value: { y: 6, delay: 0.08 },
+      sub: { y: 4, delay: 0.16 }, // starts + ends slightly after the value
+    }
+    // Focus chips: each fires FOCUS_STAGGER after the previous, offset from the
+    // Focus label by FOCUS_BASE.
+    const FOCUS_Y = 6
+    const FOCUS_BASE = 0.08
+    const FOCUS_STAGGER = 0.02
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+    const cols = document.querySelectorAll<HTMLElement>("[data-reveal-col]")
+
+    // No JS reveal under reduced motion — the columns just stay fully visible.
+    if (cols.length && !reducedMotion) {
+      // Remember each element's from-state so we can animate it back out with
+      // the same transition + delay when the column scrolls back off-threshold.
+      const primed = new Map<Element, { node: HTMLElement; fromY: number }[]>()
+
+      function prime(node: HTMLElement, fromY: number, delay: number) {
+        node.style.opacity = String(FROM_OPACITY)
+        node.style.transform = `translateY(${fromY}px)`
+        node.style.transition = `opacity ${REVEAL_MS}ms ${REVEAL_EASE} ${delay}s, transform ${REVEAL_MS}ms ${REVEAL_EASE} ${delay}s`
+        node.style.willChange = "transform, opacity"
+      }
+
+      for (const col of cols) {
+        const targets: { node: HTMLElement; fromY: number }[] = []
+        let itemOrder = 0
+        col.querySelectorAll<HTMLElement>("[data-reveal]").forEach((node) => {
+          const role = node.dataset.reveal
+          let fromY: number
+          if (role === "item") {
+            fromY = FOCUS_Y
+            prime(node, fromY, FOCUS_BASE + itemOrder * FOCUS_STAGGER)
+            itemOrder++
+          } else {
+            const r = ROLE[role as keyof typeof ROLE] ?? ROLE.value
+            fromY = r.y
+            prime(node, fromY, r.delay)
+          }
+          targets.push({ node, fromY })
+        })
+        primed.set(col, targets)
+      }
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const on = entry.isIntersecting
+            for (const { node, fromY } of primed.get(entry.target) ?? []) {
+              node.style.opacity = on ? "1" : String(FROM_OPACITY)
+              node.style.transform = on
+                ? "translateY(0)"
+                : `translateY(${fromY}px)`
+            }
+          }
+        },
+        {
+          threshold: 0,
+          rootMargin: `0px 0px -${Math.round((1 - START_VP_FRACTION) * 100)}% 0px`,
+        },
+      )
+      for (const col of cols) io.observe(col)
+    }
+  }
+</script>
