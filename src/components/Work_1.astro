@@ -1,20 +1,16 @@
 ---
-// V1 — "The Bench": V3's layout — a sticky index on the left drives a
-// sticky stage on the right — but the index rows are V2's typographic
-// list, and the stage is V4's three-layer teardown (data dots, logic
-// grid, interface screenshot) held permanently exploded. No hover
-// theatrics: switching projects runs a choreographed swap — the layers
-// stack into one, the screenshot fades to black, the image is exchanged
-// in the dark, the lights come back up, and the stack spreads apart
-// again. V3's spec sheet sits under the stage and swaps with the pick.
+// V1 — "The Dial": neumorphic, scroll-driven. The section pins and the
+// scroll becomes torque — a machined rotary dial turns through 300° of
+// throw while a lime→mint→sky gradient arc sweeps its groove (V4's
+// gradients, given a job). Each third of the throw clicks a build onto
+// the stage. Same cool porcelain as V3, same no-click ethos; the tick
+// stops around the groove jump the scroll.
 const projects = [
   {
     index: "01",
     title: "Dispatch",
     tech: "Astro · TypeScript · AI pipelines",
     fact: "writes itself every morning",
-    logicNote: "2 AI pipelines · cron @ 6am",
-    dataNote: "24h of news, triaged",
     description:
       "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
     image: "/photos/dispatch.webp",
@@ -28,10 +24,8 @@ const projects = [
     title: "Meridian",
     tech: "Vanilla TypeScript · Extensions",
     fact: "0 npm dependencies",
-    logicNote: "11 modules, all hand-built",
-    dataNote: "45 days of history, kept local",
     description:
-      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a from-scratch component library — plus a recommendation engine that never lets data leave the browser.",
+      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
     image: "/photos/meridian.webp",
     alt: "Meridian project screenshot",
     stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
@@ -44,8 +38,6 @@ const projects = [
     tech: "Next.js · React Native",
     fact: "design system: Neon Riff",
     featured: true,
-    logicNote: "music theory engine",
-    dataNote: "chords, intervals, voicings",
     description:
       "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
@@ -55,286 +47,247 @@ const projects = [
     githubUrl: null,
   },
 ];
+
+// Dial geometry — mirrored by the constants in the script
+const START = -150;
+const SWEEP = 300;
 ---
 
-<section class="wx1 relative bg-bone" aria-label="Selected work">
-  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
-    <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
-      <div class="flex items-center gap-4">
-        <span
-          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+<section class="wd1 relative" aria-label="Selected work">
+  <!-- Desktop: the pinned dial rig -->
+  <div class="hidden lg:block relative lg:h-[300vh]" data-rig>
+    <div class="sticky top-0 h-screen overflow-hidden flex flex-col">
+      <div class="max-w-[1524px] w-full mx-auto px-12 pt-12 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <span class="wd1-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
+            03&hairsp;/&hairsp;04
+          </span>
+          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+            Selected Work
+          </span>
+          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40 ml-4">
+            scroll to turn the dial
+          </span>
+        </div>
+        <a
+          href="https://github.com/DominicClerici"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
         >
-          03&hairsp;/&hairsp;04
-        </span>
-        <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-          Selected Work
-        </span>
+          more on github&nbsp;&nearr;
+        </a>
       </div>
-      <a
-        href="https://github.com/DominicClerici"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
-      >
-        more on github&nbsp;&nearr;
-      </a>
+
+      <div class="flex-1 min-h-0 max-w-[1524px] w-full mx-auto px-12 grid content-center">
+        <div class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-16 items-center">
+          <!-- The dial -->
+          <div class="flex flex-col items-center gap-7">
+            <div class="wd1-dial relative rounded-full" data-dial>
+              <div class="wd1-face absolute inset-0 rounded-full" aria-hidden="true"></div>
+              <div class="wd1-arc absolute rounded-full" style="--f: 0deg;" data-arc aria-hidden="true"></div>
+              {
+                projects.map((project, i) => (
+                  <button
+                    type="button"
+                    class="wd1-tick absolute left-1/2 top-1/2 cursor-pointer"
+                    style={`--a: ${START + ((i + 0.5) / projects.length) * SWEEP}deg;`}
+                    data-tick={i}
+                    aria-label={`Scroll to ${project.title}`}
+                  />
+                ))
+              }
+              <div class="wd1-knob absolute rounded-full">
+                <div class="wd1-rotor absolute inset-0" data-rotor aria-hidden="true">
+                  <span class="wd1-pointer"></span>
+                </div>
+                <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <span
+                    class="wd1-readout font-display font-normal leading-none tracking-[-0.03em] text-[clamp(3rem,4.4vw,4.5rem)]"
+                    data-idx
+                  >
+                    01
+                  </span>
+                  <span class="wd1-engraved font-mono text-[12px] leading-none tracking-[0.08em] uppercase" data-name>
+                    dispatch
+                  </span>
+                </div>
+              </div>
+            </div>
+            <span class="wd1-engraved font-mono text-[12px] leading-none tracking-[-0.02em] tabular-nums" data-progress>
+              0% of throw
+            </span>
+          </div>
+
+          <!-- The stage -->
+          <div class="wd1-stage min-w-0">
+            <div class="wd1-plate rounded-[30px] p-5">
+              <div class="wd1-well rounded-[20px] p-3">
+                <div class="relative rounded-[12px] overflow-hidden aspect-[16/8.4] bg-ink/5">
+                  {
+                    projects.map((project, i) => (
+                      <img
+                        src={project.image}
+                        srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                        alt={project.alt}
+                        class="wd1-shot absolute inset-0 w-full h-full object-cover object-top"
+                        data-shot={i}
+                        data-on={i === 0 ? "" : undefined}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="relative mt-8">
+              {
+                projects.map((project, i) => (
+                  <div class="wd1-panel" data-panel={i} hidden={i !== 0}>
+                    <div class="grid grid-cols-[minmax(0,6fr)_minmax(0,5fr)] gap-10 items-start">
+                      <div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                          <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(1.875rem,2.4vw,2.5rem)]">
+                            {project.title}
+                          </h3>
+                          {project.featured && (
+                            <span class="wd1-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
+                              featured
+                            </span>
+                          )}
+                        </div>
+                        <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
+                          {project.tech}
+                        </p>
+                        <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
+                      </div>
+
+                      <div>
+                        <div class="flex flex-wrap gap-2.5">
+                          {project.stack.map((item) => (
+                            <span class="wd1-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                        <div class="flex items-center gap-4 mt-7">
+                          <a
+                            href={project.websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="wd1-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                          >
+                            Visit site
+                          </a>
+                          {project.githubUrl && (
+                            <a
+                              href={project.githubUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
+                            >
+                              GitHub
+                            </a>
+                          )}
+                          <a
+                            href={project.websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Open ${project.title} in a new tab`}
+                            class="wd1-btn wd1-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                              <path
+                                d="M2 12 12 2M4.5 2H12v7.5"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="max-w-[1524px] w-full mx-auto px-12 pb-8 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right">
+        calibrated at the factory &mdash; torque to taste
+      </p>
+    </div>
+  </div>
+
+  <!-- Mobile: molded cards, no rig -->
+  <div class="lg:hidden max-w-[1524px] mx-auto px-6 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10">
+      <span class="wd1-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
+        03&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+        Selected Work
+      </span>
     </div>
 
     <p
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-20"
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12"
     >
-      One build on the bench at a time&nbsp;&mdash;
-      <span class="text-ink/55">pick from the index and watch it come apart.</span>
+      Three builds on one dial&nbsp;&mdash;
+      <span class="text-ink/55">every stop is load-bearing.</span>
     </p>
 
-    <!-- Desktop: index rail + bench -->
-    <div class="hidden lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:items-start">
-      <!-- Index -->
-      <div class="sticky top-[max(96px,calc(50vh-260px))]">
-        <ul class="border-t border-ink/15">
-          {
-            projects.map((project, i) => (
-              <li class="wx1-item border-b border-ink/15" data-item={i}>
-                <button
-                  type="button"
-                  class="wx1-head w-full text-left py-5 cursor-pointer"
-                  data-select={i}
-                  data-image={project.image}
-                  data-alt={project.alt}
-                  data-logic-note={project.logicNote}
-                  data-data-note={project.dataNote}
-                  aria-pressed={i === 0 ? "true" : "false"}
-                >
-                  <span class="grid grid-cols-[36px_minmax(0,1fr)] items-baseline gap-3">
-                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">
-                      {project.index}
-                    </span>
-                    <span class="min-w-0">
-                      <span class="flex items-center gap-2.5 min-w-0">
-                        <span class="wx1-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0" aria-hidden="true" />
-                        <span class="wx1-title font-display font-normal leading-[1] tracking-[-0.016em] text-ink/45 truncate text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.006),1.75rem)]">
-                          {project.title}
-                        </span>
-                        {project.featured && (
-                          <span class="font-mono text-[10px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2 py-1 shrink-0">
-                            featured
-                          </span>
-                        )}
-                      </span>
-                      <span class="block font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 mt-2.5">
-                        {project.tech}
-                      </span>
-                    </span>
-                  </span>
-                </button>
-
-                <div class="wx1-more" data-more={i}>
-                  <div class="overflow-hidden">
-                    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/50 pt-0.5 pb-5 pl-[48px]">
-                      {project.fact}
-                    </p>
-                  </div>
-                </div>
-              </li>
-            ))
-          }
-        </ul>
-        <p class="font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35 mt-4 pl-1">
-          swaps happen with the lights off
-        </p>
-      </div>
-
-      <!-- Bench + spec sheet -->
-      <div>
-        <div class="wx1-stage relative" data-stage>
-          <div class="wx1-space absolute inset-0">
-            <div class="wx1-stack">
-              <div class="wx1-floor" aria-hidden="true"></div>
-
-              <div class="wx1-plane wx1-plane-data" aria-hidden="true">
-                <span class="wx1-plane-tag font-mono">data · <span data-data-note>{projects[0].dataNote}</span></span>
-              </div>
-
-              <div class="wx1-plane wx1-plane-logic" aria-hidden="true">
-                <span class="wx1-plane-tag font-mono">logic · <span data-logic-note>{projects[0].logicNote}</span></span>
-                <span class="wx1-node" style="left: 26%; top: 30%;"></span>
-                <span class="wx1-node" style="left: 62%; top: 58%;"></span>
-                <span class="wx1-node" style="left: 44%; top: 76%;"></span>
-              </div>
-
-              <div class="wx1-plane wx1-plane-ui">
-                <img
-                  src={projects[0].image}
-                  srcset={`${projects[0].image} 1x, ${projects[0].image.replace(".webp", "-2x.webp")} 2x`}
-                  alt={projects[0].alt}
-                  class="w-full h-full object-cover object-top"
-                  decoding="async"
-                  data-shot
-                />
-                <span class="wx1-plane-tag wx1-plane-tag-ui font-mono">interface</span>
-                <div class="wx1-shutter absolute inset-0" aria-hidden="true"></div>
-              </div>
-            </div>
-          </div>
-          <p class="absolute -bottom-7 right-1 font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35">
-            exploded view &mdash; interface / logic / data
-          </p>
-        </div>
-
-        <!-- Spec sheet -->
-        <div class="mt-16">
-          {
-            projects.map((project, i) => (
-              <div class="wx1-panel" data-panel={i} hidden={i !== 0}>
-                <div class="flex items-center gap-3 flex-wrap">
-                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
-                    fig.&thinsp;{project.index}
-                  </span>
-                  {project.featured && (
-                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
-                      featured
-                    </span>
-                  )}
-                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
-                </div>
-
-                <div class="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12 mt-6">
-                  <div>
-                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,calc(2rem+(100vw-27.5rem)*0.014),2.75rem)]">
-                      {project.title}
-                    </h3>
-                    <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
-                      {project.tech}
-                    </p>
-                    <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-ink/60 max-w-[520px] mt-6">
-                      {project.description}
-                    </p>
-                  </div>
-
-                  <div>
-                    <dl class="border-t border-ink/10">
-                      <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
-                        <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
-                          stack
-                        </dt>
-                        <dd class="flex flex-wrap gap-x-5 gap-y-2">
-                          {project.stack.map((item) => (
-                            <span class="inline-flex items-center gap-2">
-                              <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
-                              <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
-                                {item}
-                              </span>
-                            </span>
-                          ))}
-                        </dd>
-                      </div>
-                      <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
-                        <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
-                          status
-                        </dt>
-                        <dd class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
-                          live · maintained
-                        </dd>
-                      </div>
-                    </dl>
-
-                    <div class="flex items-center gap-3 mt-7">
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
-                      >
-                        Visit site
-                      </a>
-                      {project.githubUrl && (
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
-                        >
-                          GitHub
-                        </a>
-                      )}
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Open ${project.title} in a new tab`}
-                        class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                          <path
-                            d="M2 12 12 2M4.5 2H12v7.5"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    </div>
-
-    <!-- Mobile: plain cards -->
-    <div class="lg:hidden flex flex-col gap-8">
+    <div class="flex flex-col gap-10">
       {
         projects.map((project) => (
-          <article class="bg-paper rounded-[20px] border border-ink/10 overflow-hidden">
-            <div class="p-4 pb-0">
+          <article class="wd1-plate relative rounded-[26px] p-5 overflow-hidden">
+            <span class="wd1-hair absolute top-0 left-[12%] right-[12%]" aria-hidden="true" />
+            <div class="wd1-well rounded-[18px] p-2.5">
               <img
                 src={project.image}
                 srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
                 alt={project.alt}
-                class="w-full aspect-[16/10] object-cover object-top rounded-[12px] border border-ink/10"
+                class="w-full aspect-[16/10] object-cover object-top rounded-[10px]"
                 loading="lazy"
                 decoding="async"
               />
             </div>
-            <div class="p-6">
+            <div class="p-2 pt-6">
               <div class="flex items-center gap-3 flex-wrap">
-                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
-                  fig.&thinsp;{project.index}
-                </span>
+                <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)]">
+                  {project.title}
+                </h3>
                 {project.featured && (
-                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
+                  <span class="wd1-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
                     featured
                   </span>
                 )}
-                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
               </div>
-
-              <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink mt-5 text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.014),2.625rem)]">
-                {project.title}
-              </h3>
               <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
                 {project.tech}
               </p>
               <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
 
-              <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-6">
+              <div class="flex flex-wrap gap-3 mt-6">
                 {project.stack.map((item) => (
-                  <span class="inline-flex items-center gap-2">
-                    <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
-                    <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">{item}</span>
+                  <span class="wd1-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                    {item}
                   </span>
                 ))}
               </div>
 
-              <div class="flex items-center gap-3 mt-8">
+              <div class="flex items-center gap-4 mt-8">
                 <a
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                  class="wd1-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
                 >
                   Visit site
                 </a>
@@ -343,7 +296,7 @@ const projects = [
                     href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
                   >
                     GitHub
                   </a>
@@ -353,7 +306,7 @@ const projects = [
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Open ${project.title} in a new tab`}
-                  class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
+                  class="wd1-btn wd1-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path
@@ -371,314 +324,299 @@ const projects = [
         ))
       }
     </div>
-
-    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-12">
-      no screws were lost during disassembly
-    </p>
   </div>
 </section>
 
 <style>
-  .wx1-head:focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 4px;
-    border-radius: 6px;
+  /* Cool porcelain slab (V3's clean palette) + the gradient instrument */
+  .wd1 {
+    --por: #e9ecf1;
+    --por-dark: rgba(150, 162, 179, 0.55);
+    --por-darker: rgba(150, 162, 179, 0.75);
+    --por-light: rgba(255, 255, 255, 0.95);
+    --grad: linear-gradient(120deg, #cef79e, #9fe8cf 48%, #9cc2ff);
+    background: var(--por);
   }
 
-  .wx1-title {
-    transition: color 0.3s ease;
+  .wd1-pill {
+    box-shadow:
+      inset 3px 3px 6px var(--por-dark),
+      inset -3px -3px 6px var(--por-light);
   }
 
-  .wx1-item[data-active] .wx1-title,
-  .wx1-head:hover .wx1-title {
-    color: var(--color-ink);
+  /* ── The dial ── */
+  .wd1-dial {
+    --dial: clamp(300px, 30vw, 430px);
+    width: var(--dial);
+    height: var(--dial);
   }
 
-  /* Lime dot marks the pick; hidden rows keep the slot so text doesn't shift */
-  .wx1-dot {
-    opacity: 0;
-    transform: scale(0.4);
-    transition:
-      opacity 0.3s ease,
-      transform 0.3s ease;
+  /* Recessed basin; the raised knob covers its middle so the visible
+     margin reads as a groove */
+  .wd1-face {
+    background: var(--por);
+    box-shadow:
+      inset 8px 8px 20px var(--por-darker),
+      inset -8px -8px 20px var(--por-light);
   }
 
-  .wx1-item[data-active] .wx1-dot {
-    opacity: 1;
-    transform: scale(1);
+  /* Gradient arc, masked to a ring riding the groove. --f is the filled
+     sweep in degrees, set from scroll. */
+  .wd1-arc {
+    inset: 10px;
+    background: conic-gradient(
+      from -150deg,
+      #cef79e 0deg,
+      #9fe8cf calc(var(--f) * 0.5),
+      #9cc2ff var(--f),
+      transparent var(--f)
+    );
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 26px), #000 calc(100% - 25px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 26px), #000 calc(100% - 25px));
   }
 
-  /* Expanding drawer — grid-rows keeps it height-animatable */
-  .wx1-more {
-    display: grid;
-    grid-template-rows: 0fr;
-  }
-
-  .wx1-more > div {
-    min-height: 0;
-  }
-
-  .wx1-item[data-active] .wx1-more {
-    grid-template-rows: 1fr;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .wx1-more {
-      transition: grid-template-rows 0.55s cubic-bezier(0.65, 0, 0.35, 1);
-    }
-  }
-
-  /* ── The bench ── */
-  .wx1-stage {
-    height: clamp(320px, 34vw, 460px);
-  }
-
-  .wx1-space {
-    perspective: 1500px;
-    display: grid;
-    place-items: center;
-  }
-
-  /* Rest state: exploded. --spread drives the layer gap; the stage's
-     is-flat class (set by the swap choreography) collapses it. */
-  .wx1-stack {
-    position: relative;
-    width: min(74%, 520px);
-    aspect-ratio: 16 / 10;
-    transform-style: preserve-3d;
-    transform: rotateX(52deg) rotateZ(-30deg) scale(0.94);
-    --spread: 1;
-  }
-
-  .wx1-stage.is-flat .wx1-stack {
-    --spread: 0;
-  }
-
-  .wx1-floor {
-    position: absolute;
-    left: 4%;
-    right: 4%;
-    bottom: -6%;
-    height: 18%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(34, 47, 48, 0.2), transparent 68%);
-    transform: translateZ(-150px);
-  }
-
-  .wx1-plane {
-    position: absolute;
-    inset: 0;
-    border-radius: 14px;
-    border: 1px solid rgba(34, 47, 48, 0.14);
-    overflow: hidden;
-    backface-visibility: hidden;
-  }
-
-  /* Bottom layer — the data bed */
-  .wx1-plane-data {
-    background-color: var(--color-bone);
-    background-image: radial-gradient(circle, rgba(34, 47, 48, 0.22) 1px, transparent 1px);
-    background-size: 22px 22px;
-    transform: translateZ(calc(var(--spread) * -86px));
-    box-shadow: 0 30px 50px -30px rgba(34, 47, 48, 0.45);
-  }
-
-  /* Middle layer — the logic board */
-  .wx1-plane-logic {
-    background-color: var(--color-paper);
-    background-image:
-      linear-gradient(rgba(34, 47, 48, 0.09) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(34, 47, 48, 0.09) 1px, transparent 1px);
-    background-size: 34px 34px;
-    transform: translateZ(0px);
-  }
-
-  .wx1-node {
-    position: absolute;
+  /* Tick stops sit in the groove, under the passing arc */
+  .wd1-tick {
     width: 9px;
     height: 9px;
     border-radius: 999px;
-    background: var(--color-bio-lime);
-    border: 1.5px solid var(--color-ink);
+    background: var(--por);
+    box-shadow:
+      inset 2px 2px 3px var(--por-darker),
+      inset -2px -2px 3px var(--por-light);
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--dial) * -0.445)) rotate(calc(var(--a) * -1));
   }
 
-  /* Top layer — the interface */
-  .wx1-plane-ui {
-    background: var(--color-paper);
-    transform: translateZ(calc(var(--spread) * 86px + 1px));
-    box-shadow: 0 24px 48px -24px rgba(34, 47, 48, 0.5);
+  .wd1-tick:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
   }
 
-  /* The blackout curtain over the screenshot during a swap */
-  .wx1-shutter {
-    background: #0b0f10;
-    opacity: 0;
-    pointer-events: none;
+  .wd1-knob {
+    inset: 13.5%;
+    background: var(--por);
+    box-shadow:
+      10px 10px 26px var(--por-darker),
+      -10px -10px 26px var(--por-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
-  .wx1-stage.is-dark .wx1-shutter {
-    opacity: 1;
+  .wd1-rotor {
+    will-change: transform;
   }
 
-  .wx1-plane-tag {
+  /* The needle: a gradient sliver at 12 o'clock on the rotor */
+  .wd1-pointer {
     position: absolute;
-    left: 10px;
-    bottom: 10px;
-    font-size: 11px;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    color: var(--color-ink);
-    background: rgba(247, 247, 245, 0.92);
-    border: 1px solid rgba(34, 47, 48, 0.14);
+    top: 9px;
+    left: 50%;
+    width: 4px;
+    height: 24px;
+    margin-left: -2px;
     border-radius: 999px;
-    padding: 6px 10px;
-    white-space: nowrap;
-    /* Layer tags only make sense while the stack is apart */
-    opacity: var(--spread);
+    background: var(--grad);
+    box-shadow: 0 0 10px 1px rgba(159, 232, 207, 0.9);
   }
 
-  .wx1-plane-tag-ui {
-    background: var(--color-bio-lime);
-    border-color: transparent;
+  /* Engraved numeral, tinted by the gradient */
+  .wd1-readout {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: saturate(0.85) brightness(0.72);
+  }
+
+  .wd1-engraved {
+    color: rgba(34, 47, 48, 0.45);
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  /* ── Stage ── */
+  /* Width doubles as the height budget: keeps plate + spec inside the pin
+     on short screens */
+  .wd1-stage {
+    max-width: min(820px, calc((100vh - 380px) * 1.9));
+  }
+
+  .wd1-plate {
+    background: var(--por);
+    box-shadow:
+      12px 12px 28px var(--por-dark),
+      -12px -12px 28px var(--por-light);
+  }
+
+  .wd1-well {
+    background: var(--por);
+    box-shadow:
+      inset 8px 8px 18px var(--por-dark),
+      inset -8px -8px 18px var(--por-light);
+  }
+
+  .wd1-shot {
+    opacity: 0;
+    transform: translateY(3%);
+  }
+
+  .wd1-shot[data-on] {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .wx1-plane {
-      /* Durations here are mirrored by the timing constants in the script */
-      transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
+    .wd1-shot {
+      transition:
+        opacity 0.45s ease,
+        transform 0.45s ease;
     }
 
-    .wx1-plane-data {
-      transition-delay: 0.04s;
-    }
-
-    .wx1-shutter {
-      transition: opacity 0.3s ease;
-    }
-
-    .wx1-plane-tag {
-      transition: opacity 0.4s ease;
-    }
-
-    /* Spec sheet settles in when the pick changes (hidden toggle
-       restarts the animation) */
-    .wx1-panel {
-      animation: wx1-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
+    .wd1-panel {
+      animation: wd1-rise 0.45s cubic-bezier(0.33, 1, 0.68, 1) both;
     }
   }
 
-  @keyframes wx1-rise {
+  @keyframes wd1-rise {
     from {
       opacity: 0;
       transform: translateY(14px);
     }
   }
+
+  /* ── Fittings ── */
+  .wd1-feat {
+    background: var(--grad);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .wd1-hair {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--grad);
+    opacity: 0.85;
+  }
+
+  .wd1-chip {
+    box-shadow:
+      inset 3px 3px 7px var(--por-dark),
+      inset -3px -3px 7px var(--por-light);
+  }
+
+  .wd1-btn {
+    background: var(--por);
+    box-shadow:
+      6px 6px 14px var(--por-dark),
+      -6px -6px 14px var(--por-light);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .wd1-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .wd1-btn:active {
+    transform: translateY(0);
+    box-shadow:
+      inset 4px 4px 10px var(--por-dark),
+      inset -4px -4px 10px var(--por-light);
+  }
+
+  .wd1-btn:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .wd1-btn-go {
+    background: var(--grad);
+    box-shadow:
+      6px 6px 14px var(--por-dark),
+      -6px -6px 14px var(--por-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .wd1-btn-go:active {
+    box-shadow:
+      inset 4px 4px 10px rgba(110, 150, 120, 0.5),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.6);
+  }
 </style>
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".wx1");
+    const section = document.querySelector<HTMLElement>(".wd1");
     if (section) {
-      const items = section.querySelectorAll<HTMLElement>("[data-item]");
-      const heads = section.querySelectorAll<HTMLButtonElement>("[data-select]");
+      const rig = section.querySelector<HTMLElement>("[data-rig]");
+      const arc = section.querySelector<HTMLElement>("[data-arc]");
+      const rotor = section.querySelector<HTMLElement>("[data-rotor]");
+      const idx = section.querySelector<HTMLElement>("[data-idx]");
+      const name = section.querySelector<HTMLElement>("[data-name]");
+      const progress = section.querySelector<HTMLElement>("[data-progress]");
+      const shots = section.querySelectorAll<HTMLElement>("[data-shot]");
       const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
-      const stage = section.querySelector<HTMLElement>("[data-stage]");
-      const shot = section.querySelector<HTMLImageElement>("[data-shot]");
-      // Scoped to the stage — the index buttons carry the same data-* attributes
-      const logicNote = stage?.querySelector<HTMLElement>("[data-logic-note]") ?? null;
-      const dataNote = stage?.querySelector<HTMLElement>("[data-data-note]") ?? null;
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const ticks = section.querySelectorAll<HTMLButtonElement>("[data-tick]");
+      const count = shots.length;
+      const titles = ["dispatch", "meridian", "fuzzbox"];
 
-      // Must track the CSS: plane transform 0.65s (+0.04s delay), shutter 0.3s
-      const COLLAPSE_MS = 700;
-      const FADE_MS = 340;
+      // Must track the CSS: arc from -150deg, 300° of throw
+      const START = -150;
+      const SWEEP = 300;
 
-      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let currentIdx = 0;
 
-      let current = "0";
-      let target = "0";
-      let animating = false;
-
-      const setIndex = (id: string) => {
-        items.forEach((item) => {
-          if (item.dataset.item === id) item.setAttribute("data-active", "");
-          else item.removeAttribute("data-active");
+      const select = (i: number) => {
+        if (i === currentIdx) return;
+        currentIdx = i;
+        const id = String(i);
+        shots.forEach((shot) => {
+          if (shot.dataset.shot === id) shot.setAttribute("data-on", "");
+          else shot.removeAttribute("data-on");
         });
-        heads.forEach((head) => {
-          head.setAttribute("aria-pressed", String(head.dataset.select === id));
-        });
-      };
-
-      const setPanels = (id: string) => {
         panels.forEach((panel) => {
           panel.hidden = panel.dataset.panel !== id;
         });
+        if (idx) idx.textContent = `0${i + 1}`;
+        if (name) name.textContent = titles[i] ?? "";
       };
 
-      const applyShot = async (id: string) => {
-        const head = section.querySelector<HTMLElement>(`[data-select="${id}"]`);
-        if (!head) return;
-        const src = head.dataset.image!;
-        if (shot) {
-          shot.src = src;
-          shot.srcset = `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
-          shot.alt = head.dataset.alt ?? "";
+      let ticking = false;
+
+      const update = () => {
+        ticking = false;
+        if (!rig) return;
+        const rect = rig.getBoundingClientRect();
+        // Hidden variant panel (display: none) or mobile layout — nothing to drive
+        if (!rect.height) return;
+        const range = rect.height - window.innerHeight;
+        if (range <= 0) return;
+        const p = Math.min(1, Math.max(0, -rect.top / range));
+        if (arc) arc.style.setProperty("--f", `${(p * SWEEP).toFixed(2)}deg`);
+        if (rotor) rotor.style.transform = `rotate(${(START + p * SWEEP).toFixed(2)}deg)`;
+        if (progress) progress.textContent = `${Math.round(p * 100)}% of throw`;
+        select(Math.min(count - 1, Math.floor(p * count)));
+      };
+
+      const onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
         }
-        if (logicNote) logicNote.textContent = head.dataset.logicNote ?? "";
-        if (dataNote) dataNote.textContent = head.dataset.dataNote ?? "";
-        // Hold in the dark until the new frame is ready — no half-loaded reveal
-        if (shot) await shot.decode().catch(() => {});
       };
 
-      /* The swap choreography: stack together → lights off → exchange the
-         specimen → lights on → spread apart. Loops in case the pick
-         changed again mid-sequence — the latest click always wins. */
-      const run = async () => {
-        if (animating || !stage) return;
-        animating = true;
-        while (current !== target) {
-          stage.classList.add("is-flat");
-          await wait(COLLAPSE_MS);
-          stage.classList.add("is-dark");
-          await wait(FADE_MS);
-          const id = target;
-          await applyShot(id);
-          setPanels(id);
-          current = id;
-          stage.classList.remove("is-dark");
-          await wait(FADE_MS);
-          stage.classList.remove("is-flat");
-          await wait(COLLAPSE_MS);
-        }
-        animating = false;
-      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      update();
 
-      heads.forEach((head) => {
-        head.addEventListener("click", () => {
-          const id = head.dataset.select!;
-          if (id === target) return;
-          target = id;
-          setIndex(id);
-          if (reducedMotion || !stage) {
-            applyShot(id);
-            setPanels(id);
-            current = id;
-            return;
-          }
-          run();
+      // Tick stops jump the page scroll to the middle of that build's segment
+      ticks.forEach((tick) => {
+        tick.addEventListener("click", () => {
+          if (!rig) return;
+          const rect = rig.getBoundingClientRect();
+          const range = rect.height - window.innerHeight;
+          const i = Number(tick.dataset.tick);
+          const top = window.scrollY + rect.top + range * ((i + 0.5) / count);
+          window.scrollTo({ top, behavior: "smooth" });
         });
-      });
-
-      setIndex("0");
-      setPanels("0");
-
-      // Warm the cache so the in-the-dark swap never waits on the network
-      heads.forEach((head) => {
-        const src = head.dataset.image;
-        if (!src || src === shot?.src) return;
-        const img = new Image();
-        img.srcset = `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
-        img.src = src;
       });
     }
   }

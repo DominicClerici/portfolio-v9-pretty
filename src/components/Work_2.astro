@@ -1,37 +1,34 @@
 ---
-// V2 — "The Stage": a clean typographic index on the left drives a sticky
-// 3D stage on the right. The active project's screenshot floats as a pane
-// in real perspective — spec chips hover at different depths above it and
-// the whole assembly tilts to follow the cursor. Selecting a row swaps the
-// specimen with a settle animation.
+// V2 — "The Strata": neumorphic, scroll-stacked. The three builds are
+// full-width porcelain slabs that stick as you scroll — each new layer
+// slides up and seats over the last while the buried one settles back
+// into the slab. Giant gradient-clipped numerals and aurora-lit image
+// wells carry V4's gradients; the stick comes from V3. No clicking at
+// all — the pile files itself.
 const projects = [
   {
     index: "01",
     title: "Dispatch",
-    tech: "Astro · AI pipelines",
+    tech: "Astro · TypeScript · AI pipelines",
     fact: "writes itself every morning",
-    chip: "2 AI pipelines",
     description:
-      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs it while I sleep.",
+      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
     image: "/photos/dispatch.webp",
     alt: "Dispatch project screenshot",
     stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
-    url: "dispatch.dominicclerici.com",
     websiteUrl: "https://dispatch.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/dispatch",
   },
   {
     index: "02",
     title: "Meridian",
-    tech: "Vanilla TS · Extensions",
+    tech: "Vanilla TypeScript · Extensions",
     fact: "0 npm dependencies",
-    chip: "11 hand-built modules",
     description:
-      "A new-tab extension for Chrome and Firefox with zero npm dependencies — a reactive storage layer, a from-scratch component library, and a recommendation engine that never lets data leave the browser.",
+      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
     image: "/photos/meridian.webp",
     alt: "Meridian project screenshot",
     stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
-    url: "meridian.dominicclerici.com",
     websiteUrl: "https://meridian.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/meridian",
   },
@@ -40,27 +37,27 @@ const projects = [
     title: "Fuzzbox",
     tech: "Next.js · React Native",
     fact: "design system: Neon Riff",
-    chip: "interactive fretboard",
     featured: true,
     description:
       "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
     alt: "Fuzzbox project screenshot",
     stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
-    url: "fuzzbox.dominicclerici.com",
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
   },
 ];
+
+// Stair offset per layer — mirrored by STICK_TOP/STICK_STEP in the script
+const STICK_TOP = 88;
+const STICK_STEP = 26;
 ---
 
-<section class="ws2 relative bg-bone" aria-label="Selected work">
-  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
+<section class="ws2 relative" aria-label="Selected work">
+  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]">
     <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
       <div class="flex items-center gap-4">
-        <span
-          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
-        >
+        <span class="ws2-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
           03&hairsp;/&hairsp;04
         </span>
         <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
@@ -78,375 +75,384 @@ const projects = [
     </div>
 
     <p
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12 lg:mb-20"
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-4 lg:mb-6"
     >
-      The shortlist, on the stage.
-      <span class="text-ink/55">Everything here is live &mdash; go poke at it.</span>
+      Three builds, laid down in strata&nbsp;&mdash;
+      <span class="text-ink/55">each new layer seats over the last.</span>
     </p>
+  </div>
 
-    <div class="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:items-start">
-      <!-- Index -->
-      <ul class="border-t border-ink/15">
-        {
-          projects.map((project, i) => (
-            <li class="ws2-item border-b border-ink/15" data-item={i}>
-              <button
-                type="button"
-                class="ws2-head w-full text-left py-6 lg:py-7 cursor-pointer"
-                data-select={i}
-                aria-expanded={i === 0 ? "true" : "false"}
-              >
-                <span class="grid grid-cols-[44px_minmax(0,1fr)_auto] items-baseline gap-3">
-                  <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40">
-                    {project.index}
-                  </span>
-                  <span class="flex items-center gap-3 min-w-0">
-                    <span class="ws2-title font-display font-normal leading-[0.95] tracking-[-0.018em] text-ink/45 text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.014),2.625rem)]">
-                      {project.title}
-                    </span>
-                    {project.featured && (
-                      <span class="font-mono text-[10px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-2 py-1 shrink-0">
-                        featured
-                      </span>
-                    )}
-                  </span>
-                  <span class="hidden sm:block font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/40 text-right">
-                    {project.tech}
-                  </span>
+  <!-- Desktop: the sticky pile -->
+  <div class="hidden lg:block max-w-[1524px] mx-auto px-12 pb-24" data-pile>
+    {
+      projects.map((project, i) => (
+        <div class="ws2-layer" data-layer={i}>
+          <article
+            class="ws2-card relative rounded-[36px] p-8 xl:p-10 overflow-hidden"
+            data-card={i}
+            style={`--i: ${i}; top: ${STICK_TOP + i * STICK_STEP}px;`}
+          >
+            <span class="ws2-hair absolute top-0 left-[8%] right-[8%]" aria-hidden="true" />
+
+            <div class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 items-center">
+              <div class={i % 2 === 1 ? "order-last" : ""}>
+                <span class="ws2-num font-display font-normal leading-[0.85] tracking-[-0.04em] block text-[clamp(5rem,8vw,8rem)]">
+                  {project.index}
                 </span>
-              </button>
+                <div class="flex items-center gap-3 flex-wrap mt-5">
+                  <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,2.6vw,2.75rem)]">
+                    {project.title}
+                  </h3>
+                  {project.featured && (
+                    <span class="ws2-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
+                      featured
+                    </span>
+                  )}
+                </div>
+                <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+                  {project.tech}
+                  <span class="text-ink/30 normal-case">&nbsp;&middot;&nbsp;{project.fact}</span>
+                </p>
+                <p class="font-display text-[15px] leading-[1.6] text-ink/60 max-w-[460px] mt-6">
+                  {project.description}
+                </p>
 
-              <div class="ws2-more" data-more={i}>
-                <div class="overflow-hidden">
-                  <div class="pb-7 pl-0 sm:pl-[56px]">
-                    <img
-                      src={project.image}
-                      srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                      alt={project.alt}
-                      class="lg:hidden w-full aspect-[16/10] object-cover object-top rounded-[14px] border border-ink/10 mb-5"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <p class="font-display text-[15px] lg:text-[16px] leading-[1.6] text-ink/60 max-w-[520px]">
-                      {project.description}
-                    </p>
-                    <div class="flex flex-wrap gap-x-5 gap-y-2.5 mt-5">
-                      {project.stack.map((item) => (
-                        <span class="inline-flex items-center gap-2">
-                          <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
-                          <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
-                            {item}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                    <div class="flex items-center gap-3 mt-7">
-                      <a
-                        href={project.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
-                      >
-                        Visit site
-                      </a>
-                      {project.githubUrl && (
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
-                        >
-                          GitHub
-                        </a>
-                      )}
-                    </div>
-                  </div>
+                <div class="flex flex-wrap gap-2.5 mt-7">
+                  {project.stack.map((item) => (
+                    <span class="ws2-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+
+                <div class="flex items-center gap-4 mt-9 max-w-[460px]">
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="ws2-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                  >
+                    Visit site
+                  </a>
+                  {project.githubUrl && (
+                    <a
+                      href={project.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
+                    >
+                      GitHub
+                    </a>
+                  )}
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${project.title} in a new tab`}
+                    class="ws2-btn ws2-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path
+                        d="M2 12 12 2M4.5 2H12v7.5"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </a>
                 </div>
               </div>
-            </li>
-          ))
-        }
-      </ul>
 
-      <!-- Stage (desktop only) -->
-      <div class="hidden lg:block sticky top-[max(96px,calc(50vh-270px))]" aria-hidden="true">
-        <div class="ws2-stage relative w-full aspect-[7/5]" data-stage>
-          <div class="ws2-space absolute inset-0">
-            <div class="ws2-rig absolute inset-0" data-rig>
-              <!-- floor shadow -->
-              <div class="ws2-floor absolute left-[8%] right-[8%] bottom-[2%] h-[12%]"></div>
-              <!-- lime aura behind the pane -->
-              <div class="ws2-aura absolute inset-[10%]"></div>
-
-              {
-                projects.map((project, i) => (
-                  <div class="ws2-specimen absolute inset-x-[6%] inset-y-[4%]" data-specimen={i} data-active={i === 0 ? "true" : undefined}>
-                    <div class="ws2-pane absolute left-0 right-0 top-[6%] bottom-[14%] rounded-[18px] overflow-hidden border border-ink/12 bg-paper">
-                      <img
-                        src={project.image}
-                        srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                        alt=""
-                        class="w-full h-full object-cover object-top"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <span class="ws2-sheen absolute inset-0" />
-                    </div>
-                    <span class="ws2-chip ws2-chip-url font-mono text-[12px] leading-none tracking-[-0.02em] text-ink bg-paper border border-ink/12 rounded-full px-3.5 py-2 absolute top-0 left-[4%] inline-flex items-center gap-2">
-                      <span class="w-[6px] h-[6px] rounded-full bg-bio-lime" />
-                      {project.url}
-                    </span>
-                    <span class="ws2-chip ws2-chip-fact font-mono text-[12px] leading-none tracking-[-0.02em] text-ink bg-bio-lime rounded-full px-3.5 py-2 absolute bottom-[6%] right-[2%]">
-                      {project.fact}
-                    </span>
-                    <span class="ws2-chip ws2-chip-stat font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/70 bg-bone border border-ink/12 rounded-full px-3.5 py-2 absolute top-[38%] right-[-2%]">
-                      {project.chip}
-                    </span>
-                  </div>
-                ))
-              }
+              <div class="ws2-well rounded-[24px] p-4">
+                <img
+                  src={project.image}
+                  srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                  alt={project.alt}
+                  class="w-full aspect-[16/9] object-cover object-top rounded-[14px]"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             </div>
-          </div>
-          <p class="absolute -bottom-8 right-1 font-mono text-[11px] leading-none tracking-[-0.02em] text-ink/35">
-            exhibit {projects.map((p) => p.index)[0]}&ndash;{projects[projects.length - 1].index} · it follows the cursor
-          </p>
+
+            <span class="ws2-veil absolute inset-0 rounded-[inherit]" aria-hidden="true" />
+          </article>
         </div>
-      </div>
+      ))
+    }
+  </div>
+
+  <!-- Mobile: molded cards, no pile -->
+  <div class="lg:hidden max-w-[1524px] mx-auto px-6 pb-[clamp(96px,14vh,180px)] pt-8">
+    <div class="flex flex-col gap-10">
+      {
+        projects.map((project) => (
+          <article class="ws2-card relative rounded-[26px] p-5 overflow-hidden">
+            <span class="ws2-hair absolute top-0 left-[12%] right-[12%]" aria-hidden="true" />
+            <div class="ws2-well rounded-[18px] p-2.5">
+              <img
+                src={project.image}
+                srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                alt={project.alt}
+                class="w-full aspect-[16/10] object-cover object-top rounded-[10px]"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="p-2 pt-6">
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="ws2-num font-display font-normal leading-none tracking-[-0.03em] text-[2.25rem]">
+                  {project.index}
+                </span>
+                <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)]">
+                  {project.title}
+                </h3>
+                {project.featured && (
+                  <span class="ws2-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
+                    featured
+                  </span>
+                )}
+              </div>
+              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
+                {project.tech}
+              </p>
+              <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
+
+              <div class="flex flex-wrap gap-3 mt-6">
+                {project.stack.map((item) => (
+                  <span class="ws2-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              <div class="flex items-center gap-4 mt-8">
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="ws2-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                >
+                  Visit site
+                </a>
+                {project.githubUrl && (
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
+                  >
+                    GitHub
+                  </a>
+                )}
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${project.title} in a new tab`}
+                  class="ws2-btn ws2-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12 12 2M4.5 2H12v7.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        ))
+      }
     </div>
   </div>
+
+  <p
+    class="max-w-[1524px] mx-auto px-6 lg:px-12 pb-12 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right"
+  >
+    sedimentary, my dear &mdash; newest layer on top
+  </p>
 </section>
 
 <style>
-  .ws2-head:focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 4px;
-    border-radius: 6px;
+  /* Cool porcelain (V3's clean palette); the gradient is the mineral seam */
+  .ws2 {
+    --por: #eaedf1;
+    --por-dark: rgba(151, 163, 180, 0.55);
+    --por-darker: rgba(151, 163, 180, 0.72);
+    --por-light: rgba(255, 255, 255, 0.95);
+    --grad: linear-gradient(120deg, #cef79e, #9fe8cf 48%, #9cc2ff);
+    background: var(--por);
   }
 
-  .ws2-title {
-    transition: color 0.3s ease;
+  .ws2-pill {
+    box-shadow:
+      inset 3px 3px 6px var(--por-dark),
+      inset -3px -3px 6px var(--por-light);
   }
 
-  .ws2-item[data-open] .ws2-title,
-  .ws2-head:hover .ws2-title {
-    color: var(--color-ink);
+  /* ── Layers ── */
+  .ws2-layer {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
   }
 
-  /* Expanding drawer — grid-rows keeps it height-animatable */
-  .ws2-more {
-    display: grid;
-    grid-template-rows: 0fr;
+  /* --cover (0→1, set from scroll) is how far the next layer has seated
+     over this one: the card scales back and its veil pushes it into the slab */
+  .ws2-card {
+    position: sticky;
+    width: 100%;
+    background: var(--por);
+    box-shadow:
+      14px 14px 34px var(--por-dark),
+      -14px -14px 34px var(--por-light);
+    transform: scale(calc(1 - var(--cover, 0) * 0.05));
+    transform-origin: 50% 0;
   }
 
-  .ws2-more > div {
-    min-height: 0;
-  }
-
-  .ws2-item[data-open] .ws2-more {
-    grid-template-rows: 1fr;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .ws2-more {
-      transition: grid-template-rows 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+  /* Mobile cards reuse .ws2-card styling without the pile mechanics */
+  @media (max-width: 1023px) {
+    .ws2-card {
+      position: relative;
+      top: auto !important;
+      transform: none;
     }
   }
 
-  /* ── Stage ── */
-  .ws2-space {
-    perspective: 1300px;
-  }
-
-  .ws2-rig {
-    transform-style: preserve-3d;
-    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-  }
-
-  .ws2-floor {
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(34, 47, 48, 0.22), transparent 68%);
-    transform: translateZ(-90px);
-  }
-
-  .ws2-aura {
-    border-radius: 40px;
-    background: radial-gradient(ellipse at 60% 40%, rgba(206, 247, 158, 0.55), transparent 62%);
-    filter: blur(24px);
-    transform: translateZ(-70px);
-  }
-
-  .ws2-specimen {
-    transform-style: preserve-3d;
-    opacity: 0;
+  .ws2-veil {
+    background: var(--por);
+    opacity: calc(var(--cover, 0) * 0.55);
     pointer-events: none;
-    visibility: hidden;
   }
 
-  .ws2-specimen[data-active] {
-    opacity: 1;
-    visibility: visible;
+  .ws2-hair {
+    height: 2px;
+    border-radius: 999px;
+    background: var(--grad);
+    opacity: 0.85;
   }
 
-  .ws2-pane {
-    box-shadow: 0 40px 80px -32px rgba(34, 47, 48, 0.45);
-    transform: translateZ(10px);
+  /* Gradient-clipped numeral, dimmed toward engraving */
+  .ws2-num {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: saturate(0.9) brightness(0.74);
   }
 
-  .ws2-sheen {
-    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.35) 50%, transparent 58%);
-    background-size: 260% 100%;
-    background-position: 110% 0;
+  /* Aurora well: the gradient pooled behind the screenshot, showing
+     through the gutter */
+  .ws2-well {
+    background:
+      radial-gradient(120% 90% at 10% 6%, rgba(206, 247, 158, 0.5), transparent 55%),
+      radial-gradient(110% 90% at 90% 94%, rgba(156, 194, 255, 0.45), transparent 55%),
+      radial-gradient(90% 80% at 88% 8%, rgba(159, 232, 207, 0.4), transparent 55%),
+      var(--por);
+    box-shadow:
+      inset 8px 8px 18px var(--por-dark),
+      inset -8px -8px 18px var(--por-light);
+  }
+
+  .ws2-well img {
+    box-shadow: 0 10px 26px -14px rgba(34, 47, 48, 0.45);
+  }
+
+  /* ── Fittings ── */
+  .ws2-feat {
+    background: var(--grad);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 
   .ws2-chip {
-    box-shadow: 0 10px 24px -12px rgba(34, 47, 48, 0.35);
+    box-shadow:
+      inset 3px 3px 7px var(--por-dark),
+      inset -3px -3px 7px var(--por-light);
   }
 
-  .ws2-chip-url {
-    transform: translateZ(72px);
+  .ws2-btn {
+    background: var(--por);
+    box-shadow:
+      6px 6px 14px var(--por-dark),
+      -6px -6px 14px var(--por-light);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
 
-  .ws2-chip-fact {
-    transform: translateZ(104px);
+  .ws2-btn:hover {
+    transform: translateY(-1px);
   }
 
-  .ws2-chip-stat {
-    transform: translateZ(52px);
+  .ws2-btn:active {
+    transform: translateY(0);
+    box-shadow:
+      inset 4px 4px 10px var(--por-dark),
+      inset -4px -4px 10px var(--por-light);
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .ws2-specimen[data-active] .ws2-pane {
-      animation: ws2-settle 0.7s cubic-bezier(0.33, 1, 0.68, 1) both;
-    }
-
-    .ws2-specimen[data-active] .ws2-sheen {
-      animation: ws2-sweep 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.25s both;
-    }
-
-    .ws2-specimen[data-active] .ws2-chip {
-      animation: ws2-chip-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    }
-
-    .ws2-specimen[data-active] .ws2-chip-fact {
-      animation-delay: 0.12s;
-    }
-
-    .ws2-specimen[data-active] .ws2-chip-stat {
-      animation-delay: 0.2s;
-    }
+  .ws2-btn:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
   }
 
-  @keyframes ws2-settle {
-    from {
-      transform: translateZ(160px) translateY(26px);
-      opacity: 0;
-    }
-    to {
-      transform: translateZ(10px) translateY(0);
-      opacity: 1;
-    }
+  .ws2-btn-go {
+    background: var(--grad);
+    box-shadow:
+      6px 6px 14px var(--por-dark),
+      -6px -6px 14px var(--por-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 
-  @keyframes ws2-sweep {
-    to {
-      background-position: -30% 0;
-    }
-  }
-
-  @keyframes ws2-chip-in {
-    from {
-      opacity: 0;
-      transform: translateZ(var(--chip-z, 72px)) translateY(14px) scale(0.85);
-    }
-  }
-
-  .ws2-chip-url {
-    --chip-z: 72px;
-  }
-
-  .ws2-chip-fact {
-    --chip-z: 104px;
-  }
-
-  .ws2-chip-stat {
-    --chip-z: 52px;
+  .ws2-btn-go:active {
+    box-shadow:
+      inset 4px 4px 10px rgba(110, 150, 120, 0.5),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.6);
   }
 </style>
 
 <script>
   {
     const section = document.querySelector<HTMLElement>(".ws2");
-    if (section) {
-      const items = section.querySelectorAll<HTMLElement>("[data-item]");
-      const heads = section.querySelectorAll<HTMLButtonElement>("[data-select]");
-      const specimens = section.querySelectorAll<HTMLElement>("[data-specimen]");
-      const rig = section.querySelector<HTMLElement>("[data-rig]");
-      const stage = section.querySelector<HTMLElement>("[data-stage]");
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (section && !reducedMotion) {
+      const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-card]"));
 
-      const select = (id: string) => {
-        items.forEach((item) => {
-          if (item.dataset.item === id) item.setAttribute("data-open", "");
-          else item.removeAttribute("data-open");
-        });
-        heads.forEach((head) => {
-          head.setAttribute("aria-expanded", String(head.dataset.select === id));
-        });
-        specimens.forEach((s) => {
-          if (s.dataset.specimen === id) s.setAttribute("data-active", "true");
-          else s.removeAttribute("data-active");
-        });
+      // Must track the inline sticky tops: 88px base, 26px stair
+      const STICK_TOP = 88;
+      const STICK_STEP = 26;
+
+      let ticking = false;
+
+      const update = () => {
+        ticking = false;
+        // i's cover is driven by how far card i+1 has climbed toward its
+        // own sticky seat; the last card is never covered
+        for (let i = 0; i < cards.length - 1; i++) {
+          const next = cards[i + 1].getBoundingClientRect();
+          // Hidden variant panel (display: none) — nothing to drive
+          if (!next.height) return;
+          const seat = STICK_TOP + (i + 1) * STICK_STEP;
+          const p = Math.min(1, Math.max(0, 1 - (next.top - seat) / (window.innerHeight - seat)));
+          cards[i].style.setProperty("--cover", p.toFixed(3));
+        }
       };
 
-      heads.forEach((head) => {
-        head.addEventListener("click", () => select(head.dataset.select!));
-      });
-      select("0");
+      const onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      };
 
-      // Cursor tilt — the whole rig leans toward the pointer, lerped
-      if (rig && stage && !reducedMotion && window.matchMedia("(pointer: fine)").matches) {
-        let trx = 0;
-        let try_ = 0;
-        let rx = 0;
-        let ry = 0;
-        let rafId = 0;
-
-        const render = () => {
-          rx += (trx - rx) * 0.08;
-          ry += (try_ - ry) * 0.08;
-          rig.style.setProperty("--rx", `${rx.toFixed(3)}deg`);
-          rig.style.setProperty("--ry", `${ry.toFixed(3)}deg`);
-          if (Math.abs(trx - rx) > 0.01 || Math.abs(try_ - ry) > 0.01) {
-            rafId = requestAnimationFrame(render);
-          } else {
-            rafId = 0;
-          }
-        };
-
-        const kick = () => {
-          if (!rafId) rafId = requestAnimationFrame(render);
-        };
-
-        section.addEventListener(
-          "mousemove",
-          (e) => {
-            const rect = stage.getBoundingClientRect();
-            if (!rect.width) return;
-            const x = (e.clientX - rect.left) / rect.width - 0.5;
-            const y = (e.clientY - rect.top) / rect.height - 0.5;
-            trx = Math.max(-9, Math.min(9, -y * 10));
-            try_ = Math.max(-12, Math.min(12, x * 12));
-            kick();
-          },
-          { passive: true },
-        );
-
-        section.addEventListener("mouseleave", () => {
-          trx = 0;
-          try_ = 0;
-          kick();
-        });
-      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      update();
     }
   }
 </script>

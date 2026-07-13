@@ -1,18 +1,18 @@
 ---
-// V4 — "Exploded View": each project is drawn like an engineering teardown.
-// The screenshot splits into three planes in real CSS 3D — interface, logic,
-// data — annotated with leader lines. Hovering (or the assemble button)
-// snaps the stack back together and faces it toward you.
+// V4 — "The Line": neumorphic, scroll-driven sideways. The section pins
+// and vertical scroll becomes horizontal travel — three porcelain plates
+// ride a conveyor past the viewport while a giant gradient numeral keeps
+// count behind them. A gradient-filled groove at the bottom is the
+// progress readout (and its stations jump the scroll). V3's stick, V4's
+// old gradients, a brand-new axis.
 const projects = [
   {
     index: "01",
     title: "Dispatch",
     tech: "Astro · TypeScript · AI pipelines",
     fact: "writes itself every morning",
-    logicNote: "2 AI pipelines · cron @ 6am",
-    dataNote: "24h of news, triaged",
     description:
-      "A daily snapshot of the tech industry — the last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
+      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
     image: "/photos/dispatch.webp",
     alt: "Dispatch project screenshot",
     stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
@@ -24,10 +24,8 @@ const projects = [
     title: "Meridian",
     tech: "Vanilla TypeScript · Extensions",
     fact: "0 npm dependencies",
-    logicNote: "11 modules, all hand-built",
-    dataNote: "45 days of history, kept local",
     description:
-      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a from-scratch component library — plus a recommendation engine that learns without anything leaving the browser.",
+      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
     image: "/photos/meridian.webp",
     alt: "Meridian project screenshot",
     stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
@@ -40,10 +38,8 @@ const projects = [
     tech: "Next.js · React Native",
     fact: "design system: Neon Riff",
     featured: true,
-    logicNote: "music theory engine",
-    dataNote: "chords, intervals, voicings",
     description:
-      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does. Backing track generation is next.",
+      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
     alt: "Fuzzbox project screenshot",
     stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
@@ -53,133 +49,222 @@ const projects = [
 ];
 ---
 
-<section class="xv4 relative bg-bone" aria-label="Selected work">
-  <div class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(96px,14vh,180px)]">
-    <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14">
-      <div class="flex items-center gap-4">
-        <span
-          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 border border-ink/30 rounded-full px-3.5 py-2"
+<section class="wl4 relative" aria-label="Selected work">
+  <!-- Desktop: the pinned conveyor -->
+  <div class="hidden lg:block relative lg:h-[320vh]" data-rig>
+    <div class="sticky top-0 h-screen overflow-hidden flex flex-col">
+      <div class="relative z-10 max-w-[1524px] w-full mx-auto px-12 pt-12 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <span class="wl4-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
+            03&hairsp;/&hairsp;04
+          </span>
+          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+            Selected Work
+          </span>
+          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/40 ml-4">
+            scroll to advance the line
+          </span>
+        </div>
+        <a
+          href="https://github.com/DominicClerici"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
         >
-          03&hairsp;/&hairsp;04
-        </span>
-        <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-          Selected Work
+          more on github&nbsp;&nearr;
+        </a>
+      </div>
+
+      <!-- The counter that lives behind the line -->
+      <span
+        class="wl4-big absolute right-[-1vw] top-1/2 -translate-y-1/2 font-display font-normal leading-none tracking-[-0.05em] select-none pointer-events-none"
+        data-big
+        aria-hidden="true"
+      >
+        01
+      </span>
+
+      <div class="relative z-10 flex-1 min-h-0 flex items-center">
+        <div class="wl4-track flex items-center gap-12 w-max" data-track>
+          {
+            projects.map((project, i) => (
+              <article class="wl4-car rounded-[30px] p-5" data-car={i} data-on={i === 0 ? "" : undefined}>
+                <div class="wl4-well rounded-[20px] p-3">
+                  <img
+                    src={project.image}
+                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                    alt={project.alt}
+                    class="w-full aspect-[16/8] object-cover object-top rounded-[12px]"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+
+                <div class="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-10 items-start px-2 pb-2 pt-6">
+                  <div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                      <span class="wl4-num font-display font-normal leading-none tracking-[-0.03em] text-[1.75rem]">
+                        {project.index}
+                      </span>
+                      <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(1.75rem,2.2vw,2.25rem)]">
+                        {project.title}
+                      </h3>
+                      {project.featured && (
+                        <span class="wl4-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
+                          featured
+                        </span>
+                      )}
+                    </div>
+                    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
+                      {project.tech}
+                    </p>
+                    <p class="font-display text-[14px] leading-[1.55] text-ink/60 mt-4">{project.description}</p>
+                  </div>
+
+                  <div>
+                    <div class="flex flex-wrap gap-2.5">
+                      {project.stack.map((item) => (
+                        <span class="wl4-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                    <div class="flex items-center gap-4 mt-6">
+                      <a
+                        href={project.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="wl4-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
+                      >
+                        Visit site
+                      </a>
+                      {project.githubUrl && (
+                        <a
+                          href={project.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
+                        >
+                          GitHub
+                        </a>
+                      )}
+                      <a
+                        href={project.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${project.title} in a new tab`}
+                        class="wl4-btn wl4-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path
+                            d="M2 12 12 2M4.5 2H12v7.5"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="relative z-10 w-full pb-9 flex flex-col items-center gap-4">
+        <div class="wl4-groove relative w-[380px] h-[16px] rounded-full">
+          <span class="wl4-fill absolute rounded-full" data-fill aria-hidden="true"></span>
+          {
+            projects.map((project, i) => (
+              <button
+                type="button"
+                class="wl4-station absolute top-1/2 cursor-pointer"
+                style={`left: calc(8px + (100% - 16px) * ${i / (projects.length - 1)});`}
+                data-station={i}
+                aria-label={`Scroll to ${project.title}`}
+              />
+            ))
+          }
+        </div>
+        <span class="wl4-engraved font-mono text-[12px] leading-none tracking-[-0.02em] tabular-nums" data-count>
+          01&hairsp;/&hairsp;03
         </span>
       </div>
-      <a
-        href="https://github.com/DominicClerici"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
-      >
-        more on github&nbsp;&nearr;
-      </a>
+
+      <p class="absolute bottom-9 right-12 z-10 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35">
+        the line never stops moving
+      </p>
+    </div>
+  </div>
+
+  <!-- Mobile: molded cards, no conveyor -->
+  <div class="lg:hidden max-w-[1524px] mx-auto px-6 py-[clamp(96px,14vh,180px)]">
+    <div class="flex items-center gap-4 mb-10">
+      <span class="wl4-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
+        03&hairsp;/&hairsp;04
+      </span>
+      <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
+        Selected Work
+      </span>
     </div>
 
     <p
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-14 lg:mb-24"
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-12"
     >
-      Taken apart, layer by layer&nbsp;&mdash;
-      <span class="text-ink/55">hover a teardown to put it back together.</span>
+      Three builds on one line&nbsp;&mdash;
+      <span class="text-ink/55">mind the gap between them.</span>
     </p>
 
-    <div class="flex flex-col divide-y divide-ink/10 border-y border-ink/10">
+    <div class="flex flex-col gap-10">
       {
-        projects.map((project, i) => (
-          <article
-            class="xv4-row py-14 lg:py-20 lg:grid lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-16 lg:items-center"
-            data-explode
-          >
-            <div class:list={["xv4-scene relative", i % 2 === 1 && "lg:order-last"]} data-scene>
-              <div class="xv4-space">
-                <div class="xv4-stack" aria-hidden="false">
-                  <div class="xv4-plane xv4-plane-data" aria-hidden="true">
-                    <span class="xv4-plane-tag font-mono">data · {project.dataNote}</span>
-                  </div>
-                  <div class="xv4-plane xv4-plane-logic" aria-hidden="true">
-                    <span class="xv4-plane-tag font-mono">logic · {project.logicNote}</span>
-                    <span class="xv4-node" style="left: 26%; top: 30%;" />
-                    <span class="xv4-node" style="left: 62%; top: 58%;" />
-                    <span class="xv4-node" style="left: 44%; top: 76%;" />
-                  </div>
-                  <div class="xv4-plane xv4-plane-ui">
-                    <img
-                      src={project.image}
-                      srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                      alt={project.alt}
-                      class="w-full h-full object-cover object-top"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <span class="xv4-plane-tag xv4-plane-tag-ui font-mono">interface</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                class="xv4-toggle font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55 bg-paper/90 border border-ink/15 rounded-full px-3.5 py-2 absolute bottom-2 right-2 cursor-pointer hover:text-ink transition-colors duration-200"
-                data-toggle
-                aria-pressed="false"
-              >
-                assemble
-              </button>
+        projects.map((project) => (
+          <article class="wl4-car rounded-[26px] p-5" data-on>
+            <div class="wl4-well rounded-[18px] p-2.5">
+              <img
+                src={project.image}
+                srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                alt={project.alt}
+                class="w-full aspect-[16/10] object-cover object-top rounded-[10px]"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
-
-            <div class="mt-10 lg:mt-0">
+            <div class="p-2 pt-6">
               <div class="flex items-center gap-3 flex-wrap">
-                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/45 border border-ink/20 rounded-full px-3 py-1.5">
-                  fig.&thinsp;{project.index}
+                <span class="wl4-num font-display font-normal leading-none tracking-[-0.03em] text-[1.5rem]">
+                  {project.index}
                 </span>
+                <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)]">
+                  {project.title}
+                </h3>
                 {project.featured && (
-                  <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink bg-bio-lime rounded-full px-3 py-1.5">
+                  <span class="wl4-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink rounded-full px-2.5 py-1.5">
                     featured
                   </span>
                 )}
-                <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/40">{project.fact}</span>
               </div>
-
-              <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink mt-6 text-[clamp(2.25rem,calc(2.25rem+(100vw-27.5rem)*0.018),3.25rem)]">
-                {project.title}
-              </h3>
-              <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
+              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-3.5">
                 {project.tech}
               </p>
+              <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
 
-              <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-ink/60 max-w-[520px] mt-6">
-                {project.description}
-              </p>
+              <div class="flex flex-wrap gap-3 mt-6">
+                {project.stack.map((item) => (
+                  <span class="wl4-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
+                    {item}
+                  </span>
+                ))}
+              </div>
 
-              <dl class="mt-8 border-t border-ink/10">
-                <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
-                  <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
-                    stack
-                  </dt>
-                  <dd class="flex flex-wrap gap-x-5 gap-y-2">
-                    {project.stack.map((item) => (
-                      <span class="inline-flex items-center gap-2">
-                        <span class="w-[5px] h-[5px] rounded-full bg-bio-lime" aria-hidden="true" />
-                        <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">{item}</span>
-                      </span>
-                    ))}
-                  </dd>
-                </div>
-                <div class="flex items-baseline gap-6 py-3.5 border-b border-ink/10">
-                  <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40 w-[72px] shrink-0">
-                    status
-                  </dt>
-                  <dd class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/55">
-                    live · maintained
-                  </dd>
-                </div>
-              </dl>
-
-              <div class="flex items-center gap-3 mt-8">
+              <div class="flex items-center gap-4 mt-8">
                 <a
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="font-mono text-[13px] tracking-[-0.008em] text-ink border border-ink/30 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink transition-colors duration-200"
+                  class="wl4-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
                 >
                   Visit site
                 </a>
@@ -188,7 +273,7 @@ const projects = [
                     href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/60 rounded-lg h-10 px-4 inline-flex items-center hover:text-ink transition-colors duration-200"
+                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
                   >
                     GitHub
                   </a>
@@ -198,7 +283,7 @@ const projects = [
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Open ${project.title} in a new tab`}
-                  class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:-translate-y-0.5 transition-transform duration-200 ml-auto"
+                  class="wl4-btn wl4-btn-go w-11 h-11 rounded-[14px] text-ink inline-flex items-center justify-center ml-auto"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path
@@ -216,168 +301,255 @@ const projects = [
         ))
       }
     </div>
-
-    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right mt-10">
-      no screws were lost during disassembly
-    </p>
   </div>
 </section>
 
 <style>
-  .xv4-scene {
-    height: clamp(300px, 44vw, 460px);
+  /* Cool porcelain (V3's clean palette); the gradient does the moving */
+  .wl4 {
+    --por: #e8ebef;
+    --por-dark: rgba(149, 161, 178, 0.55);
+    --por-darker: rgba(149, 161, 178, 0.72);
+    --por-light: rgba(255, 255, 255, 0.95);
+    --grad: linear-gradient(120deg, #cef79e, #9fe8cf 48%, #9cc2ff);
+    background: var(--por);
   }
 
-  .xv4-space {
-    position: absolute;
-    inset: 0;
-    perspective: 1500px;
-    display: grid;
-    place-items: center;
+  .wl4-pill {
+    box-shadow:
+      inset 3px 3px 6px var(--por-dark),
+      inset -3px -3px 6px var(--por-light);
   }
 
-  .xv4-stack {
-    position: relative;
-    width: min(78%, 480px);
-    aspect-ratio: 16 / 10;
-    transform-style: preserve-3d;
-    transform: rotateX(54deg) rotateZ(-32deg) scale(0.92);
+  /* ── The counter ── */
+  .wl4-big {
+    font-size: clamp(280px, 34vw, 520px);
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    opacity: 0.4;
+    filter: saturate(0.85);
   }
 
-  .xv4-plane {
-    position: absolute;
-    inset: 0;
-    border-radius: 14px;
-    border: 1px solid rgba(34, 47, 48, 0.14);
-    overflow: hidden;
-    backface-visibility: hidden;
-  }
+  /* ── The track ── */
+  /* Car width doubles as the height budget so the whole plate fits the pin
+     on short screens */
+  @media (min-width: 1024px) {
+    .wl4 {
+      --carw: min(56vw, 760px, calc((100vh - 468px) * 2));
+    }
 
-  /* Bottom layer — the data bed */
-  .xv4-plane-data {
-    background-color: var(--color-bone);
-    background-image: radial-gradient(circle, rgba(34, 47, 48, 0.22) 1px, transparent 1px);
-    background-size: 22px 22px;
-    transform: translateZ(calc(var(--spread, 0) * -86px));
-    box-shadow: 0 30px 50px -30px rgba(34, 47, 48, 0.45);
-  }
-
-  /* Middle layer — the logic board */
-  .xv4-plane-logic {
-    background-color: var(--color-paper);
-    background-image:
-      linear-gradient(rgba(34, 47, 48, 0.09) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(34, 47, 48, 0.09) 1px, transparent 1px);
-    background-size: 34px 34px;
-    transform: translateZ(0px);
-  }
-
-  .xv4-node {
-    position: absolute;
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: var(--color-bio-lime);
-    border: 1.5px solid var(--color-ink);
-  }
-
-  /* Top layer — the interface */
-  .xv4-plane-ui {
-    background: var(--color-paper);
-    transform: translateZ(calc(var(--spread, 0) * 86px + 1px));
-    box-shadow: 0 24px 48px -24px rgba(34, 47, 48, 0.5);
-  }
-
-  .xv4-plane-tag {
-    position: absolute;
-    left: 10px;
-    bottom: 10px;
-    font-size: 11px;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    color: var(--color-ink);
-    background: rgba(247, 247, 245, 0.92);
-    border: 1px solid rgba(34, 47, 48, 0.14);
-    border-radius: 999px;
-    padding: 6px 10px;
-    white-space: nowrap;
-  }
-
-  .xv4-plane-tag-ui {
-    background: var(--color-bio-lime);
-    border-color: transparent;
-  }
-
-  /* Rest state: flat and modest. In view: the stack explodes. */
-  .xv4-row.xv4-in .xv4-stack {
-    --spread: 1;
-  }
-
-  /* Assembled: face the viewer, close the gap */
-  @media (hover: hover) {
-    .xv4-scene:hover .xv4-stack {
-      transform: rotateX(6deg) rotateZ(0deg) scale(1);
-      --spread: 0.04;
+    .wl4-car {
+      width: var(--carw);
     }
   }
 
-  .xv4-row.xv4-flat .xv4-stack {
-    transform: rotateX(6deg) rotateZ(0deg) scale(1);
-    --spread: 0.04;
+  .wl4-track {
+    /* Seats the first/last car at viewport center at either end of travel */
+    padding-inline: calc(50vw - var(--carw, 760px) / 2);
+    will-change: transform;
+  }
+
+  .wl4-car {
+    background: var(--por);
+    box-shadow:
+      10px 10px 24px var(--por-dark),
+      -10px -10px 24px var(--por-light);
+    opacity: 0.55;
+    transform: scale(0.965);
+  }
+
+  .wl4-car[data-on] {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow:
+      16px 16px 38px var(--por-darker),
+      -14px -14px 34px var(--por-light);
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .xv4-stack {
-      transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
-    }
-
-    .xv4-plane {
-      transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
-    }
-
-    .xv4-plane-data {
-      transition-delay: 0.06s;
-    }
-
-    .xv4-plane-ui {
-      transition-delay: 0.02s;
+    .wl4-car {
+      transition:
+        opacity 0.45s ease,
+        transform 0.45s ease,
+        box-shadow 0.45s ease;
     }
   }
 
-  .xv4-toggle:focus-visible {
+  .wl4-well {
+    background: var(--por);
+    box-shadow:
+      inset 8px 8px 18px var(--por-dark),
+      inset -8px -8px 18px var(--por-light);
+  }
+
+  .wl4-num {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: saturate(0.9) brightness(0.74);
+  }
+
+  /* ── The groove ── */
+  .wl4-groove {
+    background: var(--por);
+    box-shadow:
+      inset 4px 4px 9px var(--por-darker),
+      inset -4px -4px 9px var(--por-light);
+  }
+
+  /* --p (0→1) is travel, set from scroll */
+  .wl4-fill {
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(12px + (100% - 20px) * var(--p, 0));
+    background: var(--grad);
+    box-shadow: 0 0 10px 1px rgba(159, 232, 207, 0.7);
+  }
+
+  .wl4-station {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--por);
+    box-shadow:
+      inset 2px 2px 3px var(--por-darker),
+      inset -2px -2px 3px var(--por-light);
+    transform: translate(-50%, -50%);
+  }
+
+  .wl4-station:focus-visible {
     outline: 2px solid var(--color-ink);
     outline-offset: 3px;
   }
 
-  @media (min-width: 1024px) {
-    .xv4-toggle {
-      bottom: 8px;
-      right: 8px;
-    }
+  .wl4-engraved {
+    color: rgba(34, 47, 48, 0.45);
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  /* ── Fittings ── */
+  .wl4-feat {
+    background: var(--grad);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .wl4-chip {
+    box-shadow:
+      inset 3px 3px 7px var(--por-dark),
+      inset -3px -3px 7px var(--por-light);
+  }
+
+  .wl4-btn {
+    background: var(--por);
+    box-shadow:
+      6px 6px 14px var(--por-dark),
+      -6px -6px 14px var(--por-light);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .wl4-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .wl4-btn:active {
+    transform: translateY(0);
+    box-shadow:
+      inset 4px 4px 10px var(--por-dark),
+      inset -4px -4px 10px var(--por-light);
+  }
+
+  .wl4-btn:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .wl4-btn-go {
+    background: var(--grad);
+    box-shadow:
+      6px 6px 14px var(--por-dark),
+      -6px -6px 14px var(--por-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .wl4-btn-go:active {
+    box-shadow:
+      inset 4px 4px 10px rgba(110, 150, 120, 0.5),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.6);
   }
 </style>
 
 <script>
   {
-    const rows = document.querySelectorAll<HTMLElement>("[data-explode]");
+    const section = document.querySelector<HTMLElement>(".wl4");
+    if (section) {
+      const rig = section.querySelector<HTMLElement>("[data-rig]");
+      const track = section.querySelector<HTMLElement>("[data-track]");
+      const fill = section.querySelector<HTMLElement>("[data-fill]");
+      const big = section.querySelector<HTMLElement>("[data-big]");
+      const count = section.querySelector<HTMLElement>("[data-count]");
+      const cars = rig ? rig.querySelectorAll<HTMLElement>("[data-car]") : [];
+      const stations = section.querySelectorAll<HTMLButtonElement>("[data-station]");
+      const total = cars.length;
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("xv4-in");
+      let currentIdx = 0;
+
+      const select = (i: number) => {
+        if (i === currentIdx) return;
+        currentIdx = i;
+        const id = String(i);
+        cars.forEach((car) => {
+          if (car.dataset.car === id) car.setAttribute("data-on", "");
+          else car.removeAttribute("data-on");
         });
-      },
-      { threshold: 0.35 },
-    );
+        if (big) big.textContent = `0${i + 1}`;
+        if (count) count.innerHTML = `0${i + 1}&hairsp;/&hairsp;0${total}`;
+      };
 
-    rows.forEach((row) => {
-      io.observe(row);
-      const toggle = row.querySelector<HTMLButtonElement>("[data-toggle]");
-      toggle?.addEventListener("click", () => {
-        const flat = row.classList.toggle("xv4-flat");
-        toggle.setAttribute("aria-pressed", String(flat));
-        toggle.textContent = flat ? "explode" : "assemble";
+      let ticking = false;
+
+      const update = () => {
+        ticking = false;
+        if (!rig || !track) return;
+        const rect = rig.getBoundingClientRect();
+        // Hidden variant panel (display: none) or mobile layout — nothing to drive
+        if (!rect.height) return;
+        const range = rect.height - window.innerHeight;
+        if (range <= 0) return;
+        const p = Math.min(1, Math.max(0, -rect.top / range));
+        const travel = track.scrollWidth - window.innerWidth;
+        track.style.transform = `translate3d(${(-p * Math.max(0, travel)).toFixed(1)}px, 0, 0)`;
+        if (fill) fill.style.setProperty("--p", p.toFixed(4));
+        select(Math.round(p * (total - 1)));
+      };
+
+      const onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      update();
+
+      // Stations jump the page scroll to that car's seat on the line
+      stations.forEach((station) => {
+        station.addEventListener("click", () => {
+          if (!rig) return;
+          const rect = rig.getBoundingClientRect();
+          const range = rect.height - window.innerHeight;
+          const i = Number(station.dataset.station);
+          const top = window.scrollY + rect.top + range * (i / (total - 1));
+          window.scrollTo({ top, behavior: "smooth" });
+        });
       });
-    });
+    }
   }
 </script>
