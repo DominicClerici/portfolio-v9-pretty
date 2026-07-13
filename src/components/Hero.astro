@@ -99,23 +99,63 @@
     ).matches
     const forceCPU = new URLSearchParams(location.search).has("cpu")
 
+    /* ══ Tunable knobs ══════════════════════════════════════════════════
+       Everything you'd reach for to re-feel the scene lives here: per-object
+       placement/scale, plus the sensitivity / easing / motion controls that
+       all objects share. Colors and drift phase stay in OBJECTS below. */
+
+    // — Object placement —
+    //   pos: center as a fraction of the viewport (x from left, y-up from
+    //   bottom). scale: multiplier on the base sphere radius (SPHERE_R_FRAC).
+    //   The teal sphere's x is an edge-touch point + one radius (edgeR: 1),
+    //   so it reads a touch differently from the free-placed cube/purple.
+    const TEAL_POS = { x: 0.5, y: 0.56 }
+    const TEAL_SCALE = 1.0
+    const CUBE_POS = { x: 0.05, y: 0.12 }
+    const CUBE_SCALE = 0.7
+    const PURPLE_POS = { x: 0.92, y: -0.1 }
+    const PURPLE_SCALE = 0.55
+
+    // — Sensitivity (how far the objects move for a given input) —
+    const POINTER_SENSITIVITY = -0.3 // parallax shift per unit pointer travel
+    const SCROLL_SENSITIVITY = 0.4 // object climb per px scrolled
+
+    // — Easing (per-frame catch-up; lower = slower, more fluid/laggy) —
+    const POINTER_EASE = 0.0085
+    const SCROLL_EASE = 0.0425
+
+    // — Ambient motion (global multipliers on each object's idle float) —
+    const DRIFT_SPEED = 1.5 // × float speed
+    const DRIFT_AMOUNT = 2.0 // × float distance
+
+    /* ══════════════════════════════════════════════════════════════════ */
+
     /* ── Scroll behavior ──
        The background is pinned (sticky) for the whole scope. While pinned,
-       the glass cylinders hold still in screen space and the sphere climbs
-       at 0.75× scroll speed. Once the pin ends the background leaves with
-       the flow. The sphere's lift clamps at the pin end, so from there
-       sphere and glass scroll away together with the page. */
-    const SPHERE_SCROLL = 0.4
+       the glass cylinders hold still in screen space and the floating objects
+       climb at SCROLL_SENSITIVITY× scroll speed, eased toward the target so
+       the parallax glides. Once the pin ends the background leaves with the
+       flow. The lift clamps at the pin end, so from there objects and glass
+       scroll away together with the page. */
     let pinEnd = 1 // scroll distance the background stays pinned (px)
-    let scrollLift = 0 // sphere lift from scroll, CSS px, clamped at pinEnd
+    let scrollTarget = 0 // where the lift wants to be, from raw scrollY
+    let scrollLift = 0 // eased lift the objects actually use, CSS px
     let scrollQueued = false
+    // Ease the scroll lift toward its target once per rendered frame so the
+    // scroll parallax glides instead of snapping to the raw scroll position.
+    function stepScroll() {
+      scrollLift += (scrollTarget - scrollLift) * SCROLL_EASE
+    }
     function onScrollFrame() {
       scrollQueued = false
       const y = window.scrollY
-      scrollLift = Math.min(y, pinEnd) * SPHERE_SCROLL
-      // No raf loop under reduced motion — repaint the static frame instead
-      // so the scroll-linked sphere parallax still tracks the page.
-      if (reducedMotion) impl.render(40)
+      scrollTarget = Math.min(y, pinEnd) * SCROLL_SENSITIVITY
+      // No raf loop under reduced motion — snap and repaint the static frame
+      // so the scroll-linked parallax still tracks the page.
+      if (reducedMotion) {
+        scrollLift = scrollTarget
+        impl.render(40)
+      }
     }
     window.addEventListener(
       "scroll",
@@ -163,12 +203,8 @@
     // Glass fresnel — Spline: 80%, #fff, bias .24, scale 2.08, int 5.81, factor 1.17
     const G_FRES = { bias: 0.3, scale: 2.08, pow: 2.0, mix: 1.1 }
     const SEAM_DARK = 0.08 // subtle dark seam so packed cylinders read on white
-    // Sphere
-    const SPHERE_R_FRAC = 0.28 // radius, fraction of min(w, h)
-    // At rest the sphere sits just right of center — its left edge touches
-    // the page's vertical center line (center x = 0.5·w + radius).
-    const SPHERE_EDGE_X = 0.5 // fraction of w the left edge rests on
-    const SPHERE_Y = 0.52 // center height, fraction of h, y-up
+    // Base sphere radius (fraction of min(w, h)); per-object scale multiplies it
+    const SPHERE_R_FRAC = 0.28
     // Sphere fresnel — Spline: 100%, #fff, bias .4, scale 1.5, int 8, factor .8
     const S_FRES = { bias: 0.9, scale: 3.5, pow: 5.5, gain: 1.0 }
     // Linear gradients (0% at the top of the sphere → 100% at the bottom)
@@ -181,10 +217,76 @@
     // Film grain, scaled by how much color the glass is carrying
     const GRAIN_SAT = 0.12
     const GRAIN_LUM = 0.22
-    // Idle drift + pointer parallax
-    const DRIFT_FRAC = 0.05
-    const PARALLAX_FRAC = -0.3
     const BG = [0.957, 0.953, 0.945] // backdrop behind the glass
+
+    // Scene objects, composited back-to-front (smaller/farther first). All
+    // share the same glass material, sensitivity and easing; only color and
+    // drift phase differ here — placement/scale come from the knobs up top.
+    // shape: 0 sphere, 1 cube. edgeR shifts the center right by that many
+    // radii (lets the teal sphere rest against the page's center line).
+    const OBJECTS = [
+      {
+        // purple sphere — back, smallest, lower-right
+        shape: 0,
+        mat: 0,
+        rFrac: SPHERE_R_FRAC * PURPLE_SCALE,
+        cx: PURPLE_POS.x,
+        cy: PURPLE_POS.y,
+        edgeR: 0,
+        ga0: [0.482, 0.184, 0.878],
+        ga1: [0.651, 0.424, 0.961],
+        gb0: [0.29, 0.078, 0.6],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.04,
+        driftYScale: 0.7,
+        spdX: 0.17,
+        spdY: 0.11,
+        phX: 2.1,
+        phY: 4.3,
+      },
+      {
+        // blue cube — middle, lower-left
+        shape: 1,
+        mat: 0,
+        rFrac: SPHERE_R_FRAC * CUBE_SCALE,
+        cx: CUBE_POS.x,
+        cy: CUBE_POS.y,
+        edgeR: 0,
+        ga0: [0.067, 0.314, 0.902],
+        ga1: [0.298, 0.525, 0.961],
+        gb0: [0.039, 0.184, 0.627],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.038,
+        driftYScale: 0.7,
+        spdX: 0.19,
+        spdY: 0.13,
+        phX: 0.7,
+        phY: 1.9,
+      },
+      {
+        // teal sphere — front, largest
+        shape: 0,
+        mat: 1,
+        rFrac: SPHERE_R_FRAC * TEAL_SCALE,
+        cx: TEAL_POS.x,
+        cy: TEAL_POS.y,
+        edgeR: 1,
+        ga0: GRAD_A.c0,
+        ga1: GRAD_A.c1,
+        gb0: GRAD_B.c0,
+        gaMix: GRAD_A.mix,
+        gbMix: GRAD_B.mix,
+        driftAmp: 0.05,
+        driftYScale: 0.6,
+        spdX: 0.21,
+        spdY: 0.13,
+        phX: 0.0,
+        phY: 1.7,
+      },
+    ]
+    const NOBJ = OBJECTS.length
 
     const v3 = (c: number[]) => `vec3(${c.map((x) => x.toFixed(3)).join(", ")})`
     const f1 = (x: number) => x.toFixed(3)
@@ -202,24 +304,35 @@
       },
       { passive: true },
     )
-    // Sphere center in y-up canvas pixels for a given time + canvas size.
+    // Ease the shared pointer toward its target once per rendered frame.
+    function smoothPointer() {
+      px += (tpx - px) * POINTER_EASE
+      py += (tpy - py) * POINTER_EASE
+    }
+    // One object's center in y-up pixels for a given time + canvas size.
     // `lift` is the scroll parallax in the caller's pixel scale — positive
-    // moves the sphere up (y-up), i.e. it climbs as the page scrolls down.
-    function sphereCenter(tSec: number, w: number, h: number, lift: number) {
-      px += (tpx - px) * 0.04
-      py += (tpy - py) * 0.04
+    // moves the object up (y-up), i.e. it climbs as the page scrolls down.
+    // All objects share the pointer response; only their drift phase differs.
+    function objCenter(
+      o: (typeof OBJECTS)[number],
+      tSec: number,
+      w: number,
+      h: number,
+      lift: number,
+    ) {
       const m = Math.min(w, h)
+      const dx =
+        o.driftAmp *
+        DRIFT_AMOUNT *
+        Math.sin(tSec * o.spdX * DRIFT_SPEED + o.phX)
+      const dy =
+        o.driftAmp *
+        o.driftYScale *
+        DRIFT_AMOUNT *
+        Math.sin(tSec * o.spdY * DRIFT_SPEED + o.phY)
       return [
-        w * SPHERE_EDGE_X +
-          m *
-            (SPHERE_R_FRAC +
-              DRIFT_FRAC * Math.sin(tSec * 0.21) +
-              PARALLAX_FRAC * px),
-        h * SPHERE_Y +
-          m *
-            (DRIFT_FRAC * 0.6 * Math.sin(tSec * 0.13 + 1.7) +
-              PARALLAX_FRAC * py) +
-          lift,
+        w * o.cx + m * (o.rFrac * o.edgeR + dx + POINTER_SENSITIVITY * px),
+        h * o.cy + m * (dy + POINTER_SENSITIVITY * py) + lift,
       ]
     }
     type Impl = { render: (tSec: number) => void; resize: () => void }
@@ -280,32 +393,61 @@
       // image → fresnel → gradient B (40%) → gradient A (60%) → phong (60%)
       const SCENE_FS = `#version 300 es
         precision highp float;
-        uniform vec3 uSphere;    // center (px, y-up), radius (px)
+        #define NOBJ ${NOBJ}
+        uniform vec3 uObj[NOBJ];    // center (px, y-up), radius (px)
+        uniform float uShape[NOBJ]; // 0 sphere, 1 cube
+        uniform float uMat[NOBJ];   // matcap intensity
+        uniform vec3 uGA0[NOBJ];    // gradient A: bottom stop
+        uniform vec3 uGA1[NOBJ];    // gradient A: mid stop
+        uniform vec3 uGB0[NOBJ];    // gradient B: base
+        uniform float uGAmix[NOBJ];
+        uniform float uGBmix[NOBJ];
         uniform sampler2D uMatcap;
         uniform float uMatcapOn;
         out vec4 outColor;
 
-        vec3 gradA(float t) {
-          vec3 c = mix(${v3(GRAD_A.c0)}, ${v3(GRAD_A.c1)}, smoothstep(0.0, 0.8, t));
+        vec3 gradA(float t, vec3 c0, vec3 c1) {
+          vec3 c = mix(c0, c1, smoothstep(0.0, 0.8, t));
           return mix(c, vec3(1.0), smoothstep(0.8, 1.0, t));
         }
-        vec3 gradB(float t) {
-          return mix(${v3(GRAD_B.c0)}, vec3(1.0), smoothstep(0.8, 1.0, t));
+        vec3 gradB(float t, vec3 c0) {
+          return mix(c0, vec3(1.0), smoothstep(0.8, 1.0, t));
         }
 
         void main() {
-          vec2 p = (gl_FragCoord.xy - uSphere.xy) / uSphere.z;
-          float r2 = dot(p, p);
           vec3 col = ${v3(BG)};
-          if (r2 < 1.0) {
-            vec3 n = vec3(p, sqrt(1.0 - r2));
-            vec3 c = mix(vec3(0.16), texture(uMatcap, vec2(n.x, -n.y) * 0.5 + 0.5).rgb, uMatcapOn);
+          // Composite each object over the last, back-to-front (array order).
+          for (int i = 0; i < NOBJ; i++) {
+            vec3 o = uObj[i];
+            vec2 p = (gl_FragCoord.xy - o.xy) / o.z;
+            vec3 n;
+            vec3 base;
+            float cov;
+            if (uShape[i] < 0.5) {
+              float r2 = dot(p, p);
+              if (r2 >= 1.0) continue;
+              n = vec3(p, sqrt(1.0 - r2));
+              base = mix(vec3(0.16), texture(uMatcap, vec2(n.x, -n.y) * 0.5 + 0.5).rgb, uMat[i] * uMatcapOn);
+              cov = smoothstep(0.0, 2.5 / o.z, 1.0 - sqrt(r2));
+            } else {
+              // Rounded-box silhouette with a domed normal — after the glass
+              // blur + refraction it reads as a soft cube. The fresnel rim
+              // traces the square edge (n.z → 0 as the box distance → 0).
+              vec2 d2 = abs(p) - vec2(0.82) + 0.16;
+              float sd = length(max(d2, 0.0)) + min(max(d2.x, d2.y), 0.0) - 0.16;
+              if (sd >= 0.0) continue;
+              float e = clamp(-sd / 0.55, 0.0, 1.0);
+              float nz = sqrt(clamp(1.0 - (1.0 - e) * (1.0 - e), 0.0, 1.0));
+              n = vec3(0.0, clamp(p.y, -1.0, 1.0), nz);
+              base = vec3(0.16);
+              cov = smoothstep(0.0, 2.5 / o.z, -sd);
+            }
             float fr = clamp(${f1(S_FRES.bias)} + ${f1(S_FRES.scale)} * pow(1.0 - n.z, ${f1(S_FRES.pow)}), 0.0, 1.0);
-            c += vec3(1.0) * fr * fr * ${f1(S_FRES.gain)};
+            vec3 c = base + vec3(1.0) * fr * fr * ${f1(S_FRES.gain)};
             float t = 0.5 - n.y * 0.5;                  // 0 top → 1 bottom
-            c = mix(c, gradB(t), ${f1(GRAD_B.mix)});
-            c = mix(c, gradA(t), ${f1(GRAD_A.mix)});
-            col = mix(col, c, smoothstep(0.0, 2.5 / uSphere.z, 1.0 - sqrt(r2)));
+            c = mix(c, gradB(t, uGB0[i]), uGBmix[i]);
+            c = mix(c, gradA(t, uGA0[i], uGA1[i]), uGAmix[i]);
+            col = mix(col, c, cov);
           }
           outColor = vec4(col, 1.0);
         }`
@@ -403,10 +545,40 @@
       gl.enableVertexAttribArray(0)
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
-      const uSphere = gl.getUniformLocation(sceneProg, "uSphere")
+      const uObj = gl.getUniformLocation(sceneProg, "uObj")
       const uMatcapOn = gl.getUniformLocation(sceneProg, "uMatcapOn")
       gl.useProgram(sceneProg)
       gl.uniform1i(gl.getUniformLocation(sceneProg, "uMatcap"), 0)
+      // Static per-object material uniforms (color/shape never change).
+      const sceneLoc = (name: string) => gl.getUniformLocation(sceneProg, name)
+      gl.uniform1fv(
+        sceneLoc("uShape"),
+        new Float32Array(OBJECTS.map((o) => o.shape)),
+      )
+      gl.uniform1fv(
+        sceneLoc("uMat"),
+        new Float32Array(OBJECTS.map((o) => o.mat)),
+      )
+      gl.uniform1fv(
+        sceneLoc("uGAmix"),
+        new Float32Array(OBJECTS.map((o) => o.gaMix)),
+      )
+      gl.uniform1fv(
+        sceneLoc("uGBmix"),
+        new Float32Array(OBJECTS.map((o) => o.gbMix)),
+      )
+      gl.uniform3fv(
+        sceneLoc("uGA0"),
+        new Float32Array(OBJECTS.flatMap((o) => o.ga0)),
+      )
+      gl.uniform3fv(
+        sceneLoc("uGA1"),
+        new Float32Array(OBJECTS.flatMap((o) => o.ga1)),
+      )
+      gl.uniform3fv(
+        sceneLoc("uGB0"),
+        new Float32Array(OBJECTS.flatMap((o) => o.gb0)),
+      )
       const uRes = gl.getUniformLocation(glassProg, "uRes")
       const uLod = gl.getUniformLocation(glassProg, "uLod")
       const uPeriod = gl.getUniformLocation(glassProg, "uPeriod")
@@ -506,25 +678,29 @@
       )
 
       let dpr = 1
+      const objBuf = new Float32Array(NOBJ * 3)
       function render(tSec: number) {
-        const [cx, cy] = sphereCenter(
-          tSec,
-          canvas.width,
-          canvas.height,
-          scrollLift * dpr,
-        )
+        smoothPointer()
+        stepScroll()
         const m = Math.min(canvas.width, canvas.height)
+        for (let i = 0; i < NOBJ; i++) {
+          const [cx, cy] = objCenter(
+            OBJECTS[i],
+            tSec,
+            canvas.width,
+            canvas.height,
+            scrollLift * dpr,
+          )
+          objBuf[i * 3] = cx * FBO_SCALE
+          objBuf[i * 3 + 1] = cy * FBO_SCALE
+          objBuf[i * 3 + 2] = m * OBJECTS[i].rFrac * FBO_SCALE
+        }
 
         // Pass 1 — scene into the FBO, then mip it down for the glass blur
         gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo)
         gl!.viewport(0, 0, fw, fh)
         gl!.useProgram(sceneProg)
-        gl!.uniform3f(
-          uSphere,
-          cx * FBO_SCALE,
-          cy * FBO_SCALE,
-          m * SPHERE_R_FRAC * FBO_SCALE,
-        )
+        gl!.uniform3fv(uObj, objBuf)
         gl!.uniform1f(uMatcapOn, matcapReady ? 1 : 0)
         gl!.drawArrays(gl!.TRIANGLES, 0, 3)
         gl!.activeTexture(gl!.TEXTURE1)
@@ -584,16 +760,21 @@
         return t * t * (3 - 2 * t)
       }
 
-      // Green sphere ramp ≈ the GL gradient layers after the 45px blur:
-      // a top→bottom ramp with a bright lower rim.
-      function sphereColor(t: number): [number, number, number] {
+      // One object's ramp ≈ the GL gradient layers after the 45px blur:
+      // a top→bottom ramp with a bright lower rim, in the object's colors.
+      function objColor(
+        t: number,
+        ga0: number[],
+        ga1: number[],
+        gbMix: number,
+      ): [number, number, number] {
         const gA = [
-          lerp(GRAD_A.c0[0], GRAD_A.c1[0], sstep(0, 0.8, t)),
-          lerp(GRAD_A.c0[1], GRAD_A.c1[1], sstep(0, 0.8, t)),
-          lerp(GRAD_A.c0[2], GRAD_A.c1[2], sstep(0, 0.8, t)),
+          lerp(ga0[0], ga1[0], sstep(0, 0.8, t)),
+          lerp(ga0[1], ga1[1], sstep(0, 0.8, t)),
+          lerp(ga0[2], ga1[2], sstep(0, 0.8, t)),
         ]
         const w = sstep(0.8, 1, t)
-        const dark = 1 - GRAD_B.mix * (1 - w) * 0.5 // gradient B darkening
+        const dark = 1 - gbMix * (1 - w) * 0.5 // gradient B darkening
         return [
           255 * Math.min(1, lerp(gA[0] * dark, 1, w)),
           255 * Math.min(1, lerp(gA[1] * dark, 1, w)),
@@ -602,15 +783,10 @@
       }
 
       function render(tSec: number) {
-        const [scx, scy] = sphereCenter(
-          tSec,
-          W,
-          H,
-          (scrollLift * H) / Math.max(cssH, 1),
-        )
-        const cy = H - scy // ImageData is y-down
+        smoothPointer()
+        stepScroll()
+        const liftCPU = (scrollLift * H) / Math.max(cssH, 1)
         const m = Math.min(W, H)
-        const R = m * SPHERE_R_FRAC
         const blur = m * 0.06 // the baked-in "45px" softness
         const period = m * PERIOD_FRAC
         const thick = m * THICK_FRAC
@@ -620,6 +796,20 @@
         const pyv = -Math.cos(a)
         const eta = 1 / IOR
         let seed = (tSec * 61.7) % 1
+
+        // Per-frame object centers (y-down) — computed once, not per pixel.
+        const objs = OBJECTS.map((o) => {
+          const [ox, oy] = objCenter(o, tSec, W, H, liftCPU)
+          return {
+            cx: ox,
+            cyd: H - oy, // ImageData is y-down
+            R: m * o.rFrac,
+            cube: o.shape === 1,
+            ga0: o.ga0,
+            ga1: o.ga1,
+            gbMix: o.gbMix,
+          }
+        })
 
         for (let y = 0; y < H; y++) {
           for (let x = 0; x < W; x++) {
@@ -634,20 +824,34 @@
             const sx = x + pxv * shift
             const sy = y + pyv * shift
 
-            // analytic blurred scene sample
-            const dx = sx - scx
-            const dy = sy - cy
-            const d = Math.sqrt(dx * dx + dy * dy)
-            const cov = 1 - sstep(R - blur, R + blur, d)
+            // analytic blurred scene — composite objects back-to-front
             let r = BG[0] * 255
             let g = BG[1] * 255
             let b = BG[2] * 255
-            if (cov > 0) {
-              const t = Math.min(1, Math.max(0, (dy + R) / (2 * R)))
-              const sc = sphereColor(t)
-              r = lerp(r, sc[0], cov)
-              g = lerp(g, sc[1], cov)
-              b = lerp(b, sc[2], cov)
+            for (let o = 0; o < objs.length; o++) {
+              const ob = objs[o]
+              const dx = sx - ob.cx
+              const dy = sy - ob.cyd
+              let cov: number
+              if (ob.cube) {
+                // rounded-box distance ≈ the GL cube silhouette
+                const qx = Math.abs(dx) - ob.R * 0.82
+                const qy = Math.abs(dy) - ob.R * 0.82
+                const sd =
+                  Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) +
+                  Math.min(Math.max(qx, qy), 0)
+                cov = 1 - sstep(-blur, blur, sd)
+              } else {
+                const d = Math.sqrt(dx * dx + dy * dy)
+                cov = 1 - sstep(ob.R - blur, ob.R + blur, d)
+              }
+              if (cov > 0) {
+                const t = Math.min(1, Math.max(0, (dy + ob.R) / (2 * ob.R)))
+                const sc = objColor(t, ob.ga0, ob.ga1, ob.gbMix)
+                r = lerp(r, sc[0], cov)
+                g = lerp(g, sc[1], cov)
+                b = lerp(b, sc[2], cov)
+              }
             }
 
             // fresnel seam + dark line
