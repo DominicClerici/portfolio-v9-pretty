@@ -1,12 +1,22 @@
 ---
 const navLinks = [
-  { label: "LinkedIn", href: "https://www.linkedin.com/in/dominic-clerici/", external: true },
-  { label: "Email", href: "mailto:contact@dominicclerici.com", external: false },
-];
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/dominic-clerici/",
+    external: true,
+  },
+  {
+    label: "Email",
+    href: "mailto:contact@dominicclerici.com",
+    external: false,
+  },
+]
 ---
 
 <header class="absolute top-0 left-0 w-full z-[70]">
-  <div class="header-enter max-w-[1200px] mx-auto flex justify-between items-center px-6 sm:px-8 md:px-10 h-20 md:h-auto md:py-7">
+  <div
+    class="header-enter px-6 lg:px-12 flex justify-between items-center h-20 md:h-auto md:py-7"
+  >
     <a
       href="https://dev.dominicclerici.com"
       target="_blank"
@@ -24,7 +34,9 @@ const navLinks = [
           <a
             href={link.href}
             class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/70 hover:text-ink transition-colors duration-150"
-            {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            {...(link.external
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
           >
             {link.label}
           </a>
@@ -74,7 +86,9 @@ const navLinks = [
           href={link.href}
           class="font-mono text-lg uppercase tracking-[-0.02em] text-paper transition-colors duration-100"
           data-menu-link
-          {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          {...(link.external
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
         >
           {link.label}
         </a>
@@ -94,7 +108,8 @@ const navLinks = [
     <span
       id="terminal-mobile-hint"
       class="block text-xs font-label text-primary opacity-0 transition-opacity duration-300 mb-1"
-    >click it again...</span>
+      >click it again...</span
+    >
     <a
       href="https://dev.dominicclerici.com"
       target="_blank"
@@ -110,58 +125,60 @@ const navLinks = [
 </div>
 
 <script>
-  const toggle = document.getElementById("menu-toggle");
-  const menuEl = document.getElementById("mobile-menu");
+  const toggle = document.getElementById("menu-toggle")
+  const menuEl = document.getElementById("mobile-menu")
 
   function openMenu() {
-    menuEl!.classList.remove("opacity-0", "pointer-events-none");
-    menuEl!.classList.add("opacity-100", "pointer-events-auto");
-    toggle!.setAttribute("aria-expanded", "true");
-    menuEl!.removeAttribute("inert");
-    document.body.style.overflow = "hidden";
-    initMobileTerminal();
+    menuEl!.classList.remove("opacity-0", "pointer-events-none")
+    menuEl!.classList.add("opacity-100", "pointer-events-auto")
+    toggle!.setAttribute("aria-expanded", "true")
+    menuEl!.removeAttribute("inert")
+    document.body.style.overflow = "hidden"
+    initMobileTerminal()
   }
 
   function closeMenu() {
-    menuEl!.classList.add("opacity-0", "pointer-events-none");
-    menuEl!.classList.remove("opacity-100", "pointer-events-auto");
-    toggle!.setAttribute("aria-expanded", "false");
-    menuEl!.setAttribute("inert", "");
-    document.body.style.overflow = "";
-    teardownMobileTerminal();
+    menuEl!.classList.add("opacity-0", "pointer-events-none")
+    menuEl!.classList.remove("opacity-100", "pointer-events-auto")
+    toggle!.setAttribute("aria-expanded", "false")
+    menuEl!.setAttribute("inert", "")
+    document.body.style.overflow = ""
+    teardownMobileTerminal()
   }
 
   toggle!.addEventListener("click", () => {
     if (toggle!.getAttribute("aria-expanded") === "true") {
-      closeMenu();
+      closeMenu()
     } else {
-      openMenu();
+      openMenu()
     }
-  });
+  })
 
   document.querySelectorAll("[data-menu-link]").forEach((link) => {
-    link.addEventListener("click", closeMenu);
-  });
+    link.addEventListener("click", closeMenu)
+  })
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeMenu();
-  });
+    if (e.key === "Escape") closeMenu()
+  })
 
   // === Terminal Animation Engine ===
-  const TYPE_STRING = "ssh dev.dominicclerici.com";
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TYPE_STRING = "ssh dev.dominicclerici.com"
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches
 
   interface TState {
-    textEl: HTMLElement;
-    cursorEl: HTMLElement;
-    blinkInterval: number | null;
-    visTimer: number | null;
-    animCancel: { value: boolean } | null;
-    isInView: boolean;
-    isHovering: boolean;
-    isActivated: boolean;
-    hintTimer: number | null;
-    hintEl: HTMLElement | null;
+    textEl: HTMLElement
+    cursorEl: HTMLElement
+    blinkInterval: number | null
+    visTimer: number | null
+    animCancel: { value: boolean } | null
+    isInView: boolean
+    isHovering: boolean
+    isActivated: boolean
+    hintTimer: number | null
+    hintEl: HTMLElement | null
   }
 
   function makeState(el: HTMLElement, hintEl?: HTMLElement | null): TState {
@@ -176,222 +193,246 @@ const navLinks = [
       isActivated: false,
       hintTimer: null,
       hintEl: hintEl ?? null,
-    };
+    }
   }
 
   function startBlink(s: TState) {
-    if (prefersReducedMotion) return;
-    stopBlink(s);
-    s.cursorEl.style.visibility = "visible";
+    if (prefersReducedMotion) return
+    stopBlink(s)
+    s.cursorEl.style.visibility = "visible"
     s.blinkInterval = window.setInterval(() => {
       s.cursorEl.style.visibility =
-        s.cursorEl.style.visibility === "hidden" ? "visible" : "hidden";
-    }, 530);
+        s.cursorEl.style.visibility === "hidden" ? "visible" : "hidden"
+    }, 530)
   }
 
   function stopBlink(s: TState) {
     if (s.blinkInterval !== null) {
-      clearInterval(s.blinkInterval);
-      s.blinkInterval = null;
+      clearInterval(s.blinkInterval)
+      s.blinkInterval = null
     }
-    s.cursorEl.style.visibility = "visible";
+    s.cursorEl.style.visibility = "visible"
   }
 
   function cancelAnim(s: TState) {
     if (s.animCancel) {
-      s.animCancel.value = true;
-      s.animCancel = null;
+      s.animCancel.value = true
+      s.animCancel = null
     }
   }
 
   function typeText(s: TState): Promise<boolean> {
     if (prefersReducedMotion) {
-      s.textEl.textContent = ">" + TYPE_STRING;
-      return Promise.resolve(true);
+      s.textEl.textContent = ">" + TYPE_STRING
+      return Promise.resolve(true)
     }
-    cancelAnim(s);
-    const cancel = { value: false };
-    s.animCancel = cancel;
-    startBlink(s);
+    cancelAnim(s)
+    const cancel = { value: false }
+    s.animCancel = cancel
+    startBlink(s)
 
-    const full = ">" + TYPE_STRING;
-    let i = s.textEl.textContent!.length;
+    const full = ">" + TYPE_STRING
+    let i = s.textEl.textContent!.length
 
     return new Promise((resolve) => {
       function step() {
-        if (cancel.value) { resolve(false); return; }
-        if (i >= full.length) { s.animCancel = null; resolve(true); return; }
-        s.textEl.textContent = full.slice(0, i + 1);
-        i++;
-        setTimeout(step, Math.floor(Math.random() * 46) + 15);
+        if (cancel.value) {
+          resolve(false)
+          return
+        }
+        if (i >= full.length) {
+          s.animCancel = null
+          resolve(true)
+          return
+        }
+        s.textEl.textContent = full.slice(0, i + 1)
+        i++
+        setTimeout(step, Math.floor(Math.random() * 46) + 15)
       }
-      step();
-    });
+      step()
+    })
   }
 
   function deleteText(s: TState): Promise<boolean> {
     if (prefersReducedMotion) {
-      s.textEl.textContent = ">";
-      return Promise.resolve(true);
+      s.textEl.textContent = ">"
+      return Promise.resolve(true)
     }
-    cancelAnim(s);
-    const cancel = { value: false };
-    s.animCancel = cancel;
+    cancelAnim(s)
+    const cancel = { value: false }
+    s.animCancel = cancel
 
     return new Promise((resolve) => {
       function step() {
-        if (cancel.value) { resolve(false); return; }
-        const text = s.textEl.textContent!;
-        if (text.length <= 1) { s.animCancel = null; resolve(true); return; }
-        s.textEl.textContent = text.slice(0, -1);
-        setTimeout(step, 13);
+        if (cancel.value) {
+          resolve(false)
+          return
+        }
+        const text = s.textEl.textContent!
+        if (text.length <= 1) {
+          s.animCancel = null
+          resolve(true)
+          return
+        }
+        s.textEl.textContent = text.slice(0, -1)
+        setTimeout(step, 13)
       }
-      step();
-    });
+      step()
+    })
   }
 
   // === Desktop Header Button ===
-  const headerEl = document.querySelector<HTMLElement>('[data-terminal="header"]');
+  const headerEl = document.querySelector<HTMLElement>(
+    '[data-terminal="header"]',
+  )
   if (headerEl) {
-    const hs = makeState(headerEl);
+    const hs = makeState(headerEl)
 
     new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
-          hs.isInView = true;
+          hs.isInView = true
           if (!hs.isHovering) {
-            if (hs.visTimer !== null) { clearTimeout(hs.visTimer); }
-            hs.visTimer = window.setTimeout(() => startBlink(hs), 5000);
+            if (hs.visTimer !== null) {
+              clearTimeout(hs.visTimer)
+            }
+            hs.visTimer = window.setTimeout(() => startBlink(hs), 5000)
           }
         } else {
-          hs.isInView = false;
-          if (!hs.isHovering) stopBlink(hs);
+          hs.isInView = false
+          if (!hs.isHovering) stopBlink(hs)
           if (hs.visTimer !== null) {
-            clearTimeout(hs.visTimer);
-            hs.visTimer = null;
+            clearTimeout(hs.visTimer)
+            hs.visTimer = null
           }
         }
       }
-    }).observe(headerEl);
+    }).observe(headerEl)
 
     headerEl.addEventListener("mouseenter", () => {
-      hs.isHovering = true;
+      hs.isHovering = true
       if (hs.visTimer !== null) {
-        clearTimeout(hs.visTimer);
-        hs.visTimer = null;
+        clearTimeout(hs.visTimer)
+        hs.visTimer = null
       }
-      typeText(hs);
-    });
+      typeText(hs)
+    })
 
     headerEl.addEventListener("mouseleave", async () => {
-      hs.isHovering = false;
-      const completed = await deleteText(hs);
+      hs.isHovering = false
+      const completed = await deleteText(hs)
       if (completed && !hs.isHovering && hs.isInView) {
-        startBlink(hs);
+        startBlink(hs)
       }
-    });
+    })
   }
 
   // === Desktop Scroll Button ===
-  const scrollEl = document.querySelector<HTMLElement>('[data-terminal="scroll"]');
-  const heroSection = document.getElementById("hero");
+  const scrollEl = document.querySelector<HTMLElement>(
+    '[data-terminal="scroll"]',
+  )
+  const heroSection = document.getElementById("hero")
 
   if (scrollEl && heroSection) {
-    const ss = makeState(scrollEl);
+    const ss = makeState(scrollEl)
 
     new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) {
-          scrollEl.style.opacity = "0.5";
-          scrollEl.classList.remove("pointer-events-none");
-          scrollEl.classList.add("pointer-events-auto");
-          ss.isInView = true;
+          scrollEl.style.opacity = "0.5"
+          scrollEl.classList.remove("pointer-events-none")
+          scrollEl.classList.add("pointer-events-auto")
+          ss.isInView = true
           if (!ss.isHovering) {
-            if (ss.visTimer !== null) { clearTimeout(ss.visTimer); }
-            ss.visTimer = window.setTimeout(() => startBlink(ss), 5000);
+            if (ss.visTimer !== null) {
+              clearTimeout(ss.visTimer)
+            }
+            ss.visTimer = window.setTimeout(() => startBlink(ss), 5000)
           }
         } else {
-          scrollEl.style.opacity = "0";
-          scrollEl.classList.add("pointer-events-none");
-          scrollEl.classList.remove("pointer-events-auto");
-          ss.isInView = false;
-          cancelAnim(ss);
-          stopBlink(ss);
-          ss.textEl.textContent = ">";
+          scrollEl.style.opacity = "0"
+          scrollEl.classList.add("pointer-events-none")
+          scrollEl.classList.remove("pointer-events-auto")
+          ss.isInView = false
+          cancelAnim(ss)
+          stopBlink(ss)
+          ss.textEl.textContent = ">"
           if (ss.visTimer !== null) {
-            clearTimeout(ss.visTimer);
-            ss.visTimer = null;
+            clearTimeout(ss.visTimer)
+            ss.visTimer = null
           }
         }
       }
-    }).observe(heroSection);
+    }).observe(heroSection)
 
     scrollEl.addEventListener("mouseenter", () => {
-      ss.isHovering = true;
+      ss.isHovering = true
       if (ss.visTimer !== null) {
-        clearTimeout(ss.visTimer);
-        ss.visTimer = null;
+        clearTimeout(ss.visTimer)
+        ss.visTimer = null
       }
-      typeText(ss);
-    });
+      typeText(ss)
+    })
 
     scrollEl.addEventListener("mouseleave", async () => {
-      ss.isHovering = false;
-      const completed = await deleteText(ss);
+      ss.isHovering = false
+      const completed = await deleteText(ss)
       if (completed && !ss.isHovering && ss.isInView) {
-        startBlink(ss);
+        startBlink(ss)
       }
-    });
+    })
   }
 
   // === Mobile Overlay Button ===
-  const mobileEl = document.querySelector<HTMLElement>('[data-terminal="mobile"]');
-  const mobileHint = document.getElementById("terminal-mobile-hint");
-  let mobileState: TState | null = null;
+  const mobileEl = document.querySelector<HTMLElement>(
+    '[data-terminal="mobile"]',
+  )
+  const mobileHint = document.getElementById("terminal-mobile-hint")
+  let mobileState: TState | null = null
 
   function handleMobileTap(e: Event) {
-    const ms = mobileState;
-    if (!ms || !mobileEl) return;
+    const ms = mobileState
+    if (!ms || !mobileEl) return
 
     if (!ms.isActivated) {
-      e.preventDefault();
-      if (ms.animCancel) return;
+      e.preventDefault()
+      if (ms.animCancel) return
 
       typeText(ms).then((completed) => {
-        if (!completed || !mobileState) return;
-        ms.isActivated = true;
-        mobileEl!.style.opacity = "1";
+        if (!completed || !mobileState) return
+        ms.isActivated = true
+        mobileEl!.style.opacity = "1"
         ms.hintTimer = window.setTimeout(() => {
-          if (ms.hintEl) ms.hintEl.style.opacity = "1";
-        }, 3000);
-      });
+          if (ms.hintEl) ms.hintEl.style.opacity = "1"
+        }, 3000)
+      })
     }
   }
 
   function initMobileTerminal() {
-    if (!mobileEl) return;
-    const ms = makeState(mobileEl, mobileHint);
-    mobileState = ms;
-    mobileEl.style.opacity = "0.5";
+    if (!mobileEl) return
+    const ms = makeState(mobileEl, mobileHint)
+    mobileState = ms
+    mobileEl.style.opacity = "0.5"
 
-    ms.visTimer = window.setTimeout(() => startBlink(ms), 3000);
-    mobileEl.addEventListener("click", handleMobileTap);
+    ms.visTimer = window.setTimeout(() => startBlink(ms), 3000)
+    mobileEl.addEventListener("click", handleMobileTap)
   }
 
   function teardownMobileTerminal() {
-    if (!mobileEl || !mobileState) return;
-    cancelAnim(mobileState);
-    stopBlink(mobileState);
+    if (!mobileEl || !mobileState) return
+    cancelAnim(mobileState)
+    stopBlink(mobileState)
     if (mobileState.visTimer !== null) {
-      clearTimeout(mobileState.visTimer);
+      clearTimeout(mobileState.visTimer)
     }
     if (mobileState.hintTimer !== null) {
-      clearTimeout(mobileState.hintTimer);
+      clearTimeout(mobileState.hintTimer)
     }
-    mobileState.textEl.textContent = ">";
-    mobileEl.style.opacity = "0.5";
-    if (mobileState.hintEl) mobileState.hintEl.style.opacity = "0";
-    mobileEl.removeEventListener("click", handleMobileTap);
-    mobileState = null;
+    mobileState.textEl.textContent = ">"
+    mobileEl.style.opacity = "0.5"
+    if (mobileState.hintEl) mobileState.hintEl.style.opacity = "0"
+    mobileEl.removeEventListener("click", handleMobileTap)
+    mobileState = null
   }
 </script>
