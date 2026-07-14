@@ -83,6 +83,45 @@
     <!-- The section below the hero scrolls over the same pinned canvas -->
     <slot />
   </div>
+
+  <!-- Shown only when the WebGL scene can't run and the CPU fallback takes
+       over. Fixed to the bottom-right; JS reveals it while the scope is in
+       view, so it reads as pinned to the hero + about section. -->
+  <div
+    id="hero-gpu-warning"
+    role="status"
+    class="fixed bottom-4 right-4 z-50 hidden items-center gap-2 rounded-lg border border-ink/15 bg-white/70 backdrop-blur-md px-3 h-9 shadow-sm"
+  >
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      class="shrink-0 text-amber-500"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 4 2.5 20.5h19L12 4Z"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linejoin="round"></path>
+      <path
+        d="M12 10.5v4"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"></path>
+      <path
+        d="M12 17.4v.01"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"></path>
+    </svg>
+    <span
+      class="font-mono text-[12px] leading-none tracking-[-0.01em] text-ink/70 whitespace-nowrap"
+    >
+      Enable GPU acceleration for a better experience
+    </span>
+  </div>
 </div>
 
 <script>
@@ -124,6 +163,18 @@
     // — Ambient motion (global multipliers on each object's idle float) —
     const DRIFT_SPEED = 1.5 // × float speed
     const DRIFT_AMOUNT = 2.0 // × float distance
+
+    // — Performance —
+    //   Render framerate cap for the glass pass (grain + refraction). 0 =
+    //   uncapped (render at the display's refresh rate).
+    const FPS_CAP = 60
+    //   The scene pass (objects + blur mip chain) is the expensive half, and
+    //   every bit of its motion — drift, pointer, scroll — is slow and seen
+    //   only through a deep blur. So it's refreshed at this lower rate while
+    //   the glass pass still draws at FPS_CAP: the stepping is invisible
+    //   through the blur but roughly halves the pass-1 + mipmap cost. WebGL
+    //   backend only (the CPU fallback is single-pass). 0 = every frame.
+    const SCENE_FPS_CAP = 30
 
     /* ══════════════════════════════════════════════════════════════════ */
 
@@ -332,18 +383,34 @@
         h * o.cy + m * (dy + POINTER_SENSITIVITY * py) + lift,
       ]
     }
-    type Impl = { render: (tSec: number) => void; resize: () => void }
+    type Impl = {
+      render: (tSec: number, sceneDirty?: boolean) => void
+      resize: () => void
+    }
     let impl: Impl
 
     /* ── Shared render-loop harness (raf, resize, visibility) ── */
+    // rAF always fires at the display's refresh rate; when FPS_CAP is set we
+    // skip the render on frames that arrive before the next slot is due (time
+    // still comes from the real timestamp, so the motion stays correct).
+    const FRAME_MS = FPS_CAP > 0 ? 1000 / FPS_CAP : 0
+    // Frames on which the scene/blur is refreshed. The glass pass draws every
+    // capped frame; the scene pass only when this slot is due (see render()).
+    const SCENE_MS = SCENE_FPS_CAP > 0 ? 1000 / SCENE_FPS_CAP : 0
     let rafId: number | null = null
     let running = false
     let lastT = 0
+    let lastFrameMs = -Infinity
+    let lastSceneMs = -Infinity
     function loop(ms: number) {
       if (!running) return
-      lastT = ms / 1000
-      impl.render(lastT)
       rafId = requestAnimationFrame(loop)
+      if (FRAME_MS && ms - lastFrameMs < FRAME_MS - 1) return
+      lastFrameMs = ms
+      lastT = ms / 1000
+      const sceneDirty = !SCENE_MS || ms - lastSceneMs >= SCENE_MS - 1
+      if (sceneDirty) lastSceneMs = ms
+      impl.render(lastT, sceneDirty)
     }
     function start() {
       if (running || reducedMotion) return
@@ -478,13 +545,15 @@
           float shift = T.x / max(abs(T.y), 0.05) * uThick;
           vec2 uv = (gl_FragCoord.xy + perp * shift) / uRes;
 
-          // 4 rotated jitter taps hide mip-blur blockiness
+          // 4 rotated jitter taps hide mip-blur blockiness. uScene is
+          // CLAMP_TO_EDGE, so out-of-range taps resolve to the edge texel
+          // on their own — no per-tap clamp() needed.
           float a = hash(gl_FragCoord.xy) * 6.2832;
           vec2 j = vec2(cos(a), sin(a)) * uPeriod * 0.05 / uRes;
-          vec3 c = textureLod(uScene, clamp(uv + j, 0.0, 1.0), uLod).rgb
-                 + textureLod(uScene, clamp(uv - j, 0.0, 1.0), uLod).rgb
-                 + textureLod(uScene, clamp(uv + vec2(-j.y, j.x), 0.0, 1.0), uLod).rgb
-                 + textureLod(uScene, clamp(uv - vec2(-j.y, j.x), 0.0, 1.0), uLod).rgb;
+          vec3 c = textureLod(uScene, uv + j, uLod).rgb
+                 + textureLod(uScene, uv - j, uLod).rgb
+                 + textureLod(uScene, uv + vec2(-j.y, j.x), uLod).rgb
+                 + textureLod(uScene, uv - vec2(-j.y, j.x), uLod).rgb;
           c *= 0.25;
 
           // displaced samples that land off-screen read as backdrop, not
@@ -546,6 +615,9 @@
       const uMatcapOn = gl.getUniformLocation(sceneProg, "uMatcapOn")
       gl.useProgram(sceneProg)
       gl.uniform1i(gl.getUniformLocation(sceneProg, "uMatcap"), 0)
+      // Matcap toggle is set once here and flipped on in uploadMatcap() — it's
+      // constant thereafter, so the per-frame path never touches it.
+      gl.uniform1f(uMatcapOn, matcapReady ? 1 : 0)
       // Static per-object material uniforms (color/shape never change).
       const sceneLoc = (name: string) => gl.getUniformLocation(sceneProg, name)
       gl.uniform1fv(
@@ -616,13 +688,15 @@
           matcap,
         )
         gl!.pixelStorei(gl!.UNPACK_FLIP_Y_WEBGL, false)
+        gl!.useProgram(sceneProg)
+        gl!.uniform1f(uMatcapOn, 1)
       }
       onMatcap = uploadMatcap
       if (matcapReady) uploadMatcap()
 
-      // Scene FBO (unit 1) — half resolution; it only ever gets sampled
+      // Scene FBO (unit 1) — half resolution [not anymore :)]; it only ever gets sampled
       // through a deep blur, and the halving buys a free extra mip level.
-      const FBO_SCALE = 0.5
+      const FBO_SCALE = 0.25
       const sceneTex = gl.createTexture()
       const fbo = gl.createFramebuffer()
       let fw = 1
@@ -668,6 +742,7 @@
           e.preventDefault()
           stop()
           impl = startCPU()
+          useCPUBackend()
           impl.resize()
           start()
         },
@@ -676,54 +751,69 @@
 
       let dpr = 1
       const objBuf = new Float32Array(NOBJ * 3)
-      function render(tSec: number) {
-        smoothPointer()
-        stepScroll()
-        const m = Math.min(canvas.width, canvas.height)
-        for (let i = 0; i < NOBJ; i++) {
-          const [cx, cy] = objCenter(
-            OBJECTS[i],
-            tSec,
-            canvas.width,
-            canvas.height,
-            scrollLift * dpr,
-          )
-          objBuf[i * 3] = cx * FBO_SCALE
-          objBuf[i * 3 + 1] = cy * FBO_SCALE
-          objBuf[i * 3 + 2] = m * OBJECTS[i].rFrac * FBO_SCALE
+      function render(tSec: number, sceneDirty = true) {
+        // Pass 1 — scene into the FBO, then mip it down for the glass blur.
+        // Object placement and pointer/scroll easing all live in here, so the
+        // whole block is gated on sceneDirty: it refreshes at SCENE_FPS_CAP
+        // while the glass pass below still draws every frame. The FBO + its
+        // mip chain persist between refreshes for the glass pass to sample.
+        if (sceneDirty) {
+          smoothPointer()
+          stepScroll()
+          const m = Math.min(canvas.width, canvas.height)
+          for (let i = 0; i < NOBJ; i++) {
+            const [cx, cy] = objCenter(
+              OBJECTS[i],
+              tSec,
+              canvas.width,
+              canvas.height,
+              scrollLift * dpr,
+            )
+            objBuf[i * 3] = cx * FBO_SCALE
+            objBuf[i * 3 + 1] = cy * FBO_SCALE
+            objBuf[i * 3 + 2] = m * OBJECTS[i].rFrac * FBO_SCALE
+          }
+          gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo)
+          gl!.viewport(0, 0, fw, fh)
+          gl!.useProgram(sceneProg)
+          gl!.uniform3fv(uObj, objBuf)
+          gl!.drawArrays(gl!.TRIANGLES, 0, 3)
+          gl!.activeTexture(gl!.TEXTURE1)
+          gl!.bindTexture(gl!.TEXTURE_2D, sceneTex)
+          gl!.generateMipmap(gl!.TEXTURE_2D)
         }
 
-        // Pass 1 — scene into the FBO, then mip it down for the glass blur
-        gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo)
-        gl!.viewport(0, 0, fw, fh)
-        gl!.useProgram(sceneProg)
-        gl!.uniform3fv(uObj, objBuf)
-        gl!.uniform1f(uMatcapOn, matcapReady ? 1 : 0)
-        gl!.drawArrays(gl!.TRIANGLES, 0, 3)
-        gl!.activeTexture(gl!.TEXTURE1)
-        gl!.bindTexture(gl!.TEXTURE_2D, sceneTex)
-        gl!.generateMipmap(gl!.TEXTURE_2D)
-
-        // Pass 2 — glass to the screen
+        // Pass 2 — glass to the screen. Everything but uTime is resize-
+        // invariant and uploaded once in uploadGlassStatics(), so the per-
+        // frame path only pushes the clock and draws.
         gl!.bindFramebuffer(gl!.FRAMEBUFFER, null)
         gl!.viewport(0, 0, canvas.width, canvas.height)
         gl!.useProgram(glassProg)
-        gl!.uniform2f(uRes, canvas.width, canvas.height)
-        gl!.uniform1f(uLod, Math.log2(Math.max(BLUR_PX * dpr * FBO_SCALE, 1)))
-        gl!.uniform1f(uPeriod, m * PERIOD_FRAC)
-        const a = (AXIS_DEG * Math.PI) / 180
-        gl!.uniform2f(uAxis, Math.cos(a), Math.sin(a))
-        gl!.uniform1f(uThick, m * THICK_FRAC)
         gl!.uniform1f(uTime, tSec)
         gl!.drawArrays(gl!.TRIANGLES, 0, 3)
       }
 
+      // Glass-pass uniforms that depend only on canvas size / dpr, not time.
+      // Uploaded once per resize; uniform state persists on the program until
+      // it's next changed, so the per-frame path only has to touch uTime.
+      function uploadGlassStatics() {
+        const m = Math.min(canvas.width, canvas.height)
+        const a = (AXIS_DEG * Math.PI) / 180
+        gl!.useProgram(glassProg)
+        gl!.uniform2f(uRes, canvas.width, canvas.height)
+        gl!.uniform1f(uLod, Math.log2(Math.max(BLUR_PX * dpr * FBO_SCALE, 1)))
+        gl!.uniform1f(uPeriod, m * PERIOD_FRAC)
+        gl!.uniform2f(uAxis, Math.cos(a), Math.sin(a))
+        gl!.uniform1f(uThick, m * THICK_FRAC)
+      }
+
       function resize() {
         const rect = wrap.getBoundingClientRect()
-        dpr = Math.min(window.devicePixelRatio || 1, 1.75)
+        dpr = Math.min(window.devicePixelRatio || 1, 1.5)
         canvas.width = Math.max(1, Math.round(rect.width * dpr))
         canvas.height = Math.max(1, Math.round(rect.height * dpr))
         allocFBO(canvas.width, canvas.height)
+        uploadGlassStatics()
         if (reducedMotion || !running) render(reducedMotion ? 40 : lastT)
       }
 
@@ -779,6 +869,19 @@
         ]
       }
 
+      // Reusable per-object scratch — the static fields (color, shape) are set
+      // once here; render() only rewrites cx/cyd/R each frame, so the hot path
+      // does no per-frame array/object allocation.
+      const objs = OBJECTS.map((o) => ({
+        cx: 0,
+        cyd: 0,
+        R: 0,
+        cube: o.shape === 1,
+        ga0: o.ga0,
+        ga1: o.ga1,
+        gbMix: o.gbMix,
+      }))
+
       function render(tSec: number) {
         smoothPointer()
         stepScroll()
@@ -795,18 +898,12 @@
         let seed = (tSec * 61.7) % 1
 
         // Per-frame object centers (y-down) — computed once, not per pixel.
-        const objs = OBJECTS.map((o) => {
-          const [ox, oy] = objCenter(o, tSec, W, H, liftCPU)
-          return {
-            cx: ox,
-            cyd: H - oy, // ImageData is y-down
-            R: m * o.rFrac,
-            cube: o.shape === 1,
-            ga0: o.ga0,
-            ga1: o.ga1,
-            gbMix: o.gbMix,
-          }
-        })
+        for (let o = 0; o < OBJECTS.length; o++) {
+          const [ox, oy] = objCenter(OBJECTS[o], tSec, W, H, liftCPU)
+          objs[o].cx = ox
+          objs[o].cyd = H - oy // ImageData is y-down
+          objs[o].R = m * OBJECTS[o].rFrac
+        }
 
         for (let y = 0; y < H; y++) {
           for (let x = 0; x < W; x++) {
@@ -896,7 +993,36 @@
       return { render, resize }
     }
 
-    impl = startGL() ?? startCPU()
+    /* ── GPU-acceleration notice ──
+       Revealed only while the CPU fallback is driving the scene (WebGL
+       unavailable, or the context was lost) and the hero scope is on
+       screen, so it reads as pinned to the hero + about section. */
+    const gpuWarning = document.getElementById("hero-gpu-warning")!
+    let usingCPU = false
+    let scopeVisible = true
+    function syncWarning() {
+      gpuWarning.style.display = usingCPU && scopeVisible ? "flex" : "none"
+    }
+    function useCPUBackend() {
+      usingCPU = true
+      syncWarning()
+    }
+
+    const glImpl = startGL()
+    if (glImpl) {
+      impl = glImpl
+    } else {
+      impl = startCPU()
+      useCPUBackend()
+    }
+
+    new IntersectionObserver(
+      (entries) => {
+        scopeVisible = entries[0].isIntersecting
+        syncWarning()
+      },
+      { threshold: 0 },
+    ).observe(scope)
 
     function measure() {
       pinEnd = Math.max(scope.offsetHeight - bg.offsetHeight, 1)

@@ -194,7 +194,6 @@ const technicalSkills = [
             const span = document.createElement("span")
             span.textContent = piece
             span.style.display = "inline-block"
-            span.style.willChange = "transform, opacity"
             span.style.transition = `transform ${TRANSITION_MS}ms ${TRANSITION_EASE}, opacity ${TRANSITION_MS}ms ${TRANSITION_EASE}`
             span.style.opacity = String(FROM_OPACITY)
             span.style.transform = `translateY(${FROM_Y}px)`
@@ -286,7 +285,6 @@ const technicalSkills = [
         node.style.opacity = String(FROM_OPACITY)
         node.style.transform = `translateY(${fromY}px)`
         node.style.transition = `opacity ${REVEAL_MS}ms ${REVEAL_EASE} ${delay}s, transform ${REVEAL_MS}ms ${REVEAL_EASE} ${delay}s`
-        node.style.willChange = "transform, opacity"
       }
 
       for (const col of cols) {
