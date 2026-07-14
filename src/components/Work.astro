@@ -61,7 +61,7 @@ const STICK_STEP = 26;
     <div class="max-w-[1524px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)] relative z-[2]">
       <!-- Porcelain fade over the header: masks the dial's top, then clears
            as the header scrolls away before the pile goes sticky -->
-      <span class="wc3-headfade absolute inset-y-0 hidden lg:block" aria-hidden="true"></span>
+      <span class="wc3-headfade absolute inset-y-0 block" aria-hidden="true"></span>
       <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14 relative">
         <div class="flex items-center gap-4">
           <span class="wc3-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
@@ -89,14 +89,14 @@ const STICK_STEP = 26;
       </p>
     </div>
 
-    <!-- Desktop: the sticky pile over the chronometer wall. data-zone is the
-         wall's positioning + sticky context, so it pins with the pile — never
-         earlier — while the dial still rises up behind the header above it -->
+    <!-- The sticky pile over the chronometer wall — every breakpoint. data-zone
+         is the wall's positioning + sticky context, so it pins with the pile —
+         never earlier — while the dial still rises up behind the header above it -->
     <div class="relative" data-zone>
       <!-- Chronometer wall: no top clip, so the dial reads as a whole disk
            rising behind the header instead of a hard cut line. Its off-screen
            right edge is contained by the global body { overflow-x: hidden } -->
-      <div class="absolute inset-0 hidden lg:block pointer-events-none z-0" aria-hidden="true">
+      <div class="absolute inset-0 block pointer-events-none z-0" aria-hidden="true">
       <div class="sticky top-0 h-screen">
         <span class="wc3-wash wc3-wash-0 absolute inset-0"></span>
         <span class="wc3-wash wc3-wash-1 absolute inset-0"></span>
@@ -146,23 +146,20 @@ const STICK_STEP = 26;
       </div>
     </div>
 
-    <div class="hidden lg:block max-w-[1360px] mx-auto px-16 xl:px-20 pb-24 relative z-[1]" data-pile>
+    <div class="block max-w-[1360px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 pb-24 relative z-[1]" data-pile>
       {
         projects.map((project, i) => (
           <div class="wc3-layer" data-layer={i}>
             <article
-              class="wc3-card relative rounded-[32px] p-8 xl:p-10 overflow-hidden"
+              class="wc3-card relative rounded-[24px] lg:rounded-[32px] p-5 sm:p-7 lg:p-8 xl:p-10 overflow-hidden"
               data-card={i}
               style={`--en: var(--e${i}); --eng: var(--g${i}); top: ${STICK_TOP + i * STICK_STEP}px;`}
             >
-              <div class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 items-center">
-                <div class={i % 2 === 1 ? "order-last" : ""}>
-                  <span class="wc3-num font-display font-normal leading-[0.85] tracking-[-0.03em] block text-[clamp(4rem,5.5vw,5.5rem)]">
-                    {project.index}
-                  </span>
-                  <span class="wc3-tick block mt-4" aria-hidden="true" />
+              <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-7 lg:gap-14 items-center">
+                <div class={`order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`}>
+                  <span class="wc3-tick block" aria-hidden="true" />
                   <div class="flex items-center gap-3 flex-wrap mt-5">
-                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(2rem,2.6vw,2.75rem)]">
+                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)] lg:text-[clamp(2rem,2.6vw,2.75rem)]">
                       {project.title}
                     </h3>
                     {project.featured && (
@@ -227,12 +224,12 @@ const STICK_STEP = 26;
                   </div>
                 </div>
 
-                <div class={`wc3-well wc3-wp-${i} rounded-[22px] p-4`}>
+                <div class={`wc3-well wc3-wp-${i} order-1 ${i % 2 === 1 ? "lg:order-1" : "lg:order-2"} rounded-[16px] lg:rounded-[22px] p-2.5 lg:p-4`}>
                   <img
                     src={project.image}
                     srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
                     alt={project.alt}
-                    class="w-full aspect-[16/9] object-cover object-top rounded-[12px]"
+                    class="w-full aspect-[16/9] object-cover object-top rounded-[10px] lg:rounded-[12px]"
                     loading="lazy"
                     decoding="async"
                   />
@@ -246,98 +243,6 @@ const STICK_STEP = 26;
       }
     </div>
   </div>
-  </div>
-
-  <!-- Mobile: molded cards, static enamel inlays, no pile -->
-  <div class="lg:hidden max-w-[1524px] mx-auto px-6 pb-[clamp(96px,14vh,180px)] pt-8">
-    <div class="flex flex-col gap-10">
-      {
-        projects.map((project, i) => (
-          <article
-            class="wc3-card relative rounded-[24px] p-5 overflow-hidden"
-            style={`--en: var(--e${i}); --eng: var(--g${i});`}
-          >
-            <div class={`wc3-well wc3-wp-${i} rounded-[16px] p-2.5`}>
-              <img
-                src={project.image}
-                srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                alt={project.alt}
-                class="w-full aspect-[16/10] object-cover object-top rounded-[10px]"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-            <div class="p-2 pt-6">
-              <div class="flex items-center gap-3 flex-wrap">
-                <span class="wc3-num font-display font-normal leading-none tracking-[-0.03em] text-[2.25rem]">
-                  {project.index}
-                </span>
-                <h3 class="font-display font-normal leading-[1] tracking-[-0.018em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)]">
-                  {project.title}
-                </h3>
-                {project.featured && (
-                  <span class="wc3-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/70 rounded-full px-3 py-2 inline-flex items-center gap-1.5">
-                    <i class="wc3-feat-dot" aria-hidden="true" />
-                    featured
-                  </span>
-                )}
-              </div>
-              <span class="wc3-tick block mt-4" aria-hidden="true" />
-              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
-                {project.tech}
-              </p>
-              <p class="font-display text-[15px] leading-[1.6] text-ink/60 mt-5">{project.description}</p>
-
-              <div class="flex flex-wrap gap-3 mt-6">
-                {project.stack.map((item) => (
-                  <span class="wc3-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
-                    {item}
-                  </span>
-                ))}
-              </div>
-
-              <div class="flex items-center gap-4 mt-8">
-                <a
-                  href={project.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="wc3-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
-                >
-                  Visit site
-                </a>
-                {project.githubUrl && (
-                  <a
-                    href={project.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
-                  >
-                    GitHub
-                  </a>
-                )}
-                <a
-                  href={project.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Open ${project.title} in a new tab`}
-                  class="wc3-btn wc3-btn-go w-11 h-11 rounded-[14px] inline-flex items-center justify-center ml-auto"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path
-                      d="M2 12 12 2M4.5 2H12v7.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </article>
-        ))
-      }
-    </div>
   </div>
 
   <p
@@ -388,16 +293,13 @@ const STICK_STEP = 26;
     box-shadow:
       16px 16px 40px var(--por-dark),
       -16px -16px 40px var(--por-light);
-    transform: scale(calc(1 - var(--cover, 0) * 0.04));
+    /* --cover is the incoming card's proximity field (0 far → 1 seated),
+       smoothstepped in the script. As the next card nears, the seated one
+       is repelled: lifted up and shrunk from its top edge so a gap opens
+       between them instead of a flush stack. */
+    transform: translateY(calc(var(--cover, 0) * -64px)) scale(calc(1 - var(--cover, 0) * 0.05));
     transform-origin: 50% 0;
-  }
-
-  @media (max-width: 1023px) {
-    .wc3-card {
-      position: relative;
-      top: auto !important;
-      transform: none;
-    }
+    will-change: transform;
   }
 
   .wc3-veil {
@@ -636,12 +538,28 @@ const STICK_STEP = 26;
     text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
   }
 
-  /* Engraved numeral — pressed into the porcelain, no candy */
-  .wc3-num {
-    color: transparent;
-    background: linear-gradient(145deg, rgba(151, 163, 180, 0.62), rgba(255, 255, 255, 0.95));
-    -webkit-background-clip: text;
-    background-clip: text;
+  /* ── Phone tuning: same instruments, sized to sit in the narrow gutters
+     that frame the inset cards rather than in the desktop margins ── */
+  @media (max-width: 1023px) {
+    .wc3-dial {
+      --dial: 92vmin;
+    }
+
+    .wc3-plumb {
+      top: 14vh;
+      height: 64vh;
+    }
+
+    .wc3-gauges {
+      right: 14px;
+      bottom: 18px;
+      gap: 7px;
+    }
+
+    .wc3-groove {
+      width: 7px;
+      height: 80px;
+    }
   }
 
   /* The one place the build's enamel touches the card body */
@@ -758,7 +676,7 @@ const STICK_STEP = 26;
         ticking = false;
         if (!zone) return;
         const rect = zone.getBoundingClientRect();
-        // Hidden variant panel (display: none) or mobile layout — nothing to drive
+        // Hidden variant panel (display: none) — no pile height, nothing to drive
         if (!rect.height) return;
 
         // Total pile progress + per-build blend weights for the instruments
@@ -774,11 +692,15 @@ const STICK_STEP = 26;
         }
 
         // i's cover is driven by how far card i+1 has climbed toward its
-        // own sticky seat; the last card is never covered
+        // own sticky seat; the last card is never covered. The raw ramp is
+        // smoothstepped so the outgoing card eases out — slow start as the
+        // next one approaches, accelerating through the middle, settling at
+        // the seat — a magnetic repel rather than a hard bump.
         for (let i = 0; i < cards.length - 1; i++) {
           const next = cards[i + 1].getBoundingClientRect();
           const seat = STICK_TOP + (i + 1) * STICK_STEP;
-          const cover = Math.min(1, Math.max(0, 1 - (next.top - seat) / (window.innerHeight - seat)));
+          const t = Math.min(1, Math.max(0, 1 - (next.top - seat) / (window.innerHeight - seat)));
+          const cover = t * t * (3 - 2 * t);
           cards[i].style.setProperty("--cover", cover.toFixed(3));
         }
       };

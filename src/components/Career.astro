@@ -146,8 +146,10 @@ const initialIndex = stepMap[0]
       </div>
 
       <div class="grid lg:grid-cols-[360px_1fr] gap-8 lg:gap-14 items-start">
-        <!-- Rail: time spine + employer tabs -->
-        <div class="lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
+        <!-- Rail: time spine + employer tabs.
+             min-w-0 lets this grid column shrink to the viewport so the tab
+             strip below scrolls horizontally instead of forcing an overflow. -->
+        <div class="min-w-0 lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
           <!-- The spine — V3's chart, rotated vertical -->
           <div class="v1-spine relative hidden lg:block">
             <div class="absolute inset-x-0 top-2 bottom-2">
@@ -233,9 +235,10 @@ const initialIndex = stepMap[0]
           </div>
         </div>
 
-        <!-- The dossier panel -->
+        <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
+             of expanding past the viewport on small screens. -->
         <div
-          class="relative rounded-[20px] border border-[#232323] bg-[#0f0f0f] lg:min-h-[460px] overflow-hidden"
+          class="relative min-w-0 rounded-[20px] border border-[#232323] bg-[#0f0f0f] lg:min-h-[460px] overflow-hidden"
         >
           {
             entries.map((entry, i) => (
@@ -539,6 +542,9 @@ const initialIndex = stepMap[0]
       const bars = section.querySelectorAll<HTMLButtonElement>(".v1-bar")
       const panels = section.querySelectorAll<HTMLElement>("[data-panel]")
       const pin = section.querySelector<HTMLElement>(".v1-pin")
+      // Mobile: the tab chips live in a horizontal scroller; the selected chip
+      // is kept centered as selection moves (see select()).
+      const tablist = section.querySelector<HTMLElement>("[role='tablist']")
 
       const stepPct: number[] = JSON.parse(section.dataset.stepPct || "[]")
       const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]")
@@ -555,6 +561,24 @@ const initialIndex = stepMap[0]
         tabs.forEach((t) =>
           t.setAttribute("aria-selected", String(t.dataset.select === id)),
         )
+        // Bring the newly selected chip into view within the mobile strip.
+        // The guard scopes this to when the strip actually overflows (mobile);
+        // on desktop the tabs stack vertically and this is a no-op.
+        if (tablist && tablist.scrollWidth > tablist.clientWidth) {
+          const active = tablist.querySelector<HTMLElement>(
+            `[data-select="${id}"]`,
+          )
+          if (active) {
+            const cRect = tablist.getBoundingClientRect()
+            const aRect = active.getBoundingClientRect()
+            const delta =
+              aRect.left - cRect.left - (tablist.clientWidth - aRect.width) / 2
+            tablist.scrollTo({
+              left: tablist.scrollLeft + delta,
+              behavior: "smooth",
+            })
+          }
+        }
         bars.forEach((b) =>
           b.setAttribute("data-on", String(b.dataset.select === id)),
         )

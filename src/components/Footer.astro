@@ -229,6 +229,13 @@ const connect = [
 </footer>
 
 <style>
+  /* The glass canvas is counter-translated on scroll to sit still on screen
+     (see script). Promote it to its own compositor layer so that transform is
+     GPU-only — no per-frame re-raster of the canvas as the footer scrolls in. */
+  .footer-canvas-wrap {
+    will-change: transform;
+  }
+
   /* Header echo in the cap bar: hidden until the page is scrolled to its very
      bottom, then it rises 6px and fades in; leaving the bottom reverses it. */
   .footer-header {
@@ -355,11 +362,17 @@ const connect = [
       },
     ]
 
-    /* ── Scroll parallax ──
-       The objects climb gently as the footer scrolls into view; zero while
-       it's still below the fold. */
+    /* ── Pinned-glass scroll parallax ──
+       Mirrors the hero, whose glass is `position: sticky` over a two-screen
+       scope so it holds still while content scrolls over it. The footer is the
+       last, one-screen element on the page, so there's no sticky runway — but
+       its own rise from the bottom of the page IS the reveal. We counter-
+       translate the canvas by the footer's viewport offset so the glass appears
+       fixed on screen while the z-10 content scrolls up over it. That transform
+       is compositor-only (no layout/paint), and the object climb stays eased in
+       the render loop, so it glides over the pinned glass exactly like the hero. */
     const SCROLL_SENSITIVITY = 0.12
-    let footerTop = 0
+    let footerTop = 0 // footer's absolute document offset (px)
     function measure() {
       footerTop = footer.getBoundingClientRect().top + window.scrollY
     }
@@ -368,9 +381,15 @@ const connect = [
     let scrollQueued = false
     function onScrollFrame() {
       scrollQueued = false
+      // fT: the footer's top edge in viewport space — positive while it's still
+      // rising in from the bottom, 0 once its top reaches the viewport top.
+      const fT = footerTop - window.scrollY
+      // Pin the glass: shift the canvas up by fT so it stays fixed on screen
+      // while the footer window (overflow-clipped) reveals it from the bottom up.
+      wrap.style.transform = `translate3d(0, ${-Math.max(0, fT)}px, 0)`
+      // Objects climb with how far the footer has entered the viewport.
       scene?.setScrollTarget(
-        Math.max(0, window.scrollY + window.innerHeight - footerTop) *
-          SCROLL_SENSITIVITY,
+        Math.max(0, window.innerHeight - fT) * SCROLL_SENSITIVITY,
       )
     }
     window.addEventListener(
