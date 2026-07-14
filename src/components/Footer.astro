@@ -1,23 +1,492 @@
 ---
-const year = new Date().getFullYear();
+const year = new Date().getFullYear()
+
+const navigate = [
+  { label: "About", href: "#about" },
+  { label: "Career", href: "#career" },
+  { label: "Work", href: "#work" },
+  { label: "Contact", href: "#contact" },
+]
+
+const connect = [
+  {
+    label: "GitHub",
+    href: "https://github.com/DominicClerici",
+    external: true,
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/dominic-clerici/",
+    external: true,
+  },
+  {
+    label: "Email",
+    href: "mailto:contact@dominicclerici.com",
+    external: false,
+  },
+  {
+    label: "Resume",
+    href: "/DominicClerici_CV.pdf",
+    external: true,
+  },
+]
 ---
 
-<footer class="w-full bg-background border-t border-primary/10">
-  <div class="flex flex-col items-center gap-4 text-center md:flex-row md:justify-between md:items-end md:gap-0 md:text-left max-w-[1920px] mx-auto py-20 px-3 sm:px-4 md:px-8">
-    <div class="font-label text-sm uppercase tracking-[0.2em] text-secondary/60 group cursor-default leading-relaxed flex flex-col items-center md:items-start">
-      <span class="flex items-center gap-2">
-        Made with
-        <svg
-          class="w-4 h-4 text-primary group-hover:text-red-500 transition-colors duration-150"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          aria-hidden="true"
-        ><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      </span>
-      <span>by Dominic Clerici</span>
+<footer
+  id="site-footer"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] bg-bone overflow-hidden"
+>
+  <!-- The glass scene spans the whole footer, under the cap bar, so the bar's
+       rounded corners reveal it. Lazily initialized as the footer approaches
+       the viewport (see script). -->
+  <div class="footer-canvas-wrap absolute inset-0" aria-hidden="true">
+    <canvas id="footer-canvas" class="absolute inset-0 w-full h-full"></canvas>
+  </div>
+
+  <div class="relative z-10 h-full flex flex-col">
+    <!-- Cap bar: the previous (contact) section's color, fully-rounded bottom
+         corners. Mirrors the page header's layout (same h-20/md:py-7/px) so the
+         bar height tracks the header exactly. The header echo inside fades in
+         only once the page is scrolled to its very bottom (see script). It's
+         decorative (aria-hidden + tabindex=-1) — the real header and the footer
+         nav below already expose these links to assistive tech. -->
+    <div
+      class="shrink-0 flex items-center bg-[#0a0a0a] rounded-b-full h-20 md:h-auto md:py-7 px-6 lg:px-12"
+      aria-hidden="true"
+    >
+      <div
+        class="footer-header hidden md:flex w-full justify-between items-center"
+      >
+        <a
+          href="https://dev.dominicclerici.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          tabindex="-1"
+          data-terminal="footer"
+          class="inline-flex font-mono text-[14px] text-bone py-1.5"
+        >
+          <span data-terminal-text>&gt;</span><span data-terminal-cursor
+            >_</span
+          >
+        </a>
+
+        <nav class="flex gap-7 items-center">
+          <a
+            href="https://www.linkedin.com/in/dominic-clerici/"
+            target="_blank"
+            rel="noopener noreferrer"
+            tabindex="-1"
+            class="font-mono text-[13px] tracking-[-0.02em] uppercase text-bone/70 hover:text-bone transition-colors duration-150"
+          >
+            LinkedIn
+          </a>
+          <a
+            href="mailto:contact@dominicclerici.com"
+            tabindex="-1"
+            class="font-mono text-[13px] tracking-[-0.02em] uppercase text-bone/70 hover:text-bone transition-colors duration-150"
+          >
+            Email
+          </a>
+          <a
+            href="/DominicClerici_CV.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            tabindex="-1"
+            class="font-mono text-[13px] tracking-[-0.02em] uppercase text-bone border border-bone/35 rounded-xl px-4 py-1.5 hover:bg-bio-lime hover:text-ink hover:border-bio-lime transition-colors duration-150"
+          >
+            Resume
+          </a>
+        </nav>
+      </div>
     </div>
-    <p class="font-label text-[10px] uppercase tracking-widest text-outline md:text-secondary/60">
-      &copy; {year} — Dominic Clerici
-    </p>
+
+    <div
+      class="flex-1 min-h-0 flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-16 px-6 lg:px-12 pt-10 md:pt-16"
+    >
+      <div class="max-w-[560px]">
+        <p
+          class="font-display font-normal text-ink leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
+        >
+          I design and build software that&rsquo;s fast, useful, and worth
+          looking at.
+        </p>
+        <div class="flex items-center gap-3 mt-8">
+          <a
+            href="#contact"
+            class="font-mono text-[14px] tracking-[-0.008em] uppercase text-bone bg-ink rounded-lg h-10 px-5 inline-flex items-center hover:bg-ink/85 transition-colors duration-200"
+          >
+            Get in touch
+          </a>
+          <a
+            href="#contact"
+            aria-label="Scroll to the contact form"
+            class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-x-0.5 transition-transform duration-200"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M1 7h11M6.5 2 12 7l-5.5 5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <div
+        class="flex items-start justify-between lg:justify-end gap-8 lg:gap-14"
+      >
+        <nav class="flex gap-8 lg:gap-14" aria-label="Footer navigation">
+          <div class="border-l border-ink/15 pl-5 lg:pl-6 lg:min-w-[150px]">
+            <p
+              class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/50"
+            >
+              Navigate
+            </p>
+            <ul class="mt-5 space-y-2">
+              {
+                navigate.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      class="font-display text-[17px] leading-snug tracking-[-0.01em] text-ink/80 hover:text-ink transition-colors duration-150"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+          <div class="border-l border-ink/15 pl-5 lg:pl-6 lg:min-w-[150px]">
+            <p
+              class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/50"
+            >
+              Connect
+            </p>
+            <ul class="mt-5 space-y-2">
+              {
+                connect.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      class="font-display text-[17px] leading-snug tracking-[-0.01em] text-ink/80 hover:text-ink transition-colors duration-150"
+                      {...(link.external
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </nav>
+        <a
+          href="#hero"
+          aria-label="Back to top"
+          class="hidden md:inline-flex w-10 h-10 rounded-lg border border-ink/35 text-ink items-center justify-center hover:border-ink hover:bg-white/25 transition-colors duration-200"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M7 13V2M2 6.5 7 1.5l5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="shrink-0 px-6 lg:px-12 pb-5 md:pb-6">
+      <p
+        class="footer-name inline-block font-display font-normal text-ink leading-[0.95] tracking-[-0.03em] whitespace-nowrap"
+      >
+        Dominic Clerici
+      </p>
+      <p
+        class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/55 mt-4"
+      >
+        &copy; {year} Dominic Clerici. All rights reserved.
+      </p>
+    </div>
   </div>
 </footer>
+
+<style>
+  /* Header echo in the cap bar: hidden until the page is scrolled to its very
+     bottom, then it rises 6px and fades in; leaving the bottom reverses it. */
+  .footer-header {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.45s ease,
+      transform 0.45s ease;
+  }
+  .footer-header.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .footer-header {
+      transition-property: opacity;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  import {
+    createGlassScene,
+    SPHERE_R_FRAC,
+    type GlassObject,
+  } from "../scripts/glass-scene"
+  import {
+    makeState,
+    typeText,
+    cancelAnim,
+    stopBlink,
+  } from "../scripts/terminal"
+
+  {
+    const footer = document.getElementById("site-footer")!
+    const wrap = footer.querySelector<HTMLElement>(".footer-canvas-wrap")!
+    const canvas = document.getElementById("footer-canvas") as HTMLCanvasElement
+    const name = footer.querySelector<HTMLElement>(".footer-name")!
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+    const forceCPU = new URLSearchParams(location.search).has("cpu")
+
+    /* ── Giant name ──
+       Sized to span the content width exactly, reference-style: measure at a
+       fixed size, then scale so the text's edges meet the padding. */
+    function fitName() {
+      name.style.fontSize = "100px"
+      const parent = name.parentElement!
+      const cs = getComputedStyle(parent)
+      const width =
+        parent.clientWidth -
+        parseFloat(cs.paddingLeft) -
+        parseFloat(cs.paddingRight)
+      name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`
+    }
+
+    /* ── Scene config ──
+       The same objects and material as the hero, rearranged for the footer:
+       the teal sphere sits low behind the giant name, the cube mid-left by
+       the statement, the purple sphere up by the nav columns. Positions are
+       fractions of the footer (x from left, y-up from bottom). */
+    const OBJECTS: GlassObject[] = [
+      {
+        // purple sphere — back, smallest, upper-right
+        shape: 0,
+        mat: 0,
+        rFrac: SPHERE_R_FRAC * 0.5,
+        cx: 0.9,
+        cy: 0.78,
+        edgeR: 0,
+        ga0: [0.541, 0.329, 0.941],
+        ga1: [0.725, 0.549, 1.0],
+        gb0: [0.369, 0.173, 0.753],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.04,
+        driftYScale: 0.7,
+        spdX: 0.17,
+        spdY: 0.11,
+        phX: 3.4,
+        phY: 0.9,
+      },
+      {
+        // blue cube — middle, mid-left
+        shape: 1,
+        mat: 0,
+        rFrac: SPHERE_R_FRAC * 0.65,
+        cx: 0.06,
+        cy: 0.52,
+        edgeR: 0,
+        ga0: [0.133, 0.651, 0.949],
+        ga1: [0.525, 0.847, 1.0],
+        gb0: [0.055, 0.388, 0.784],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.038,
+        driftYScale: 0.7,
+        spdX: 0.19,
+        spdY: 0.13,
+        phX: 1.6,
+        phY: 5.1,
+      },
+      {
+        // teal sphere — front, largest, low behind the name
+        shape: 0,
+        mat: 1,
+        rFrac: SPHERE_R_FRAC * 1.1,
+        cx: 0.62,
+        cy: 0.14,
+        edgeR: 0,
+        ga0: [0.126, 0.997, 0.2],
+        ga1: [0.233, 0.979, 0.778],
+        gb0: [0.0, 0.824, 0.533],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.05,
+        driftYScale: 0.6,
+        spdX: 0.21,
+        spdY: 0.13,
+        phX: 0.8,
+        phY: 2.6,
+      },
+    ]
+
+    /* ── Scroll parallax ──
+       The objects climb gently as the footer scrolls into view; zero while
+       it's still below the fold. */
+    const SCROLL_SENSITIVITY = 0.12
+    let footerTop = 0
+    function measure() {
+      footerTop = footer.getBoundingClientRect().top + window.scrollY
+    }
+
+    let scene: ReturnType<typeof createGlassScene> | null = null
+    let scrollQueued = false
+    function onScrollFrame() {
+      scrollQueued = false
+      scene?.setScrollTarget(
+        Math.max(0, window.scrollY + window.innerHeight - footerTop) *
+          SCROLL_SENSITIVITY,
+      )
+    }
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!scrollQueued) {
+          scrollQueued = true
+          requestAnimationFrame(onScrollFrame)
+        }
+      },
+      { passive: true },
+    )
+
+    function ensureScene() {
+      if (scene) return
+      scene = createGlassScene({ canvas, wrap, objects: OBJECTS, forceCPU })
+      measure()
+      scene.resize()
+      onScrollFrame()
+    }
+
+    // Create the scene ahead of arrival so the first frame is already painted
+    // when the footer scrolls in; the render loop only runs while it's
+    // actually on screen (start() is a no-op under reduced motion — resize()
+    // painted the static frame).
+    new IntersectionObserver(
+      (entries, io) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          ensureScene()
+          io.disconnect()
+        }
+      },
+      { rootMargin: "600px 0px" },
+    ).observe(footer)
+
+    let footerVisible = false
+    new IntersectionObserver(
+      (entries) => {
+        footerVisible = entries[0].isIntersecting
+        if (footerVisible) {
+          ensureScene()
+          scene!.start()
+        } else {
+          scene?.stop()
+        }
+      },
+      { threshold: 0 },
+    ).observe(footer)
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) scene?.stop()
+      else if (footerVisible) scene?.start()
+    })
+
+    /* ── Header echo ──
+       The cap-bar header echo fades in only while the page is scrolled to its
+       very bottom (within 6px), reversing on the way out. Each fresh entry
+       replays the terminal typing from scratch once the rise/fade settles;
+       each exit cancels the typing and resets the prompt. */
+    const headerEcho = footer.querySelector<HTMLElement>(".footer-header")!
+    const echoState = makeState(
+      footer.querySelector<HTMLElement>('[data-terminal="footer"]')!,
+    )
+    let echoVisible = false
+
+    function setEchoVisible(visible: boolean) {
+      if (visible === echoVisible) return
+      echoVisible = visible
+      if (visible) {
+        headerEcho.classList.add("is-visible")
+      } else {
+        headerEcho.classList.remove("is-visible")
+        cancelAnim(echoState)
+        stopBlink(echoState)
+        echoState.textEl.textContent = ">"
+      }
+    }
+
+    headerEcho.addEventListener("transitionend", (e) => {
+      if (e.propertyName === "opacity" && echoVisible) typeText(echoState)
+    })
+
+    let echoQueued = false
+    function onEchoScroll() {
+      echoQueued = false
+      const distanceFromBottom =
+        document.documentElement.scrollHeight -
+        (window.scrollY + window.innerHeight)
+      setEchoVisible(distanceFromBottom <= 6)
+    }
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!echoQueued) {
+          echoQueued = true
+          requestAnimationFrame(onEchoScroll)
+        }
+      },
+      { passive: true },
+    )
+    onEchoScroll()
+
+    let resizeTimer: number | undefined
+    new ResizeObserver(() => {
+      fitName()
+      clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(() => {
+        measure()
+        scene?.resize()
+        onScrollFrame()
+        onEchoScroll()
+      }, 120)
+    }).observe(footer)
+
+    fitName()
+    // Refit once the display face arrives — metrics differ from the fallback.
+    document.fonts?.ready.then(fitName)
+  }
+</script>
