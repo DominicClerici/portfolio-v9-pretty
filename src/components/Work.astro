@@ -297,7 +297,7 @@ const STICK_STEP = 26;
        smoothstepped in the script. As the next card nears, the seated one
        is repelled: lifted up and shrunk from its top edge so a gap opens
        between them instead of a flush stack. */
-    transform: translateY(calc(var(--cover, 0) * -64px)) scale(calc(1 - var(--cover, 0) * 0.05));
+    transform: translateY(calc(var(--cover, 0) * -80px)) scale(calc(1 - var(--cover, 0) * 0.055));
     transform-origin: 50% 0;
     will-change: transform;
   }
@@ -691,16 +691,22 @@ const STICK_STEP = 26;
           }
         }
 
-        // i's cover is driven by how far card i+1 has climbed toward its
-        // own sticky seat; the last card is never covered. The raw ramp is
-        // smoothstepped so the outgoing card eases out — slow start as the
-        // next one approaches, accelerating through the middle, settling at
-        // the seat — a magnetic repel rather than a hard bump.
+        // i's cover is the repulsion field of the incoming card i+1; the
+        // last card is never covered. The field is wide and offset: the
+        // seated card begins drifting away as the next card enters from the
+        // bottom (d ≈ one viewport) and finishes clearing well before
+        // contact (d ≈ 0.2·viewport), so the seat is already vacated when
+        // the incoming settles — a repel that never resolves into a bump.
+        const engage = window.innerHeight;
+        const finish = window.innerHeight * 0.2;
         for (let i = 0; i < cards.length - 1; i++) {
           const next = cards[i + 1].getBoundingClientRect();
           const seat = STICK_TOP + (i + 1) * STICK_STEP;
-          const t = Math.min(1, Math.max(0, 1 - (next.top - seat) / (window.innerHeight - seat)));
-          const cover = t * t * (3 - 2 * t);
+          const d = next.top - seat; // incoming card's distance from its seat
+          const t = Math.min(1, Math.max(0, (engage - d) / (engage - finish)));
+          // smootherstep (6t⁵−15t⁴+10t³): zero velocity AND acceleration at
+          // both ends, so the speed-up and slow-down are as gradual as possible
+          const cover = t * t * t * (t * (t * 6 - 15) + 10);
           cards[i].style.setProperty("--cover", cover.toFixed(3));
         }
       };
