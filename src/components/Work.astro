@@ -259,6 +259,11 @@ const STICK_STEP = 26;
      sane without JS. Cards carry their own --en (solid) / --eng (gradient)
      enamel via inline style. */
   .wc3 {
+    /* clip (not hidden) — hidden would force overflow-y to auto and turn
+       this section into a scroll container, breaking the sticky dial wall
+       and sticky cards inside it. clip never establishes a scrollport. */
+    overflow-x: clip;
+    overflow-y: visible;
     --por: #eaedf1;
     --por-dark: rgba(151, 163, 180, 0.5);
     --por-darker: rgba(151, 163, 180, 0.68);
