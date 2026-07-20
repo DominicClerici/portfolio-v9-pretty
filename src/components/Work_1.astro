@@ -7,10 +7,10 @@
 // page coming off the press: the arch rises, its halo ring settles, and the
 // image eases out of overscan. Warm paper, generous margins, no rules.
 //
-// The arch is also a door. Clicking it (or "Learn more") walks through: a
-// portal expands from the arch to fill the viewport, then dissolves into the
-// inside spread — the full story, set on the same paper. Gallery images and
-// story copy below are placeholders to be swapped for real content later.
+// The arch is also a door. Clicking it (or "Learn more") walks through: the
+// arch becomes a clip mask that expands to fill the viewport, revealing the
+// inside spread already in place beneath it — nothing behind the mask moves.
+// Gallery images and story copy are placeholders to swap for real content.
 const projects = [
   {
     index: "01",
@@ -222,6 +222,8 @@ const projects = [
       <div
         class={`we1-spread ${i % 2 === 1 ? "we1-spread-flip" : ""}`}
         data-spread={i}
+        data-lenis-prevent
+        tabindex="-1"
         role="dialog"
         aria-modal="true"
         aria-labelledby={`we1-spread-title-${i}`}
@@ -298,14 +300,14 @@ const projects = [
 
           <div class="we1-gallery flex flex-col">
             {project.gallery.map((g, k) => (
-              <figure class={`we1-gfig m-0 ${k === 0 ? "we1-gfig-arch" : ""}`} data-rise style={`--ri: ${2 + k};`}>
+              <figure class={`we1-gfig m-0 ${k === 0 ? "we1-gfig-lead" : ""}`} data-rise style={`--ri: ${2 + k};`}>
                 <div class="we1-gframe relative overflow-hidden">
                   <img
                     src={g.src}
                     srcset={`${g.src} 1x, ${g.src.replace(".webp", "-2x.webp")} 2x`}
                     alt={g.alt}
-                    class="absolute inset-0 w-full h-full object-cover object-top"
-                    loading="lazy"
+                    class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
+                    loading="eager"
                     decoding="async"
                   />
                 </div>
@@ -327,7 +329,9 @@ const projects = [
   }
 
   <div class="we1-portal" data-portal aria-hidden="true">
-    <img alt="" />
+    <div class="we1-portal-frame">
+      <img alt="" />
+    </div>
   </div>
 </section>
 
@@ -534,36 +538,41 @@ const projects = [
     background: var(--acc);
   }
 
-  /* ── The portal: the door itself, mid walk-through ── */
+  /* ── The portal: an expanding clip mask over the (stationary) spread ── */
+  /* Full-viewport layer painted like the spread (paper + wash) with the lead
+     image frozen at its final column position; only the clip window moves. */
   .we1-portal {
     display: none;
     position: fixed;
-    left: var(--px, 0px);
-    top: var(--py, 0px);
-    width: var(--pw, 100px);
-    height: var(--ph, 100px);
+    inset: 0;
     z-index: 45;
-    overflow: hidden;
-    border-radius: 999px 999px 26px 26px;
-    background: #faf8f2;
+    background:
+      radial-gradient(44% 36% at var(--wx, 78%) 6%, var(--pwash, transparent), transparent 70%),
+      #faf8f2;
+    clip-path: inset(var(--ct, 0px) var(--cr, 0px) var(--cb, 0px) var(--cl, 0px) round 999px 999px 26px 26px);
     transition:
-      left 0.82s var(--door-ease),
-      top 0.82s var(--door-ease),
-      width 0.82s var(--door-ease),
-      height 0.82s var(--door-ease),
-      border-radius 0.82s var(--door-ease),
-      opacity 0.44s ease;
+      clip-path 0.82s var(--door-ease),
+      opacity 0.24s ease;
   }
 
-  .we1-portal img {
+  .we1-portal-frame {
     position: absolute;
-    inset: 0;
+    left: var(--fx, 0px);
+    top: var(--fy, 0px);
+    width: var(--fw, 100px);
+    height: var(--fh, 100px);
+    border-radius: 22px;
+    overflow: hidden;
+    background: #eef0ea;
+    box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.4);
+  }
+
+  .we1-portal-frame img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: top;
-    transform: scale(1);
-    transition: transform 0.82s var(--door-ease);
   }
 
   .we1-portal-on {
@@ -571,15 +580,7 @@ const projects = [
   }
 
   .we1-portal-full {
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-  }
-
-  .we1-portal-full img {
-    transform: scale(1.14);
+    clip-path: inset(0px 0px 0px 0px round 0px 0px 0px 0px);
   }
 
   .we1-portal-fade {
@@ -597,6 +598,10 @@ const projects = [
     background:
       radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
       #faf8f2;
+  }
+
+  .we1-spread:focus {
+    outline: none;
   }
 
   .we1-spread-flip {
@@ -654,26 +659,9 @@ const projects = [
     aspect-ratio: 4 / 3;
   }
 
-  .we1-gfig-arch {
-    max-width: 480px;
-    width: 100%;
-    margin-inline: auto;
-  }
-
-  /* The first plate is the door you came through */
-  .we1-gfig-arch .we1-gframe {
-    aspect-ratio: 0.84;
-    border-radius: 999px 999px 26px 26px;
-    position: relative;
-  }
-
-  .we1-gfig-arch .we1-gframe::after {
-    content: "";
-    position: absolute;
-    inset: 10px;
-    border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent);
-    border-radius: 999px 999px 20px 20px;
-    pointer-events: none;
+  /* The lead plate is the door you came through — shown whole, un-cropped */
+  .we1-gfig-lead .we1-gframe {
+    aspect-ratio: auto;
   }
 
   .we1-endline {
@@ -738,10 +726,6 @@ const projects = [
       padding-top: 24px;
       padding-bottom: 72px;
       gap: 56px;
-    }
-
-    .we1-gfig-arch {
-      max-width: 340px;
     }
   }
 
@@ -812,7 +796,7 @@ const projects = [
       const spreads = Array.from(section.querySelectorAll<HTMLElement>("[data-spread]"));
 
       const OPEN_MS = 820;
-      const FADE_MS = 460;
+      const SWAP_MS = 240;
 
       let openIndex = -1;
       let busy = false;
@@ -834,17 +818,35 @@ const projects = [
 
       const lock = (on: boolean) => {
         document.documentElement.style.overflow = on ? "hidden" : "";
+        // The smooth-scroll engine drives window.scrollTo itself, so it must be
+        // frozen alongside overflow (see smooth-scroll.ts hard lock)
+        (window as any).__smoothScrollLock?.(on);
       };
 
       const spreadFor = (i: number) => spreads.find((s) => s.dataset.spread === String(i));
       const archFor = (i: number) => section.querySelector<HTMLElement>(`[data-plate="${i}"] .we1-arch`);
+      const leadFrameFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-gfig-lead .we1-gframe");
 
-      const placePortal = (rect: DOMRect) => {
+      const setClipRect = (rect: DOMRect) => {
         if (!portal) return;
-        portal.style.setProperty("--px", `${rect.left}px`);
-        portal.style.setProperty("--py", `${rect.top}px`);
-        portal.style.setProperty("--pw", `${rect.width}px`);
-        portal.style.setProperty("--ph", `${rect.height}px`);
+        portal.style.setProperty("--ct", `${rect.top}px`);
+        portal.style.setProperty("--cl", `${rect.left}px`);
+        portal.style.setProperty("--cr", `${window.innerWidth - rect.right}px`);
+        portal.style.setProperty("--cb", `${window.innerHeight - rect.bottom}px`);
+      };
+
+      const setFrameRect = (rect: DOMRect) => {
+        if (!portal) return;
+        portal.style.setProperty("--fx", `${rect.left}px`);
+        portal.style.setProperty("--fy", `${rect.top}px`);
+        portal.style.setProperty("--fw", `${rect.width}px`);
+        portal.style.setProperty("--fh", `${rect.height}px`);
+      };
+
+      const dressPortal = (spread: HTMLElement) => {
+        if (!portal) return;
+        portal.style.setProperty("--pwash", getComputedStyle(spread).getPropertyValue("--wash") || "transparent");
+        portal.style.setProperty("--wx", spread.classList.contains("we1-spread-flip") ? "22%" : "78%");
       };
 
       const resetPortal = () => {
@@ -866,14 +868,25 @@ const projects = [
         if (reducedMotion || !portal || !portalImg) {
           spread.hidden = false;
           spread.classList.add("is-in");
-          spread.querySelector<HTMLElement>(".we1-back")?.focus({ preventScroll: true });
+          spread.focus({ preventScroll: true });
           return;
         }
 
         busy = true;
-        const coverImg = arch.querySelector<HTMLImageElement>("img");
-        portalImg.src = coverImg?.currentSrc || coverImg?.src || "";
-        placePortal(arch.getBoundingClientRect());
+
+        // Measure the lead image's landing position with the spread laid out
+        // but invisible, so the portal can freeze it in place
+        spread.style.visibility = "hidden";
+        spread.hidden = false;
+        const frameRect = leadFrameFor(spread)?.getBoundingClientRect();
+        const leadImg = spread.querySelector<HTMLImageElement>(".we1-gfig-lead img");
+        spread.hidden = true;
+        spread.style.visibility = "";
+
+        dressPortal(spread);
+        setFrameRect(frameRect ?? new DOMRect(0, 0, 0, 0));
+        setClipRect(arch.getBoundingClientRect());
+        portalImg.src = leadImg?.currentSrc || leadImg?.src || "";
         portal.classList.add("we1-portal-on");
         portal.getBoundingClientRect();
         portal.classList.add("we1-portal-full");
@@ -887,8 +900,8 @@ const projects = [
           later(() => {
             resetPortal();
             busy = false;
-            spread.querySelector<HTMLElement>(".we1-back")?.focus({ preventScroll: true });
-          }, FADE_MS);
+            spread.focus({ preventScroll: true });
+          }, SWAP_MS);
         }, OPEN_MS);
       };
 
@@ -904,7 +917,6 @@ const projects = [
             spread.classList.remove("is-in");
             spread.hidden = true;
           }
-          lock(false);
           lastTrigger?.focus({ preventScroll: true });
         };
 
@@ -914,11 +926,15 @@ const projects = [
           resetPortal();
           busy = false;
           finish();
+          lock(false);
           return;
         }
 
         busy = true;
-        placePortal(arch.getBoundingClientRect());
+        dressPortal(spread);
+        const frameRect = leadFrameFor(spread)?.getBoundingClientRect();
+        setFrameRect(frameRect ?? new DOMRect(0, 0, 0, 0));
+        setClipRect(arch.getBoundingClientRect());
         portal.classList.add("we1-portal-on", "we1-portal-full", "we1-portal-fade");
         portal.getBoundingClientRect();
         portal.classList.remove("we1-portal-fade");
@@ -928,9 +944,10 @@ const projects = [
           portal.classList.remove("we1-portal-full");
           later(() => {
             resetPortal();
+            lock(false);
             busy = false;
           }, OPEN_MS);
-        }, FADE_MS);
+        }, SWAP_MS);
       };
 
       const requestClose = () => {
