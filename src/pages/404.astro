@@ -1,0 +1,216 @@
+---
+// "The Error Field": the 404 as a lost sibling of the Quote interlude.
+// Where the Quote drifts "Hello, World!" — everyone's first program — this
+// page drifts failure in every language and era: segfaults, kernel panics,
+// guru meditations. Near the cursor they glow lime. Canvas2D only.
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title="404 — Dominic Clerici"
+  description="This page doesn't exist. It may never have."
+>
+  <main
+    class="err404 relative bg-n-950 overflow-hidden min-h-svh grid place-items-center py-[clamp(110px,15vh,190px)] px-6 md:px-12"
+  >
+    <div class="dot-grid" aria-hidden="true"></div>
+
+    <canvas class="absolute inset-0 w-full h-full" aria-hidden="true"></canvas>
+
+    <!-- Scrim so the message stays readable over the field -->
+    <div
+      class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_62%_58%_at_50%_50%,rgba(10,10,10,0.92)_0%,rgba(10,10,10,0.5)_55%,transparent_100%)]"
+      aria-hidden="true"
+    >
+    </div>
+
+    <div class="relative max-w-3xl mx-auto text-center pointer-events-none">
+      <p
+        class="font-mono text-[11px] md:text-xs uppercase tracking-[0.3em] text-white/40 mb-8 md:mb-12"
+      >
+        // a wrong turn
+      </p>
+
+      <h1
+        class="font-display text-[clamp(1.8rem,4.6vw,3.5rem)] leading-[1.22] tracking-[-0.01em] text-n-100"
+      >
+        This page doesn&rsquo;t exist. It may never have.<span
+          class="inline-block w-[0.5em] h-[0.9em] ml-2 align-baseline bg-bio-lime motion-safe:animate-caret-blink"
+          aria-hidden="true"></span>
+      </h1>
+
+      <p
+        class="mt-8 md:mt-12 font-mono text-[11px] md:text-sm uppercase tracking-[0.3em] text-bio-lime"
+      >
+        ERR 404 &middot; Not Found
+      </p>
+
+      <a
+        href="/"
+        class="pointer-events-auto mt-10 md:mt-14 font-mono text-[14px] tracking-[-0.008em] text-bone border border-bone/35 rounded-lg h-10 px-5 inline-flex items-center gap-2.5 hover:bg-bio-lime hover:text-ink hover:border-bio-lime transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M13 7H2M7.5 2 2 7l5.5 5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        Back to home
+      </a>
+    </div>
+
+    <div class="absolute bottom-6 right-6 md:bottom-10 md:right-12">
+      <p class="font-mono text-[10px] md:text-xs text-white/30 tracking-wide">
+        &ldquo;It was here a minute ago&hellip;&rdquo; &mdash; Dominic Clerici
+      </p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const section = document.querySelector<HTMLElement>(".err404");
+  const canvas = section?.querySelector("canvas");
+  const ctx = canvas?.getContext("2d");
+
+  if (section && canvas && ctx) {
+    const motionOK = matchMedia("(prefers-reduced-motion: no-preference)").matches;
+
+    const LIME =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-bio-lime")
+        .trim() || "#cef79e";
+    const DUST = "#dee4d8";
+
+    // Failure in every language and era — the Quote field's mirror image.
+    // Each snippet is unique; the field renders exactly one of each.
+    const TOKENS = [
+      "HTTP/1.1 404 Not Found", // the honest one
+      "ENOENT: no such file or directory", // POSIX
+      "Segmentation fault (core dumped)", // C
+      "?SYNTAX  ERROR", // Commodore BASIC
+      "Abort, Retry, Fail?", // MS-DOS
+      "Guru Meditation #00000404.48454C50", // Amiga
+      "kernel panic - not syncing", // Linux
+      "Keyboard not found. Press F1 to continue.", // BIOS
+      "PC LOAD LETTER", // HP LaserJet
+      "lp0 on fire", // Linux printer driver
+      "*** STOP: 0x00000404", // BSOD
+      "stack overflow at line 0", // old Internet Explorer
+      "Uncaught ReferenceError: page is not defined", // JavaScript
+      "TypeError: Cannot read properties of undefined", // JavaScript
+      "java.lang.NullPointerException", // Java
+      "IndexError: list index out of range", // Python
+      "undefined method 'page' for nil:NilClass", // Ruby
+      "panic: runtime error: invalid memory address", // Go
+      "error[E0404]: cannot find page in this scope", // Rust
+      "zsh: command not found: page", // shell
+      "fatal: not a git repository", // git
+    ];
+
+    type P = { t: string; x: number; y: number; vx: number; vy: number; s: number; a: number };
+    let w = 0;
+    let h = 0;
+    let parts: P[] = [];
+    const mouse = { x: -1e4, y: -1e4 };
+
+    const init = () => {
+      const r = canvas.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      const dpr = Math.min(devicePixelRatio || 1, 1.5);
+      w = r.width;
+      h = r.height;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!parts.length) {
+        // One particle per snippet — never repeated.
+        parts = TOKENS.map((t) => ({
+          t,
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.16,
+          vy: (Math.random() - 0.5) * 0.1,
+          s: 10 + Math.random() * 6,
+          a: 0.05 + Math.random() * 0.09,
+        }));
+      }
+      return true;
+    };
+
+    const draw = (step: boolean) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.textBaseline = "middle";
+      for (const p of parts) {
+        if (step) {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < -140) p.x = w + 140;
+          if (p.x > w + 140) p.x = -140;
+          if (p.y < -20) p.y = h + 20;
+          if (p.y > h + 20) p.y = -20;
+        }
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const glow = Math.max(0, 1 - (dx * dx + dy * dy) / (190 * 190));
+        const lit = glow > 0.01;
+        ctx.font = `${p.s}px "Roboto Mono", monospace`;
+        ctx.fillStyle = lit ? LIME : DUST;
+        ctx.globalAlpha = lit ? Math.min(0.85, p.a + glow * 0.55) : p.a;
+        ctx.fillText(p.t, p.x, p.y);
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    let raf = 0;
+    let running = false;
+    const loop = () => {
+      draw(true);
+      raf = requestAnimationFrame(loop);
+    };
+    const start = () => {
+      if (!running && motionOK && w > 0) {
+        running = true;
+        raf = requestAnimationFrame(loop);
+      }
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+
+    document.addEventListener("visibilitychange", () => {
+      document.hidden ? stop() : start();
+    });
+
+    // Re-init on resize; draw a static frame regardless so reduced-motion
+    // users still get the field.
+    new ResizeObserver(() => {
+      if (init()) {
+        draw(false);
+        start();
+      }
+    }).observe(canvas);
+
+    section.addEventListener(
+      "pointermove",
+      (e) => {
+        const r = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - r.left;
+        mouse.y = e.clientY - r.top;
+      },
+      { passive: true }
+    );
+    section.addEventListener("pointerleave", () => {
+      mouse.x = -1e4;
+      mouse.y = -1e4;
+    });
+  }
+</script>
