@@ -1,0 +1,105 @@
+---
+import Work from "./Work.astro";
+import Work1 from "./Work_1.astro";
+import Work2 from "./Work_2.astro";
+import Work3 from "./Work_3.astro";
+import Work4 from "./Work_4.astro";
+
+const variants = [
+  { key: "original", label: "Original" },
+  { key: "1", label: "1" },
+  { key: "2", label: "2" },
+  { key: "3", label: "3" },
+  { key: "4", label: "4" },
+];
+---
+
+<div class="wvs relative" data-wvs>
+  <div class="wvs-panel fixed top-4 right-4 z-50 flex items-center gap-1 rounded-full p-1" data-wvs-panel>
+    {
+      variants.map((v) => (
+        <button
+          type="button"
+          class="wvs-btn font-mono text-[12px] leading-none tracking-[-0.02em] rounded-full px-3 py-2"
+          data-wvs-btn={v.key}
+        >
+          {v.label}
+        </button>
+      ))
+    }
+  </div>
+
+  <div data-wvs-pane="original">
+    <Work />
+  </div>
+  <div data-wvs-pane="1" hidden>
+    <Work1 />
+  </div>
+  <div data-wvs-pane="2" hidden>
+    <Work2 />
+  </div>
+  <div data-wvs-pane="3" hidden>
+    <Work3 />
+  </div>
+  <div data-wvs-pane="4" hidden>
+    <Work4 />
+  </div>
+</div>
+
+<style>
+  .wvs-panel {
+    background: #eaedf1;
+    box-shadow:
+      4px 4px 10px rgba(151, 163, 180, 0.5),
+      -4px -4px 10px rgba(255, 255, 255, 0.95);
+  }
+
+  .wvs-btn {
+    color: rgba(34, 47, 48, 0.55);
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .wvs-btn:hover {
+    color: rgba(34, 47, 48, 0.9);
+  }
+
+  .wvs-btn[aria-pressed="true"] {
+    background: #ffffff;
+    color: rgba(34, 47, 48, 0.9);
+    box-shadow:
+      inset 2px 2px 5px rgba(151, 163, 180, 0.4),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+  }
+</style>
+
+<script>
+  {
+    const root = document.querySelector<HTMLElement>("[data-wvs]");
+    if (root) {
+      const panel = root.querySelector<HTMLElement>("[data-wvs-panel]");
+      const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-wvs-btn]"));
+      const panes = Array.from(root.querySelectorAll<HTMLElement>("[data-wvs-pane]"));
+      const STORAGE_KEY = "work-variant";
+
+      const select = (key: string) => {
+        for (const pane of panes) {
+          pane.hidden = pane.dataset.wvsPane !== key;
+        }
+        for (const btn of buttons) {
+          btn.setAttribute("aria-pressed", String(btn.dataset.wvsBtn === key));
+        }
+        localStorage.setItem(STORAGE_KEY, key);
+        window.dispatchEvent(new Event("resize"));
+      };
+
+      panel?.addEventListener("click", (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-wvs-btn]");
+        if (btn?.dataset.wvsBtn) select(btn.dataset.wvsBtn);
+      });
+
+      select(localStorage.getItem(STORAGE_KEY) ?? "original");
+    }
+  }
+</script>
