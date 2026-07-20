@@ -5,14 +5,26 @@
 // letter's body, and the quote signs off as a P.S.
 ---
 
-<section id="contact" class="cv2 relative bg-[#0a0a0a] overflow-hidden" aria-label="Contact">
-  <div class="relative max-w-[860px] mx-auto px-6 md:px-10 py-[clamp(110px,15vh,190px)]">
+<section
+  id="contact"
+  class="cv2 relative bg-[#0a0a0a] overflow-hidden"
+  aria-label="Contact"
+>
+  <div
+    class="relative max-w-[860px] mx-auto px-6 md:px-10 py-[clamp(110px,15vh,190px)]"
+  >
     <h2 class="sr-only">Contact</h2>
 
     <!-- Notebook margin rule -->
-    <div class="cv2-margin absolute top-0 bottom-0 left-3 md:-left-8 w-px pointer-events-none" aria-hidden="true"></div>
+    <div
+      class="cv2-margin absolute top-0 bottom-0 left-3 md:-left-8 w-px pointer-events-none"
+      aria-hidden="true"
+    >
+    </div>
 
-    <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-white/45 mb-14 md:mb-20">
+    <p
+      class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-white/45 mb-14 md:mb-20"
+    >
       04&hairsp;/&hairsp;04 &middot; Write to me
     </p>
 
@@ -30,7 +42,9 @@
           data-fit="10"
           class="cv2-blank"
         />
-        <span class="text-white/35">(or don&rsquo;t say — that&rsquo;s fine)</span>
+        <span class="text-white/35"
+          >(or don&rsquo;t say — that&rsquo;s fine)</span
+        >
         and I wanted to tell you:
       </p>
 
@@ -41,8 +55,7 @@
         rows="3"
         required
         placeholder="…anything. This is the only part I actually need."
-        class="cv2-body mt-8"
-      ></textarea>
+        class="cv2-body mt-8"></textarea>
 
       <p class="cv2-line mt-8">
         <label for="cv2-email" class="sr-only">Your email (optional)</label>
@@ -64,28 +77,55 @@
             aria-label="Prove your humanity"
             class="cv2-seal group relative w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
           >
-            <svg class="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2 12 12 2M4.5 2H12v7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <svg
+              class="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              width="18"
+              height="18"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M2 12 12 2M4.5 2H12v7.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
             </svg>
           </button>
-          <span class="cv2-tip" aria-hidden="true">Already sent &mdash; one letter is plenty.</span>
+          <span class="cv2-tip" aria-hidden="true"
+            >Already sent &mdash; one letter is plenty.</span
+          >
         </span>
         <div>
-          <p class="cv2-cta-title font-mono text-[13px] tracking-[-0.02em] text-[#c9c9c9]">Prove your humanity</p>
-          <p class="cv2-cta-sub font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-1.5">
+          <p
+            class="cv2-cta-title font-mono text-[13px] tracking-[-0.02em] text-[#c9c9c9]"
+          >
+            Prove your humanity
+          </p>
+          <p
+            class="cv2-cta-sub font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-1.5"
+          >
             I promise this won&rsquo;t be your usual captcha.
           </p>
-          <button type="button" class="cv2-again hidden">Write another letter</button>
+          <button type="button" class="cv2-again hidden"
+            >Write another letter</button
+          >
         </div>
       </div>
 
-      <p class="cv2-error hidden font-mono text-[12px] tracking-[-0.02em] text-[#e0a68b] mt-6" role="alert">
+      <p
+        class="cv2-error hidden font-mono text-[12px] tracking-[-0.02em] text-[#e0a68b] mt-6"
+        role="alert"
+      >
         The letter needs a body — write anything at all.
       </p>
 
       <div id="cv2-captcha" popover class="cv2-captcha">
         <div class="cv2-cap-main">
-          <p class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-white/45">
+          <p
+            class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-white/45"
+          >
             Proof of humanity
           </p>
           <p class="cv2-cap-line mt-4">
@@ -102,7 +142,18 @@
             <span class="cv2-sig-x" aria-hidden="true">&times;</span>
             <div class="cv2-sig-line" aria-hidden="true"></div>
           </div>
-          <p class="cv2-cap-status mt-4" role="status">Sign with a scribble — any scribble.</p>
+          <div class="flex items-center justify-between gap-4 mt-4">
+            <p class="cv2-cap-status" role="status">
+              Sign with a scribble — any scribble.
+            </p>
+            <button
+              type="button"
+              class="cv2-cap-reset shrink-0"
+              aria-label="Clear the signature and start over"
+            >
+              Start over
+            </button>
+          </div>
           <button type="button" class="cv2-cap-send mt-5" disabled>
             <span class="cv2-cap-spinner" aria-hidden="true"></span>
             <span class="cv2-cap-send-label">Awaiting a signature</span>
@@ -110,7 +161,13 @@
         </div>
         <div class="cv2-cap-sent" aria-hidden="true">
           <svg width="40" height="40" viewBox="0 0 14 14" fill="none">
-            <path d="M2 12 12 2M4.5 2H12v7.5" pathLength="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+            <path
+              d="M2 12 12 2M4.5 2H12v7.5"
+              pathLength="1"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
           </svg>
           <p class="font-mono text-[12px] tracking-[-0.02em]">Off it goes.</p>
         </div>
@@ -118,15 +175,29 @@
     </form>
 
     <div class="border-t border-[#1e1e1e] mt-16 md:mt-20 pt-10">
-      <p class="font-display italic text-[19px] md:text-[22px] leading-[1.55] text-white/55 max-w-[560px]">
+      <p
+        class="font-display italic text-[19px] md:text-[22px] leading-[1.55] text-white/55 max-w-[560px]"
+      >
         P.S. — The first language was a disaster. Everything since has been
         <span class="text-bio-lime not-italic">on purpose</span>.
       </p>
 
       <div class="flex flex-wrap gap-x-8 gap-y-3 mt-10">
-        <a href="https://github.com/DominicClerici" target="_blank" rel="noopener noreferrer" class="cv2-link">GitHub</a>
-        <a href="https://www.linkedin.com/in/dominic-clerici/" target="_blank" rel="noopener noreferrer" class="cv2-link">LinkedIn</a>
-        <a href="mailto:contact@dominicclerici.com" class="cv2-link">contact@dominicclerici.com</a>
+        <a
+          href="https://github.com/DominicClerici"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cv2-link">GitHub</a
+        >
+        <a
+          href="https://www.linkedin.com/in/dominic-clerici/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cv2-link">LinkedIn</a
+        >
+        <a href="mailto:contact@dominicclerici.com" class="cv2-link"
+          >contact@dominicclerici.com</a
+        >
       </div>
     </div>
   </div>
@@ -333,6 +404,46 @@
     color: var(--color-bio-lime);
   }
 
+  /* Only offered once there's ink to regret */
+  .cv2-cap-reset {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: #c9c9c9;
+    background: transparent;
+    border: 1px solid #2c2c2c;
+    padding: 6px 10px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .cv2-captcha.has-ink .cv2-cap-reset {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .cv2-captcha.is-sending .cv2-cap-reset,
+  .cv2-captcha.is-sent-anim .cv2-cap-reset {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .cv2-cap-reset:hover {
+    color: var(--color-bio-lime);
+    border-color: rgba(206, 247, 158, 0.4);
+  }
+
+  .cv2-cap-reset:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 3px;
+  }
+
   .cv2-cap-main {
     transition: opacity 0.25s ease;
   }
@@ -530,35 +641,37 @@
 
 <script>
   {
-    const form = document.querySelector<HTMLFormElement>(".cv2-form");
+    const form = document.querySelector<HTMLFormElement>(".cv2-form")
     if (form) {
-      const message = form.querySelector<HTMLTextAreaElement>("#cv2-message");
-      const error = form.querySelector<HTMLElement>(".cv2-error");
+      const message = form.querySelector<HTMLTextAreaElement>("#cv2-message")
+      const error = form.querySelector<HTMLElement>(".cv2-error")
 
       // Blanks grow with their contents, like handwriting filling a line
       form.querySelectorAll<HTMLInputElement>("[data-fit]").forEach((input) => {
-        const min = Number(input.dataset.fit) || 10;
+        const min = Number(input.dataset.fit) || 10
         const fit = () => {
-          input.style.width = `${Math.max(min, input.value.length + 2)}ch`;
-        };
-        input.addEventListener("input", fit);
-        fit();
-      });
+          input.style.width = `${Math.max(min, input.value.length + 2)}ch`
+        }
+        input.addEventListener("input", fit)
+        fit()
+      })
 
       if (message) {
         message.addEventListener("input", () => {
-          message.style.height = "auto";
-          message.style.height = `${message.scrollHeight}px`;
-          error?.classList.add("hidden");
-        });
+          message.style.height = "auto"
+          message.style.height = `${message.scrollHeight}px`
+          error?.classList.add("hidden")
+        })
       }
 
       const sendLetter = () => {
-        const data = new FormData(form);
-        const name = String(data.get("name") || "").trim();
-        const email = String(data.get("email") || "").trim();
-        const body = String(data.get("message") || "").trim();
-        const subject = name ? `A letter from ${name}` : "A letter from your portfolio";
+        const data = new FormData(form)
+        const name = String(data.get("name") || "").trim()
+        const email = String(data.get("email") || "").trim()
+        const body = String(data.get("message") || "").trim()
+        const subject = name
+          ? `A letter from ${name}`
+          : "A letter from your portfolio"
         const lines = [
           "Hi Dominic —",
           "",
@@ -567,239 +680,396 @@
           name ? `— ${name}` : "",
           email ? `Reply to: ${email}` : "",
           "✍ signed by hand",
-        ].filter(Boolean);
-        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
-      };
+        ].filter(Boolean)
+        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`
+      }
 
       // --- The captcha: sign the letter ---
-      const SENT_KEY = "cv2-letter-sent";
-      const seal = form.querySelector<HTMLButtonElement>(".cv2-seal");
-      const pop = form.querySelector<HTMLElement>("#cv2-captcha");
-      const canvas = pop?.querySelector<HTMLCanvasElement>(".cv2-sig");
-      const status = pop?.querySelector<HTMLElement>(".cv2-cap-status");
-      const ctx = canvas?.getContext("2d");
-      const sendBtn = pop?.querySelector<HTMLButtonElement>(".cv2-cap-send");
-      const sendLabel = pop?.querySelector<HTMLElement>(".cv2-cap-send-label");
-      const ctaTitle = form.querySelector<HTMLElement>(".cv2-cta-title");
-      const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub");
-      const again = form.querySelector<HTMLButtonElement>(".cv2-again");
+      const SENT_KEY = "cv2-letter-sent"
+      const seal = form.querySelector<HTMLButtonElement>(".cv2-seal")
+      const pop = form.querySelector<HTMLElement>("#cv2-captcha")
+      const canvas = pop?.querySelector<HTMLCanvasElement>(".cv2-sig")
+      const status = pop?.querySelector<HTMLElement>(".cv2-cap-status")
+      const ctx = canvas?.getContext("2d")
+      const sendBtn = pop?.querySelector<HTMLButtonElement>(".cv2-cap-send")
+      const resetSig = pop?.querySelector<HTMLButtonElement>(".cv2-cap-reset")
+      const sendLabel = pop?.querySelector<HTMLElement>(".cv2-cap-send-label")
+      const ctaTitle = form.querySelector<HTMLElement>(".cv2-cta-title")
+      const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub")
+      const again = form.querySelector<HTMLButtonElement>(".cv2-again")
 
-      const INK = "#cef79e";
+      const INK = "#cef79e"
       // Enough path to rule out a stray tap; any real squiggle clears it easily
-      const MIN_INK = 220;
-      const MIN_SAMPLES = 14;
+      const MIN_INK = 220
+      const MIN_SAMPLES = 14
 
-      let inkLength = 0;
-      let samples = 0;
-      let ready = false;
-      let committed = false;
-      let drawing = false;
-      let last: { x: number; y: number; t: number; w: number } | null = null;
-      let sendT1 = 0;
-      let sendT2 = 0;
+      // Bot tells: a run of ink is "robotic" only when it's literally
+      // perfectly straight — within sub-pixel rounding of its own chord.
+      // Even a careful human hand wobbles more than half a pixel over 30px;
+      // synthetic pointer events don't. Runs need a few samples so a fast
+      // human flick (2–3 sparse points, trivially "straight") doesn't get
+      // accused.
+      const STRAIGHT_DEV = 0.25
+      const MIN_STRAIGHT = 30
+      const MIN_RUN_SAMPLES = 4
+      const ANGLE_TOL = 5
+      const ROBOT_RATIO = 0.75
+
+      const RIGHT_ANGLE_LINES = [
+        "That's an awfully perfect 90° for a human…",
+        "A crisp right angle. Blink twice if you're a robot.",
+      ]
+      const DIAGONAL_LINES = [
+        "A flawless 45° — no human hand owns a protractor that steady.",
+        "Perfect 45s? Beep boop. Try again, but messier.",
+      ]
+      const STRAIGHT_LINES = [
+        "Ruler-straight. Humans wobble — wobble for me.",
+        "That's not a signature, that's a blueprint. Loosen up.",
+      ]
+      const pick = (lines: string[]) =>
+        lines[Math.floor(Math.random() * lines.length)]
+
+      type Pt = { x: number; y: number }
+      let strokes: Pt[][] = []
+
+      let inkLength = 0
+      let samples = 0
+      let ready = false
+      let committed = false
+      let drawing = false
+      let last: { x: number; y: number; t: number; w: number } | null = null
+      let sendT1 = 0
+      let sendT2 = 0
 
       // localStorage can throw in strict privacy modes — treat as "never sent"
       const readSent = () => {
         try {
-          return Boolean(localStorage.getItem(SENT_KEY));
+          return Boolean(localStorage.getItem(SENT_KEY))
         } catch {
-          return false;
+          return false
         }
-      };
+      }
 
       const applySentState = (sent: boolean) => {
-        if (seal) seal.disabled = sent;
-        if (sent) form.setAttribute("data-sent", "");
-        else form.removeAttribute("data-sent");
-        if (ctaTitle) ctaTitle.textContent = sent ? "Letter sent." : "Prove your humanity";
+        if (seal) seal.disabled = sent
+        if (sent) form.setAttribute("data-sent", "")
+        else form.removeAttribute("data-sent")
+        if (ctaTitle)
+          ctaTitle.textContent = sent ? "Letter sent." : "Prove your humanity"
         if (ctaSub)
           ctaSub.textContent = sent
             ? "One letter is plenty — I promise I read them."
-            : "I promise this won’t be your usual captcha.";
-        again?.classList.toggle("hidden", !sent);
-      };
+            : "I promise this won’t be your usual captcha."
+        again?.classList.toggle("hidden", !sent)
+      }
 
       const setStatus = (text: string) => {
-        if (status) status.textContent = text;
-      };
+        if (status) status.textContent = text
+      }
 
       const resetPad = () => {
-        if (!canvas || !ctx) return;
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = canvas.clientWidth * dpr;
-        canvas.height = canvas.clientHeight * dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.strokeStyle = INK;
-        ctx.fillStyle = INK;
-        inkLength = 0;
-        samples = 0;
-        ready = false;
-        committed = false;
-        drawing = false;
-        last = null;
-        pop?.classList.remove("is-ready", "is-signed", "is-sending", "is-sent-anim");
-        if (sendBtn) sendBtn.disabled = true;
-        if (sendLabel) sendLabel.textContent = "Awaiting a signature";
-        setStatus("Sign with a scribble — any scribble.");
-      };
+        if (!canvas || !ctx) return
+        const dpr = window.devicePixelRatio || 1
+        canvas.width = canvas.clientWidth * dpr
+        canvas.height = canvas.clientHeight * dpr
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        ctx.lineCap = "round"
+        ctx.lineJoin = "round"
+        ctx.strokeStyle = INK
+        ctx.fillStyle = INK
+        inkLength = 0
+        samples = 0
+        strokes = []
+        ready = false
+        committed = false
+        drawing = false
+        last = null
+        pop?.classList.remove(
+          "is-ready",
+          "is-signed",
+          "is-sending",
+          "is-sent-anim",
+          "has-ink",
+        )
+        if (sendBtn) sendBtn.disabled = true
+        if (sendLabel) sendLabel.textContent = "Awaiting a signature"
+        setStatus("Sign with a scribble — any scribble.")
+      }
+
+      // Max perpendicular distance of the points between a and b from the
+      // straight chord joining them
+      const chordDeviation = (pts: Pt[], a: number, b: number) => {
+        const ax = pts[a].x
+        const ay = pts[a].y
+        const dx = pts[b].x - ax
+        const dy = pts[b].y - ay
+        const len = Math.hypot(dx, dy) || 1
+        let max = 0
+        for (let i = a + 1; i < b; i++) {
+          const d = Math.abs((pts[i].x - ax) * dy - (pts[i].y - ay) * dx) / len
+          if (d > max) max = d
+        }
+        return max
+      }
+
+      const pathLength = (pts: Pt[], a: number, b: number) => {
+        let l = 0
+        for (let i = a; i < b; i++)
+          l += Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y)
+        return l
+      }
+
+      // Split every stroke into maximal near-straight runs, tally how much of
+      // the ink is robotic, and note any suspiciously perfect corners between
+      // consecutive straight runs
+      const inspectInk = () => {
+        let total = 0
+        let robotic = 0
+        let rightAngle = false
+        let diagonal = false
+        for (const pts of strokes) {
+          if (pts.length < 2) continue
+          total += pathLength(pts, 0, pts.length - 1)
+          const runs: { a: number; b: number }[] = []
+          let a = 0
+          for (let b = a + 2; b < pts.length; b++) {
+            if (chordDeviation(pts, a, b) > STRAIGHT_DEV) {
+              runs.push({ a, b: b - 1 })
+              a = b - 1
+              b = a + 1
+            }
+          }
+          if (pts.length - 1 > a) runs.push({ a, b: pts.length - 1 })
+          let prevDir: number | null = null
+          for (const run of runs) {
+            const chord = Math.hypot(
+              pts[run.b].x - pts[run.a].x,
+              pts[run.b].y - pts[run.a].y,
+            )
+            if (chord < MIN_STRAIGHT || run.b - run.a < MIN_RUN_SAMPLES) {
+              prevDir = null
+              continue
+            }
+            robotic += pathLength(pts, run.a, run.b)
+            const dir =
+              (Math.atan2(
+                pts[run.b].y - pts[run.a].y,
+                pts[run.b].x - pts[run.a].x,
+              ) *
+                180) /
+              Math.PI
+            if (prevDir !== null) {
+              let turn = Math.abs(dir - prevDir) % 360
+              if (turn > 180) turn = 360 - turn
+              if (Math.abs(turn - 90) <= ANGLE_TOL) rightAngle = true
+              else if (
+                Math.abs(turn - 45) <= ANGLE_TOL ||
+                Math.abs(turn - 135) <= ANGLE_TOL
+              )
+                diagonal = true
+            }
+            prevDir = dir
+          }
+        }
+        return {
+          flagged: total > 0 && robotic / total >= ROBOT_RATIO,
+          rightAngle,
+          diagonal,
+        }
+      }
+
+      const botMessage = (verdict: {
+        rightAngle: boolean
+        diagonal: boolean
+      }) => {
+        if (verdict.rightAngle) return pick(RIGHT_ANGLE_LINES)
+        if (verdict.diagonal) return pick(DIAGONAL_LINES)
+        return pick(STRAIGHT_LINES)
+      }
 
       const markReady = () => {
-        ready = true;
-        pop?.classList.add("is-ready");
-        if (sendBtn) sendBtn.disabled = false;
-        if (sendLabel) sendLabel.textContent = "Send the letter";
-      };
+        ready = true
+        pop?.classList.add("is-ready")
+        if (sendBtn) sendBtn.disabled = false
+        if (sendLabel) sendLabel.textContent = "Send the letter"
+      }
 
       const placePopover = () => {
-        if (!pop || !seal || !pop.matches(":popover-open")) return;
-        const r = seal.getBoundingClientRect();
-        const w = pop.offsetWidth;
-        const h = pop.offsetHeight;
-        const pad = 12;
-        let top = r.top - h - 14;
-        if (top < pad) top = Math.min(r.bottom + 14, window.innerHeight - h - pad);
-        const left = Math.min(Math.max(r.left, pad), window.innerWidth - w - pad);
-        pop.style.top = `${top}px`;
-        pop.style.left = `${left}px`;
-      };
+        if (!pop || !seal || !pop.matches(":popover-open")) return
+        const r = seal.getBoundingClientRect()
+        const w = pop.offsetWidth
+        const h = pop.offsetHeight
+        const pad = 12
+        let top = r.top - h - 14
+        if (top < pad)
+          top = Math.min(r.bottom + 14, window.innerHeight - h - pad)
+        const left = Math.min(
+          Math.max(r.left, pad),
+          window.innerWidth - w - pad,
+        )
+        pop.style.top = `${top}px`
+        pop.style.left = `${left}px`
+      }
 
       if (pop && canvas && ctx && seal && sendBtn) {
         // Ink with a live nib: slower strokes pool wider, like a real pen
         canvas.addEventListener("pointerdown", (e) => {
-          if (committed) return;
-          canvas.setPointerCapture(e.pointerId);
-          drawing = true;
-          last = { x: e.offsetX, y: e.offsetY, t: e.timeStamp, w: 2.4 };
-          ctx.beginPath();
-          ctx.arc(e.offsetX, e.offsetY, 1.2, 0, Math.PI * 2);
-          ctx.fill();
-        });
+          if (committed) return
+          canvas.setPointerCapture(e.pointerId)
+          drawing = true
+          strokes.push([{ x: e.offsetX, y: e.offsetY }])
+          pop.classList.add("has-ink")
+          last = { x: e.offsetX, y: e.offsetY, t: e.timeStamp, w: 2.4 }
+          ctx.beginPath()
+          ctx.arc(e.offsetX, e.offsetY, 1.2, 0, Math.PI * 2)
+          ctx.fill()
+        })
 
         canvas.addEventListener("pointermove", (e) => {
-          if (!drawing || !last || committed) return;
-          const x = e.offsetX;
-          const y = e.offsetY;
-          const dist = Math.hypot(x - last.x, y - last.y);
-          if (dist < 1) return;
-          const speed = dist / Math.max(e.timeStamp - last.t, 1);
-          const target = Math.min(Math.max(3.4 - speed * 1.1, 1.1), 3.4);
-          const width = last.w + (target - last.w) * 0.3;
-          ctx.lineWidth = width;
-          ctx.beginPath();
-          ctx.moveTo(last.x, last.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-          inkLength += dist;
-          samples += 1;
-          last = { x, y, t: e.timeStamp, w: width };
-          if (!ready && inkLength > MIN_INK && samples > MIN_SAMPLES) markReady();
-        });
+          if (!drawing || !last || committed) return
+          const x = e.offsetX
+          const y = e.offsetY
+          const dist = Math.hypot(x - last.x, y - last.y)
+          if (dist < 1) return
+          const speed = dist / Math.max(e.timeStamp - last.t, 1)
+          const target = Math.min(Math.max(3.4 - speed * 1.1, 1.1), 3.4)
+          const width = last.w + (target - last.w) * 0.3
+          ctx.lineWidth = width
+          ctx.beginPath()
+          ctx.moveTo(last.x, last.y)
+          ctx.lineTo(x, y)
+          ctx.stroke()
+          inkLength += dist
+          samples += 1
+          strokes[strokes.length - 1]?.push({ x, y })
+          last = { x, y, t: e.timeStamp, w: width }
+          if (!ready && inkLength > MIN_INK && samples > MIN_SAMPLES)
+            markReady()
+        })
 
         const liftPen = () => {
-          if (!drawing) return;
-          drawing = false;
-          last = null;
-          if (committed) return;
-          if (ready) {
-            pop.classList.add("is-signed");
-            setStatus("Good enough for me — send it.");
+          if (!drawing) return
+          drawing = false
+          last = null
+          if (committed) return
+          const verdict = inspectInk()
+          if (verdict.flagged) {
+            // Too much of the ink is geometrically perfect — revoke the
+            // signature until some human wobble dilutes it
+            ready = false
+            pop.classList.remove("is-ready", "is-signed")
+            sendBtn.disabled = true
+            if (sendLabel) sendLabel.textContent = "Awaiting a signature"
+            setStatus(botMessage(verdict))
+          } else if (ready) {
+            pop.classList.add("is-signed")
+            setStatus("Good enough for me — send it.")
           } else if (samples < 3) {
-            setStatus("That's a dot. I need a whole scribble.");
+            setStatus("That's a dot. I need a whole scribble.")
           } else {
-            setStatus("Almost — keep the scribble going.");
+            setStatus("Almost — keep the scribble going.")
           }
-        };
-        canvas.addEventListener("pointerup", liftPen);
-        canvas.addEventListener("pointercancel", liftPen);
+        }
+        canvas.addEventListener("pointerup", liftPen)
+        canvas.addEventListener("pointercancel", liftPen)
+
+        resetSig?.addEventListener("click", () => {
+          if (committed) return
+          resetPad()
+          canvas.focus({ preventScroll: true })
+        })
 
         sendBtn.addEventListener("click", () => {
-          if (!ready || committed) return;
-          committed = true;
-          sendBtn.disabled = true;
-          pop.classList.add("is-sending");
-          if (sendLabel) sendLabel.textContent = "Sealing…";
+          if (!ready || committed) return
+          committed = true
+          sendBtn.disabled = true
+          pop.classList.add("is-sending")
+          if (sendLabel) sendLabel.textContent = "Sealing…"
           sendT1 = window.setTimeout(() => {
             try {
-              localStorage.setItem(SENT_KEY, new Date().toISOString());
+              localStorage.setItem(SENT_KEY, new Date().toISOString())
             } catch {
               /* still send; the page just won't remember */
             }
-            sendLetter();
-            setStatus("Sent — off it goes.");
-            pop.classList.add("is-sent-anim");
+            sendLetter()
+            setStatus("Sent — off it goes.")
+            pop.classList.add("is-sent-anim")
             sendT2 = window.setTimeout(() => {
-              if (pop.matches(":popover-open")) pop.hidePopover();
-              else applySentState(true);
-            }, 2000);
-          }, 1000);
-        });
+              if (pop.matches(":popover-open")) pop.hidePopover()
+              else applySentState(true)
+            }, 2000)
+          }, 1000)
+        })
 
         // Open locks page scroll (compensating for the vanished scrollbar).
         // Closing early (Esc, light dismiss) abandons an unsent attempt;
         // once the letter is away, closing just finalizes the sent state
         pop.addEventListener("toggle", (e) => {
-          const open = (e as unknown as { newState: string }).newState === "open";
-          const html = document.documentElement;
+          const open =
+            (e as unknown as { newState: string }).newState === "open"
+          const html = document.documentElement
           // overflow:hidden blocks native inputs; the engine lock stops the
           // smooth-scroll's programmatic scrolling, which overflow can't
-          (window as unknown as { __smoothScrollLock?: (l: boolean) => void }).__smoothScrollLock?.(open);
+          ;(
+            window as unknown as { __smoothScrollLock?: (l: boolean) => void }
+          ).__smoothScrollLock?.(open)
           if (open) {
-            const gap = window.innerWidth - html.clientWidth;
-            html.style.overflow = "hidden";
-            if (gap > 0) html.style.paddingRight = `${gap}px`;
-            return;
+            const gap = window.innerWidth - html.clientWidth
+            html.style.overflow = "hidden"
+            if (gap > 0) html.style.paddingRight = `${gap}px`
+            return
           }
-          html.style.overflow = "";
-          html.style.paddingRight = "";
-          drawing = false;
+          html.style.overflow = ""
+          html.style.paddingRight = ""
+          drawing = false
           if (committed) {
-            window.clearTimeout(sendT1);
-            window.clearTimeout(sendT2);
-            if (readSent()) applySentState(true);
+            window.clearTimeout(sendT1)
+            window.clearTimeout(sendT2)
+            if (readSent()) applySentState(true)
           }
-        });
+        })
 
         // Auto popovers close on Esc natively; explicit fallback just in case
         document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && pop.matches(":popover-open")) pop.hidePopover();
-        });
+          if (e.key === "Escape" && pop.matches(":popover-open"))
+            pop.hidePopover()
+        })
 
         again?.addEventListener("click", () => {
           try {
-            localStorage.removeItem(SENT_KEY);
+            localStorage.removeItem(SENT_KEY)
           } catch {
             /* nothing to clear */
           }
-          applySentState(false);
-          seal.focus();
-        });
+          applySentState(false)
+          seal.focus()
+        })
 
-        if (readSent()) applySentState(true);
+        if (readSent()) applySentState(true)
 
-        window.addEventListener("resize", placePopover, { passive: true });
-        window.addEventListener("scroll", placePopover, { passive: true });
+        window.addEventListener("resize", placePopover, { passive: true })
+        window.addEventListener("scroll", placePopover, { passive: true })
       }
 
       form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (readSent()) return;
-        const body = String(new FormData(form).get("message") || "").trim();
+        e.preventDefault()
+        if (readSent()) return
+        const body = String(new FormData(form).get("message") || "").trim()
         if (!body) {
-          error?.classList.remove("hidden");
-          message?.focus();
-          return;
+          error?.classList.remove("hidden")
+          message?.focus()
+          return
         }
         if (pop && canvas && ctx && typeof pop.showPopover === "function") {
-          pop.showPopover();
-          resetPad();
-          placePopover();
-          canvas.focus({ preventScroll: true });
+          pop.showPopover()
+          resetPad()
+          placePopover()
+          canvas.focus({ preventScroll: true })
         } else {
-          sendLetter();
+          sendLetter()
         }
-      });
+      })
     }
   }
 </script>

@@ -638,6 +638,34 @@ const projects = [
     opacity: 0;
   }
 
+  /* ── Closing: content dissolves over the shrinking portal ── */
+  /* The spread lifts above the portal and fades as one layer. Inside the
+     clip the portal paints the same paper + column at scrollTop 0, so an
+     unscrolled gallery reads as perfectly still while only the text (and,
+     outside the clip, the paper) dissolves into the revealed page. */
+  /* Compound selector: must outrank .we1-spread's own z-index below */
+  .we1-spread.we1-spread-close {
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .we1-spread-out {
+    opacity: 0;
+    transition: opacity 0.49s ease; /* 60% of the 0.82s door shrink */
+  }
+
+  /* Scrolled gallery: the portal's column starts hidden so the spread's
+     scrolled images genuinely fade out with it... */
+  .we1-portal-col-hide .we1-portal-col {
+    opacity: 0;
+  }
+
+  /* ...then fades back in at the top of the column near the end */
+  .we1-portal-col-in .we1-portal-col {
+    opacity: 1;
+    transition: opacity 0.25s ease; /* 30% of the door shrink */
+  }
+
   /* ── The inside spread ── */
   .we1-spread {
     position: fixed;
@@ -730,8 +758,8 @@ const projects = [
 
   /* Content rises in staggered once the portal dissolves */
   .we1-spread [data-rise] {
-    opacity: 0;
-    transform: translateY(22px);
+    opacity: 0.1;
+    transform: translateY(6px);
     transition:
       opacity 0.7s var(--settle-ease),
       transform 0.7s var(--settle-ease);
@@ -834,6 +862,13 @@ const projects = [
 
       const spreadFor = (i: number) => spreads.find((s) => s.dataset.spread === String(i));
       const galleryFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-gallery");
+      // Both scroll containers: the spread itself (gallery) and the sticky
+      // story column, which scrolls independently on desktop
+      const resetScroll = (spread: HTMLElement) => {
+        spread.scrollTop = 0;
+        const story = spread.querySelector<HTMLElement>(".we1-story");
+        if (story) story.scrollTop = 0;
+      };
 
       const windows = Array.from(section.querySelectorAll<HTMLElement>("[data-plate]")).map((plate) => ({
         plate,
@@ -969,6 +1004,13 @@ const projects = [
 
       const OPEN_MS = 820;
       const SWAP_MS = 240;
+      // Close choreography, scaled to the door shrink (OPEN_MS): content
+      // fades over the first 60%; a scrolled gallery's images fade back in
+      // starting at 80%, over 30%. Keep the CSS durations in sync
+      // (.we1-spread-out, .we1-portal-col-in).
+      const CLOSE_FADE_MS = Math.round(OPEN_MS * 0.6);
+      const COL_IN_AT_MS = Math.round(OPEN_MS * 0.8);
+      const COL_IN_MS = Math.round(OPEN_MS * 0.3);
 
       let openIndex = -1;
       let busy = false;
@@ -1037,7 +1079,7 @@ const projects = [
       };
 
       const resetPortal = () => {
-        portal?.classList.remove("we1-portal-on", "we1-portal-full", "we1-portal-fade");
+        portal?.classList.remove("we1-portal-on", "we1-portal-full", "we1-portal-fade", "we1-portal-col-hide", "we1-portal-col-in");
       };
 
       const open = (i: number, trigger: HTMLElement) => {
@@ -1049,11 +1091,11 @@ const projects = [
         openIndex = i;
         lastTrigger = trigger;
         lock(true);
-        spread.scrollTop = 0;
         history.pushState({ we1: i }, "");
 
         if (reducedMotion || !portal || !portalCol) {
           spread.hidden = false;
+          resetScroll(spread);
           spread.classList.add("is-in");
           attachScroll(spread);
           spread.focus({ preventScroll: true });
@@ -1075,6 +1117,7 @@ const projects = [
 
         later(() => {
           spread.hidden = false;
+          resetScroll(spread);
           attachScroll(spread);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => spread.classList.add("is-in"));
@@ -1098,7 +1141,8 @@ const projects = [
         const finish = () => {
           detachScroll();
           if (spread) {
-            spread.classList.remove("is-in");
+            spread.classList.remove("is-in", "we1-spread-close", "we1-spread-out");
+            resetScroll(spread);
             spread.hidden = true;
           }
           lastTrigger?.focus({ preventScroll: true });
@@ -1116,26 +1160,31 @@ const projects = [
 
         busy = true;
         // Portal scene is the scrollTop-0 state (what the arch window shows);
-        // galRectOf compensates if the spread was scrolled, and the crossfade
-        // absorbs the snap back to the top of the page
+        // galRectOf compensates if the spread was scrolled. If the gallery was
+        // scrolled, its images fade out with the spread (the portal's column
+        // starts hidden) and fade back in at the top near the end; if not, the
+        // portal's identical column keeps the images steady under the fade.
+        const scrolled = spread.scrollTop > 1;
         const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
         fillPortal(spread);
         dressPortal(spread);
         setColRect(g);
         setClipRect(arch.getBoundingClientRect());
-        portal.classList.add("we1-portal-on", "we1-portal-full", "we1-portal-fade");
+        portal.classList.add("we1-portal-on", "we1-portal-full");
+        portal.classList.toggle("we1-portal-col-hide", scrolled);
+        spread.classList.add("we1-spread-close");
         portal.getBoundingClientRect();
-        portal.classList.remove("we1-portal-fade");
+        // Same frame: the door starts shrinking and the content starts fading
+        portal.classList.remove("we1-portal-full");
+        spread.classList.add("we1-spread-out");
 
+        later(finish, CLOSE_FADE_MS);
+        if (scrolled) later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS);
         later(() => {
-          finish();
-          portal.classList.remove("we1-portal-full");
-          later(() => {
-            resetPortal();
-            lock(false);
-            busy = false;
-          }, OPEN_MS);
-        }, SWAP_MS);
+          resetPortal();
+          lock(false);
+          busy = false;
+        }, scrolled ? COL_IN_AT_MS + COL_IN_MS : OPEN_MS);
       };
 
       const requestClose = () => {
