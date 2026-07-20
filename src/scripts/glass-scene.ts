@@ -119,7 +119,7 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     objects: OBJECTS,
     pointerSensitivity: POINTER_SENSITIVITY = -0.5,
     pointerEase: POINTER_EASE = 0.04,
-    scrollEase: SCROLL_EASE = 0.09,
+    scrollEase: SCROLL_EASE = 0.14,
     driftSpeed: DRIFT_SPEED = 1.5,
     driftAmount: DRIFT_AMOUNT = 2.0,
     fpsCap: FPS_CAP = 60,

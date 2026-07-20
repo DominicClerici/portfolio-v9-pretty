@@ -12,16 +12,13 @@
 ---
 
 <div id="hero-scope" class="relative bg-bone">
-  <div
-    data-canvas-bg
-    class="sticky top-0 h-[var(--hero-h)]"
-    aria-hidden="true"
-  >
+  <div data-canvas-bg class="sticky top-0 h-[var(--hero-h)]" aria-hidden="true">
     <!-- Full-bleed clipping container; isolated so the inner clip-path
          animation composites onto its own layer. -->
     <div class="absolute inset-0 overflow-hidden isolate transform-gpu">
       <div class="hero-canvas-wrap absolute inset-0 bg-bone">
-        <canvas id="hero-canvas" class="absolute inset-0 w-full h-full"></canvas>
+        <canvas id="hero-canvas" class="absolute inset-0 w-full h-full"
+        ></canvas>
       </div>
     </div>
   </div>
@@ -108,7 +105,7 @@
     const PURPLE_SCALE = 0.55
 
     // — Sensitivity (how far the objects move for a given input) —
-    const SCROLL_SENSITIVITY = 0.6 // object climb per px scrolled
+    const SCROLL_SENSITIVITY = 0.45 // object climb per px scrolled
 
     /* ══════════════════════════════════════════════════════════════════ */
 
@@ -123,7 +120,9 @@
     let scrollQueued = false
     function onScrollFrame() {
       scrollQueued = false
-      scene.setScrollTarget(Math.min(window.scrollY, pinEnd) * SCROLL_SENSITIVITY)
+      scene.setScrollTarget(
+        Math.min(window.scrollY, pinEnd) * SCROLL_SENSITIVITY,
+      )
     }
     window.addEventListener(
       "scroll",

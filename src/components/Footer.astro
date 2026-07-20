@@ -372,7 +372,7 @@ const connect = [
        fixed on screen while the z-10 content scrolls up over it. That transform
        is compositor-only (no layout/paint), and the object climb stays eased in
        the render loop, so it glides over the pinned glass exactly like the hero. */
-    const SCROLL_SENSITIVITY = 0.34
+    const SCROLL_SENSITIVITY = 0.3
     let footerTop = 0 // footer's absolute document offset (px)
     function measure() {
       footerTop = footer.getBoundingClientRect().top + window.scrollY
