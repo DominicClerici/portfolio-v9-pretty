@@ -126,6 +126,16 @@ const technicalSkills = [
       opacity 0.25s var(--ease-rise);
   }
 
+  /* A word is split into several inline-block chunks, which the browser would
+     otherwise treat as independent break opportunities — wrapping "University"
+     as "Universi / ty". The wrapper keeps each word atomic; breaks happen at
+     the whitespace text nodes between wrappers, as they would without the
+     typewriter. */
+  #about .word {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
   #about .chunk.on {
     opacity: 1;
     transform: translateY(0);
@@ -217,15 +227,18 @@ const technicalSkills = [
             frag.appendChild(document.createTextNode(token))
             continue
           }
+          const word = document.createElement("span")
+          word.className = "word"
           for (let i = 0; i < token.length; i += CHUNK_SIZE) {
             const piece = token.slice(i, i + CHUNK_SIZE)
             const span = document.createElement("span")
             span.className = "chunk"
             span.textContent = piece
-            frag.appendChild(span)
+            word.appendChild(span)
             chunks.push({ node: span, trigger: cursor, on: false })
             cursor += piece.length
           }
+          frag.appendChild(word)
         }
         node.parentNode!.replaceChild(frag, node)
       }

@@ -26,7 +26,7 @@ import ProjectLinks from "./ProjectLinks.astro";
 ---
 
 <section id="work" class="we1 relative" aria-label="Selected work">
-  <header class="max-w-[1200px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]">
+  <header class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]">
     <div class="border-t border-ink/20 mb-10 lg:mb-14" aria-hidden="true"></div>
     <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45">
       03&hairsp;/&hairsp;04 &mdash; Selected Work
@@ -47,12 +47,12 @@ import ProjectLinks from "./ProjectLinks.astro";
     projects.map((project, i) => (
       <>
         {i > 0 && (
-          <div class="max-w-[1200px] mx-auto px-6 lg:px-12" aria-hidden="true">
+          <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12" aria-hidden="true">
             <div class="border-t border-ink/20"></div>
           </div>
         )}
         <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash};`}>
-          <div class="max-w-[1200px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
+          <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
             <div class="we1-copy">
               <EditionLine index={project.index} edition={project.edition} />
               <h3 class="font-display text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
@@ -105,7 +105,7 @@ import ProjectLinks from "./ProjectLinks.astro";
   }
 
   <p
-    class="max-w-[1200px] mx-auto px-6 lg:px-12 pb-14 pt-4 font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 text-center"
+    class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 pb-14 pt-4 font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 text-center"
   >
     end of the print run &mdash; back tomorrow, six a.m. sharp
   </p>
@@ -131,7 +131,7 @@ import ProjectLinks from "./ProjectLinks.astro";
           &larr;&ensp;Back to the front page
         </button>
 
-        <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-6">
+        <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-3 sm:px-6">
           <div class="we1-story">
             <EditionLine index={project.index} edition={project.edition} suffix="the full story" data-rise style="--ri: 0;" />
             <h3

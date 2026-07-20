@@ -111,7 +111,7 @@ const initialIndex = stepMap[0]
        scrolls past, which reads as a scroll-lock without trapping the wheel. -->
   <div class="v1-pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
     <div
-      class="relative w-full max-w-[1524px] mx-auto px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
+      class="relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
       <h2
         class="font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
@@ -121,7 +121,7 @@ const initialIndex = stepMap[0]
       </h2>
 
       <!-- Mobile: horizontal timeline above the card strip (oldest left). -->
-      <div class="lg:hidden relative h-8 mb-5" aria-hidden="true">
+      <div class="v1-rail-h lg:hidden relative h-8 mb-5" aria-hidden="true">
         <div class="absolute inset-x-[7px] top-1/2 -translate-y-1/2">
           <div
             class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-n-800"
@@ -147,7 +147,7 @@ const initialIndex = stepMap[0]
         </div>
       </div>
 
-      <div class="grid lg:grid-cols-[360px_1fr] gap-8 lg:gap-14 items-start">
+      <div class="grid lg:grid-cols-[360px_1fr] gap-4 lg:gap-14 items-start">
         <!-- Rail: time spine + employer tabs.
              min-w-0 lets this grid column shrink to the viewport so the tab
              strip below scrolls horizontally instead of forcing an overflow. -->
@@ -205,7 +205,7 @@ const initialIndex = stepMap[0]
                buttons that scroll to an entry, with aria-current marking the one
                the playhead is currently on. -->
           <div
-            class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-6 px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+            class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-3 px-3 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
             role="group"
             aria-label="Employers"
           >
@@ -243,7 +243,7 @@ const initialIndex = stepMap[0]
           {
             entries.map((entry, i) => (
               <div
-                class="relative p-7 sm:p-9 lg:p-12"
+                class="relative p-5 sm:p-8 lg:p-12"
                 data-panel={i}
                 hidden={i !== initialIndex}
               >
@@ -269,15 +269,15 @@ const initialIndex = stepMap[0]
                     </span>
                   </div>
 
-                  <h3 class="font-display leading-[0.95] tracking-[-0.02em] text-n-100 mt-6 text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.028),4.5rem)]">
+                  <h3 class="font-display leading-[0.95] tracking-[-0.02em] text-n-100 mt-4 sm:mt-6 text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.028),4.5rem)]">
                     {entry.company}
                   </h3>
 
-                  <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-n-350 max-w-[640px] mt-6 lg:mt-8">
+                  <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-n-350 max-w-[640px] mt-4 sm:mt-6 lg:mt-8">
                     {entry.description}
                   </p>
 
-                  <div class="flex flex-wrap gap-x-6 gap-y-3 mt-8 lg:mt-10">
+                  <div class="flex flex-wrap gap-x-6 gap-y-3 mt-5 sm:mt-8 lg:mt-10">
                     {entry.skills.map((skill) => (
                       <span class="inline-flex items-center gap-2">
                         <span
@@ -290,7 +290,7 @@ const initialIndex = stepMap[0]
                       </span>
                     ))}
                   </div>
-                  <div class="flex flex-wrap gap-x-4 gap-y-2 mt-5">
+                  <div class="flex flex-wrap gap-x-4 gap-y-2 mt-4 sm:mt-5">
                     {entry.tags.map((tag) => (
                       <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-n-400">
                         {tag}
@@ -298,7 +298,7 @@ const initialIndex = stepMap[0]
                     ))}
                   </div>
 
-                  <div class="flex items-center gap-3 mt-10 lg:mt-12">
+                  <div class="flex items-center gap-3 mt-6 sm:mt-10 lg:mt-12">
                     <a
                       href={entry.url}
                       target="_blank"
@@ -439,6 +439,23 @@ const initialIndex = stepMap[0]
   }
 
   @media (max-width: 1023px) {
+    /* The pin is offset upward by the height of everything above the rail, so
+       the heading scrolls off the top of the viewport *before* the section
+       locks — buying back that vertical space on short screens. The offset is
+       measured in JS (--v1-head-h) since the heading wraps at unpredictable
+       widths; it already accounts for the padding the rail should keep above
+       it once stuck. */
+    .v1-pin {
+      top: calc(-1 * var(--v1-head-h, 0px));
+      height: calc(100svh + var(--v1-head-h, 0px));
+    }
+
+    /* The selection state is already carried by the chip's border and fill on
+       mobile, so the dot is redundant width in a strip that is tight for it. */
+    .v1-tab-dot {
+      display: none;
+    }
+
     .v1-tab {
       border: 1px solid var(--color-n-800);
       border-radius: 14px;
@@ -626,6 +643,18 @@ const initialIndex = stepMap[0]
         setBarriers(tv > 0 ? [top, top + tv] : [])
       }
 
+      // Mobile only: let the heading scroll off before the pin engages, by
+      // pulling the pin's sticky top up by everything above the rail. RAIL_PAD
+      // is the gap the rail keeps below the viewport top once stuck.
+      const railH = section.querySelector<HTMLElement>(".v1-rail-h")
+      const RAIL_PAD = 20
+      const measureHead = () => {
+        if (!railH) return
+        const mobile = window.matchMedia("(max-width: 1023px)").matches
+        const h = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0
+        section.style.setProperty("--v1-head-h", `${h}px`)
+      }
+
       let ticking = false
       const onScroll = () => {
         if (ticking) return
@@ -646,8 +675,21 @@ const initialIndex = stepMap[0]
       }
 
       window.addEventListener("scroll", onScroll, { passive: true })
-      window.addEventListener("resize", onScroll)
+      window.addEventListener("resize", () => {
+        measureHead()
+        onScroll()
+      })
+      measureHead()
       onScroll()
+
+      // The heading's wrapped height depends on font loading and the panel's
+      // own reflow, both of which land after this runs.
+      if (railH && "ResizeObserver" in window) {
+        new ResizeObserver(() => {
+          measureHead()
+          onScroll()
+        }).observe(railH.parentElement ?? railH)
+      }
 
       // Clicking a tab / bar selects it and scrolls the page to that entry's slot
       // in the pin, reusing the site's smooth-scroll easing.
