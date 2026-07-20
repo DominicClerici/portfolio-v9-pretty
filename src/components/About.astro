@@ -42,7 +42,7 @@ const technicalSkills = [
 
     <p
       id="about-intro"
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-display"
+      class="font-display text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-display"
     >
       CS student at Indiana University, full-stack engineer at Rumor. I&rsquo;ve
       been programming since before I had any business doing so&nbsp;&mdash;
@@ -59,7 +59,7 @@ const technicalSkills = [
         stats.map((stat) => (
           <div class="md:col-span-3" data-reveal-col>
             <div
-              class="label-mono uppercase text-ink/45 mb-3"
+              class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3"
               data-reveal="label"
             >
               {stat.label}
@@ -70,7 +70,7 @@ const technicalSkills = [
             >
               {stat.value}
             </div>
-            <div class="label-mono text-ink/45 mt-2" data-reveal="sub">
+            <div class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2" data-reveal="sub">
               {stat.sub}
             </div>
           </div>
@@ -78,14 +78,14 @@ const technicalSkills = [
       }
 
       <div class="col-span-2 md:col-span-6" data-reveal-col>
-        <div class="label-mono uppercase text-ink/45 mb-4" data-reveal="label">
+        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4" data-reveal="label">
           Focus
         </div>
         <div class="flex flex-wrap gap-x-6 gap-y-3">
           {
             conceptualSkills.map((skill) => (
               <span
-                class="label-mono leading-none uppercase text-ink/80"
+                class="font-mono text-[13px] tracking-[-0.02em] leading-none uppercase text-ink/80"
                 data-reveal="item"
               >
                 {skill}
@@ -97,7 +97,7 @@ const technicalSkills = [
           {
             technicalSkills.map((skill) => (
               <span
-                class="label-mono leading-none text-ink/45"
+                class="font-mono text-[13px] tracking-[-0.02em] leading-none text-ink/45"
                 data-reveal="item"
               >
                 {skill}

@@ -2,18 +2,6 @@
 
 /* ── Self-hosted fonts (latin subset only) ── */
 
-/* Inter — 400 only */
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/inter-latin-400.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
-    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
 /* Aspekta — 400 only, sole display + body face of the new system */
 @font-face {
   font-family: "Aspekta";
@@ -36,39 +24,12 @@
 }
 
 @theme {
-  /* Primary palette */
-  --color-primary: #e2c28f;
-  --color-on-primary: #412d06;
-
-  /* Secondary palette */
-  --color-secondary: #a9cfb8;
-
-  /* Surface / Background */
-  --color-background: #111412;
-  --color-surface: #111412;
-  --color-surface-container-lowest: #0c0f0d;
-  --color-surface-container-low: #191c1a;
-  --color-surface-container: #1d201e;
-  --color-surface-container-high: #282b28;
-
-  /* On-colors */
-  --color-on-surface: #e1e3df;
-  --color-on-surface-variant: #d0c5b6;
-
-  /* Outline */
-  --color-outline: #998f82;
-  --color-outline-variant: #4d463b;
-
-  /* Font families */
-  --font-body: "Inter", sans-serif;
-
   /* ── Integrated design system (DESIGN.md) ── */
 
   /* Colors */
   --color-bio-lime: #cef79e;
   --color-ink: #222f30;
   --color-bone: #f7f7f5;
-  --color-paper: #ffffff;
 
   /* Neutral ramp for the dark sections (Career, Quote, Contact, Footer).
      Only the values that recur across more than one component live here —
@@ -126,14 +87,6 @@
    since it is referenced from arbitrary values rather than a utility. */
 :root {
   --hero-h: max(100svh, 560px);
-}
-
-/* The 13px mono label that runs through the whole site (section labels, nav,
-   chips, meta). Case and color vary per use, so those stay at the call site. */
-@utility label-mono {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: -0.02em;
 }
 
 /* Shared page gutter + max width. */

@@ -32,7 +32,7 @@ import ProjectLinks from "./ProjectLinks.astro";
       03&hairsp;/&hairsp;04 &mdash; Selected Work
     </p>
     <h2
-      class="font-display font-normal text-ink leading-[1.02] tracking-[-0.03em] mt-6 text-[clamp(2.5rem,6.5vw,4.75rem)]"
+      class="font-display text-ink leading-[1.02] tracking-[-0.03em] mt-6 text-[clamp(2.5rem,6.5vw,4.75rem)]"
     >
       The Morning Editions
     </h2>
@@ -55,7 +55,7 @@ import ProjectLinks from "./ProjectLinks.astro";
           <div class="max-w-[1200px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
             <div class="we1-copy">
               <EditionLine index={project.index} edition={project.edition} />
-              <h3 class="font-display font-normal text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
+              <h3 class="font-display text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
                 {project.title}
               </h3>
               <p class="font-display text-[17px] leading-[1.6] tracking-[-0.01em] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
@@ -136,7 +136,7 @@ import ProjectLinks from "./ProjectLinks.astro";
             <EditionLine index={project.index} edition={project.edition} suffix="the full story" data-rise style="--ri: 0;" />
             <h3
               id={`we1-spread-title-${i}`}
-              class="font-display font-normal text-ink leading-[0.96] tracking-[-0.03em] mt-6 text-[clamp(3rem,6.5vw,5.25rem)]"
+              class="font-display text-ink leading-[0.96] tracking-[-0.03em] mt-6 text-[clamp(3rem,6.5vw,5.25rem)]"
               data-rise
               style="--ri: 1;"
             >
@@ -374,19 +374,31 @@ import ProjectLinks from "./ProjectLinks.astro";
   /* Shared invited state: hovering/focusing the door OR the Learn more button.
      No lift/scale here — moving the arch would drag the "world" seen through
      the window along with it and break the illusion; the invitation is all
-     light: deeper shadow, inner glow, outer ring. */
-  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-arch {
-    box-shadow: 0 36px 76px -28px
-      color-mix(in srgb, var(--acc) 34%, color-mix(in srgb, var(--color-ink) 50%, transparent));
-  }
+     light: deeper shadow, inner glow, outer ring, and the Learn more glyph
+     filling with ink. All four live here so the :has() trigger is written once. */
+  .we1-plate:has(
+    .we1-door:hover,
+    .we1-more:hover,
+    .we1-door:focus-visible,
+    .we1-more:focus-visible
+  ) {
+    & .we1-arch {
+      box-shadow: 0 36px 76px -28px
+        color-mix(in srgb, var(--acc) 34%, color-mix(in srgb, var(--color-ink) 50%, transparent));
+    }
 
-  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-arch::after {
-    opacity: 1;
-  }
+    & .we1-arch::after {
+      opacity: 1;
+    }
 
-  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-ring2 {
-    opacity: 0.85;
-    transform: scale(1);
+    & .we1-ring2 {
+      opacity: 0.85;
+      transform: scale(1);
+    }
+
+    & .we1-more-glyph {
+      background: var(--acc);
+    }
   }
 
   /* Ghost folio numeral behind the plate */
@@ -437,16 +449,13 @@ import ProjectLinks from "./ProjectLinks.astro";
     color: var(--acc);
   }
 
+  /* Fills with ink under the shared invited state above */
   .we1-more-glyph {
     width: 9px;
     height: 12px;
     border: 1.5px solid var(--acc);
     border-radius: 999px 999px 2px 2px;
     transition: background 0.3s var(--settle-ease);
-  }
-
-  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-more-glyph {
-    background: var(--acc);
   }
 
   /* ── The portal: an expanding clip mask over the (stationary) spread ── */

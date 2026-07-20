@@ -1,4 +1,6 @@
 ---
+import IconButton from "./IconButton.astro"
+
 const year = new Date().getFullYear()
 
 const navigate = [
@@ -104,7 +106,7 @@ const connect = [
     >
       <div class="max-w-[560px]">
         <p
-          class="font-display font-normal text-ink leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
+          class="font-display text-ink leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
         >
           I design and build software that&rsquo;s fast, useful, and worth
           looking at.
@@ -116,10 +118,10 @@ const connect = [
           >
             Get in touch
           </a>
-          <a
+          <IconButton
             href="#contact"
             aria-label="Scroll to the contact form"
-            class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-x-0.5 transition-transform duration-200"
+            class="hover:translate-x-0.5"
           >
             <svg
               width="14"
@@ -135,7 +137,7 @@ const connect = [
                 stroke-linecap="round"
                 stroke-linejoin="round"></path>
             </svg>
-          </a>
+          </IconButton>
         </div>
       </div>
 
@@ -214,7 +216,7 @@ const connect = [
 
     <div class="shrink-0 px-6 lg:px-12 pb-5 md:pb-6">
       <p
-        class="footer-name inline-block font-display font-normal text-ink leading-[0.95] tracking-[-0.03em] whitespace-nowrap"
+        class="footer-name inline-block font-display text-ink leading-[0.95] tracking-[-0.03em] whitespace-nowrap"
       >
         Dominic Clerici
       </p>

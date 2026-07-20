@@ -1,3 +1,7 @@
+---
+import IconButton from "./IconButton.astro";
+---
+
 <!-- Scrolls over the pinned canvas in PinnedCanvas.astro — no background of
      its own. Height must match --hero-h, which the pin is measured against. -->
 <section id="hero" class="relative h-[var(--hero-h)]">
@@ -5,7 +9,7 @@
     class="relative z-10 h-full flex flex-col justify-between gap-y-[100px] px-6 lg:px-12 pt-[clamp(112px,calc(112px+(100vw-440px)*0.036),148px)] pb-[clamp(32px,calc(32px+(100vw-440px)*0.012),44px)]"
   >
     <h1
-      class="hero-enter-mask font-display font-normal text-ink leading-none tracking-[-0.03em] text-hero"
+      class="hero-enter-mask font-display text-ink leading-none tracking-[-0.03em] text-hero"
     >
       <span>Dominic Clerici.</span>
     </h1>
@@ -16,12 +20,12 @@
           class="hero-enter flex items-center mb-5"
           style="--enter-delay: 1.35s"
         >
-          <span class="label-mono leading-none uppercase text-ink/60">
+          <span class="font-mono text-[13px] tracking-[-0.02em] leading-none uppercase text-ink/60">
             Engineer &amp; Designer&ensp;·&ensp;New York
           </span>
         </div>
         <p
-          class="hero-enter font-display font-normal text-ink/90 leading-[1.2] tracking-[-0.02em] text-lead"
+          class="hero-enter font-display text-ink/90 leading-[1.2] tracking-[-0.02em] text-lead"
           style="--enter-delay: 1.35s"
         >
           I design and build software that&rsquo;s fast, useful, and worth
@@ -39,10 +43,10 @@
         >
           View selected work
         </a>
-        <a
+        <IconButton
           href="#work"
           aria-label="Scroll to selected work"
-          class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-y-0.5 transition-transform duration-200"
+          class="hover:translate-y-0.5"
         >
           <svg
             width="14"
@@ -58,7 +62,7 @@
               stroke-linecap="round"
               stroke-linejoin="round"></path>
           </svg>
-        </a>
+        </IconButton>
       </div>
     </div>
   </div>
