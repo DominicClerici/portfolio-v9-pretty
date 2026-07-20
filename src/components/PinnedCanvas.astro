@@ -11,7 +11,14 @@
  */
 ---
 
-<div id="hero-scope" class="relative bg-bone">
+<!-- The bottom padding is the pin's runway, not spacing: sticky stops at the
+     padding box, and the pin is lifted by one overhang, so without it the glass
+     would come to rest an overhang short of the scope's end and leave a gap
+     before the next section. -->
+<div
+  id="hero-scope"
+  class="relative bg-bone mb-[calc(var(--bg-overhang)_*_(-1))]"
+>
   <div data-canvas-bg class="sticky top-0 h-[var(--bg-h)]" aria-hidden="true">
     <!-- Full-bleed clipping container; isolated so the inner clip-path
          animation composites onto its own layer. -->

@@ -110,6 +110,12 @@
 :root {
   --hero-h: max(100svh, 560px);
 
+  /* How far the pinned background reaches past each edge of the viewport, so
+     it still fills the screen behind mobile Safari's top and bottom control
+     rows. The bleed is symmetric: --bg-h adds it twice, and the pin is pulled
+     up by it once (see [data-canvas-bg]). */
+  --bg-overhang: 60px;
+
   /* Paint height for the pinned background layers. Deliberately the *large*
      viewport where --hero-h is the *small* one: svh is the height with the
      mobile browser chrome expanded, so an svh-tall background stops short of
@@ -117,7 +123,7 @@
      covers; dvh would too, but it changes mid-scroll as the bar animates,
      which would re-layout and re-allocate the WebGL canvas on every frame of
      that animation. Content stays on --hero-h so nothing lands under the bar. */
-  --bg-h: max(100lvh, 560px);
+  --bg-h: max(calc(100lvh + 2 * var(--bg-overhang)), 560px);
 }
 
 /* Shared page gutter + max width. */
@@ -157,6 +163,22 @@ body {
   );
   background-size: 26px 26px;
   background-attachment: fixed;
+}
+
+/* The pin is lifted by the overhang with a transform rather than `top` or a
+   negative margin, and both alternatives are wrong for the same reason in
+   different ways. A sticky `top: -60px` is only honoured once the box has
+   scrolled far enough to latch onto it — at scroll 0 the box still sits at its
+   static position, so the band above it shows through as body background until
+   you scroll. A negative margin-top fixes the resting position but collapses
+   through #hero-scope (no border, padding, or BFC to stop it) and takes the
+   whole page up with it. A transform is applied after sticky resolves and
+   leaves layout untouched, so the resting and stuck positions coincide and
+   both pinEnd and the content offset below stay measured off the real box.
+   The lift is paid back by a matching pad-bottom on #hero-scope, which gives
+   the pin the extra runway it needs to still reach the end of the scope. */
+[data-canvas-bg] {
+  transform: translateY(calc(-1 * var(--bg-overhang)));
 }
 
 /* Content stack rides above the sticky background, pulled up by exactly
