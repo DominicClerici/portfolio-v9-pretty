@@ -30,7 +30,7 @@ const LINK_CLASS = `font-mono text-[12px] tracking-[-0.02em] uppercase text-n-40
 
 // Small outline button — the captcha's "start over" and the "write another"
 // affordance. Colour and padding differ per instance; everything else is shared.
-const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transparent border border-[#2c2c2c] cursor-pointer hover:text-bio-lime hover:border-bio-lime/40 ${FOCUS_RING}`
+const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transparent border border-n-700 cursor-pointer hover:text-bio-lime hover:border-bio-lime/40 ${FOCUS_RING}`
 ---
 
 <section
@@ -105,7 +105,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
             aria-label="Prove your humanity"
             class:list={[
               "cv2-seal group relative w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer",
-              "disabled:bg-[#1a1a1a] disabled:text-n-500 disabled:cursor-not-allowed",
+              "disabled:bg-n-850 disabled:text-n-500 disabled:cursor-not-allowed",
               FOCUS_RING,
             ]}
           >
@@ -210,7 +210,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
             class:list={[
               "cv2-cap-send flex items-center justify-center gap-2 w-full mt-5 py-[11px] cursor-pointer",
               "font-mono text-[12px] tracking-[-0.02em] uppercase bg-bio-lime text-n-950 transition-colors duration-200",
-              "disabled:bg-[#1a1a1a] disabled:text-n-500 disabled:cursor-not-allowed",
+              "disabled:bg-n-850 disabled:text-n-500 disabled:cursor-not-allowed",
               FOCUS_RING,
             ]}
             disabled
@@ -364,7 +364,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
   /* Raised dark surfaces: the captcha slip and the seal's tooltip */
   .cv2-captcha,
   .cv2-tip {
-    background: #101010;
+    background: var(--color-n-900);
     border: 1px solid var(--color-n-800);
   }
 
@@ -409,7 +409,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: -0.02em;
-    color: var(--color-n-500);
+    color: var(--color-n-400);
     transition: color 0.2s ease;
   }
 
@@ -487,8 +487,8 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
   @media (prefers-reduced-motion: no-preference) {
     .cv2-captcha {
       transition:
-        opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.25s var(--ease-settle),
+        transform 0.25s var(--ease-settle),
         overlay 0.25s ease allow-discrete,
         display 0.25s ease allow-discrete;
     }

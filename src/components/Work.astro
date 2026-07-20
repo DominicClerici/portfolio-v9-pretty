@@ -202,7 +202,6 @@ import ProjectLinks from "./ProjectLinks.astro";
     overflow-x: clip;
     background: var(--color-bone);
     --door-ease: cubic-bezier(0.77, 0, 0.175, 1);
-    --settle-ease: cubic-bezier(0.22, 1, 0.36, 1);
     /* --in: entry progress (0 offscreen → 1 seated), --par: full-traverse
        progress for parallax. Defaults render the seated state without JS. */
   }
@@ -280,7 +279,7 @@ import ProjectLinks from "./ProjectLinks.astro";
     border-radius: 999px 999px 26px 26px;
     background: var(--color-bone);
     box-shadow: 0 26px 60px -30px color-mix(in srgb, var(--color-ink) 45%, transparent);
-    transition: box-shadow 0.55s var(--settle-ease);
+    transition: box-shadow 0.55s var(--ease-settle);
   }
 
   /* The view: a replica of the spread, seen through the arch. Without JS (or
@@ -345,7 +344,7 @@ import ProjectLinks from "./ProjectLinks.astro";
     pointer-events: none;
     background: radial-gradient(85% 55% at 50% 104%, color-mix(in srgb, var(--acc) 32%, transparent), transparent 72%);
     opacity: 0;
-    transition: opacity 0.55s var(--settle-ease);
+    transition: opacity 0.55s var(--ease-settle);
   }
 
   /* Halo ring settles around the arch as it seats */
@@ -367,8 +366,8 @@ import ProjectLinks from "./ProjectLinks.astro";
     transform: scale(0.97);
     pointer-events: none;
     transition:
-      opacity 0.55s var(--settle-ease),
-      transform 0.55s var(--settle-ease);
+      opacity 0.55s var(--ease-settle),
+      transform 0.55s var(--ease-settle);
   }
 
   /* Shared invited state: hovering/focusing the door OR the Learn more button.
@@ -455,7 +454,7 @@ import ProjectLinks from "./ProjectLinks.astro";
     height: 12px;
     border: 1.5px solid var(--acc);
     border-radius: 999px 999px 2px 2px;
-    transition: background 0.3s var(--settle-ease);
+    transition: background 0.3s var(--ease-settle);
   }
 
   /* ── The portal: an expanding clip mask over the (stationary) spread ── */
@@ -591,8 +590,8 @@ import ProjectLinks from "./ProjectLinks.astro";
     opacity: 0.1;
     transform: translateY(6px);
     transition:
-      opacity 0.6s var(--settle-ease),
-      transform 0.6s var(--settle-ease);
+      opacity 0.6s var(--ease-settle),
+      transform 0.6s var(--ease-settle);
     transition-delay: calc(var(--ri, 0) * 60ms);
   }
 

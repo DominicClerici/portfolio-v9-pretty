@@ -124,7 +124,7 @@ const initialIndex = stepMap[0]
       <div class="lg:hidden relative h-8 mb-5" aria-hidden="true">
         <div class="absolute inset-x-[7px] top-1/2 -translate-y-1/2">
           <div
-            class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-[#242424]"
+            class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-n-800"
           >
           </div>
           <div
@@ -135,7 +135,7 @@ const initialIndex = stepMap[0]
           {
             orderedEntries.map((_, s) => (
               <span
-                class="absolute top-1/2 w-[7px] h-[7px] rounded-full bg-[#2a2a2a] border border-[#3d3d3d] -translate-x-1/2 -translate-y-1/2"
+                class="absolute top-1/2 w-[7px] h-[7px] rounded-full bg-n-800 border border-n-700 -translate-x-1/2 -translate-y-1/2"
                 style={`left: ${evenPct[s]}%`}
               />
             ))
@@ -170,17 +170,17 @@ const initialIndex = stepMap[0]
                     style={`top: ${yPct(y)}%`}
                     aria-hidden="true"
                   >
-                    <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-[#4d4d4d]">
+                    <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-n-400">
                       {`'${String(y).slice(2)}`}
                     </span>
-                    <span class="absolute left-7 right-0 top-0 border-t border-[#1b1b1b]" />
+                    <span class="absolute left-7 right-0 top-0 border-t border-n-800" />
                   </div>
                 ))
               }
               {
                 orderedEntries.map(({ entry, i }) => (
                   <span
-                    class="v1-bar absolute w-[14px] rounded-full border border-[#333333]"
+                    class="v1-bar absolute w-[14px] rounded-full border border-n-700"
                     style={`top: ${yPct(entry.start)}%; height: ${yPct(entry.end) - yPct(entry.start)}%; left: ${30 + entry.lane * 20}px; --d: ${i * 120}ms`}
                     data-select={i}
                     data-on={i === initialIndex ? "true" : "false"}
@@ -218,7 +218,7 @@ const initialIndex = stepMap[0]
                   data-select={i}
                 >
                   <span class="block">
-                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-n-500 block">
+                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-n-400 block">
                       {entry.period}
                     </span>
                     <span class="v1-tab-name font-display leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
@@ -238,7 +238,7 @@ const initialIndex = stepMap[0]
         <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
              of expanding past the viewport on small screens. -->
         <div
-          class="relative min-w-0 rounded-[20px] border border-n-800 bg-[#0f0f0f] lg:min-h-[460px] overflow-hidden"
+          class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-900 lg:min-h-[460px] overflow-hidden"
         >
           {
             entries.map((entry, i) => (
@@ -273,7 +273,7 @@ const initialIndex = stepMap[0]
                     {entry.company}
                   </h3>
 
-                  <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-[#a8a8a8] max-w-[640px] mt-6 lg:mt-8">
+                  <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-n-350 max-w-[640px] mt-6 lg:mt-8">
                     {entry.description}
                   </p>
 
@@ -292,7 +292,7 @@ const initialIndex = stepMap[0]
                   </div>
                   <div class="flex flex-wrap gap-x-4 gap-y-2 mt-5">
                     {entry.tags.map((tag) => (
-                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-[#616161]">
+                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-n-400">
                         {tag}
                       </span>
                     ))}
@@ -303,7 +303,7 @@ const initialIndex = stepMap[0]
                       href={entry.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="font-mono text-[13px] tracking-[-0.008em] text-n-100 border border-[#3a3a3a] rounded-lg h-10 px-4 inline-flex items-center hover:border-n-400 transition-colors duration-200"
+                      class="font-mono text-[13px] tracking-[-0.008em] text-n-100 border border-n-700 rounded-lg h-10 px-4 inline-flex items-center hover:border-n-400 transition-colors duration-200"
                     >
                       Visit {entry.company}
                     </a>
@@ -376,13 +376,13 @@ const initialIndex = stepMap[0]
 
   /* Spine bars */
   .v1-bar {
-    background: #191919;
+    background: var(--color-n-850);
     cursor: pointer;
     /* transform is inert unless the grow-in below is active, so it can live in
        the single base transition rather than being redeclared under the
        reduced-motion query. */
     transition:
-      transform 0.9s cubic-bezier(0.33, 1, 0.68, 1) var(--d, 0ms),
+      transform 0.9s var(--ease-rise) var(--d, 0ms),
       background-color 0.2s ease,
       border-color 0.2s ease;
   }
@@ -400,13 +400,13 @@ const initialIndex = stepMap[0]
 
   /* Tabs */
   .v1-tab-name {
-    color: #6e6e6e;
+    color: var(--color-n-400);
     transition: color 0.2s ease;
   }
 
   .v1-tab:hover .v1-tab-name,
   .v1-tab.hl .v1-tab-name {
-    color: #bdbdbd;
+    color: var(--color-n-300);
   }
 
   .v1-tab[aria-current="true"] .v1-tab-name {
@@ -429,28 +429,28 @@ const initialIndex = stepMap[0]
   @media (min-width: 1024px) {
     .v1-tab {
       padding: 20px 0;
-      border-top: 1px solid #222222;
+      border-top: 1px solid var(--color-n-800);
       cursor: pointer;
     }
 
     .v1-tab:last-child {
-      border-bottom: 1px solid #222222;
+      border-bottom: 1px solid var(--color-n-800);
     }
   }
 
   @media (max-width: 1023px) {
     .v1-tab {
-      border: 1px solid #2a2a2a;
+      border: 1px solid var(--color-n-800);
       border-radius: 14px;
       padding: 12px 18px;
-      background: #111111;
+      background: var(--color-n-900);
       cursor: pointer;
       white-space: nowrap;
     }
 
     .v1-tab[aria-current="true"] {
       border-color: var(--color-n-600);
-      background: #191919;
+      background: var(--color-n-850);
     }
   }
 
@@ -483,7 +483,7 @@ const initialIndex = stepMap[0]
 
     /* Panel content entrance on tab switch */
     .v1-enter {
-      animation: v1-rise 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
+      animation: v1-rise 0.5s var(--ease-rise) both;
     }
 
     @keyframes v1-rise {

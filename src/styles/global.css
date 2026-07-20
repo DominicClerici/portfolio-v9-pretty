@@ -32,15 +32,27 @@
   --color-bone: #f7f7f5;
 
   /* Neutral ramp for the dark sections (Career, Quote, Contact, Footer).
-     Only the values that recur across more than one component live here —
-     one-off shades stay local. These are the exact shipped hexes, not an
-     opacity ramp over --color-bone: bone composites to #f5f5f5 at α≈0.99,
-     so a tidier ramp would move pixels. */
+     Every cool grey in the app resolves to a step here — components must not
+     introduce local hexes. The ramp is deliberately complete at both ends:
+     the 900/850 and 700 steps exist because the gaps between 950→800 and
+     800→600 were previously filled by ad-hoc one-offs in Career/Contact.
+
+     Adjacent steps are all >1.1:1 apart, so each is a step someone can
+     actually see; anything closer belongs to the step above or below it.
+
+     This ramp is cool/neutral by design. The warm light tones (--color-bone,
+     Contact's --letter-ink, ProjectGallery's paper) are NOT part of it and
+     must not be collapsed into n-100: they differ in hue, not just lightness
+     (bone is #f7f7f5 — B is 2 below R/G — where n-100 is flat #f5f5f5). */
   --color-n-950: #0a0a0a;
+  --color-n-900: #101010;
+  --color-n-850: #191919;
   --color-n-800: #232323;
+  --color-n-700: #333333;
   --color-n-600: #4a4a4a;
   --color-n-500: #5f5f5f;
   --color-n-400: #8a8a8a;
+  --color-n-350: #a8a8a8;
   --color-n-300: #c9c9c9;
   --color-n-100: #f5f5f5;
 
@@ -66,9 +78,19 @@
   );
   --text-lead: clamp(1.25rem, calc(1.25rem + (100vw - 27.5rem) * 0.004), 1.5rem);
 
-  /* Shared entrance easing: hero line-rise, hero content rise, About reveals.
+  /* ── Shared easings ──
+     Only curves used by more than one component live here. The one-off
+     art-directed curves (the hero iris expo, the CTA back-out overshoot)
+     stay local to the component that owns them — they describe one specific
+     motion and sharing them would imply a relationship that isn't there. */
+
+  /* Entrance: hero line-rise, hero content rise, About reveals.
      The About scripts read this off the computed style. */
   --ease-rise: cubic-bezier(0.33, 1, 0.68, 1);
+
+  /* Settle: the decelerating curve for state changes that come to rest —
+     Header drop, ProjectLinks underline, Work card settle, Contact seal. */
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Terminal caret blink (Quote). steps(2, jump-none) gives a hard on/off
      rather than a fade. */

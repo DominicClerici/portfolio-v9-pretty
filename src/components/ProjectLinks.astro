@@ -44,7 +44,7 @@ const { websiteUrl, githubUrl, class: className = "", ...rest } = Astro.props;
     background-size: 100% 1.5px;
     background-position: 0 96%;
     padding-bottom: 3px;
-    transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background-size 0.35s var(--ease-settle);
   }
 
   .we1-link:hover {
