@@ -1,16 +1,26 @@
 ---
-// "The Chronometer": a strata pile, re-machined to tolerance.
-// Same sticky slabs, same cover mechanic, same one-mineral-per-build logic —
-// but the minerals are fired down to enamel (sage, iris, rose) and the
-// instrument wall keeps only two pieces, both watch-grade: a buried dial
-// with machined ticks and a 3px arc whose bead rides the tip as you scroll,
-// and a 4px plumb thread down the left gutter. Color never fills a surface;
-// it is inlaid — a hairline, a tick, a jewel. The porcelain does the rest.
+// "The Morning Editions": Dispatch prints a paper every morning, so the whole
+// shelf is typeset like one — each build is the front page of its own edition,
+// run off the same press across one day: morning, midday, late. Newsreader
+// italic mastheads, an arched plate window for the artwork, one ink per
+// edition (press blue, ocean teal, magenta). Scroll seats each plate like a
+// page coming off the press: the arch rises, its halo ring settles, and the
+// image eases out of overscan. Warm paper, generous margins, no rules.
+//
+// The arch is also a door — and before that, a window. Each arch holds a
+// full replica of its spread (paper, wash, and the gallery column) pinned to
+// the viewport at the exact position the open spread will place it: the
+// spread is a fixed overlay, so its landing coordinates are viewport
+// coordinates. Scrolling sweeps the arch across that stationary scene — the
+// images never move, only the mask does, a window panning over a room.
+// Clicking (or "Learn more") expands the mask to the full viewport; nothing
+// behind it shifts, so the walk-through is seamless.
+// Gallery images and story copy are placeholders to swap for real content.
 const projects = [
   {
     index: "01",
     title: "Dispatch",
-    tech: "Astro · TypeScript · AI pipelines",
+    edition: "morning edition",
     fact: "writes itself every morning",
     description:
       "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
@@ -19,11 +29,29 @@ const projects = [
     stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
     websiteUrl: "https://dispatch.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/dispatch",
+    featured: false,
+    accent: "#33569c",
+    wash: "rgba(51, 86, 156, 0.09)",
+    details: [
+      { label: "Role", value: "Design & build — solo" },
+      { label: "Timeline", value: "2025 — ongoing" },
+      { label: "Status", value: "In print daily" },
+    ],
+    story: [
+      "Dispatch exists because I kept losing whole mornings to tab sprawl — four newsletters, two aggregators, and a feed that never ended. The brief I set myself was narrow: everything that mattered in tech in the last twenty-four hours, printed as one calm page, readable before the coffee goes cold.",
+      "Two decoupled pipelines run the press. The first is a researcher: it sweeps sources overnight, scores stories against each other, and throws most of them away. The second is a writer: it takes the surviving shortlist and sets it in plain language, with a hard budget of ten minutes of reading. Neither pipeline knows the other exists — they only share an editorial contract.",
+      "GitHub Actions is the night shift. It runs the whole edition while I sleep, and the only moving part I ever touch is reading the paper it leaves behind.",
+    ],
+    gallery: [
+      { src: "/photos/dispatch.webp", alt: "Dispatch front page", caption: "The front page of a live edition, printed at six sharp." },
+      { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — the triage pipeline's scoring pass." },
+      { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — a story moving from shortlist to print." },
+    ],
   },
   {
     index: "02",
     title: "Meridian",
-    tech: "Vanilla TypeScript · Extensions",
+    edition: "midday edition",
     fact: "0 npm dependencies",
     description:
       "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
@@ -32,13 +60,30 @@ const projects = [
     stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
     websiteUrl: "https://meridian.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/meridian",
+    featured: false,
+    accent: "#2c7a6f",
+    wash: "rgba(44, 122, 111, 0.09)",
+    details: [
+      { label: "Role", value: "Design & build — solo" },
+      { label: "Timeline", value: "2024 — 2025" },
+      { label: "Status", value: "Live on two stores" },
+    ],
+    story: [
+      "Meridian is a protest against the modern new-tab page — the weather widgets, the sponsored links, the quiet phone-home. It ships with zero npm dependencies: every line that runs in the browser is a line I wrote and can read.",
+      "Under the hood it is eleven feature modules seated on a reactive storage layer. Each module owns its slice of state; the layer broadcasts changes and the page settles itself, no framework in the room.",
+      "The recommendation engine is the part I'm proudest of: it learns what you open and when, and never lets a byte of that leave the machine. Your habits stay yours.",
+    ],
+    gallery: [
+      { src: "/photos/meridian.webp", alt: "Meridian new tab", caption: "A fresh tab, seated and quiet." },
+      { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the module registry at work." },
+      { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the on-device recommendation pass." },
+    ],
   },
   {
     index: "03",
     title: "Fuzzbox",
-    tech: "Next.js · React Native",
+    edition: "late edition",
     fact: "design system: Neon Riff",
-    featured: true,
     description:
       "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
     image: "/photos/fuzzbox.webp",
@@ -46,686 +91,1079 @@ const projects = [
     stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
+    featured: true,
+    accent: "#b4487f",
+    wash: "rgba(180, 72, 127, 0.1)",
+    details: [
+      { label: "Role", value: "Design & build — solo" },
+      { label: "Timeline", value: "2025 — ongoing" },
+      { label: "Status", value: "Editor's pick — in beta" },
+    ],
+    story: [
+      "Fuzzbox started with a chord I found by accident and couldn't name. Every tool I tried wanted me to already know the answer; I wanted one that would meet me at the fretboard.",
+      "Place notes on the interactive fretboard and Fuzzbox explains what you've built — the intervals, the theory, why it rings the way it does. It is the companion I wished I had in the first year of playing.",
+      "The whole thing wears a design system called Neon Riff — stage-light color on deep black, built to feel like the back room of a guitar shop after hours.",
+    ],
+    gallery: [
+      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox fretboard", caption: "The fretboard, mid-chord." },
+      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox placeholder plate", caption: "Placeholder plate — interval breakdown for a found chord." },
+      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox placeholder plate", caption: "Placeholder plate — Neon Riff tokens in the wild." },
+    ],
   },
 ];
-
-// Stair offset per layer — mirrored by STICK_TOP/STICK_STEP in the script
-const STICK_TOP = 88;
-const STICK_STEP = 26;
 ---
 
-<section id="work" class="wc3 relative" aria-label="Selected work">
-  <!-- Stage: header and pile share one relative box so the chronometer wall
-       spans both and the dial is never clipped at the header seam -->
-  <div class="relative">
-    <div class="max-w-[1524px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)] relative z-[2]">
-      <!-- Porcelain fade over the header: masks the dial's top, then clears
-           as the header scrolls away before the pile goes sticky -->
-      <span class="wc3-headfade absolute inset-y-0 block" aria-hidden="true"></span>
-      <div class="flex items-center justify-between gap-4 mb-10 lg:mb-14 relative">
-        <div class="flex items-center gap-4">
-          <span class="wc3-pill font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2">
-            03&hairsp;/&hairsp;04
-          </span>
-          <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60">
-            Selected Work
-          </span>
-        </div>
-        <a
-          href="https://github.com/DominicClerici"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="hidden sm:inline-flex font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45 hover:text-ink transition-colors duration-200"
-        >
-          more on github&nbsp;&nearr;
-        </a>
-      </div>
+<section id="work" class="we1 relative" aria-label="Selected work">
+  <header class="max-w-[1200px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)] text-center">
+    <p class="font-mono text-[11px] leading-none tracking-[0.3em] uppercase text-ink/45">
+      03&hairsp;/&hairsp;04 &mdash; Selected Work
+    </p>
+    <h2
+      class="font-headline italic font-normal text-ink leading-[1.02] tracking-[-0.01em] mt-7 text-[clamp(2.5rem,6.5vw,4.75rem)]"
+    >
+      The Morning Editions
+    </h2>
+    <p class="font-body text-[15px] leading-[1.7] text-ink/55 max-w-[540px] mx-auto mt-6">
+      Three builds, run off the same press across one day &mdash; morning, midday, and late.
+    </p>
+  </header>
 
-      <p
-        class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)] mb-4 lg:mb-6 relative"
-      >
-        Three builds, machined to fit&nbsp;&mdash;
-        <span class="text-ink/55">the dial keeps the count.</span>
-      </p>
-    </div>
-
-    <!-- The sticky pile over the chronometer wall — every breakpoint. data-zone
-         is the wall's positioning + sticky context, so it pins with the pile —
-         never earlier — while the dial still rises up behind the header above it -->
-    <div class="relative" data-zone>
-      <!-- Chronometer wall: no top clip, so the dial reads as a whole disk
-           rising behind the header instead of a hard cut line. Its off-screen
-           right edge is contained by the global body { overflow-x: hidden } -->
-      <div class="absolute inset-0 block pointer-events-none z-0" aria-hidden="true">
-      <div class="sticky top-0 h-screen">
-        <span class="wc3-wash wc3-wash-0 absolute inset-0"></span>
-        <span class="wc3-wash wc3-wash-1 absolute inset-0"></span>
-        <span class="wc3-wash wc3-wash-2 absolute inset-0"></span>
-
-        <div class="wc3-dial absolute rounded-full">
-          <span class="wc3-ticks absolute rounded-full"></span>
-          <span class="wc3-ring absolute rounded-full"></span>
-          <span class="wc3-arc wc3-arc-0 absolute rounded-full"></span>
-          <span class="wc3-arc wc3-arc-1 absolute rounded-full"></span>
-          <span class="wc3-arc wc3-arc-2 absolute rounded-full"></span>
-          <span class="wc3-hand absolute rounded-full">
-            <span class="wc3-bead absolute rounded-full">
-              <i class="wc3-bd wc3-bd-0"></i>
-              <i class="wc3-bd wc3-bd-1"></i>
-              <i class="wc3-bd wc3-bd-2"></i>
-            </span>
-          </span>
-        </div>
-
-        <div class="wc3-plumb absolute rounded-full">
-          <span class="wc3-plumb-fill absolute"></span>
-          {
-            projects.map((_, i) => (
-              <span
-                class={`wc3-plumb-dot wc3-pd-${i} absolute rounded-full`}
-                style={`top: ${(((i + 0.5) / projects.length) * 100).toFixed(2)}%;`}
-              />
-            ))
-          }
-        </div>
-
-        <!-- Chapter gauges in the bottom-right: three vertical grooves,
-             left → middle → right, each filling during its own build -->
-        <div class="wc3-gauges absolute flex items-end gap-3">
-          {
-            projects.map((project, i) => (
-              <div class="flex flex-col items-center gap-2.5">
-                <span class="wc3-groove relative block rounded-full">
-                  <span class={`wc3-gfill wc3-gf-${i} absolute rounded-full`} />
-                </span>
-                <span class="wc3-engraved font-mono text-[10px] leading-none tracking-[0.08em]">{project.index}</span>
+  {
+    projects.map((project, i) => (
+      <>
+        {i > 0 && (
+          <div class="we1-asterism text-center font-headline text-[18px] tracking-[0.9em] text-ink/30 pl-[0.9em]" aria-hidden="true">
+            &middot;&nbsp;&middot;&nbsp;&middot;
+          </div>
+        )}
+        <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash};`}>
+          <div class="max-w-[1200px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
+            <div class={`we1-copy order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`}>
+              <p class="font-mono text-[11px] leading-none tracking-[0.28em] uppercase text-ink/45">
+                Edition {project.index}
+                <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
+                <span style="color: var(--acc);">{project.edition}</span>
+              </p>
+              <h3 class="font-headline italic font-normal text-ink leading-[0.98] tracking-[-0.015em] mt-6 text-[clamp(3rem,8vw,5.5rem)]">
+                {project.title}
+              </h3>
+              <p class="font-headline text-[17px] leading-[1.75] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
+              <p class="we1-colophon font-mono text-[11px] leading-[1.9] tracking-[0.14em] uppercase text-ink/45 mt-8">
+                Set in &mdash; {project.stack.join(" · ")}
+              </p>
+              <p class="font-mono text-[11px] leading-none tracking-[0.14em] uppercase text-ink/35 mt-3">
+                {project.fact}
+              </p>
+              <div class="flex items-center flex-wrap gap-x-7 gap-y-4 mt-9">
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="we1-link font-headline italic text-[19px] text-ink"
+                >
+                  Visit the site&nbsp;&nearr;
+                </a>
+                <button
+                  type="button"
+                  class="we1-more font-mono text-[12px] tracking-[0.1em] uppercase we1-focus"
+                  data-open={i}
+                >
+                  <span class="we1-more-glyph" aria-hidden="true" />
+                  Learn more
+                </button>
+                {project.githubUrl && (
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[12px] tracking-[0.1em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
+                  >
+                    Source
+                  </a>
+                )}
               </div>
-            ))
-          }
-        </div>
-      </div>
-    </div>
+            </div>
 
-    <div class="block max-w-[1360px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 pb-24 relative z-[1]" data-pile>
-      {
-        projects.map((project, i) => (
-          <div class="wc3-layer" data-layer={i}>
-            <article
-              class="wc3-card relative rounded-[24px] lg:rounded-[32px] p-5 sm:p-7 lg:p-8 xl:p-10 overflow-hidden"
-              data-card={i}
-              style={`--en: var(--e${i}); --eng: var(--g${i}); top: ${STICK_TOP + i * STICK_STEP}px;`}
+            <figure class={`we1-fig relative order-1 ${i % 2 === 1 ? "lg:order-1" : "lg:order-2"} m-0`}>
+              <span class="we1-no font-headline italic absolute select-none" aria-hidden="true">
+                No.&thinsp;{i + 1}
+              </span>
+              <div class="we1-arch-wrap relative mx-auto">
+                <span class="we1-ring absolute" aria-hidden="true" />
+                <span class="we1-ring2 absolute" aria-hidden="true" />
+                <button type="button" class="we1-door block w-full" data-open={i} aria-label={`Read the full story — ${project.title}`}>
+                  <div class="we1-arch relative overflow-hidden">
+                    <div class="we1-view absolute" data-view aria-hidden="true">
+                      <div class="we1-gallery flex flex-col">
+                        {project.gallery.map((g, k) => (
+                          <figure class={`we1-gfig m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
+                            <div class="we1-gframe relative overflow-hidden">
+                              <img
+                                src={g.src}
+                                srcset={`${g.src} 1x, ${g.src.replace(".webp", "-2x.webp")} 2x`}
+                                alt=""
+                                class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                            <figcaption class="font-mono text-[10px] leading-[1.7] tracking-[0.16em] uppercase text-ink/40 mt-4 text-center">
+                              fig. 0{k + 1} &mdash; {g.caption}
+                            </figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+                {project.featured && (
+                  <span class="we1-stamp absolute font-mono text-[10px] leading-none tracking-[0.22em] uppercase">
+                    Editor&rsquo;s pick
+                  </span>
+                )}
+              </div>
+            </figure>
+          </div>
+        </article>
+      </>
+    ))
+  }
+
+  <p
+    class="max-w-[1200px] mx-auto px-6 lg:px-12 pb-14 pt-4 font-mono text-[11px] leading-none tracking-[0.18em] uppercase text-ink/35 text-center"
+  >
+    end of the print run &mdash; back tomorrow, six a.m. sharp
+  </p>
+
+  {
+    projects.map((project, i) => (
+      <div
+        class={`we1-spread ${i % 2 === 1 ? "we1-spread-flip" : ""}`}
+        data-spread={i}
+        data-lenis-prevent
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`we1-spread-title-${i}`}
+        style={`--acc: ${project.accent}; --wash: ${project.wash};`}
+        hidden
+      >
+        <button type="button" class="we1-back font-mono text-[11px] leading-none tracking-[0.14em] uppercase we1-focus" data-close>
+          &larr;&ensp;Back to the front page
+        </button>
+
+        <div class="we1-sgrid grid grid-cols-1 gap-x-24">
+          <div class="we1-story">
+            <p class="font-mono text-[11px] leading-none tracking-[0.28em] uppercase text-ink/45" data-rise style="--ri: 0;">
+              Edition {project.index}
+              <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
+              <span style="color: var(--acc);">{project.edition}</span>
+              <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
+              the full story
+            </p>
+            <h3
+              id={`we1-spread-title-${i}`}
+              class="font-headline italic font-normal text-ink leading-[0.96] tracking-[-0.015em] mt-6 text-[clamp(3.25rem,7vw,5.75rem)]"
+              data-rise
+              style="--ri: 1;"
             >
-              <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-7 lg:gap-14 items-center">
-                <div class={`order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`}>
-                  <span class="wc3-tick block" aria-hidden="true" />
-                  <div class="flex items-center gap-3 flex-wrap mt-5">
-                    <h3 class="font-display font-normal leading-[0.98] tracking-[-0.02em] text-ink text-[clamp(1.75rem,calc(1.75rem+(100vw-27.5rem)*0.014),2.5rem)] lg:text-[clamp(2rem,2.6vw,2.75rem)]">
-                      {project.title}
-                    </h3>
-                    {project.featured && (
-                      <span class="wc3-feat font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/70 rounded-full px-3 py-2 inline-flex items-center gap-1.5">
-                        <i class="wc3-feat-dot" aria-hidden="true" />
-                        featured
-                      </span>
-                    )}
-                  </div>
-                  <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/45 mt-4">
-                    {project.tech}
-                    <span class="text-ink/30 normal-case">&nbsp;&middot;&nbsp;{project.fact}</span>
-                  </p>
-                  <p class="font-display text-[15px] leading-[1.6] text-ink/60 max-w-[460px] mt-6">
-                    {project.description}
-                  </p>
-
-                  <div class="flex flex-wrap gap-2.5 mt-7">
-                    {project.stack.map((item) => (
-                      <span class="wc3-chip font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/60 rounded-full px-3.5 py-2.5">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div class="flex items-center gap-4 mt-9 max-w-[460px]">
-                    <a
-                      href={project.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="wc3-btn font-mono text-[13px] tracking-[-0.008em] text-ink rounded-[14px] h-11 px-5 inline-flex items-center"
-                    >
-                      Visit site
-                    </a>
-                    {project.githubUrl && (
-                      <a
-                        href={project.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="font-mono text-[13px] tracking-[-0.008em] text-ink/55 h-11 px-2 inline-flex items-center hover:text-ink transition-colors duration-200"
-                      >
-                        GitHub
-                      </a>
-                    )}
-                    <a
-                      href={project.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Open ${project.title} in a new tab`}
-                      class="wc3-btn wc3-btn-go w-11 h-11 rounded-[14px] inline-flex items-center justify-center ml-auto"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                        <path
-                          d="M2 12 12 2M4.5 2H12v7.5"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </a>
-                  </div>
+              {project.title}
+            </h3>
+            <p class="font-headline text-[19px] leading-[1.7] text-ink/75 max-w-[52ch] mt-8" data-rise style="--ri: 2;">
+              {project.description}
+            </p>
+            <div class="mt-9 space-y-6 max-w-[58ch]">
+              {project.story.map((para, j) => (
+                <p class="font-body text-[15px] leading-[1.85] text-ink/65" data-rise style={`--ri: ${3 + j};`}>
+                  {para}
+                </p>
+              ))}
+            </div>
+            <dl class="we1-details grid grid-cols-3 gap-6 mt-12 max-w-[52ch]" data-rise style={`--ri: ${3 + project.story.length};`}>
+              {project.details.map((d) => (
+                <div>
+                  <dt class="font-mono text-[10px] leading-none tracking-[0.22em] uppercase text-ink/40">{d.label}</dt>
+                  <dd class="font-headline text-[15px] leading-[1.5] text-ink/80 mt-2.5">{d.value}</dd>
                 </div>
+              ))}
+            </dl>
+            <p
+              class="we1-colophon font-mono text-[11px] leading-[1.9] tracking-[0.14em] uppercase text-ink/45 mt-10"
+              data-rise
+              style={`--ri: ${4 + project.story.length};`}
+            >
+              Set in &mdash; {project.stack.join(" · ")}
+            </p>
+            <div class="flex items-center flex-wrap gap-x-7 gap-y-4 mt-10" data-rise style={`--ri: ${5 + project.story.length};`}>
+              <a
+                href={project.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="we1-link font-headline italic text-[19px] text-ink"
+              >
+                Visit the site&nbsp;&nearr;
+              </a>
+              {project.githubUrl && (
+                <a
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-mono text-[12px] tracking-[0.1em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
+                >
+                  Source
+                </a>
+              )}
+            </div>
+          </div>
 
-                <div class={`wc3-well wc3-wp-${i} order-1 ${i % 2 === 1 ? "lg:order-1" : "lg:order-2"} rounded-[16px] lg:rounded-[22px] p-2.5 lg:p-4`}>
+          <div class="we1-gallery flex flex-col">
+            {project.gallery.map((g, k) => (
+              <figure class={`we1-gfig m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
+                <div class="we1-gframe relative overflow-hidden">
                   <img
-                    src={project.image}
-                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
-                    alt={project.alt}
-                    class="w-full aspect-[16/9] object-cover object-top rounded-[10px] lg:rounded-[12px]"
-                    loading="lazy"
+                    src={g.src}
+                    srcset={`${g.src} 1x, ${g.src.replace(".webp", "-2x.webp")} 2x`}
+                    alt={g.alt}
+                    class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
+                    loading="eager"
                     decoding="async"
                   />
                 </div>
-              </div>
-
-              <span class="wc3-veil absolute inset-0 rounded-[inherit]" aria-hidden="true" />
-            </article>
+                <figcaption class="font-mono text-[10px] leading-[1.7] tracking-[0.16em] uppercase text-ink/40 mt-4 text-center">
+                  fig. 0{k + 1} &mdash; {g.caption}
+                </figcaption>
+              </figure>
+            ))}
           </div>
-        ))
-      }
-    </div>
-  </div>
-  </div>
+        </div>
 
-  <p
-    class="max-w-[1524px] mx-auto px-6 lg:px-12 pb-12 font-mono text-[12px] leading-none tracking-[-0.02em] text-ink/35 text-right"
-  >
-    calibration record: sage, iris, rose &mdash; all within tolerance
-  </p>
+        <div class="pb-16 pt-6 text-center">
+          <button type="button" class="we1-endline font-mono text-[11px] leading-none tracking-[0.18em] uppercase text-ink/35 we1-focus" data-close>
+            fold the paper &mdash; back to the front page
+          </button>
+        </div>
+      </div>
+    ))
+  }
+
+  <div class="we1-portal" data-portal aria-hidden="true">
+    <div class="we1-portal-col" data-portal-col></div>
+  </div>
 </section>
 
 <style>
-  /* Cool porcelain, enamel inlays. --w0/--w1/--w2 are per-build blend
-     weights and --p is total pile progress, both set from scroll. Defaults
-     read as "Dispatch seated, nothing scrolled" so the section renders
-     sane without JS. Cards carry their own --en (solid) / --eng (gradient)
-     enamel via inline style. */
-  .wc3 {
-    /* clip (not hidden) — hidden would force overflow-y to auto and turn
-       this section into a scroll container, breaking the sticky dial wall
-       and sticky cards inside it. clip never establishes a scrollport. */
+  .we1 {
     overflow-x: clip;
-    overflow-y: visible;
-    --por: #eaedf1;
-    --por-dark: rgba(151, 163, 180, 0.5);
-    --por-darker: rgba(151, 163, 180, 0.68);
-    --por-light: rgba(255, 255, 255, 0.95);
-    /* Fired enamels: 0 dispatch sage, 1 meridian iris, 2 fuzzbox rose */
-    --e0: #8aa55f;
-    --e1: #7f89d4;
-    --e2: #c778a8;
-    --g0: linear-gradient(120deg, #b0c688, #8aa55f);
-    --g1: linear-gradient(120deg, #8d97dd, #a595d6);
-    --g2: linear-gradient(120deg, #d38ab7, #8fa9d6);
-    background: var(--por);
+    background: #faf8f2;
+    --door-ease: cubic-bezier(0.77, 0, 0.175, 1);
+    --settle-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* --in: entry progress (0 offscreen → 1 seated), --par: full-traverse
+       progress for parallax. Defaults render the seated state without JS. */
   }
 
-  .wc3-pill {
-    box-shadow:
-      inset 3px 3px 6px var(--por-dark),
-      inset -3px -3px 6px var(--por-light);
+  .we1-plate {
+    --in: 1;
+    --par: 0.5;
+    padding: clamp(80px, 11vh, 140px) 0;
   }
 
-  /* ── Layers (V1/V4's pile, verbatim) ── */
-  .wc3-layer {
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
+  /* One tinted wash pooled behind the figure side */
+  .we1-plate::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(46% 62% at 74% 50%, var(--wash), transparent 72%);
+    opacity: var(--in);
   }
 
-  .wc3-card {
-    position: sticky;
-    width: 100%;
-    background: var(--por);
-    box-shadow:
-      16px 16px 40px var(--por-dark),
-      -16px -16px 40px var(--por-light);
-    /* --cover is the incoming card's proximity field (0 far → 1 seated),
-       smoothstepped in the script. As the next card nears, the seated one
-       is repelled: lifted up and shrunk from its top edge so a gap opens
-       between them instead of a flush stack. */
-    transform: translateY(calc(var(--cover, 0) * -80px)) scale(calc(1 - var(--cover, 0) * 0.055));
-    transform-origin: 50% 0;
+  .we1-flip::before {
+    background: radial-gradient(46% 62% at 26% 50%, var(--wash), transparent 72%);
+  }
+
+  .we1-folio-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--acc);
+  }
+
+  /* ── The arch plate ── */
+  /* isolate so the numeral's z-index: -1 stays inside the figure instead of
+     dropping behind the section background */
+  .we1-fig {
+    isolation: isolate;
+  }
+
+  .we1-arch-wrap {
+    max-width: 440px;
+    transform: translateY(calc((1 - var(--in)) * 70px));
+    opacity: calc(0.2 + var(--in) * 0.8);
     will-change: transform;
   }
 
-  .wc3-veil {
-    background: var(--por);
-    opacity: calc(var(--cover, 0) * 0.5);
+  .we1-door {
+    cursor: pointer;
+    border-radius: 999px 999px 26px 26px;
+  }
+
+  .we1-door:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 6px;
+  }
+
+  .we1-arch {
+    aspect-ratio: 0.84;
+    border-radius: 999px 999px 26px 26px;
+    background: #faf8f2;
+    box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.45);
+    transition: box-shadow 0.55s var(--settle-ease);
+  }
+
+  /* The view: a replica of the spread, seen through the arch. Without JS (or
+     with reduced motion / narrow viewports) it stays arch-sized and simply
+     shows the gallery column at arch width — the lead plate, like before.
+     With JS on desktop (.we1-js) it becomes a viewport-sized scene: the
+     gallery replica is seated at the spread's landing rect and the whole view
+     is counter-translated by the arch's viewport position every frame, so the
+     content holds still while the arch sweeps over it. */
+  .we1-view {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #faf8f2;
+    will-change: transform;
+  }
+
+  .we1-view .we1-gallery {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  @media (max-width: 1023px) {
+    /* Small screens keep the old gentle drift instead of the pinned scene */
+    .we1-view .we1-gallery {
+      transform: translateY(calc((0.5 - var(--par)) * 26px));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .we1-js .we1-view {
+      width: 100vw;
+      height: 100dvh;
+      background:
+        radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
+        #faf8f2;
+    }
+
+    .we1-js .we1-flip .we1-view {
+      background:
+        radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
+        #faf8f2;
+    }
+
+    /* No JS / reduced motion: the arch-sized fallback shouldn't inherit the
+       spread's tall desktop gallery padding — keep the lead plate in view */
+    .we1:not(.we1-js) .we1-view .we1-gallery {
+      padding-top: 24px;
+    }
+  }
+
+  /* Warm accent light seeping up from inside the doorway (hover state) */
+  .we1-arch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(85% 55% at 50% 104%, color-mix(in srgb, var(--acc) 32%, transparent), transparent 72%);
+    opacity: 0;
+    transition: opacity 0.55s var(--settle-ease);
+  }
+
+  /* Halo ring settles around the arch as it seats */
+  .we1-ring {
+    inset: -16px;
+    border: 1px solid var(--acc);
+    border-radius: 999px 999px 34px 34px;
+    opacity: calc(var(--in) * 0.55);
+    transform: scale(calc(0.965 + var(--in) * 0.035));
     pointer-events: none;
   }
 
-  /* ── Ambient washes: one whisper of enamel behind the seated card ── */
-  .wc3-wash-0 {
-    background: radial-gradient(58% 46% at 50% 56%, rgba(138, 165, 95, 0.17), transparent 72%);
-    opacity: var(--w0, 1);
+  /* Second ring, hover only — glows outward when the door is "unlatched" */
+  .we1-ring2 {
+    inset: -26px;
+    border: 1px solid var(--acc);
+    border-radius: 999px 999px 40px 40px;
+    opacity: 0;
+    transform: scale(0.97);
+    pointer-events: none;
+    transition:
+      opacity 0.55s var(--settle-ease),
+      transform 0.55s var(--settle-ease);
   }
 
-  .wc3-wash-1 {
-    background: radial-gradient(58% 46% at 50% 56%, rgba(127, 137, 212, 0.17), transparent 72%);
-    opacity: var(--w1, 0);
+  /* Shared invited state: hovering/focusing the door OR the Learn more button.
+     No lift/scale here — moving the arch would drag the "world" seen through
+     the window along with it and break the illusion; the invitation is all
+     light: deeper shadow, inner glow, outer ring. */
+  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-arch {
+    box-shadow: 0 36px 76px -28px color-mix(in srgb, var(--acc) 34%, rgba(34, 47, 48, 0.5));
   }
 
-  .wc3-wash-2 {
-    background:
-      radial-gradient(46% 40% at 40% 58%, rgba(211, 138, 183, 0.14), transparent 70%),
-      radial-gradient(46% 40% at 64% 50%, rgba(143, 169, 214, 0.14), transparent 70%);
-    opacity: var(--w2, 0);
+  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-arch::after {
+    opacity: 1;
   }
 
-  /* ── The chronometer: V1's buried dial machined down to a tick band,
-     a 3px arc, and a bead that rides the arc tip with total scroll ── */
-  .wc3-dial {
-    --dial: 78vmin;
-    width: var(--dial);
-    height: var(--dial);
-    top: calc(var(--dial) * -0.32);
-    right: calc(var(--dial) * -0.32);
-    background: var(--por);
-    box-shadow:
-      inset 7px 7px 20px var(--por-darker),
-      inset -7px -7px 20px var(--por-light);
+  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-ring2 {
+    opacity: 0.85;
+    transform: scale(1);
   }
 
-  /* Porcelain fade filling the header box: opaque over the pill and title,
-     dissolving to clear where the pile meets the header so the dial reads
-     unclipped. It scrolls off with the header before the pile goes sticky. */
-  .wc3-headfade {
-    left: 50%;
-    width: 100vw;
-    transform: translateX(-50%);
-    background: linear-gradient(to bottom, var(--por) 45%, transparent);
-  }
-
-  .wc3-ticks {
-    inset: 4.5vmin;
-    background: repeating-conic-gradient(rgba(34, 47, 48, 0.18) 0deg 0.5deg, transparent 0.5deg 6deg);
-    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
-    mask: radial-gradient(closest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
-    opacity: 0.55;
-  }
-
-  /* The groove the arc runs in */
-  .wc3-ring {
-    inset: 8vmin;
-    background: rgba(151, 163, 180, 0.32);
-    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-    mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-  }
-
-  .wc3-arc {
-    inset: 8vmin;
-    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-    mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-  }
-
-  .wc3-arc-0 {
-    background: conic-gradient(
-      from 135deg,
-      var(--e0) 0deg,
-      var(--e0) calc(var(--p, 0) * 300deg),
-      transparent calc(var(--p, 0) * 300deg)
-    );
-    opacity: var(--w0, 1);
-  }
-
-  .wc3-arc-1 {
-    background: conic-gradient(
-      from 135deg,
-      var(--e1) 0deg,
-      var(--e1) calc(var(--p, 0) * 300deg),
-      transparent calc(var(--p, 0) * 300deg)
-    );
-    opacity: var(--w1, 0);
-  }
-
-  .wc3-arc-2 {
-    background: conic-gradient(
-      from 135deg,
-      var(--e2) 0deg,
-      var(--e2) calc(var(--p, 0) * 300deg),
-      transparent calc(var(--p, 0) * 300deg)
-    );
-    opacity: var(--w2, 0);
-  }
-
-  /* The hand: a rotating carrier whose bead sits exactly on the arc's
-     radius, so it tracks the tip of the sweep */
-  .wc3-hand {
-    inset: 8vmin;
-    transform: rotate(calc(135deg + var(--p, 0) * 300deg));
+  /* Ghost folio numeral behind the plate */
+  .we1-no {
+    font-size: clamp(6rem, 15vw, 11rem);
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px color-mix(in srgb, var(--acc) 40%, transparent);
+    top: -0.35em;
+    right: -0.08em;
+    z-index: -1;
+    transform: translateY(calc((0.5 - var(--par)) * 60px));
     will-change: transform;
   }
 
-  .wc3-bead {
-    left: 50%;
-    top: 0;
-    width: 12px;
-    height: 12px;
-    transform: translate(-50%, -50%) translateY(1.5px);
-    background: var(--por);
-    box-shadow:
-      2px 2px 5px var(--por-darker),
-      -2px -2px 5px var(--por-light);
+  .we1-flip .we1-no {
+    right: auto;
+    left: -0.08em;
   }
 
-  .wc3-bd {
-    position: absolute;
-    inset: 2.5px;
+  .we1-stamp {
+    top: 8%;
+    right: -14px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--acc);
     border-radius: 999px;
+    color: var(--acc);
+    background: rgba(250, 248, 242, 0.85);
+    transform: rotate(6deg);
+    pointer-events: none;
   }
 
-  .wc3-bd-0 {
-    background: var(--e0);
-    opacity: var(--w0, 1);
+  .we1-flip .we1-stamp {
+    right: auto;
+    left: -14px;
+    transform: rotate(-6deg);
   }
 
-  .wc3-bd-1 {
-    background: var(--e1);
-    opacity: var(--w1, 0);
+  /* ── Links: accent underline that draws on hover ── */
+  .we1-link {
+    background-image: linear-gradient(var(--acc), var(--acc));
+    background-repeat: no-repeat;
+    background-size: 100% 1.5px;
+    background-position: 0 96%;
+    padding-bottom: 3px;
+    transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .wc3-bd-2 {
-    background: var(--e2);
-    opacity: var(--w2, 0);
+  .we1-link:hover {
+    background-size: 38% 1.5px;
   }
 
-  /* ── The plumb thread: a 4px core sample down the left gutter ── */
-  .wc3-plumb {
-    left: max(16px, calc((100vw - 1524px) / 2 + 16px));
-    top: 18vh;
-    width: 4px;
-    height: 64vh;
-    background: var(--por);
-    box-shadow:
-      inset 1.5px 1.5px 3px var(--por-darker),
-      inset -1.5px -1.5px 3px var(--por-light);
-  }
-
-  .wc3-plumb-fill {
-    inset: 1px;
-    border-radius: 999px;
-    background: linear-gradient(to bottom, var(--e0), var(--e1) 50%, var(--e2));
-    clip-path: inset(0 0 calc((1 - var(--p, 0)) * 100%) 0 round 999px);
-    opacity: 0.9;
-  }
-
-  .wc3-plumb-dot {
-    left: 50%;
-    width: 10px;
-    height: 10px;
-    transform: translate(-50%, -50%);
-    background: var(--por);
-    box-shadow:
-      inset 1.5px 1.5px 3px var(--por-darker),
-      inset -1.5px -1.5px 3px var(--por-light);
-  }
-
-  .wc3-plumb-dot::after {
-    content: "";
-    position: absolute;
-    inset: 2.5px;
-    border-radius: 999px;
-  }
-
-  .wc3-pd-0::after {
-    background: var(--e0);
-    opacity: var(--w0, 1);
-  }
-
-  .wc3-pd-1::after {
-    background: var(--e1);
-    opacity: var(--w1, 0);
-  }
-
-  .wc3-pd-2::after {
-    background: var(--e2);
-    opacity: var(--w2, 0);
-  }
-
-  /* ── Chapter gauges: three vertical grooves in the bottom-right, each
-     filling bottom-up only during its own build's stretch of the scroll ── */
-  .wc3-gauges {
-    right: max(48px, calc((100vw - 1524px) / 2 + 48px));
-    bottom: 40px;
-  }
-
-  .wc3-groove {
-    width: 8px;
-    height: 120px;
-    background: var(--por);
-    box-shadow:
-      inset 2px 2px 4px var(--por-darker),
-      inset -2px -2px 4px var(--por-light);
-  }
-
-  .wc3-gfill {
-    left: 2px;
-    right: 2px;
-    bottom: 2px;
-  }
-
-  .wc3-gf-0 {
-    height: calc(4px + (100% - 8px) * var(--f0, 0));
-    background: var(--e0);
-  }
-
-  .wc3-gf-1 {
-    height: calc(4px + (100% - 8px) * var(--f1, 0));
-    background: var(--e1);
-  }
-
-  .wc3-gf-2 {
-    height: calc(4px + (100% - 8px) * var(--f2, 0));
-    background: var(--e2);
-  }
-
-  .wc3-engraved {
-    color: rgba(34, 47, 48, 0.42);
-    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
-  }
-
-  /* ── Phone tuning: same instruments, sized to sit in the narrow gutters
-     that frame the inset cards rather than in the desktop margins ── */
-  @media (max-width: 1023px) {
-    .wc3-dial {
-      --dial: 92vmin;
-    }
-
-    .wc3-plumb {
-      top: 14vh;
-      height: 64vh;
-    }
-
-    .wc3-gauges {
-      right: 14px;
-      bottom: 18px;
-      gap: 7px;
-    }
-
-    .wc3-groove {
-      width: 7px;
-      height: 80px;
-    }
-  }
-
-  /* The one place the build's enamel touches the card body */
-  .wc3-tick {
-    width: 44px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--eng, var(--g0));
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-
-  /* Image wells: barely pooled with the build's enamel */
-  .wc3-well {
-    box-shadow:
-      inset 8px 8px 18px var(--por-dark),
-      inset -8px -8px 18px var(--por-light);
-  }
-
-  .wc3-wp-0 {
-    background:
-      radial-gradient(120% 90% at 12% 8%, rgba(138, 165, 95, 0.2), transparent 55%),
-      var(--por);
-  }
-
-  .wc3-wp-1 {
-    background:
-      radial-gradient(120% 90% at 12% 8%, rgba(127, 137, 212, 0.18), transparent 55%),
-      var(--por);
-  }
-
-  .wc3-wp-2 {
-    background:
-      radial-gradient(110% 85% at 12% 8%, rgba(211, 138, 183, 0.16), transparent 55%),
-      radial-gradient(110% 85% at 88% 92%, rgba(143, 169, 214, 0.16), transparent 55%),
-      var(--por);
-  }
-
-  .wc3-well img {
-    box-shadow: 0 10px 26px -14px rgba(34, 47, 48, 0.4);
-  }
-
-  /* ── Fittings ── */
-  .wc3-feat {
-    box-shadow:
-      inset 3px 3px 7px var(--por-dark),
-      inset -3px -3px 7px var(--por-light);
-  }
-
-  .wc3-feat-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 999px;
-    background: var(--eng, var(--g2));
-  }
-
-  .wc3-chip {
-    box-shadow:
-      inset 3px 3px 7px var(--por-dark),
-      inset -3px -3px 7px var(--por-light);
-  }
-
-  .wc3-btn {
-    background: var(--por);
-    box-shadow:
-      6px 6px 14px var(--por-dark),
-      -6px -6px 14px var(--por-light);
-    transition:
-      box-shadow 0.2s ease,
-      transform 0.2s ease,
-      color 0.2s ease;
-  }
-
-  .wc3-btn:hover {
-    transform: translateY(-1px);
-  }
-
-  .wc3-btn:active {
-    transform: translateY(0);
-    box-shadow:
-      inset 4px 4px 10px var(--por-dark),
-      inset -4px -4px 10px var(--por-light);
-  }
-
-  .wc3-btn:focus-visible {
+  .we1-link:focus-visible,
+  .we1-focus:focus-visible {
     outline: 2px solid var(--color-ink);
-    outline-offset: 3px;
+    outline-offset: 4px;
+    border-radius: 2px;
   }
 
-  /* The go button's arrow wears the build's enamel; ink on hover */
-  .wc3-btn-go {
-    color: var(--en, var(--color-ink));
+  /* ── Learn more: mono button with a tiny arch that fills with ink ── */
+  .we1-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--acc);
+    cursor: pointer;
   }
 
-  .wc3-btn-go:hover {
-    color: var(--color-ink);
+  .we1-more-glyph {
+    width: 9px;
+    height: 12px;
+    border: 1.5px solid var(--acc);
+    border-radius: 999px 999px 2px 2px;
+    transition: background 0.3s var(--settle-ease);
+  }
+
+  .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-more-glyph {
+    background: var(--acc);
+  }
+
+  /* ── The portal: an expanding clip mask over the (stationary) spread ── */
+  /* Full-viewport layer painted like the spread (paper + wash) with a clone
+     of the gallery column frozen at its landing position — the same scene the
+     arch window shows, so only the clip window ever moves. */
+  .we1-portal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background:
+      radial-gradient(44% 36% at var(--wx, 78%) 6%, var(--pwash, transparent), transparent 70%),
+      #faf8f2;
+    clip-path: inset(var(--ct, 0px) var(--cr, 0px) var(--cb, 0px) var(--cl, 0px) round 999px 999px 26px 26px);
+    transition:
+      clip-path 0.82s var(--door-ease),
+      opacity 0.24s ease;
+  }
+
+  .we1-portal-col {
+    position: absolute;
+    left: var(--fx, 0px);
+    top: var(--fy, 0px);
+    width: var(--fw, 300px);
+  }
+
+  .we1-portal-on {
+    display: block;
+  }
+
+  .we1-portal-full {
+    clip-path: inset(0px 0px 0px 0px round 0px 0px 0px 0px);
+  }
+
+  .we1-portal-fade {
+    opacity: 0;
+  }
+
+  /* ── The inside spread ── */
+  .we1-spread {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background:
+      radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
+      #faf8f2;
+  }
+
+  .we1-spread:focus {
+    outline: none;
+  }
+
+  .we1-spread-flip {
+    background:
+      radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
+      #faf8f2;
+  }
+
+  .we1-spread-flip .we1-story {
+    order: 2;
+  }
+
+  .we1-spread-flip .we1-gallery {
+    order: 1;
+  }
+
+  .we1-back {
+    position: fixed;
+    top: 22px;
+    left: max(22px, env(safe-area-inset-left));
+    z-index: 5;
+    padding: 12px 18px;
+    border: 1px solid rgba(34, 47, 48, 0.14);
+    border-radius: 999px;
+    color: rgba(34, 47, 48, 0.6);
+    background: rgba(250, 248, 242, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition:
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .we1-back:hover {
+    color: var(--color-ink, #222f30);
+    border-color: color-mix(in srgb, var(--acc) 55%, transparent);
+  }
+
+  .we1-sgrid {
+    padding-inline: 24px;
+  }
+
+  .we1-story {
+    padding-top: clamp(120px, 16vh, 180px);
+    padding-bottom: 96px;
+  }
+
+  .we1-gallery {
+    padding-top: clamp(150px, 19vh, 230px);
+    padding-bottom: 120px;
+    gap: 72px;
+  }
+
+  .we1-gframe {
+    border-radius: 22px;
+    background: #eef0ea;
+    box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.4);
+    aspect-ratio: 4 / 3;
+  }
+
+  /* The lead plate is the door you came through — shown whole, un-cropped */
+  .we1-gfig-lead .we1-gframe {
+    aspect-ratio: auto;
+  }
+
+  .we1-endline {
+    cursor: pointer;
+    transition: color 0.25s ease;
+  }
+
+  .we1-endline:hover {
+    color: var(--acc);
+  }
+
+  /* Content rises in staggered once the portal dissolves */
+  .we1-spread [data-rise] {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+      opacity 0.7s var(--settle-ease),
+      transform 0.7s var(--settle-ease);
+    transition-delay: calc(var(--ri, 0) * 70ms);
+  }
+
+  .we1-spread.is-in [data-rise] {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (min-width: 1024px) {
+    /* Story column sits where the old centered 1280px container put it; the
+       gallery column runs from the gap to the page edge, with half the column
+       gap (48px) as its edge padding */
+    .we1-sgrid {
+      grid-template-columns: minmax(0, 36rem) minmax(0, 1fr);
+      padding-left: calc(max((100vw - 1280px) / 2, 0px) + 48px);
+      padding-right: 48px;
+    }
+
+    .we1-spread-flip .we1-sgrid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 36rem);
+      padding-left: 48px;
+      padding-right: calc(max((100vw - 1280px) / 2, 0px) + 48px);
+    }
+
+    .we1-story {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100dvh;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .we1-story::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .we1-arch-wrap {
+      max-width: 360px;
+    }
+
+    .we1-no {
+      font-size: clamp(5rem, 22vw, 8rem);
+      top: -0.3em;
+    }
+
+    .we1-plate {
+      padding: clamp(64px, 9vh, 110px) 0;
+    }
+
+    .we1-story {
+      padding-top: 110px;
+      padding-bottom: 24px;
+    }
+
+    .we1-gallery {
+      padding-top: 24px;
+      padding-bottom: 72px;
+      gap: 56px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .we1-plate {
+      --in: 1 !important;
+      --par: 0.5 !important;
+    }
+
+    .we1-portal {
+      display: none !important;
+    }
+
+    .we1-arch,
+    .we1-ring2,
+    .we1-arch::after,
+    .we1-spread [data-rise] {
+      transition: none !important;
+    }
+
+    .we1-spread [data-rise] {
+      opacity: 1;
+      transform: none;
+    }
   }
 </style>
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".wc3");
+    const section = document.querySelector<HTMLElement>(".we1");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (section && !reducedMotion) {
-      const zone = section.querySelector<HTMLElement>("[data-zone]");
-      const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-card]"));
 
-      // Must track the inline sticky tops: 88px base, 26px stair
-      const STICK_TOP = 88;
-      const STICK_STEP = 26;
+    if (section) {
+      const spreads = Array.from(section.querySelectorAll<HTMLElement>("[data-spread]"));
+      const desktop = window.matchMedia("(min-width: 1024px)");
 
-      let ticking = false;
+      const spreadFor = (i: number) => spreads.find((s) => s.dataset.spread === String(i));
+      const galleryFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-gallery");
 
-      const update = () => {
-        ticking = false;
-        if (!zone) return;
-        const rect = zone.getBoundingClientRect();
-        // Hidden variant panel (display: none) — no pile height, nothing to drive
-        if (!rect.height) return;
+      const windows = Array.from(section.querySelectorAll<HTMLElement>("[data-plate]")).map((plate) => ({
+        plate,
+        i: Number(plate.dataset.plate),
+        arch: plate.querySelector<HTMLElement>(".we1-arch"),
+        view: plate.querySelector<HTMLElement>("[data-view]"),
+        replica: plate.querySelector<HTMLElement>("[data-view] .we1-gallery"),
+      }));
 
-        // Total pile progress + per-build blend weights for the instruments
-        const range = rect.height - window.innerHeight;
-        if (range > 0) {
-          const p = Math.min(1, Math.max(0, -rect.top / range));
-          const s = p * (cards.length - 1);
-          section.style.setProperty("--p", p.toFixed(4));
-          for (let i = 0; i < cards.length; i++) {
-            section.style.setProperty(`--w${i}`, Math.max(0, 1 - Math.abs(s - i)).toFixed(3));
-            section.style.setProperty(`--f${i}`, Math.min(1, Math.max(0, p * cards.length - i)).toFixed(3));
+      // ── The window: each arch looks through at its spread's gallery ──
+      // The spread is a fixed overlay, so its gallery's rect at scrollTop 0 is
+      // in viewport coordinates. The replica inside each arch is seated at
+      // that rect (on measure), and the viewport-sized view around it is
+      // translated by minus the arch's own viewport position every frame —
+      // pinning the scene to the viewport while the arch sweeps over it.
+      type GalRect = { left: number; top: number; width: number };
+      // undefined = stale, retry when visible; null = windows off (mobile)
+      const galRects: (GalRect | null | undefined)[] = [];
+
+      const galRectOf = (spread: HTMLElement): GalRect | undefined => {
+        const gallery = galleryFor(spread);
+        if (!gallery) return undefined;
+        const wasHidden = spread.hidden;
+        if (wasHidden) {
+          spread.style.visibility = "hidden";
+          spread.hidden = false;
+        }
+        const r = gallery.getBoundingClientRect();
+        const rect = { left: r.left, top: r.top + spread.scrollTop, width: r.width };
+        if (wasHidden) {
+          spread.hidden = true;
+          spread.style.visibility = "";
+        }
+        // Zero width means we measured before layout settled — retry later
+        return rect.width > 0 ? rect : undefined;
+      };
+
+      const measureAll = () => {
+        for (const w of windows) {
+          const spread = spreadFor(w.i);
+          galRects[w.i] = desktop.matches ? (spread && galRectOf(spread)) : null;
+          if (!w.view || !w.replica) continue;
+          const g = galRects[w.i];
+          if (g) {
+            w.replica.style.left = `${g.left}px`;
+            w.replica.style.top = `${g.top}px`;
+            w.replica.style.width = `${g.width}px`;
+          } else {
+            w.replica.style.left = "";
+            w.replica.style.top = "";
+            w.replica.style.width = "";
+            w.view.style.transform = "";
+          }
+        }
+      };
+
+      if (!reducedMotion) {
+        section.classList.add("we1-js");
+        let ticking = false;
+        let measureQueued = false;
+
+        const remeasureSoon = () => {
+          if (measureQueued) return;
+          measureQueued = true;
+          requestAnimationFrame(() => {
+            measureQueued = false;
+            measureAll();
+            update();
+          });
+        };
+
+        function update() {
+          ticking = false;
+          const vh = window.innerHeight;
+          for (const w of windows) {
+            const rect = w.plate.getBoundingClientRect();
+            // Not laid out (display: none) — nothing to drive
+            if (!rect.height) continue;
+            const raw = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)));
+            const eased = raw * raw * (3 - 2 * raw);
+            const par = Math.min(1, Math.max(0, (vh - rect.top) / (vh + rect.height)));
+            w.plate.style.setProperty("--in", eased.toFixed(3));
+            w.plate.style.setProperty("--par", par.toFixed(3));
+
+            if (!w.view || !w.arch) continue;
+            const g = galRects[w.i];
+            if (g === undefined) {
+              // Became measurable after an earlier stale measurement
+              if (desktop.matches) remeasureSoon();
+              continue;
+            }
+            if (!g) continue;
+            // Read after --in lands so the arch rect already carries this
+            // frame's entry transform — the scene must not trail the arch
+            const a = w.arch.getBoundingClientRect();
+            const t = `translate(${(-a.left).toFixed(2)}px, ${(-a.top).toFixed(2)}px)`;
+            if (w.view.style.transform !== t) w.view.style.transform = t;
           }
         }
 
-        // i's cover is the repulsion field of the incoming card i+1; the
-        // last card is never covered. The field is wide and offset: the
-        // seated card begins drifting away as the next card enters from the
-        // bottom (d ≈ one viewport) and finishes clearing well before
-        // contact (d ≈ 0.2·viewport), so the seat is already vacated when
-        // the incoming settles — a repel that never resolves into a bump.
-        const engage = window.innerHeight;
-        const finish = window.innerHeight * 0.2;
-        for (let i = 0; i < cards.length - 1; i++) {
-          const next = cards[i + 1].getBoundingClientRect();
-          const seat = STICK_TOP + (i + 1) * STICK_STEP;
-          const d = next.top - seat; // incoming card's distance from its seat
-          const t = Math.min(1, Math.max(0, (engage - d) / (engage - finish)));
-          // smootherstep (6t⁵−15t⁴+10t³): zero velocity AND acceleration at
-          // both ends, so the speed-up and slow-down are as gradual as possible
-          const cover = t * t * t * (t * (t * 6 - 15) + 10);
-          cards[i].style.setProperty("--cover", cover.toFixed(3));
+        // The smooth-scroll engine moves the page inside its own rAF tick; a
+        // plain scroll listener repaints one frame behind it. This hook runs
+        // synchronously after each tick's scrollTo — same frame, no lag.
+        const hook = () => (window as any).__onSmoothScrollTick?.(update) ?? null;
+        let detachTick: (() => void) | null = hook();
+
+        const onScroll = () => {
+          if (!detachTick) detachTick = hook();
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        };
+
+        let resizeRaf = 0;
+        const onResize = () => {
+          cancelAnimationFrame(resizeRaf);
+          resizeRaf = requestAnimationFrame(() => {
+            measureAll();
+            update();
+          });
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onResize, { passive: true });
+        measureAll();
+        update();
+      }
+
+      // ── Walk-through-the-door open/close ──
+      const portal = section.querySelector<HTMLElement>("[data-portal]");
+      const portalCol = portal?.querySelector<HTMLElement>("[data-portal-col]");
+
+      const OPEN_MS = 820;
+      const SWAP_MS = 240;
+
+      let openIndex = -1;
+      let busy = false;
+      let lastTrigger: HTMLElement | null = null;
+      let detachSpreadScroll: (() => void) | null = null;
+      const timers = new Set<ReturnType<typeof setTimeout>>();
+
+      const attachScroll = (spread: HTMLElement) => {
+        detachSpreadScroll?.();
+        detachSpreadScroll = (window as any).__attachSmoothScroll?.(spread) ?? null;
+      };
+
+      const detachScroll = () => {
+        detachSpreadScroll?.();
+        detachSpreadScroll = null;
+      };
+
+      const later = (fn: () => void, ms: number) => {
+        const id = setTimeout(() => {
+          timers.delete(id);
+          fn();
+        }, ms);
+        timers.add(id);
+      };
+
+      const clearTimers = () => {
+        for (const id of timers) clearTimeout(id);
+        timers.clear();
+      };
+
+      const lock = (on: boolean) => {
+        document.documentElement.style.overflow = on ? "hidden" : "";
+        // The smooth-scroll engine drives window.scrollTo itself, so it must be
+        // frozen alongside overflow (see smooth-scroll.ts hard lock)
+        (window as any).__smoothScrollLock?.(on);
+      };
+
+      const archFor = (i: number) => section.querySelector<HTMLElement>(`[data-plate="${i}"] .we1-arch`);
+
+      const setClipRect = (rect: DOMRect) => {
+        if (!portal) return;
+        portal.style.setProperty("--ct", `${rect.top}px`);
+        portal.style.setProperty("--cl", `${rect.left}px`);
+        portal.style.setProperty("--cr", `${window.innerWidth - rect.right}px`);
+        portal.style.setProperty("--cb", `${window.innerHeight - rect.bottom}px`);
+      };
+
+      const setColRect = (g: GalRect) => {
+        if (!portal) return;
+        portal.style.setProperty("--fx", `${g.left}px`);
+        portal.style.setProperty("--fy", `${g.top}px`);
+        portal.style.setProperty("--fw", `${g.width}px`);
+      };
+
+      // The portal shows the same stationary scene the arch window does — a
+      // clone of the gallery column frozen at its landing rect
+      const fillPortal = (spread: HTMLElement) => {
+        const gallery = galleryFor(spread);
+        if (portalCol && gallery) portalCol.replaceChildren(gallery.cloneNode(true));
+      };
+
+      const dressPortal = (spread: HTMLElement) => {
+        if (!portal) return;
+        portal.style.setProperty("--pwash", getComputedStyle(spread).getPropertyValue("--wash") || "transparent");
+        portal.style.setProperty("--wx", spread.classList.contains("we1-spread-flip") ? "22%" : "78%");
+      };
+
+      const resetPortal = () => {
+        portal?.classList.remove("we1-portal-on", "we1-portal-full", "we1-portal-fade");
+      };
+
+      const open = (i: number, trigger: HTMLElement) => {
+        if (busy || openIndex >= 0) return;
+        const spread = spreadFor(i);
+        const arch = archFor(i);
+        if (!spread || !arch) return;
+
+        openIndex = i;
+        lastTrigger = trigger;
+        lock(true);
+        spread.scrollTop = 0;
+        history.pushState({ we1: i }, "");
+
+        if (reducedMotion || !portal || !portalCol) {
+          spread.hidden = false;
+          spread.classList.add("is-in");
+          attachScroll(spread);
+          spread.focus({ preventScroll: true });
+          return;
+        }
+
+        busy = true;
+
+        // The gallery's landing rect (measured with the spread laid out but
+        // invisible) — the portal freezes the whole column there
+        const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
+        fillPortal(spread);
+        dressPortal(spread);
+        setColRect(g);
+        setClipRect(arch.getBoundingClientRect());
+        portal.classList.add("we1-portal-on");
+        portal.getBoundingClientRect();
+        portal.classList.add("we1-portal-full");
+
+        later(() => {
+          spread.hidden = false;
+          attachScroll(spread);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => spread.classList.add("is-in"));
+          });
+          portal.classList.add("we1-portal-fade");
+          later(() => {
+            resetPortal();
+            busy = false;
+            spread.focus({ preventScroll: true });
+          }, SWAP_MS);
+        }, OPEN_MS);
+      };
+
+      const close = () => {
+        if (openIndex < 0) return;
+        const i = openIndex;
+        openIndex = -1;
+        const spread = spreadFor(i);
+        const arch = archFor(i);
+
+        const finish = () => {
+          detachScroll();
+          if (spread) {
+            spread.classList.remove("is-in");
+            spread.hidden = true;
+          }
+          lastTrigger?.focus({ preventScroll: true });
+        };
+
+        // Mid-open interrupt or reduced motion: snap closed
+        if (reducedMotion || busy || !portal || !portalCol || !arch || !spread) {
+          clearTimers();
+          resetPortal();
+          busy = false;
+          finish();
+          lock(false);
+          return;
+        }
+
+        busy = true;
+        // Portal scene is the scrollTop-0 state (what the arch window shows);
+        // galRectOf compensates if the spread was scrolled, and the crossfade
+        // absorbs the snap back to the top of the page
+        const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
+        fillPortal(spread);
+        dressPortal(spread);
+        setColRect(g);
+        setClipRect(arch.getBoundingClientRect());
+        portal.classList.add("we1-portal-on", "we1-portal-full", "we1-portal-fade");
+        portal.getBoundingClientRect();
+        portal.classList.remove("we1-portal-fade");
+
+        later(() => {
+          finish();
+          portal.classList.remove("we1-portal-full");
+          later(() => {
+            resetPortal();
+            lock(false);
+            busy = false;
+          }, OPEN_MS);
+        }, SWAP_MS);
+      };
+
+      const requestClose = () => {
+        if (openIndex < 0 || busy) return;
+        if (history.state && history.state.we1 != null) {
+          history.back();
+        } else {
+          close();
         }
       };
 
-      const onScroll = () => {
-        if (!ticking) {
-          ticking = true;
-          requestAnimationFrame(update);
+      section.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        const opener = target.closest<HTMLElement>("[data-open]");
+        if (opener?.dataset.open != null) {
+          open(Number(opener.dataset.open), opener);
+          return;
         }
-      };
+        if (target.closest("[data-close]")) requestClose();
+      });
 
-      window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("resize", onScroll, { passive: true });
-      update();
+      window.addEventListener("popstate", () => {
+        if (openIndex >= 0) close();
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") requestClose();
+      });
     }
   }
 </script>
