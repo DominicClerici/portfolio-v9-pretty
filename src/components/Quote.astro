@@ -118,6 +118,7 @@
     const draw = (step: boolean) => {
       ctx.clearRect(0, 0, w, h);
       ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
       for (const p of parts) {
         if (step) {
           p.x += p.vx;

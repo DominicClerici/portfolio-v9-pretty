@@ -114,7 +114,7 @@ const initialIndex = stepMap[0]
       class="relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
       <h2
-        class="font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
+        class="v1-heading font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
       >
         Time on one axis,
         <span class="text-white/45">the story on the other.</span>
@@ -346,6 +346,13 @@ const initialIndex = stepMap[0]
 </section>
 
 <style>
+  /* Mobile-only: opacity is toggled in JS as the section crosses the sticky
+     lock boundary; this transition is what makes that toggle read as a fade
+     instead of a snap. Desktop never sets the inline style, so it's inert there. */
+  .v1-heading {
+    transition: opacity 0.3s ease;
+  }
+
   /* Progress playhead — horizontal marker line (desktop), sweeps top -> bottom */
   .v1-playhead {
     height: 2px;
@@ -648,11 +655,14 @@ const initialIndex = stepMap[0]
       // is the gap the rail keeps below the viewport top once stuck.
       const railH = section.querySelector<HTMLElement>(".v1-rail-h")
       const RAIL_PAD = 20
+      const mobileMQ = window.matchMedia("(max-width: 1023px)")
+      const heading = section.querySelector<HTMLElement>(".v1-heading")
+      let headH = 0
       const measureHead = () => {
         if (!railH) return
-        const mobile = window.matchMedia("(max-width: 1023px)").matches
-        const h = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0
-        section.style.setProperty("--v1-head-h", `${h}px`)
+        const mobile = mobileMQ.matches
+        headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0
+        section.style.setProperty("--v1-head-h", `${headH}px`)
       }
 
       let ticking = false
@@ -671,6 +681,14 @@ const initialIndex = stepMap[0]
           const p = tv > 0 ? Math.max(0, Math.min((-rect.top + lead) / tv, 1)) : 0
           registerBarriers(rect.top, tv)
           render(p)
+
+          // Mobile: the heading fades out the moment the section crosses into
+          // its sticky lock (rect.top past -headH) and fades back in once
+          // scrolling leaves that pinned range.
+          if (heading) {
+            const stuck = mobileMQ.matches && headH > 0 && rect.top <= -headH
+            heading.style.opacity = stuck ? "0" : ""
+          }
         })
       }
 
