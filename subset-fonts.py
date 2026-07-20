@@ -20,6 +20,7 @@ and writes trimmed font files to public/fonts/.
 import os
 import re
 import sys
+from html.entities import html5
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -50,6 +51,18 @@ DEFAULT_FONT = "inter"
 # contain text and don't have end tags, so they must NOT be listed here
 # or they'll increment skip depth without ever decrementing it.
 SKIP_TAGS = {"script", "style", "noscript", "title"}
+
+# Non-breaking / en / em / thin / hair / narrow-nbsp. These render as visible
+# advance width but report isprintable() == False, so the printable filter in
+# collect_chars() would otherwise discard them.
+TYPOGRAPHIC_SPACES = {
+    "\u00a0",  # no-break space
+    "\u2002",  # en space
+    "\u2003",  # em space
+    "\u2009",  # thin space
+    "\u200a",  # hair space
+    "\u202f",  # narrow no-break space
+}
 
 
 class FontTextExtractor(HTMLParser):
@@ -84,33 +97,21 @@ class FontTextExtractor(HTMLParser):
     def handle_data(self, data):
         if self._skip_depth > 0:
             return
-        text = data.strip()
-        if text:
+        # Strip only to test for emptiness \u2014 str.strip() also eats U+00A0,
+        # U+2002 and U+2009, which are glyphs we need, so collect from raw.
+        if data.strip():
             font = self._font_stack[-1]
-            self.chars[font].update(text)
+            self.chars[font].update(data)
 
     def handle_entityref(self, name):
         if self._skip_depth > 0:
             return
-        entity_map = {
-            "mdash": "\u2014",
-            "ndash": "\u2013",
-            "amp": "&",
-            "lt": "<",
-            "gt": ">",
-            "quot": '"',
-            "apos": "'",
-            "rsquo": "\u2019",
-            "lsquo": "\u2018",
-            "rdquo": "\u201d",
-            "ldquo": "\u201c",
-            "copy": "\u00a9",
-            "hellip": "\u2026",
-            "nbsp": " ",
-        }
-        char = entity_map.get(name, "")
+        # Resolve against the full HTML5 entity table rather than a hand-kept
+        # map \u2014 a missing entry here drops the glyph silently, which is how
+        # &ensp; &thinsp; &larr; &nearr; and &times; went unsubset.
+        char = html5.get(name + ";") or html5.get(name, "")
         if char:
-            self.chars[self._font_stack[-1]].add(char)
+            self.chars[self._font_stack[-1]].update(char)
 
     def handle_charref(self, name):
         if self._skip_depth > 0:
@@ -138,11 +139,13 @@ def collect_chars():
     # Always include space
     for font_name in extractor.chars:
         extractor.chars[font_name].add(" ")
-        # Filter to printable chars only
+        # Drop control chars and the newlines/tabs picked up from HTML
+        # indentation. Typographic spaces are str.isprintable() == False but
+        # are real glyphs used as separators, so keep them explicitly.
         extractor.chars[font_name] = {
             c
             for c in extractor.chars[font_name]
-            if c.isprintable() or c in ("\u00a9",)
+            if c.isprintable() or c in TYPOGRAPHIC_SPACES
         }
 
     return extractor.chars
