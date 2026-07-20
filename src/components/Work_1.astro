@@ -1,6 +1,345 @@
 ---
+// "The Morning Editions": Dispatch prints a paper every morning, so the whole
+// shelf is typeset like one — each build is the front page of its own edition,
+// run off the same press across one day: morning, midday, late. Newsreader
+// italic mastheads, an arched plate window for the artwork, one ink per
+// edition (press blue, ocean teal, magenta). Scroll seats each plate like a
+// page coming off the press: the arch rises, its halo ring settles, and the
+// image eases out of overscan. Warm paper, generous margins, no rules.
+const projects = [
+  {
+    index: "01",
+    title: "Dispatch",
+    edition: "morning edition",
+    fact: "writes itself every morning",
+    description:
+      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
+    image: "/photos/dispatch.webp",
+    alt: "Dispatch project screenshot",
+    stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
+    websiteUrl: "https://dispatch.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/dispatch",
+    featured: false,
+    accent: "#33569c",
+    wash: "rgba(51, 86, 156, 0.09)",
+  },
+  {
+    index: "02",
+    title: "Meridian",
+    edition: "midday edition",
+    fact: "0 npm dependencies",
+    description:
+      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
+    image: "/photos/meridian.webp",
+    alt: "Meridian project screenshot",
+    stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
+    websiteUrl: "https://meridian.dominicclerici.com/",
+    githubUrl: "https://github.com/DominicClerici/meridian",
+    featured: false,
+    accent: "#2c7a6f",
+    wash: "rgba(44, 122, 111, 0.09)",
+  },
+  {
+    index: "03",
+    title: "Fuzzbox",
+    edition: "late edition",
+    fact: "design system: Neon Riff",
+    description:
+      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
+    image: "/photos/fuzzbox.webp",
+    alt: "Fuzzbox project screenshot",
+    stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
+    websiteUrl: "https://fuzzbox.dominicclerici.com/",
+    githubUrl: null,
+    featured: true,
+    accent: "#b4487f",
+    wash: "rgba(180, 72, 127, 0.1)",
+  },
+];
 ---
 
-<section class="min-h-screen flex items-center justify-center">
-  <p class="font-display text-4xl text-ink">Variant 1</p>
+<section class="we1 relative" aria-label="Selected work">
+  <header class="max-w-[1200px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)] text-center">
+    <p class="font-mono text-[11px] leading-none tracking-[0.3em] uppercase text-ink/45">
+      03&hairsp;/&hairsp;04 &mdash; Selected Work
+    </p>
+    <h2
+      class="font-headline italic font-normal text-ink leading-[1.02] tracking-[-0.01em] mt-7 text-[clamp(2.5rem,6.5vw,4.75rem)]"
+    >
+      The Morning Editions
+    </h2>
+    <p class="font-body text-[15px] leading-[1.7] text-ink/55 max-w-[540px] mx-auto mt-6">
+      Three builds, run off the same press across one day &mdash; morning, midday, and late.
+    </p>
+  </header>
+
+  {
+    projects.map((project, i) => (
+      <>
+        {i > 0 && (
+          <div class="we1-asterism text-center font-headline text-[18px] tracking-[0.9em] text-ink/30 pl-[0.9em]" aria-hidden="true">
+            &middot;&nbsp;&middot;&nbsp;&middot;
+          </div>
+        )}
+        <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash};`}>
+          <div class="max-w-[1200px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
+            <div class={`we1-copy order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`}>
+              <p class="font-mono text-[11px] leading-none tracking-[0.28em] uppercase text-ink/45">
+                Edition {project.index}
+                <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
+                <span style="color: var(--acc);">{project.edition}</span>
+              </p>
+              <h3 class="font-headline italic font-normal text-ink leading-[0.98] tracking-[-0.015em] mt-6 text-[clamp(3rem,8vw,5.5rem)]">
+                {project.title}
+              </h3>
+              <p class="font-headline text-[17px] leading-[1.75] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
+              <p class="we1-colophon font-mono text-[11px] leading-[1.9] tracking-[0.14em] uppercase text-ink/45 mt-8">
+                Set in &mdash; {project.stack.join(" · ")}
+              </p>
+              <p class="font-mono text-[11px] leading-none tracking-[0.14em] uppercase text-ink/35 mt-3">
+                {project.fact}
+              </p>
+              <div class="flex items-center gap-7 mt-9">
+                <a
+                  href={project.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="we1-link font-headline italic text-[19px] text-ink"
+                >
+                  Visit the site&nbsp;&nearr;
+                </a>
+                {project.githubUrl && (
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-[12px] tracking-[0.1em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
+                  >
+                    Source
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <figure class={`we1-fig relative order-1 ${i % 2 === 1 ? "lg:order-1" : "lg:order-2"} m-0`}>
+              <span class="we1-no font-headline italic absolute select-none" aria-hidden="true">
+                No.&thinsp;{i + 1}
+              </span>
+              <div class="we1-arch-wrap relative mx-auto">
+                <span class="we1-ring absolute" aria-hidden="true" />
+                <div class="we1-arch relative overflow-hidden">
+                  <img
+                    src={project.image}
+                    srcset={`${project.image} 1x, ${project.image.replace(".webp", "-2x.webp")} 2x`}
+                    alt={project.alt}
+                    class="absolute inset-0 w-full h-full object-cover object-top"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                {project.featured && (
+                  <span class="we1-stamp absolute font-mono text-[10px] leading-none tracking-[0.22em] uppercase">
+                    Editor&rsquo;s pick
+                  </span>
+                )}
+              </div>
+            </figure>
+          </div>
+        </article>
+      </>
+    ))
+  }
+
+  <p
+    class="max-w-[1200px] mx-auto px-6 lg:px-12 pb-14 pt-4 font-mono text-[11px] leading-none tracking-[0.18em] uppercase text-ink/35 text-center"
+  >
+    end of the print run &mdash; back tomorrow, six a.m. sharp
+  </p>
 </section>
+
+<style>
+  .we1 {
+    overflow-x: clip;
+    background: #faf8f2;
+    /* --in: entry progress (0 offscreen → 1 seated), --par: full-traverse
+       progress for parallax. Defaults render the seated state without JS. */
+  }
+
+  .we1-plate {
+    --in: 1;
+    --par: 0.5;
+    padding: clamp(80px, 11vh, 140px) 0;
+  }
+
+  /* One tinted wash pooled behind the figure side */
+  .we1-plate::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(46% 62% at 74% 50%, var(--wash), transparent 72%);
+    opacity: var(--in);
+  }
+
+  .we1-flip::before {
+    background: radial-gradient(46% 62% at 26% 50%, var(--wash), transparent 72%);
+  }
+
+  .we1-folio-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--acc);
+  }
+
+  /* ── The arch plate ── */
+  /* isolate so the numeral's z-index: -1 stays inside the figure instead of
+     dropping behind the section background */
+  .we1-fig {
+    isolation: isolate;
+  }
+
+  .we1-arch-wrap {
+    max-width: 440px;
+    transform: translateY(calc((1 - var(--in)) * 70px));
+    opacity: calc(0.2 + var(--in) * 0.8);
+    will-change: transform;
+  }
+
+  .we1-arch {
+    aspect-ratio: 0.84;
+    border-radius: 999px 999px 26px 26px;
+    background: #eef0ea;
+    box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.45);
+  }
+
+  .we1-arch img {
+    transform: scale(calc(1.16 - var(--in) * 0.16)) translateY(calc((0.5 - var(--par)) * 26px));
+    will-change: transform;
+  }
+
+  /* Halo ring settles around the arch as it seats */
+  .we1-ring {
+    inset: -16px;
+    border: 1px solid var(--acc);
+    border-radius: 999px 999px 34px 34px;
+    opacity: calc(var(--in) * 0.55);
+    transform: scale(calc(0.965 + var(--in) * 0.035));
+    pointer-events: none;
+  }
+
+  /* Ghost folio numeral behind the plate */
+  .we1-no {
+    font-size: clamp(6rem, 15vw, 11rem);
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px color-mix(in srgb, var(--acc) 40%, transparent);
+    top: -0.35em;
+    right: -0.08em;
+    z-index: -1;
+    transform: translateY(calc((0.5 - var(--par)) * 60px));
+    will-change: transform;
+  }
+
+  .we1-flip .we1-no {
+    right: auto;
+    left: -0.08em;
+  }
+
+  .we1-stamp {
+    top: 8%;
+    right: -14px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--acc);
+    border-radius: 999px;
+    color: var(--acc);
+    background: rgba(250, 248, 242, 0.85);
+    transform: rotate(6deg);
+  }
+
+  .we1-flip .we1-stamp {
+    right: auto;
+    left: -14px;
+    transform: rotate(-6deg);
+  }
+
+  /* ── Links: accent underline that draws on hover ── */
+  .we1-link {
+    background-image: linear-gradient(var(--acc), var(--acc));
+    background-repeat: no-repeat;
+    background-size: 100% 1.5px;
+    background-position: 0 96%;
+    padding-bottom: 3px;
+    transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .we1-link:hover {
+    background-size: 38% 1.5px;
+  }
+
+  .we1-link:focus-visible,
+  .we1-focus:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 1023px) {
+    .we1-arch-wrap {
+      max-width: 360px;
+    }
+
+    .we1-no {
+      font-size: clamp(5rem, 22vw, 8rem);
+      top: -0.3em;
+    }
+
+    .we1-plate {
+      padding: clamp(64px, 9vh, 110px) 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .we1-plate {
+      --in: 1 !important;
+      --par: 0.5 !important;
+    }
+  }
+</style>
+
+<script>
+  {
+    const section = document.querySelector<HTMLElement>(".we1");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (section && !reducedMotion) {
+      const plates = Array.from(section.querySelectorAll<HTMLElement>("[data-plate]"));
+      let ticking = false;
+
+      const update = () => {
+        ticking = false;
+        const vh = window.innerHeight;
+        for (const plate of plates) {
+          const rect = plate.getBoundingClientRect();
+          // Hidden variant panel (display: none) — nothing to drive
+          if (!rect.height) return;
+          const raw = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)));
+          const eased = raw * raw * (3 - 2 * raw);
+          const par = Math.min(1, Math.max(0, (vh - rect.top) / (vh + rect.height)));
+          plate.style.setProperty("--in", eased.toFixed(3));
+          plate.style.setProperty("--par", par.toFixed(3));
+        }
+      };
+
+      const onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      update();
+    }
+  }
+</script>

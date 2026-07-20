@@ -58,26 +58,63 @@
       </p>
 
       <div class="flex items-center gap-6 mt-14 md:mt-16">
-        <button
-          type="submit"
-          aria-label="Prove your humanity"
-          class="cv2-seal group relative shrink-0 w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
-        >
-          <svg class="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M2 12 12 2M4.5 2H12v7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
+        <span class="cv2-seal-wrap relative shrink-0">
+          <button
+            type="submit"
+            aria-label="Prove your humanity"
+            class="cv2-seal group relative w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
+          >
+            <svg class="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 12 12 2M4.5 2H12v7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <span class="cv2-tip" aria-hidden="true">Already sent &mdash; one letter is plenty.</span>
+        </span>
         <div>
-          <p class="font-mono text-[13px] tracking-[-0.02em] text-[#c9c9c9]">Prove your humanity</p>
-          <p class="font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-1.5">
+          <p class="cv2-cta-title font-mono text-[13px] tracking-[-0.02em] text-[#c9c9c9]">Prove your humanity</p>
+          <p class="cv2-cta-sub font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-1.5">
             I promise this won&rsquo;t be your usual captcha.
           </p>
+          <button type="button" class="cv2-again hidden">Write another letter</button>
         </div>
       </div>
 
       <p class="cv2-error hidden font-mono text-[12px] tracking-[-0.02em] text-[#e0a68b] mt-6" role="alert">
         The letter needs a body — write anything at all.
       </p>
+
+      <div id="cv2-captcha" popover class="cv2-captcha">
+        <div class="cv2-cap-main">
+          <p class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-white/45">
+            Proof of humanity
+          </p>
+          <p class="cv2-cap-line mt-4">
+            One last thing — sign here.
+            <span class="text-white/35">Any scribble counts.</span>
+          </p>
+          <div class="cv2-sigwrap mt-5">
+            <canvas
+              class="cv2-sig"
+              tabindex="0"
+              role="img"
+              aria-label="Signature area. Draw any scribble with your mouse or finger."
+            ></canvas>
+            <span class="cv2-sig-x" aria-hidden="true">&times;</span>
+            <div class="cv2-sig-line" aria-hidden="true"></div>
+          </div>
+          <p class="cv2-cap-status mt-4" role="status">Sign with a scribble — any scribble.</p>
+          <button type="button" class="cv2-cap-send mt-5" disabled>
+            <span class="cv2-cap-spinner" aria-hidden="true"></span>
+            <span class="cv2-cap-send-label">Awaiting a signature</span>
+          </button>
+        </div>
+        <div class="cv2-cap-sent" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 14 14" fill="none">
+            <path d="M2 12 12 2M4.5 2H12v7.5" pathLength="1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <p class="font-mono text-[12px] tracking-[-0.02em]">Off it goes.</p>
+        </div>
+      </div>
     </form>
 
     <div class="border-t border-[#1e1e1e] mt-16 md:mt-20 pt-10">
@@ -186,6 +223,291 @@
       transform: scale(1.06) rotate(4deg);
     }
   }
+
+  /* The captcha: a slip of the same letter, in the top layer */
+  .cv2-captcha {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: min(340px, calc(100vw - 32px));
+    padding: 22px 24px 18px 30px;
+    background: #101010;
+    border: 1px solid #232323;
+    color: #e9e9e6;
+    overflow: visible;
+  }
+
+  /* Echo of the notebook margin rule */
+  .cv2-captcha::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 11px;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(206, 247, 158, 0.28) 24px,
+      rgba(206, 247, 158, 0.28) calc(100% - 24px),
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  .cv2-cap-line {
+    font-family: var(--font-display);
+    font-size: 19px;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+
+  .cv2-sigwrap {
+    position: relative;
+    height: 116px;
+  }
+
+  .cv2-sig {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  .cv2-sig:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 4px;
+  }
+
+  /* Same dashed-blank language as the inline inputs */
+  .cv2-sig-line {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    bottom: 24px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.35);
+    transition: border-color 0.2s ease;
+    pointer-events: none;
+  }
+
+  .cv2-captcha.is-ready .cv2-sig-line {
+    border-bottom-style: solid;
+    border-bottom-color: var(--color-bio-lime);
+  }
+
+  .cv2-sig-x {
+    position: absolute;
+    left: 4px;
+    bottom: 30px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+  }
+
+  .cv2-cap-status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: -0.02em;
+    color: #5f5f5f;
+    transition: color 0.2s ease;
+  }
+
+  .cv2-captcha.is-signed .cv2-cap-status {
+    color: var(--color-bio-lime);
+  }
+
+  .cv2-cap-main {
+    transition: opacity 0.25s ease;
+  }
+
+  .cv2-captcha.is-sent-anim .cv2-cap-main {
+    opacity: 0;
+  }
+
+  .cv2-cap-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    background: var(--color-bio-lime);
+    color: #0a0a0a;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .cv2-cap-send:disabled {
+    background: #1a1a1a;
+    color: #5f5f5f;
+    cursor: not-allowed;
+  }
+
+  .cv2-cap-send:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 3px;
+  }
+
+  .cv2-cap-spinner {
+    display: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid #4a4a4a;
+    border-top-color: #c9c9c9;
+  }
+
+  .cv2-captcha.is-sending .cv2-cap-spinner {
+    display: inline-block;
+  }
+
+  /* "Off it goes." — the seal's arrow, drawn then released */
+  .cv2-cap-sent {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--color-bio-lime);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease 0.15s;
+  }
+
+  .cv2-captcha.is-sent-anim .cv2-cap-sent {
+    opacity: 1;
+  }
+
+  /* Sent state: seal goes quiet, tooltip explains */
+  .cv2-seal:disabled {
+    background: #1a1a1a;
+    color: #565656;
+    cursor: not-allowed;
+  }
+
+  .cv2-seal:disabled svg {
+    transform: none !important;
+  }
+
+  .cv2-tip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(3px);
+    white-space: nowrap;
+    background: #101010;
+    border: 1px solid #232323;
+    padding: 8px 11px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: -0.02em;
+    color: #c9c9c9;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+    z-index: 10;
+  }
+
+  .cv2-form[data-sent] .cv2-seal-wrap:hover .cv2-tip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .cv2-again {
+    margin-top: 12px;
+    padding: 7px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+    background: transparent;
+    border: 1px solid #2c2c2c;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .cv2-again:hover {
+    color: var(--color-bio-lime);
+    border-color: rgba(206, 247, 158, 0.4);
+  }
+
+  .cv2-again:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cv2-captcha:popover-open {
+      animation: cv2-cap-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes cv2-cap-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px) rotate(-0.5deg);
+      }
+    }
+
+    .cv2-cap-spinner {
+      animation: cv2-spin 0.7s linear infinite;
+    }
+
+    @keyframes cv2-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .cv2-captcha.is-sent-anim .cv2-cap-sent path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: cv2-draw 0.45s ease 0.3s forwards;
+    }
+
+    @keyframes cv2-draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .cv2-captcha.is-sent-anim .cv2-cap-sent svg {
+      animation: cv2-fly 0.55s cubic-bezier(0.6, -0.1, 0.9, 0.5) 1.05s forwards;
+    }
+
+    @keyframes cv2-fly {
+      to {
+        transform: translate(30px, -30px);
+        opacity: 0;
+      }
+    }
+
+    .cv2-captcha.is-sent-anim .cv2-cap-sent p {
+      opacity: 0;
+      animation: cv2-appear 0.3s ease 1.2s forwards;
+    }
+
+    @keyframes cv2-appear {
+      to {
+        opacity: 1;
+      }
+    }
+  }
 </style>
 
 <script>
@@ -213,22 +535,234 @@
         });
       }
 
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
+      const sendLetter = () => {
         const data = new FormData(form);
         const name = String(data.get("name") || "").trim();
         const email = String(data.get("email") || "").trim();
         const body = String(data.get("message") || "").trim();
+        const subject = name ? `A letter from ${name}` : "A letter from your portfolio";
+        const lines = [
+          "Hi Dominic —",
+          "",
+          body,
+          "",
+          name ? `— ${name}` : "",
+          email ? `Reply to: ${email}` : "",
+          "✍ signed by hand",
+        ].filter(Boolean);
+        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+      };
 
+      // --- The captcha: sign the letter ---
+      const SENT_KEY = "cv2-letter-sent";
+      const seal = form.querySelector<HTMLButtonElement>(".cv2-seal");
+      const pop = form.querySelector<HTMLElement>("#cv2-captcha");
+      const canvas = pop?.querySelector<HTMLCanvasElement>(".cv2-sig");
+      const status = pop?.querySelector<HTMLElement>(".cv2-cap-status");
+      const ctx = canvas?.getContext("2d");
+      const sendBtn = pop?.querySelector<HTMLButtonElement>(".cv2-cap-send");
+      const sendLabel = pop?.querySelector<HTMLElement>(".cv2-cap-send-label");
+      const ctaTitle = form.querySelector<HTMLElement>(".cv2-cta-title");
+      const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub");
+      const again = form.querySelector<HTMLButtonElement>(".cv2-again");
+
+      const INK = "#cef79e";
+      // Enough path to rule out a stray tap; any real squiggle clears it easily
+      const MIN_INK = 220;
+      const MIN_SAMPLES = 14;
+
+      let inkLength = 0;
+      let samples = 0;
+      let ready = false;
+      let committed = false;
+      let drawing = false;
+      let last: { x: number; y: number; t: number; w: number } | null = null;
+      let sendT1 = 0;
+      let sendT2 = 0;
+
+      // localStorage can throw in strict privacy modes — treat as "never sent"
+      const readSent = () => {
+        try {
+          return Boolean(localStorage.getItem(SENT_KEY));
+        } catch {
+          return false;
+        }
+      };
+
+      const applySentState = (sent: boolean) => {
+        if (seal) seal.disabled = sent;
+        if (sent) form.setAttribute("data-sent", "");
+        else form.removeAttribute("data-sent");
+        if (ctaTitle) ctaTitle.textContent = sent ? "Letter sent." : "Prove your humanity";
+        if (ctaSub)
+          ctaSub.textContent = sent
+            ? "One letter is plenty — I promise I read them."
+            : "I promise this won’t be your usual captcha.";
+        again?.classList.toggle("hidden", !sent);
+      };
+
+      const setStatus = (text: string) => {
+        if (status) status.textContent = text;
+      };
+
+      const resetPad = () => {
+        if (!canvas || !ctx) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = INK;
+        ctx.fillStyle = INK;
+        inkLength = 0;
+        samples = 0;
+        ready = false;
+        committed = false;
+        drawing = false;
+        last = null;
+        pop?.classList.remove("is-ready", "is-signed", "is-sending", "is-sent-anim");
+        if (sendBtn) sendBtn.disabled = true;
+        if (sendLabel) sendLabel.textContent = "Awaiting a signature";
+        setStatus("Sign with a scribble — any scribble.");
+      };
+
+      const markReady = () => {
+        ready = true;
+        pop?.classList.add("is-ready");
+        if (sendBtn) sendBtn.disabled = false;
+        if (sendLabel) sendLabel.textContent = "Send the letter";
+      };
+
+      const placePopover = () => {
+        if (!pop || !seal || !pop.matches(":popover-open")) return;
+        const r = seal.getBoundingClientRect();
+        const w = pop.offsetWidth;
+        const h = pop.offsetHeight;
+        const pad = 12;
+        let top = r.top - h - 14;
+        if (top < pad) top = Math.min(r.bottom + 14, window.innerHeight - h - pad);
+        const left = Math.min(Math.max(r.left, pad), window.innerWidth - w - pad);
+        pop.style.top = `${top}px`;
+        pop.style.left = `${left}px`;
+      };
+
+      if (pop && canvas && ctx && seal && sendBtn) {
+        // Ink with a live nib: slower strokes pool wider, like a real pen
+        canvas.addEventListener("pointerdown", (e) => {
+          if (committed) return;
+          canvas.setPointerCapture(e.pointerId);
+          drawing = true;
+          last = { x: e.offsetX, y: e.offsetY, t: e.timeStamp, w: 2.4 };
+          ctx.beginPath();
+          ctx.arc(e.offsetX, e.offsetY, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        canvas.addEventListener("pointermove", (e) => {
+          if (!drawing || !last || committed) return;
+          const x = e.offsetX;
+          const y = e.offsetY;
+          const dist = Math.hypot(x - last.x, y - last.y);
+          if (dist < 1) return;
+          const speed = dist / Math.max(e.timeStamp - last.t, 1);
+          const target = Math.min(Math.max(3.4 - speed * 1.1, 1.1), 3.4);
+          const width = last.w + (target - last.w) * 0.3;
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          ctx.moveTo(last.x, last.y);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+          inkLength += dist;
+          samples += 1;
+          last = { x, y, t: e.timeStamp, w: width };
+          if (!ready && inkLength > MIN_INK && samples > MIN_SAMPLES) markReady();
+        });
+
+        const liftPen = () => {
+          if (!drawing) return;
+          drawing = false;
+          last = null;
+          if (committed) return;
+          if (ready) {
+            pop.classList.add("is-signed");
+            setStatus("Good enough for me — send it.");
+          } else if (samples < 3) {
+            setStatus("That's a dot. I need a whole scribble.");
+          } else {
+            setStatus("Almost — keep the scribble going.");
+          }
+        };
+        canvas.addEventListener("pointerup", liftPen);
+        canvas.addEventListener("pointercancel", liftPen);
+
+        sendBtn.addEventListener("click", () => {
+          if (!ready || committed) return;
+          committed = true;
+          sendBtn.disabled = true;
+          pop.classList.add("is-sending");
+          if (sendLabel) sendLabel.textContent = "Sealing…";
+          sendT1 = window.setTimeout(() => {
+            try {
+              localStorage.setItem(SENT_KEY, new Date().toISOString());
+            } catch {
+              /* still send; the page just won't remember */
+            }
+            sendLetter();
+            setStatus("Sent — off it goes.");
+            pop.classList.add("is-sent-anim");
+            sendT2 = window.setTimeout(() => {
+              if (pop.matches(":popover-open")) pop.hidePopover();
+              else applySentState(true);
+            }, 2000);
+          }, 1000);
+        });
+
+        // Closing early (Esc, light dismiss) abandons an unsent attempt;
+        // once the letter is away, closing just finalizes the sent state
+        pop.addEventListener("toggle", (e) => {
+          if ((e as unknown as { newState: string }).newState !== "closed") return;
+          drawing = false;
+          if (committed) {
+            window.clearTimeout(sendT1);
+            window.clearTimeout(sendT2);
+            if (readSent()) applySentState(true);
+          }
+        });
+
+        again?.addEventListener("click", () => {
+          try {
+            localStorage.removeItem(SENT_KEY);
+          } catch {
+            /* nothing to clear */
+          }
+          applySentState(false);
+          seal.focus();
+        });
+
+        if (readSent()) applySentState(true);
+
+        window.addEventListener("resize", placePopover, { passive: true });
+        window.addEventListener("scroll", placePopover, { passive: true });
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (readSent()) return;
+        const body = String(new FormData(form).get("message") || "").trim();
         if (!body) {
           error?.classList.remove("hidden");
           message?.focus();
           return;
         }
-
-        const subject = name ? `A letter from ${name}` : "A letter from your portfolio";
-        const lines = ["Hi Dominic —", "", body, "", name ? `— ${name}` : "", email ? `Reply to: ${email}` : ""].filter(Boolean);
-        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+        if (pop && canvas && ctx && typeof pop.showPopover === "function") {
+          pop.showPopover();
+          resetPad();
+          placePopover();
+          canvas.focus({ preventScroll: true });
+        } else {
+          sendLetter();
+        }
       });
     }
   }
