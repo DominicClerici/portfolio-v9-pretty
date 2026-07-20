@@ -13,9 +13,10 @@ const navLinks = [
 ]
 ---
 
-<header class="absolute top-0 left-0 w-full z-[70]">
+<!-- Desktop only: on mobile the hero stands alone with no header. -->
+<header class="hidden md:block absolute top-0 left-0 w-full z-[70]">
   <div
-    class="header-enter px-3 sm:px-6 lg:px-12 flex justify-between items-center h-20 md:h-auto md:py-7"
+    class="header-enter px-6 lg:px-12 py-7 flex justify-between items-center"
   >
     <a
       href="https://dev.dominicclerici.com"
@@ -23,12 +24,12 @@ const navLinks = [
       rel="noopener noreferrer"
       data-terminal="header"
       aria-label="Open developer terminal"
-      class="hidden md:inline-flex font-mono text-[14px] text-ink py-1.5"
+      class="inline-flex font-mono text-[14px] text-ink py-1.5"
     >
       <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
     </a>
 
-    <nav class="hidden md:flex gap-7 items-center" aria-label="Main navigation">
+    <nav class="flex gap-7 items-center" aria-label="Main navigation">
       {
         navLinks.map((link) => (
           <a
@@ -51,84 +52,10 @@ const navLinks = [
         Resume
       </a>
     </nav>
-
-    <button
-      id="menu-toggle"
-      class="group md:hidden ml-auto flex flex-col justify-center gap-1 w-6 h-6 bg-transparent border-none cursor-pointer p-0"
-      aria-label="Toggle navigation menu"
-      aria-expanded="false"
-    >
-      <span
-        class="block w-full h-[1px] bg-ink transition-all duration-200 origin-center group-aria-expanded:translate-y-[5px] group-aria-expanded:rotate-45"
-      ></span>
-      <span
-        class="block w-full h-[1px] bg-ink transition-all duration-200 group-aria-expanded:opacity-0"
-      ></span>
-      <span
-        class="block w-full h-[1px] bg-ink transition-all duration-200 origin-center group-aria-expanded:-translate-y-[5px] group-aria-expanded:-rotate-45"
-      ></span>
-    </button>
   </div>
 </header>
 
-<div
-  id="mobile-menu"
-  class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-ink/60 backdrop-blur-xl opacity-0 pointer-events-none md:hidden"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Navigation menu"
-  inert
->
-  <nav class="flex flex-col items-center gap-8" aria-label="Mobile navigation">
-    {
-      navLinks.map((link) => (
-        <a
-          href={link.href}
-          class="font-mono text-lg uppercase tracking-[-0.02em] text-white transition-colors duration-100"
-          data-menu-link
-          {...(link.external
-            ? { target: "_blank", rel: "noopener noreferrer" }
-            : {})}
-        >
-          {link.label}
-        </a>
-      ))
-    }
-    <a
-      href="/DominicClerici_CV.pdf"
-      class="font-mono text-lg uppercase tracking-[-0.02em] text-bio-lime border border-bio-lime/60 rounded-xl px-6 py-2 transition-colors duration-100"
-      data-menu-link
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Resume
-    </a>
-  </nav>
-  <div class="absolute bottom-4 left-6 md:hidden">
-    <span
-      id="terminal-mobile-hint"
-      class="block text-xs font-mono text-bio-lime opacity-0 transition-opacity duration-300 mb-1"
-      >click it again...</span
-    >
-    <a
-      href="https://dev.dominicclerici.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      data-terminal="mobile"
-      aria-label="Open developer terminal"
-      class="font-mono text-white"
-      style="opacity: 0.5"
-    >
-      <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
-    </a>
-  </div>
-</div>
-
 <style>
-  #mobile-menu {
-    transition: opacity 0.3s ease;
-  }
-
   @media (prefers-reduced-motion: no-preference) {
     .header-enter {
       opacity: 0;
@@ -153,45 +80,7 @@ const navLinks = [
     cancelAnim,
     typeText,
     deleteText,
-    type TState,
   } from "../scripts/terminal"
-
-  const toggle = document.getElementById("menu-toggle")
-  const menuEl = document.getElementById("mobile-menu")
-
-  function openMenu() {
-    menuEl!.classList.remove("opacity-0", "pointer-events-none")
-    menuEl!.classList.add("opacity-100", "pointer-events-auto")
-    toggle!.setAttribute("aria-expanded", "true")
-    menuEl!.removeAttribute("inert")
-    document.body.style.overflow = "hidden"
-    initMobileTerminal()
-  }
-
-  function closeMenu() {
-    menuEl!.classList.add("opacity-0", "pointer-events-none")
-    menuEl!.classList.remove("opacity-100", "pointer-events-auto")
-    toggle!.setAttribute("aria-expanded", "false")
-    menuEl!.setAttribute("inert", "")
-    document.body.style.overflow = ""
-    teardownMobileTerminal()
-  }
-
-  toggle!.addEventListener("click", () => {
-    if (toggle!.getAttribute("aria-expanded") === "true") {
-      closeMenu()
-    } else {
-      openMenu()
-    }
-  })
-
-  document.querySelectorAll("[data-menu-link]").forEach((link) => {
-    link.addEventListener("click", closeMenu)
-  })
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeMenu()
-  })
 
   // === Desktop Header Button ===
   const headerEl = document.querySelector<HTMLElement>(
@@ -293,58 +182,5 @@ const navLinks = [
         startBlink(ss)
       }
     })
-  }
-
-  // === Mobile Overlay Button ===
-  const mobileEl = document.querySelector<HTMLElement>(
-    '[data-terminal="mobile"]',
-  )
-  const mobileHint = document.getElementById("terminal-mobile-hint")
-  let mobileState: TState | null = null
-
-  function handleMobileTap(e: Event) {
-    const ms = mobileState
-    if (!ms || !mobileEl) return
-
-    if (!ms.isActivated) {
-      e.preventDefault()
-      if (ms.animCancel) return
-
-      typeText(ms).then((completed) => {
-        if (!completed || !mobileState) return
-        ms.isActivated = true
-        mobileEl!.style.opacity = "1"
-        ms.hintTimer = window.setTimeout(() => {
-          if (ms.hintEl) ms.hintEl.style.opacity = "1"
-        }, 3000)
-      })
-    }
-  }
-
-  function initMobileTerminal() {
-    if (!mobileEl) return
-    const ms = makeState(mobileEl, mobileHint)
-    mobileState = ms
-    mobileEl.style.opacity = "0.5"
-
-    ms.visTimer = window.setTimeout(() => startBlink(ms), 3000)
-    mobileEl.addEventListener("click", handleMobileTap)
-  }
-
-  function teardownMobileTerminal() {
-    if (!mobileEl || !mobileState) return
-    cancelAnim(mobileState)
-    stopBlink(mobileState)
-    if (mobileState.visTimer !== null) {
-      clearTimeout(mobileState.visTimer)
-    }
-    if (mobileState.hintTimer !== null) {
-      clearTimeout(mobileState.hintTimer)
-    }
-    mobileState.textEl.textContent = ">"
-    mobileEl.style.opacity = "0.5"
-    if (mobileState.hintEl) mobileState.hintEl.style.opacity = "0"
-    mobileEl.removeEventListener("click", handleMobileTap)
-    mobileState = null
   }
 </script>

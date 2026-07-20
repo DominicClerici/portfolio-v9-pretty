@@ -19,15 +19,9 @@ export interface TState {
   animCancel: { value: boolean } | null
   isInView: boolean
   isHovering: boolean
-  isActivated: boolean
-  hintTimer: number | null
-  hintEl: HTMLElement | null
 }
 
-export function makeState(
-  el: HTMLElement,
-  hintEl?: HTMLElement | null,
-): TState {
+export function makeState(el: HTMLElement): TState {
   return {
     textEl: el.querySelector("[data-terminal-text]") as HTMLElement,
     cursorEl: el.querySelector("[data-terminal-cursor]") as HTMLElement,
@@ -36,9 +30,6 @@ export function makeState(
     animCancel: null,
     isInView: false,
     isHovering: false,
-    isActivated: false,
-    hintTimer: null,
-    hintEl: hintEl ?? null,
   }
 }
 
