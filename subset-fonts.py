@@ -39,12 +39,11 @@ FULL_FONTS_DIR = ROOT / "fonts-src"
 FONT_CLASSES = {
     "font-display": "aspekta",
     "font-mono": "roboto-mono",
-    "font-body": "inter",
 }
 
-# The <body> in Layout.astro carries font-body, so anything that never hits a
-# font-* class inherits Inter. Keep this in sync with that class.
-DEFAULT_FONT = "inter"
+# The <body> in Layout.astro carries font-display, so anything that never hits
+# a font-* class inherits Aspekta. Keep this in sync with that class.
+DEFAULT_FONT = "aspekta"
 
 # Tags whose text content is not visible and should be skipped.
 # Only tags that have closing tags — void elements (meta, link) can't
@@ -196,7 +195,6 @@ def main():
         print("Files needed:")
         print("  - aspekta-400.woff2")
         print("  - roboto-mono-latin-400.woff2")
-        print("  - inter-latin-400.woff2")
         sys.exit(1)
 
     char_sets = collect_chars()
@@ -209,7 +207,6 @@ def main():
     font_files = [
         ("aspekta-400.woff2", "aspekta"),
         ("roboto-mono-latin-400.woff2", "roboto-mono"),
-        ("inter-latin-400.woff2", "inter"),
     ]
 
     total_before = 0
