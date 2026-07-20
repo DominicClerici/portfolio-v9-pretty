@@ -11,10 +11,16 @@ export default defineConfig({
   vite: {
     plugins: [
       tailwindcss(),
-      visualizer({
-        emitFile: true,
-        filename: "stats.html",
-      }),
+      // Opt-in only: emitFile writes into dist/, so an unguarded visualizer
+      // publishes the module graph to the live site. Run: ANALYZE=1 pnpm build
+      ...(process.env.ANALYZE
+        ? [
+            visualizer({
+              emitFile: true,
+              filename: "stats.html",
+            }),
+          ]
+        : []),
     ],
   },
 })
