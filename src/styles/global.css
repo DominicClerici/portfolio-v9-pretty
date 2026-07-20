@@ -109,6 +109,15 @@
    since it is referenced from arbitrary values rather than a utility. */
 :root {
   --hero-h: max(100svh, 560px);
+
+  /* Paint height for the pinned background layers. Deliberately the *large*
+     viewport where --hero-h is the *small* one: svh is the height with the
+     mobile browser chrome expanded, so an svh-tall background stops short of
+     the screen edge the moment Safari's control bar retracts. lvh always
+     covers; dvh would too, but it changes mid-scroll as the bar animates,
+     which would re-layout and re-allocate the WebGL canvas on every frame of
+     that animation. Content stays on --hero-h so nothing lands under the bar. */
+  --bg-h: max(100lvh, 560px);
 }
 
 /* Shared page gutter + max width. */
@@ -153,7 +162,7 @@ body {
 /* Content stack rides above the sticky background, pulled up by exactly
    the background's height so the hero starts at the top of the page. */
 .hero-scope-content {
-  margin-top: calc(-1 * var(--hero-h));
+  margin-top: calc(-1 * var(--bg-h));
 }
 
 /* Radius of the iris the canvas opens from (see the keyframes below). */

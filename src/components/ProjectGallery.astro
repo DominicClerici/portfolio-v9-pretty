@@ -1,23 +1,27 @@
 ---
-// The gallery column of an edition. Rendered twice per project: once inside
+// The gallery column of an edition. Rendered three times per project: inside
 // the arch as the window's replica (decorative — the arch's own button carries
-// the label), once inside the spread. The portal clones one of these at open
-// time, so the markup has to survive cloneNode without JS wiring.
+// the label), inside the spread, and — leadOnly — as the mobile spread's hero
+// plate, the landing spot the arch's plate flies out to. The portal clones
+// these at open time, so the markup has to survive cloneNode without JS wiring.
 import type { GalleryPlate } from "../data/projects";
 
 interface Props {
   gallery: GalleryPlate[];
   decorative?: boolean;
+  leadOnly?: boolean;
 }
 
-const { gallery, decorative = false } = Astro.props;
+const { gallery, decorative = false, leadOnly = false } = Astro.props;
+
+const plates = leadOnly ? gallery.slice(0, 1) : gallery;
 
 const srcset = (src: string) => `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
 ---
 
-<div class="we1-gallery flex flex-col">
+<div class:list={["we1-gallery flex flex-col", leadOnly && "we1-ghero"]}>
   {
-    gallery.map((g, k) => (
+    plates.map((g, k) => (
       <figure class={`m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
         <div class="we1-gframe relative overflow-hidden">
           <img
@@ -62,5 +66,12 @@ const srcset = (src: string) => `${src} 1x, ${src.replace(".webp", "-2x.webp")} 
       padding-bottom: 72px;
       gap: 56px;
     }
+  }
+
+  /* The hero variant carries no column padding of its own — the flying clone
+     is seated by its frame rect, and in-spread spacing is Work.astro's */
+  .we1-gallery.we1-ghero {
+    padding: 0;
+    gap: 0;
   }
 </style>

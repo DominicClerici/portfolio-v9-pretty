@@ -22,6 +22,12 @@ import ProjectLinks from "./ProjectLinks.astro";
 // Clicking (or "Learn more") expands the mask to the full viewport; nothing
 // behind it shifts, so the walk-through is seamless.
 //
+// On mobile there is no pinned scene to walk into. Instead the plate itself
+// steps through the door: the spread leads with the same plate as a hero
+// image, and on open the arch mask expands while a clone of the plate flies
+// from the arch to the hero's landing rect — one continuous object, tapped
+// card to story cover. Close reverses the flight back into the doorway.
+//
 // Copy and imagery live in src/data/projects.ts.
 ---
 
@@ -132,6 +138,7 @@ import ProjectLinks from "./ProjectLinks.astro";
         </button>
 
         <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-3 sm:px-6">
+          <ProjectGallery gallery={project.gallery} leadOnly />
           <div class="we1-story">
             <EditionLine index={project.index} edition={project.edition} suffix="the full story" data-rise style="--ri: 0;" />
             <h3
@@ -374,10 +381,13 @@ import ProjectLinks from "./ProjectLinks.astro";
      No lift/scale here — moving the arch would drag the "world" seen through
      the window along with it and break the illusion; the invitation is all
      light: deeper shadow, inner glow, outer ring, and the Learn more glyph
-     filling with ink. All four live here so the :has() trigger is written once. */
+     filling with ink. All four live here so the :has() trigger is written once.
+     :active covers touch, where hover never fires — the press itself unlatches. */
   .we1-plate:has(
     .we1-door:hover,
     .we1-more:hover,
+    .we1-door:active,
+    .we1-more:active,
     .we1-door:focus-visible,
     .we1-more:focus-visible
   ) {
@@ -480,6 +490,15 @@ import ProjectLinks from "./ProjectLinks.astro";
     left: var(--fx, 0px);
     top: var(--fy, 0px);
     width: var(--fw, 300px);
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  /* Mobile door: the column is seated at the hero's landing rect and FLIPped
+     over the arch's plate, then released to fly home as the mask opens (and
+     flown back into the doorway on close) */
+  .we1-portal-fly .we1-portal-col {
+    transition: transform 0.7s var(--door-ease);
   }
 
   .we1-portal-on {
@@ -508,6 +527,13 @@ import ProjectLinks from "./ProjectLinks.astro";
   .we1-spread-out {
     opacity: 0;
     transition: opacity 0.42s ease; /* 60% of the 0.7s door shrink */
+  }
+
+  /* Unscrolled mobile close: the portal's flying clone takes over for the
+     spread's hero the instant the close starts, so the spread's own copy must
+     vanish with no fade — otherwise a static ghost would sit over the flight */
+  .we1-hero-off :global(.we1-ghero) {
+    opacity: 0;
   }
 
   /* Scrolled gallery: the portal's column starts hidden so the spread's
@@ -539,15 +565,6 @@ import ProjectLinks from "./ProjectLinks.astro";
     background:
       radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
       var(--color-bone);
-  }
-
-  .we1-spread-flip .we1-story {
-    order: 2;
-  }
-
-  /* :global — rendered by ProjectGallery.astro (see .we1-view above) */
-  .we1-spread-flip :global(.we1-gallery) {
-    order: 1;
   }
 
   .we1-back {
@@ -601,6 +618,22 @@ import ProjectLinks from "./ProjectLinks.astro";
   }
 
   @media (min-width: 1024px) {
+    /* Sides swap on desktop only — the mobile spread always runs hero →
+       story → remaining plates */
+    .we1-spread-flip .we1-story {
+      order: 2;
+    }
+
+    /* :global — rendered by ProjectGallery.astro (see .we1-view above) */
+    .we1-spread-flip :global(.we1-gallery) {
+      order: 1;
+    }
+
+    /* The hero plate is a mobile-only element */
+    .we1-spread :global(.we1-ghero) {
+      display: none;
+    }
+
     /* Story column sits where the old centered 1280px container put it; the
        gallery column runs from the gap to the page edge, with half the column
        gap (48px) as its edge padding */
@@ -645,8 +678,25 @@ import ProjectLinks from "./ProjectLinks.astro";
     }
 
     .we1-story {
-      padding-top: 110px;
+      padding-top: 44px;
       padding-bottom: 24px;
+    }
+
+    /* The lead plate leads the mobile spread — the door you tapped, seated as
+       the story's cover. It takes over the top clearance (under the fixed
+       back button) that the story used to carry. Specificity bump over
+       ProjectGallery's own .we1-gallery.we1-ghero padding reset. */
+    .we1-spread :global(.we1-gallery.we1-ghero) {
+      padding-top: 96px;
+      width: 100%;
+      max-width: 640px;
+      margin-inline: auto;
+    }
+
+    /* ...so the in-flow gallery drops its own copy of the lead (the hero is
+       fig. 01; the column resumes at fig. 02) */
+    .we1-spread :global(.we1-gallery:not(.we1-ghero) .we1-gfig-lead) {
+      display: none;
     }
   }
 
@@ -684,7 +734,9 @@ import ProjectLinks from "./ProjectLinks.astro";
       const desktop = window.matchMedia("(min-width: 1024px)");
 
       const spreadFor = (i: number) => spreads.find((s) => s.dataset.spread === String(i));
-      const galleryFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-gallery");
+      // The full gallery column — the mobile hero also wears .we1-gallery, skip it
+      const galleryFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-gallery:not(.we1-ghero)");
+      const heroFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-ghero");
       // Both scroll containers: the spread itself (gallery) and the sticky
       // story column, which scrolls independently on desktop
       const resetScroll = (spread: HTMLElement) => {
@@ -711,23 +763,43 @@ import ProjectLinks from "./ProjectLinks.astro";
       // undefined = stale, retry when visible; null = windows off (mobile)
       const galRects: (GalRect | null | undefined)[] = [];
 
-      const galRectOf = (spread: HTMLElement): GalRect | undefined => {
-        const gallery = galleryFor(spread);
-        if (!gallery) return undefined;
+      // Run fn with the spread laid out (but invisible) so rects are measurable
+      const measured = <T,>(spread: HTMLElement, fn: () => T): T => {
         const wasHidden = spread.hidden;
         if (wasHidden) {
           spread.style.visibility = "hidden";
           spread.hidden = false;
         }
-        const r = gallery.getBoundingClientRect();
-        const rect = { left: r.left, top: r.top + spread.scrollTop, width: r.width };
+        const out = fn();
         if (wasHidden) {
           spread.hidden = true;
           spread.style.visibility = "";
         }
-        // Zero width means we measured before layout settled — retry later
+        return out;
+      };
+
+      // An element's rect at scrollTop 0 — the spread is a fixed overlay, so
+      // these are landing coordinates in viewport space. Zero width means we
+      // measured before layout settled — retry later.
+      const landingRect = (spread: HTMLElement, el: HTMLElement | null | undefined): GalRect | undefined => {
+        if (!el) return undefined;
+        const r = el.getBoundingClientRect();
+        const rect = { left: r.left, top: r.top + spread.scrollTop, width: r.width };
         return rect.width > 0 ? rect : undefined;
       };
+
+      const galRectOf = (spread: HTMLElement): GalRect | undefined =>
+        measured(spread, () => landingRect(spread, galleryFor(spread)));
+
+      // Mobile door: the hero plate's image frame — where the flight lands.
+      // Only left/top/width matter; height follows the image on both copies.
+      const heroFrameOf = (spread: HTMLElement): GalRect | undefined =>
+        measured(spread, () => landingRect(spread, heroFor(spread)?.querySelector<HTMLElement>(".we1-gframe")));
+
+      // ...and the same plate's frame as rendered inside the arch — where the
+      // flight starts (getBoundingClientRect folds in the drift transform)
+      const replicaFrameFor = (i: number) =>
+        section.querySelector<HTMLElement>(`[data-plate="${i}"] [data-view] .we1-gfig-lead .we1-gframe`);
 
       const measureAll = () => {
         for (const w of windows) {
@@ -908,12 +980,18 @@ import ProjectLinks from "./ProjectLinks.astro";
         portal.style.setProperty("--fw", `${g.width}px`);
       };
 
-      // The portal shows the same stationary scene the arch window does — a
-      // clone of the gallery column frozen at its landing rect
-      const fillPortal = (spread: HTMLElement) => {
-        const gallery = galleryFor(spread);
-        if (portalCol && gallery) portalCol.replaceChildren(gallery.cloneNode(true));
+      // The portal's cast: desktop clones the whole gallery column (the
+      // stationary scene the arch window shows), mobile just the hero plate
+      const fillPortal = (source: HTMLElement | null) => {
+        if (portalCol && source) portalCol.replaceChildren(source.cloneNode(true));
       };
+
+      // Mobile door: the transform that, applied to the column seated at `to`
+      // (the hero's landing frame), lays its plate exactly over `from` (the
+      // frame seen inside the arch). Same image both sides, so a uniform
+      // width-derived scale maps one onto the other.
+      const flyTransform = (from: DOMRect, to: GalRect) =>
+        `translate(${(from.left - to.left).toFixed(2)}px, ${(from.top - to.top).toFixed(2)}px) scale(${(from.width / to.width).toFixed(4)})`;
 
       const dressPortal = (spread: HTMLElement) => {
         if (!portal) return;
@@ -922,7 +1000,15 @@ import ProjectLinks from "./ProjectLinks.astro";
       };
 
       const resetPortal = () => {
-        portal?.classList.remove("we1-portal-on", "we1-portal-full", "we1-portal-fade", "we1-portal-col-hide", "we1-portal-col-in");
+        portal?.classList.remove(
+          "we1-portal-on",
+          "we1-portal-full",
+          "we1-portal-fade",
+          "we1-portal-col-hide",
+          "we1-portal-col-in",
+          "we1-portal-fly",
+        );
+        if (portalCol) portalCol.style.transform = "";
       };
 
       const open = (i: number, trigger: HTMLElement) => {
@@ -931,12 +1017,20 @@ import ProjectLinks from "./ProjectLinks.astro";
         const arch = archFor(i);
         if (!spread || !arch) return;
 
+        // Mobile door: no pinned scene to walk into — the plate itself steps
+        // through instead. Measured up front so a failed measure can fall
+        // back to the snap path below.
+        const mobile = !desktop.matches;
+        const archFrame = mobile ? replicaFrameFor(i)?.getBoundingClientRect() : undefined;
+        const heroFrame = mobile ? heroFrameOf(spread) : undefined;
+        const hero = mobile ? heroFor(spread) : null;
+
         openIndex = i;
         lastTrigger = trigger;
         lock(true);
         history.pushState({ we1: i }, "");
 
-        if (reducedMotion || !portal || !portalCol) {
+        if (reducedMotion || !portal || !portalCol || (mobile && !(archFrame && heroFrame && hero))) {
           spread.hidden = false;
           resetScroll(spread);
           spread.classList.add("is-in");
@@ -947,16 +1041,30 @@ import ProjectLinks from "./ProjectLinks.astro";
 
         busy = true;
 
-        // The gallery's landing rect (measured with the spread laid out but
-        // invisible) — the portal freezes the whole column there
-        const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
-        fillPortal(spread);
-        dressPortal(spread);
-        setColRect(g);
+        if (mobile) {
+          // The hero clone is seated at its landing frame but transformed
+          // back over the arch's plate...
+          fillPortal(hero!);
+          dressPortal(spread);
+          setColRect(heroFrame!);
+          portalCol.style.transform = flyTransform(archFrame!, heroFrame!);
+        } else {
+          // The gallery's landing rect (measured with the spread laid out but
+          // invisible) — the portal freezes the whole column there
+          const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
+          fillPortal(galleryFor(spread));
+          dressPortal(spread);
+          setColRect(g);
+        }
         setClipRect(arch.getBoundingClientRect());
         portal.classList.add("we1-portal-on");
         portal.getBoundingClientRect();
         portal.classList.add("we1-portal-full");
+        if (mobile) {
+          // ...then released to fly home as the mask opens
+          portal.classList.add("we1-portal-fly");
+          portalCol.style.transform = "";
+        }
 
         later(() => {
           spread.hidden = false;
@@ -984,15 +1092,22 @@ import ProjectLinks from "./ProjectLinks.astro";
         const finish = () => {
           detachScroll();
           if (spread) {
-            spread.classList.remove("is-in", "we1-spread-close", "we1-spread-out");
+            spread.classList.remove("is-in", "we1-spread-close", "we1-spread-out", "we1-hero-off");
             resetScroll(spread);
             spread.hidden = true;
           }
           lastTrigger?.focus({ preventScroll: true });
         };
 
+        // Mobile door: the reverse flight, measured up front like open
+        const mobile = !desktop.matches;
+        const canFly = mobile && !reducedMotion && !busy && !!spread;
+        const archFrame = canFly ? replicaFrameFor(i)?.getBoundingClientRect() : undefined;
+        const heroFrame = canFly && spread ? heroFrameOf(spread) : undefined;
+        const hero = canFly && spread ? heroFor(spread) : null;
+
         // Mid-open interrupt or reduced motion: snap closed
-        if (reducedMotion || busy || !portal || !portalCol || !arch || !spread) {
+        if (reducedMotion || busy || !portal || !portalCol || !arch || !spread || (mobile && !(archFrame && heroFrame && hero))) {
           clearTimers();
           resetPortal();
           busy = false;
@@ -1003,22 +1118,36 @@ import ProjectLinks from "./ProjectLinks.astro";
 
         busy = true;
         // Portal scene is the scrollTop-0 state (what the arch window shows);
-        // galRectOf compensates if the spread was scrolled. If the gallery was
-        // scrolled, its images fade out with the spread (the portal's column
-        // starts hidden) and fade back in at the top near the end; if not, the
-        // portal's identical column keeps the images steady under the fade.
+        // landingRect compensates if the spread was scrolled. If the content
+        // was scrolled, the portal's copy fades out with the spread (its
+        // column starts hidden) and fades back in near the end of the flight;
+        // if not, the identical copy keeps the images steady under the fade.
         const scrolled = spread.scrollTop > 1;
-        const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
-        fillPortal(spread);
-        dressPortal(spread);
-        setColRect(g);
+        if (mobile) {
+          fillPortal(hero!);
+          dressPortal(spread);
+          setColRect(heroFrame!);
+          portalCol.style.transform = "";
+        } else {
+          const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
+          fillPortal(galleryFor(spread));
+          dressPortal(spread);
+          setColRect(g);
+        }
         setClipRect(arch.getBoundingClientRect());
         portal.classList.add("we1-portal-on", "we1-portal-full");
         portal.classList.toggle("we1-portal-col-hide", scrolled);
         spread.classList.add("we1-spread-close");
+        // Unscrolled mobile close: the flying clone takes over for the
+        // spread's hero, whose own copy must vanish instantly beneath it
+        if (mobile) spread.classList.toggle("we1-hero-off", !scrolled);
         portal.getBoundingClientRect();
         // Same frame: the door starts shrinking and the content starts fading
         portal.classList.remove("we1-portal-full");
+        if (mobile) {
+          portal.classList.add("we1-portal-fly");
+          portalCol.style.transform = flyTransform(archFrame!, heroFrame!);
+        }
         spread.classList.add("we1-spread-out");
 
         later(finish, CLOSE_FADE_MS);
