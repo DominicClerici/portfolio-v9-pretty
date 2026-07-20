@@ -126,6 +126,17 @@ if (!prefersReducedMotion) {
     return false
   }
 
+  // Pixel-locked consumers (e.g. the Work arch windows, which counter-translate
+  // content to keep it viewport-fixed) subscribe here. Callbacks run
+  // synchronously right after each tick's scrollTo — same frame, before paint —
+  // where a plain scroll listener would trail the paint by one frame. Returns
+  // an unsubscribe function.
+  const tickSubscribers = new Set<() => void>()
+  ;(window as any).__onSmoothScrollTick = (cb: () => void) => {
+    tickSubscribers.add(cb)
+    return () => tickSubscribers.delete(cb)
+  }
+
   const tick = (time: number) => {
     // Clamp dt so a backgrounded tab (paused rAF) can't produce a wild step.
     const dt = lastTime ? Math.min((time - lastTime) / 1000, 0.064) : 0
@@ -217,6 +228,7 @@ if (!prefersReducedMotion) {
     if (mode === "normal" && Math.abs(target - current) < 0.1) current = target
 
     window.scrollTo(0, current)
+    for (const cb of tickSubscribers) cb()
 
     if (mode === "normal" && current === target) {
       running = false
@@ -406,4 +418,5 @@ if (!prefersReducedMotion) {
   ;(window as any).__scrollProgressLead = () => 0
   // Native scrolling here; the locker's overflow:hidden is the whole lock.
   ;(window as any).__smoothScrollLock = () => {}
+  ;(window as any).__onSmoothScrollTick = () => () => {}
 }
