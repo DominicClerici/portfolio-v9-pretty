@@ -1,0 +1,59 @@
+---
+// Visit / Source pair, shared by the front page and the inside spread. The
+// slot sits between them so the front page can seat its "Learn more" button
+// in the middle without duplicating the anchors.
+interface Props {
+  websiteUrl: string;
+  githubUrl: string | null;
+  class?: string;
+  [key: string]: unknown;
+}
+
+const { websiteUrl, githubUrl, class: className = "", ...rest } = Astro.props;
+---
+
+<div class:list={["flex items-center flex-wrap gap-x-7 gap-y-4", className]} {...rest}>
+  <a
+    href={websiteUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="we1-link font-display text-[17px] tracking-[-0.01em] text-ink"
+  >
+    Visit the site&nbsp;&nearr;
+  </a>
+  <slot />
+  {
+    githubUrl && (
+      <a
+        href={githubUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="we1-focus font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/50 hover:text-ink transition-colors duration-200"
+      >
+        Source
+      </a>
+    )
+  }
+</div>
+
+<style>
+  /* Accent underline that draws back on hover */
+  .we1-link {
+    background-image: linear-gradient(var(--acc), var(--acc));
+    background-repeat: no-repeat;
+    background-size: 100% 1.5px;
+    background-position: 0 96%;
+    padding-bottom: 3px;
+    transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .we1-link:hover {
+    background-size: 38% 1.5px;
+  }
+
+  .we1-link:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+</style>

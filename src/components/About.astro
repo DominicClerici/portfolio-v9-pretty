@@ -1,4 +1,9 @@
 ---
+const stats = [
+  { label: "Location", value: "New York", sub: "EST. 2004" },
+  { label: "Experience", value: "5+ years", sub: "9+ years programming" },
+]
+
 const conceptualSkills = [
   "Full Stack",
   "Mobile Development",
@@ -30,18 +35,14 @@ const technicalSkills = [
 
 <!-- Scrolls over the pinned hero canvas — no background of its own -->
 <section id="about" class="relative">
-  <div
-    class="max-w-[1524px] mx-auto px-6 lg:px-12 py-[clamp(120px,18vh,200px)]"
-  >
+  <div class="container-page py-[clamp(120px,18vh,200px)]">
     <h2 class="sr-only">About</h2>
 
-    <div class="pt-6 lg:pt-8 mb-10 lg:mb-14">
-      <div class="border-t border-ink/20" aria-hidden="true"></div>
-    </div>
+    <hr class="border-t border-ink/20 mt-6 lg:mt-8 mb-10 lg:mb-14" />
 
     <p
       id="about-intro"
-      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.625rem,calc(1.625rem+(100vw-27.5rem)*0.02),2.625rem)]"
+      class="font-display font-normal text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-display"
     >
       CS student at Indiana University, full-stack engineer at Rumor. I&rsquo;ve
       been programming since before I had any business doing so&nbsp;&mdash;
@@ -54,62 +55,40 @@ const technicalSkills = [
     <div
       class="mt-16 lg:mt-24 pt-8 lg:pt-10 border-t border-ink/20 grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-10"
     >
-      <div class="md:col-span-3" data-reveal-col>
-        <div
-          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3"
-          data-reveal="label"
-        >
-          Location
-        </div>
-        <div
-          class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink"
-          data-reveal="value"
-        >
-          New York
-        </div>
-        <div
-          class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2"
-          data-reveal="sub"
-        >
-          EST. 2004
-        </div>
-      </div>
-
-      <div class="md:col-span-3" data-reveal-col>
-        <div
-          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3"
-          data-reveal="label"
-        >
-          Experience
-        </div>
-        <div
-          class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink"
-          data-reveal="value"
-        >
-          5+ years
-        </div>
-        <div
-          class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2"
-          data-reveal="sub"
-        >
-          9+ years programming
-        </div>
-      </div>
+      {
+        stats.map((stat) => (
+          <div class="md:col-span-3" data-reveal-col>
+            <div
+              class="label-mono uppercase text-ink/45 mb-3"
+              data-reveal="label"
+            >
+              {stat.label}
+            </div>
+            <div
+              class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink"
+              data-reveal="value"
+            >
+              {stat.value}
+            </div>
+            <div class="label-mono text-ink/45 mt-2" data-reveal="sub">
+              {stat.sub}
+            </div>
+          </div>
+        ))
+      }
 
       <div class="col-span-2 md:col-span-6" data-reveal-col>
-        <div
-          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4"
-          data-reveal="label"
-        >
+        <div class="label-mono uppercase text-ink/45 mb-4" data-reveal="label">
           Focus
         </div>
         <div class="flex flex-wrap gap-x-6 gap-y-3">
           {
             conceptualSkills.map((skill) => (
-              <span class="inline-flex items-center gap-2" data-reveal="item">
-                <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/80">
-                  {skill}
-                </span>
+              <span
+                class="label-mono leading-none uppercase text-ink/80"
+                data-reveal="item"
+              >
+                {skill}
               </span>
             ))
           }
@@ -118,7 +97,7 @@ const technicalSkills = [
           {
             technicalSkills.map((skill) => (
               <span
-                class="font-mono text-[13px] leading-none tracking-[-0.02em] text-ink/45"
+                class="label-mono leading-none text-ink/45"
                 data-reveal="item"
               >
                 {skill}
@@ -131,15 +110,55 @@ const technicalSkills = [
   </div>
 </section>
 
+<!-- is:global because these spans are created by the script at runtime and so
+     never carry Astro's scope attribute. Kept under #about to contain them. -->
+<style is:global>
+  /* Typewriter chunk: one span per few characters of the intro paragraph.
+     The from-state and the transition live here so the script only toggles
+     .on rather than writing four inline styles per span — which also means
+     the duration and travel below are the knobs, not the script. */
+  #about .chunk {
+    display: inline-block;
+    opacity: 0.1;
+    transform: translateY(6px);
+    transition:
+      transform 250ms var(--ease-rise),
+      opacity 250ms var(--ease-rise);
+  }
+
+  #about .chunk.on {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+
 <script>
   {
-    /* ══ Scroll-driven typewriter ══════════════════════════════════════════
-       Scroll only *triggers* each chunk. Every character you scroll past costs
-       PX_PER_CHAR pixels, and once a chunk's trigger point is reached it plays
-       its own fixed-duration transition (TRANSITION_MS) — the scroll position
-       does not scrub the motion, it just fires it. Scrolling back past a
-       chunk's trigger reverses it. All the feel knobs live here. */
+    /* ══ Scroll-driven reveals ═════════════════════════════════════════════
+       Two effects, one scroll listener and one reduced-motion check:
 
+       1. The intro paragraph types itself in. Scroll only *triggers* each
+          chunk — every character you scroll past costs PX_PER_CHAR pixels,
+          and once a chunk's trigger point is reached it plays its own
+          fixed-duration CSS transition. The scroll position does not scrub
+          the motion, it just fires it. Scrolling back reverses it.
+
+       2. The stats row fades + rises into place, a column at a time, the
+          moment its top scrolls past REVEAL_VP_FRACTION of the viewport.
+          Within a column the label, value and sub-label cascade; the Focus
+          chips stagger one after another.
+
+       Under prefers-reduced-motion neither runs: no chunk spans are created
+       and the stats are never primed, so both stay fully visible.
+
+       The typewriter's own duration and travel are CSS (.chunk, above); the
+       knobs here are the ones the script owns. */
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+
+    // ── Typewriter knobs ──
     // Max characters per chunk. Chunks never span two words — a word longer
     // than this is split into pieces, and each word starts a fresh chunk, so
     // e.g. "…ing a…" reveals as "ing" then "a…", never "ing a".
@@ -147,23 +166,36 @@ const technicalSkills = [
     // How far you scroll (px) to advance one character's worth of triggers —
     // the pacing knob. Larger = more scrolling between chunks firing.
     const PX_PER_CHAR = 3.5
-    // The effect only starts once the top of the text crosses this fraction
-    // of the viewport height (0.8 = the top edge of the bottom 20%).
-    const START_VP_FRACTION = 0.9
-    // How long each chunk takes to transition in once triggered.
-    const TRANSITION_MS = 250
-    const TRANSITION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)"
-    // Per-chunk animation start state (end state is translateY(0) / opacity 1).
-    const FROM_Y = 6 // px of vertical offset before a chunk is triggered
-    const FROM_OPACITY = 0.1 // opacity before a chunk is triggered
+    // The typewriter starts once the top of the text crosses this fraction of
+    // the viewport height (0.9 = the top edge of the bottom 10%).
+    const TYPE_VP_FRACTION = 0.9
 
-    const el = document.getElementById("about-intro")
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches
+    // ── Stats-reveal knobs ──
+    const REVEAL_MS = 650 // duration — matches the hero line-rise
+    // Trigger once a column's top crosses this fraction of the viewport
+    // height (0.8 = the top edge of the bottom 20%).
+    const REVEAL_VP_FRACTION = 0.8
+    const FROM_OPACITY = 0.1
+    // Per-role start offset (px) and stagger delay (s) within a column.
+    const ROLE = {
+      label: { y: -4, delay: 0 },
+      value: { y: 6, delay: 0.08 },
+      sub: { y: 4, delay: 0.16 }, // starts + ends slightly after the value
+    }
+    // Focus chips: each fires FOCUS_STAGGER after the previous, offset from
+    // the Focus label by FOCUS_BASE.
+    const FOCUS_Y = 6
+    const FOCUS_BASE = 0.08
+    const FOCUS_STAGGER = 0.02
 
-    // No JS reveal under reduced motion — the text just stays fully visible.
-    if (el && !reducedMotion) {
+    const ease = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ease-rise")
+      .trim()
+
+    /* ── 1. Intro typewriter ── */
+    const intro = document.getElementById("about-intro")
+
+    if (intro && !reducedMotion) {
       /* Split the paragraph into chunk <span>s in place, preserving nested
          markup (e.g. the muted second-sentence span) and whitespace. Words
          become one-or-more chunk spans; whitespace stays as plain text nodes
@@ -173,7 +205,7 @@ const technicalSkills = [
       let cursor = 0
 
       const textNodes: Text[] = []
-      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      const walker = document.createTreeWalker(intro, NodeFilter.SHOW_TEXT)
       while (walker.nextNode()) textNodes.push(walker.currentNode as Text)
 
       for (const node of textNodes) {
@@ -188,11 +220,8 @@ const technicalSkills = [
           for (let i = 0; i < token.length; i += CHUNK_SIZE) {
             const piece = token.slice(i, i + CHUNK_SIZE)
             const span = document.createElement("span")
+            span.className = "chunk"
             span.textContent = piece
-            span.style.display = "inline-block"
-            span.style.transition = `transform ${TRANSITION_MS}ms ${TRANSITION_EASE}, opacity ${TRANSITION_MS}ms ${TRANSITION_EASE}`
-            span.style.opacity = String(FROM_OPACITY)
-            span.style.transform = `translateY(${FROM_Y}px)`
             frag.appendChild(span)
             chunks.push({ node: span, trigger: cursor, on: false })
             cursor += piece.length
@@ -202,27 +231,24 @@ const technicalSkills = [
       }
 
       function update() {
-        const line = START_VP_FRACTION * window.innerHeight
+        const line = TYPE_VP_FRACTION * window.innerHeight
         // Characters worth of scroll past the trigger line (0 until crossed).
         const revealed = Math.max(
           0,
-          (line - el!.getBoundingClientRect().top) / PX_PER_CHAR,
+          (line - intro!.getBoundingClientRect().top) / PX_PER_CHAR,
         )
         for (const c of chunks) {
           // Fire once scroll has advanced past this chunk's trigger point;
-          // the CSS transition on the span animates the actual motion.
+          // the CSS transition on .chunk animates the actual motion.
           const on = revealed > c.trigger
           if (on === c.on) continue
           c.on = on
-          c.node.style.opacity = on ? "1" : String(FROM_OPACITY)
-          c.node.style.transform = on
-            ? "translateY(0px)"
-            : `translateY(${FROM_Y}px)`
+          c.node.classList.toggle("on", on)
         }
       }
 
       let queued = false
-      function onScroll() {
+      const onScroll = () => {
         if (queued) return
         queued = true
         requestAnimationFrame(() => {
@@ -235,43 +261,10 @@ const technicalSkills = [
       window.addEventListener("scroll", onScroll, { passive: true })
       window.addEventListener("resize", onScroll, { passive: true })
     }
-  }
-</script>
 
-<script>
-  {
-    /* ══ Scroll-triggered reveal for the stats row ═════════════════════════
-       Each column (Location / Experience / Focus) fades + rises into place —
-       same easing/duration as the hero "Dominic Clerici" line-rise — the
-       moment its top scrolls past the bottom 20% of the viewport. Within a
-       column the label, value and sub-label cascade; the Focus chips stagger
-       one after another. All the feel knobs live here. */
-
-    const REVEAL_MS = 650 // duration — matches the hero line-rise
-    const REVEAL_EASE = "cubic-bezier(0.33, 1, 0.68, 1)" // hero line-rise curve
-    // Trigger once the element's top crosses this fraction of the viewport
-    // height (0.8 = the top edge of the bottom 20%).
-    const START_VP_FRACTION = 0.8
-    const FROM_OPACITY = 0.1
-
-    // Per-role start offset (px) and stagger delay (s) within a column.
-    const ROLE = {
-      label: { y: -4, delay: 0 },
-      value: { y: 6, delay: 0.08 },
-      sub: { y: 4, delay: 0.16 }, // starts + ends slightly after the value
-    }
-    // Focus chips: each fires FOCUS_STAGGER after the previous, offset from the
-    // Focus label by FOCUS_BASE.
-    const FOCUS_Y = 6
-    const FOCUS_BASE = 0.08
-    const FOCUS_STAGGER = 0.02
-
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches
+    /* ── 2. Stats row reveal ── */
     const cols = document.querySelectorAll<HTMLElement>("[data-reveal-col]")
 
-    // No JS reveal under reduced motion — the columns just stay fully visible.
     if (cols.length && !reducedMotion) {
       // Remember each element's from-state so we can animate it back out with
       // the same transition + delay when the column scrolls back off-threshold.
@@ -280,7 +273,7 @@ const technicalSkills = [
       function prime(node: HTMLElement, fromY: number, delay: number) {
         node.style.opacity = String(FROM_OPACITY)
         node.style.transform = `translateY(${fromY}px)`
-        node.style.transition = `opacity ${REVEAL_MS}ms ${REVEAL_EASE} ${delay}s, transform ${REVEAL_MS}ms ${REVEAL_EASE} ${delay}s`
+        node.style.transition = `opacity ${REVEAL_MS}ms ${ease} ${delay}s, transform ${REVEAL_MS}ms ${ease} ${delay}s`
       }
 
       for (const col of cols) {
@@ -317,7 +310,7 @@ const technicalSkills = [
         },
         {
           threshold: 0,
-          rootMargin: `0px 0px -${Math.round((1 - START_VP_FRACTION) * 100)}% 0px`,
+          rootMargin: `0px 0px -${Math.round((1 - REVEAL_VP_FRACTION) * 100)}% 0px`,
         },
       )
       for (const col of cols) io.observe(col)

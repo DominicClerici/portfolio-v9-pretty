@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.astro";
+import PinnedCanvas from "../components/PinnedCanvas.astro";
 import Hero from "../components/Hero.astro";
 import About from "../components/About.astro";
 import Career from "../components/Career.astro";
@@ -13,9 +14,10 @@ import Footer from "../components/Footer.astro";
 <Layout>
   <Header />
   <main>
-    <Hero>
+    <PinnedCanvas>
+      <Hero />
       <About />
-    </Hero>
+    </PinnedCanvas>
     <Career />
     <Quote />
     <Work />

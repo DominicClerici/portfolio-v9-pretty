@@ -5,10 +5,10 @@
 ---
 
 <section
-  class="qv4 relative bg-[#0a0a0a] overflow-hidden min-h-[78vh] grid place-items-center py-[clamp(110px,15vh,190px)] px-6 md:px-12"
+  class="qv4 relative bg-n-950 overflow-hidden min-h-[78vh] grid place-items-center py-[clamp(110px,15vh,190px)] px-6 md:px-12"
   aria-label="Quote"
 >
-  <div class="dot-grid absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+  <div class="dot-grid" aria-hidden="true"></div>
 
   <canvas class="absolute inset-0 w-full h-full" aria-hidden="true"></canvas>
 
@@ -25,11 +25,11 @@
     </p>
 
     <blockquote
-      class="font-display text-[clamp(1.8rem,4.6vw,3.5rem)] leading-[1.22] tracking-[-0.01em] text-[#f5f5f5]"
+      class="font-display text-[clamp(1.8rem,4.6vw,3.5rem)] leading-[1.22] tracking-[-0.01em] text-n-100"
     >
       &ldquo;The most disastrous thing that you can ever learn is your first
       programming language.&rdquo;<span
-        class="qv4-caret inline-block w-[0.5em] h-[0.9em] ml-2 align-baseline bg-bio-lime"
+        class="inline-block w-[0.5em] h-[0.9em] ml-2 align-baseline bg-bio-lime motion-safe:animate-caret-blink"
         aria-hidden="true"></span>
     </blockquote>
 
@@ -45,19 +45,6 @@
   </div>
 </section>
 
-<style>
-  @media (prefers-reduced-motion: no-preference) {
-    .qv4-caret {
-      animation: qv4-blink 1.1s steps(2, jump-none) infinite;
-    }
-    @keyframes qv4-blink {
-      50% {
-        opacity: 0;
-      }
-    }
-  }
-</style>
-
 <script>
   const section = document.querySelector<HTMLElement>(".qv4");
   const canvas = section?.querySelector("canvas");
@@ -65,6 +52,12 @@
 
   if (section && canvas && ctx) {
     const motionOK = matchMedia("(prefers-reduced-motion: no-preference)").matches;
+
+    const LIME =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-bio-lime")
+        .trim() || "#cef79e";
+    const DUST = "#dee4d8";
 
     // "Hello, World!" — everyone's first program — across languages and eras.
     // Each snippet is unique; the field renders exactly one of each.
@@ -137,13 +130,13 @@
         const dx = p.x - mouse.x;
         const dy = p.y - mouse.y;
         const glow = Math.max(0, 1 - (dx * dx + dy * dy) / (190 * 190));
+        const lit = glow > 0.01;
         ctx.font = `${p.s}px "Roboto Mono", monospace`;
-        ctx.fillStyle =
-          glow > 0.01
-            ? `rgba(206, 247, 158, ${Math.min(0.85, p.a + glow * 0.55)})`
-            : `rgba(222, 228, 216, ${p.a})`;
+        ctx.fillStyle = lit ? LIME : DUST;
+        ctx.globalAlpha = lit ? Math.min(0.85, p.a + glow * 0.55) : p.a;
         ctx.fillText(p.t, p.x, p.y);
       }
+      ctx.globalAlpha = 1;
     };
 
     let raf = 0;
@@ -176,9 +169,8 @@
       inView && !document.hidden ? start() : stop();
     });
 
-    // Re-init when the section gets real dimensions (it starts inside a
-    // hidden variant panel) or on resize; draw a static frame regardless
-    // so reduced-motion users still get the field.
+    // Re-init on resize; draw a static frame regardless so reduced-motion
+    // users still get the field.
     new ResizeObserver(() => {
       if (init()) draw(false);
     }).observe(canvas);

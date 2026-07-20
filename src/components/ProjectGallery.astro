@@ -1,0 +1,66 @@
+---
+// The gallery column of an edition. Rendered twice per project: once inside
+// the arch as the window's replica (decorative — the arch's own button carries
+// the label), once inside the spread. The portal clones one of these at open
+// time, so the markup has to survive cloneNode without JS wiring.
+import type { GalleryPlate } from "../data/projects";
+
+interface Props {
+  gallery: GalleryPlate[];
+  decorative?: boolean;
+}
+
+const { gallery, decorative = false } = Astro.props;
+
+const srcset = (src: string) => `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
+---
+
+<div class="we1-gallery flex flex-col">
+  {
+    gallery.map((g, k) => (
+      <figure class={`m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
+        <div class="we1-gframe relative overflow-hidden">
+          <img
+            src={g.src}
+            srcset={srcset(g.src)}
+            alt={decorative ? "" : g.alt}
+            class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <figcaption class="font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-ink/40 mt-4 text-center">
+          fig. 0{k + 1} &mdash; {g.caption}
+        </figcaption>
+      </figure>
+    ))
+  }
+</div>
+
+<style>
+  .we1-gallery {
+    padding-top: clamp(150px, 19vh, 230px);
+    padding-bottom: 120px;
+    gap: 72px;
+  }
+
+  .we1-gframe {
+    border-radius: 22px;
+    background: #ececea;
+    box-shadow: 0 26px 60px -30px color-mix(in srgb, var(--color-ink) 40%, transparent);
+    aspect-ratio: 4 / 3;
+  }
+
+  /* The lead plate is the door you came through — shown whole, un-cropped */
+  .we1-gfig-lead .we1-gframe {
+    aspect-ratio: auto;
+  }
+
+  @media (max-width: 1023px) {
+    .we1-gallery {
+      padding-top: 24px;
+      padding-bottom: 72px;
+      gap: 56px;
+    }
+  }
+</style>

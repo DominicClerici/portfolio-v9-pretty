@@ -1,4 +1,9 @@
 ---
+import { projects } from "../data/projects";
+import EditionLine from "./EditionLine.astro";
+import ProjectGallery from "./ProjectGallery.astro";
+import ProjectLinks from "./ProjectLinks.astro";
+
 // "The Morning Editions": Dispatch prints a paper every morning, so the whole
 // shelf is typeset like one — each build is the front page of its own edition,
 // run off the same press across one day: morning, midday, late. Set in the
@@ -16,102 +21,8 @@
 // images never move, only the mask does, a window panning over a room.
 // Clicking (or "Learn more") expands the mask to the full viewport; nothing
 // behind it shifts, so the walk-through is seamless.
-// Gallery images and story copy are placeholders to swap for real content.
-const projects = [
-  {
-    index: "01",
-    title: "Dispatch",
-    edition: "morning edition",
-    fact: "writes itself every morning",
-    description:
-      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
-    image: "/photos/dispatch.webp",
-    alt: "Dispatch project screenshot",
-    stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
-    websiteUrl: "https://dispatch.dominicclerici.com/",
-    githubUrl: "https://github.com/DominicClerici/dispatch",
-    featured: false,
-    accent: "#0e63c8",
-    wash: "rgba(14, 99, 200, 0.09)",
-    details: [
-      { label: "Role", value: "Design & build — solo" },
-      { label: "Timeline", value: "2025 — ongoing" },
-      { label: "Status", value: "In print daily" },
-    ],
-    story: [
-      "Dispatch exists because I kept losing whole mornings to tab sprawl — four newsletters, two aggregators, and a feed that never ended. The brief I set myself was narrow: everything that mattered in tech in the last twenty-four hours, printed as one calm page, readable before the coffee goes cold.",
-      "Two decoupled pipelines run the press. The first is a researcher: it sweeps sources overnight, scores stories against each other, and throws most of them away. The second is a writer: it takes the surviving shortlist and sets it in plain language, with a hard budget of ten minutes of reading. Neither pipeline knows the other exists — they only share an editorial contract.",
-      "GitHub Actions is the night shift. It runs the whole edition while I sleep, and the only moving part I ever touch is reading the paper it leaves behind.",
-    ],
-    gallery: [
-      { src: "/photos/dispatch.webp", alt: "Dispatch front page", caption: "The front page of a live edition, printed at six sharp." },
-      { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — the triage pipeline's scoring pass." },
-      { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — a story moving from shortlist to print." },
-    ],
-  },
-  {
-    index: "02",
-    title: "Meridian",
-    edition: "midday edition",
-    fact: "0 npm dependencies",
-    description:
-      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
-    image: "/photos/meridian.webp",
-    alt: "Meridian project screenshot",
-    stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
-    websiteUrl: "https://meridian.dominicclerici.com/",
-    githubUrl: "https://github.com/DominicClerici/meridian",
-    featured: false,
-    accent: "#006c22",
-    wash: "rgba(0, 108, 34, 0.09)",
-    details: [
-      { label: "Role", value: "Design & build — solo" },
-      { label: "Timeline", value: "2024 — 2025" },
-      { label: "Status", value: "Live on two stores" },
-    ],
-    story: [
-      "Meridian is a protest against the modern new-tab page — the weather widgets, the sponsored links, the quiet phone-home. It ships with zero npm dependencies: every line that runs in the browser is a line I wrote and can read.",
-      "Under the hood it is eleven feature modules seated on a reactive storage layer. Each module owns its slice of state; the layer broadcasts changes and the page settles itself, no framework in the room.",
-      "The recommendation engine is the part I'm proudest of: it learns what you open and when, and never lets a byte of that leave the machine. Your habits stay yours.",
-    ],
-    gallery: [
-      { src: "/photos/meridian.webp", alt: "Meridian new tab", caption: "A fresh tab, seated and quiet." },
-      { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the module registry at work." },
-      { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the on-device recommendation pass." },
-    ],
-  },
-  {
-    index: "03",
-    title: "Fuzzbox",
-    edition: "late edition",
-    fact: "design system: Neon Riff",
-    description:
-      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
-    image: "/photos/fuzzbox.webp",
-    alt: "Fuzzbox project screenshot",
-    stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
-    websiteUrl: "https://fuzzbox.dominicclerici.com/",
-    githubUrl: null,
-    featured: true,
-    accent: "#5e2cc0",
-    wash: "rgba(94, 44, 192, 0.1)",
-    details: [
-      { label: "Role", value: "Design & build — solo" },
-      { label: "Timeline", value: "2025 — ongoing" },
-      { label: "Status", value: "Editor's pick — in beta" },
-    ],
-    story: [
-      "Fuzzbox started with a chord I found by accident and couldn't name. Every tool I tried wanted me to already know the answer; I wanted one that would meet me at the fretboard.",
-      "Place notes on the interactive fretboard and Fuzzbox explains what you've built — the intervals, the theory, why it rings the way it does. It is the companion I wished I had in the first year of playing.",
-      "The whole thing wears a design system called Neon Riff — stage-light color on deep black, built to feel like the back room of a guitar shop after hours.",
-    ],
-    gallery: [
-      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox fretboard", caption: "The fretboard, mid-chord." },
-      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox placeholder plate", caption: "Placeholder plate — interval breakdown for a found chord." },
-      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox placeholder plate", caption: "Placeholder plate — Neon Riff tokens in the wild." },
-    ],
-  },
-];
+//
+// Copy and imagery live in src/data/projects.ts.
 ---
 
 <section id="work" class="we1 relative" aria-label="Selected work">
@@ -142,81 +53,41 @@ const projects = [
         )}
         <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash};`}>
           <div class="max-w-[1200px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
-            <div class={`we1-copy order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`}>
-              <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45">
-                Edition {project.index}
-                <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
-                <span style="color: var(--acc);">{project.edition}</span>
-              </p>
+            <div class="we1-copy">
+              <EditionLine index={project.index} edition={project.edition} />
               <h3 class="font-display font-normal text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
                 {project.title}
               </h3>
               <p class="font-display text-[17px] leading-[1.6] tracking-[-0.01em] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
-              <p class="we1-colophon font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-8">
+              <p class="font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-8">
                 Set in &mdash; {project.stack.join(" · ")}
               </p>
               <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 mt-3">
                 {project.fact}
               </p>
-              <div class="flex items-center flex-wrap gap-x-7 gap-y-4 mt-9">
-                <a
-                  href={project.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="we1-link font-display text-[17px] tracking-[-0.01em] text-ink"
-                >
-                  Visit the site&nbsp;&nearr;
-                </a>
+              <ProjectLinks websiteUrl={project.websiteUrl} githubUrl={project.githubUrl} class="mt-9">
                 <button
                   type="button"
-                  class="we1-more font-mono text-[13px] tracking-[-0.02em] uppercase we1-focus"
+                  class="we1-more we1-focus font-mono text-[13px] tracking-[-0.02em] uppercase inline-flex items-center gap-[9px] cursor-pointer"
                   data-open={i}
                 >
                   <span class="we1-more-glyph" aria-hidden="true" />
                   Learn more
                 </button>
-                {project.githubUrl && (
-                  <a
-                    href={project.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
-                  >
-                    Source
-                  </a>
-                )}
-              </div>
+              </ProjectLinks>
             </div>
 
-            <figure class={`we1-fig relative order-1 ${i % 2 === 1 ? "lg:order-1" : "lg:order-2"} m-0`}>
+            <figure class="we1-fig relative m-0">
               <span class="we1-no font-display absolute select-none" aria-hidden="true">
                 No.&thinsp;{i + 1}
               </span>
               <div class="we1-arch-wrap relative mx-auto">
                 <span class="we1-ring absolute" aria-hidden="true" />
                 <span class="we1-ring2 absolute" aria-hidden="true" />
-                <button type="button" class="we1-door block w-full" data-open={i} aria-label={`Read the full story — ${project.title}`}>
+                <button type="button" class="we1-door block w-full cursor-pointer" data-open={i} aria-label={`Read the full story — ${project.title}`}>
                   <div class="we1-arch relative overflow-hidden">
                     <div class="we1-view absolute" data-view aria-hidden="true">
-                      <div class="we1-gallery flex flex-col">
-                        {project.gallery.map((g, k) => (
-                          <figure class={`we1-gfig m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
-                            <div class="we1-gframe relative overflow-hidden">
-                              <img
-                                src={g.src}
-                                srcset={`${g.src} 1x, ${g.src.replace(".webp", "-2x.webp")} 2x`}
-                                alt=""
-                                class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            </div>
-                            <figcaption class="font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-ink/40 mt-4 text-center">
-                              fig. 0{k + 1} &mdash; {g.caption}
-                            </figcaption>
-                          </figure>
-                        ))}
-                      </div>
+                      <ProjectGallery gallery={project.gallery} decorative />
                     </div>
                   </div>
                 </button>
@@ -242,7 +113,7 @@ const projects = [
   {
     projects.map((project, i) => (
       <div
-        class={`we1-spread ${i % 2 === 1 ? "we1-spread-flip" : ""}`}
+        class={`we1-spread focus:outline-none ${i % 2 === 1 ? "we1-spread-flip" : ""}`}
         data-spread={i}
         data-lenis-prevent
         tabindex="-1"
@@ -252,19 +123,17 @@ const projects = [
         style={`--acc: ${project.accent}; --wash: ${project.wash};`}
         hidden
       >
-        <button type="button" class="we1-back font-mono text-[12px] leading-none tracking-[-0.02em] uppercase we1-focus" data-close>
+        <button
+          type="button"
+          class="we1-back we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase cursor-pointer"
+          data-close
+        >
           &larr;&ensp;Back to the front page
         </button>
 
-        <div class="we1-sgrid grid grid-cols-1 gap-x-24">
+        <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-6">
           <div class="we1-story">
-            <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45" data-rise style="--ri: 0;">
-              Edition {project.index}
-              <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
-              <span style="color: var(--acc);">{project.edition}</span>
-              <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
-              the full story
-            </p>
+            <EditionLine index={project.index} edition={project.edition} suffix="the full story" data-rise style="--ri: 0;" />
             <h3
               id={`we1-spread-title-${i}`}
               class="font-display font-normal text-ink leading-[0.96] tracking-[-0.03em] mt-6 text-[clamp(3rem,6.5vw,5.25rem)]"
@@ -292,57 +161,30 @@ const projects = [
               ))}
             </dl>
             <p
-              class="we1-colophon font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-10"
+              class="font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-10"
               data-rise
               style={`--ri: ${4 + project.story.length};`}
             >
               Set in &mdash; {project.stack.join(" · ")}
             </p>
-            <div class="flex items-center flex-wrap gap-x-7 gap-y-4 mt-10" data-rise style={`--ri: ${5 + project.story.length};`}>
-              <a
-                href={project.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="we1-link font-display text-[17px] tracking-[-0.01em] text-ink"
-              >
-                Visit the site&nbsp;&nearr;
-              </a>
-              {project.githubUrl && (
-                <a
-                  href={project.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
-                >
-                  Source
-                </a>
-              )}
-            </div>
+            <ProjectLinks
+              websiteUrl={project.websiteUrl}
+              githubUrl={project.githubUrl}
+              class="mt-10"
+              data-rise
+              style={`--ri: ${5 + project.story.length};`}
+            />
           </div>
 
-          <div class="we1-gallery flex flex-col">
-            {project.gallery.map((g, k) => (
-              <figure class={`we1-gfig m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
-                <div class="we1-gframe relative overflow-hidden">
-                  <img
-                    src={g.src}
-                    srcset={`${g.src} 1x, ${g.src.replace(".webp", "-2x.webp")} 2x`}
-                    alt={g.alt}
-                    class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
-                    loading="eager"
-                    decoding="async"
-                  />
-                </div>
-                <figcaption class="font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-ink/40 mt-4 text-center">
-                  fig. 0{k + 1} &mdash; {g.caption}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <ProjectGallery gallery={project.gallery} />
         </div>
 
         <div class="pb-16 pt-6 text-center">
-          <button type="button" class="we1-endline font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 we1-focus" data-close>
+          <button
+            type="button"
+            class="we1-endline we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 cursor-pointer"
+            data-close
+          >
             fold the paper &mdash; back to the front page
           </button>
         </div>
@@ -358,7 +200,7 @@ const projects = [
 <style>
   .we1 {
     overflow-x: clip;
-    background: #f7f7f5;
+    background: var(--color-bone);
     --door-ease: cubic-bezier(0.77, 0, 0.175, 1);
     --settle-ease: cubic-bezier(0.22, 1, 0.36, 1);
     /* --in: entry progress (0 offscreen → 1 seated), --par: full-traverse
@@ -385,11 +227,10 @@ const projects = [
     background: radial-gradient(46% 62% at 26% 50%, var(--wash), transparent 72%);
   }
 
-  .we1-folio-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 999px;
-    background: var(--acc);
+  /* Column order: copy under figure on mobile, sides swapping per edition on
+     desktop — driven off .we1-flip alone, like the spread below */
+  .we1-copy {
+    order: 2;
   }
 
   /* ── The arch plate ── */
@@ -397,6 +238,25 @@ const projects = [
      dropping behind the section background */
   .we1-fig {
     isolation: isolate;
+    order: 1;
+  }
+
+  @media (min-width: 1024px) {
+    .we1-copy {
+      order: 1;
+    }
+
+    .we1-fig {
+      order: 2;
+    }
+
+    .we1-flip .we1-copy {
+      order: 2;
+    }
+
+    .we1-flip .we1-fig {
+      order: 1;
+    }
   }
 
   .we1-arch-wrap {
@@ -407,7 +267,6 @@ const projects = [
   }
 
   .we1-door {
-    cursor: pointer;
     border-radius: 999px 999px 26px 26px;
   }
 
@@ -419,8 +278,8 @@ const projects = [
   .we1-arch {
     aspect-ratio: 0.84;
     border-radius: 999px 999px 26px 26px;
-    background: #f7f7f5;
-    box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.45);
+    background: var(--color-bone);
+    box-shadow: 0 26px 60px -30px color-mix(in srgb, var(--color-ink) 45%, transparent);
     transition: box-shadow 0.55s var(--settle-ease);
   }
 
@@ -436,11 +295,13 @@ const projects = [
     left: 0;
     width: 100%;
     height: 100%;
-    background: #f7f7f5;
+    background: var(--color-bone);
     will-change: transform;
   }
 
-  .we1-view .we1-gallery {
+  /* :global — the gallery column is rendered by ProjectGallery.astro, so it
+     carries that component's scope, not this one's */
+  .we1-view :global(.we1-gallery) {
     position: absolute;
     left: 0;
     top: 0;
@@ -449,7 +310,7 @@ const projects = [
 
   @media (max-width: 1023px) {
     /* Small screens keep the old gentle drift instead of the pinned scene */
-    .we1-view .we1-gallery {
+    .we1-view :global(.we1-gallery) {
       transform: translateY(calc((0.5 - var(--par)) * 26px));
     }
   }
@@ -460,18 +321,18 @@ const projects = [
       height: 100dvh;
       background:
         radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-        #f7f7f5;
+        var(--color-bone);
     }
 
     .we1-js .we1-flip .we1-view {
       background:
         radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-        #f7f7f5;
+        var(--color-bone);
     }
 
     /* No JS / reduced motion: the arch-sized fallback shouldn't inherit the
        spread's tall desktop gallery padding — keep the lead plate in view */
-    .we1:not(.we1-js) .we1-view .we1-gallery {
+    .we1:not(.we1-js) .we1-view :global(.we1-gallery) {
       padding-top: 24px;
     }
   }
@@ -515,7 +376,8 @@ const projects = [
      the window along with it and break the illusion; the invitation is all
      light: deeper shadow, inner glow, outer ring. */
   .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-arch {
-    box-shadow: 0 36px 76px -28px color-mix(in srgb, var(--acc) 34%, rgba(34, 47, 48, 0.5));
+    box-shadow: 0 36px 76px -28px
+      color-mix(in srgb, var(--acc) 34%, color-mix(in srgb, var(--color-ink) 50%, transparent));
   }
 
   .we1-plate:has(.we1-door:hover, .we1-more:hover, .we1-door:focus-visible, .we1-more:focus-visible) .we1-arch::after {
@@ -552,7 +414,7 @@ const projects = [
     border: 1.5px solid var(--acc);
     border-radius: 999px;
     color: var(--acc);
-    background: rgba(247, 247, 245, 0.85);
+    background: color-mix(in srgb, var(--color-bone) 85%, transparent);
     transform: rotate(6deg);
     pointer-events: none;
   }
@@ -563,22 +425,8 @@ const projects = [
     transform: rotate(-6deg);
   }
 
-  /* ── Links: accent underline that draws on hover ── */
-  .we1-link {
-    background-image: linear-gradient(var(--acc), var(--acc));
-    background-repeat: no-repeat;
-    background-size: 100% 1.5px;
-    background-position: 0 96%;
-    padding-bottom: 3px;
-    transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .we1-link:hover {
-    background-size: 38% 1.5px;
-  }
-
-  .we1-link:focus-visible,
-  .we1-focus:focus-visible {
+  /* :global — also worn by the Source link inside ProjectLinks.astro */
+  :global(.we1-focus:focus-visible) {
     outline: 2px solid var(--color-ink);
     outline-offset: 4px;
     border-radius: 2px;
@@ -586,11 +434,7 @@ const projects = [
 
   /* ── Learn more: mono button with a tiny arch that fills with ink ── */
   .we1-more {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
     color: var(--acc);
-    cursor: pointer;
   }
 
   .we1-more-glyph {
@@ -616,7 +460,7 @@ const projects = [
     z-index: 45;
     background:
       radial-gradient(44% 36% at var(--wx, 78%) 6%, var(--pwash, transparent), transparent 70%),
-      #f7f7f5;
+      var(--color-bone);
     clip-path: inset(var(--ct, 0px) var(--cr, 0px) var(--cb, 0px) var(--cl, 0px) round 999px 999px 26px 26px);
     transition:
       clip-path 0.7s var(--door-ease),
@@ -680,24 +524,21 @@ const projects = [
     -webkit-overflow-scrolling: touch;
     background:
       radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-      #f7f7f5;
-  }
-
-  .we1-spread:focus {
-    outline: none;
+      var(--color-bone);
   }
 
   .we1-spread-flip {
     background:
       radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-      #f7f7f5;
+      var(--color-bone);
   }
 
   .we1-spread-flip .we1-story {
     order: 2;
   }
 
-  .we1-spread-flip .we1-gallery {
+  /* :global — rendered by ProjectGallery.astro (see .we1-view above) */
+  .we1-spread-flip :global(.we1-gallery) {
     order: 1;
   }
 
@@ -707,25 +548,20 @@ const projects = [
     left: max(22px, env(safe-area-inset-left));
     z-index: 5;
     padding: 12px 16px;
-    border: 1px solid rgba(34, 47, 48, 0.35);
+    border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent);
     border-radius: 8px;
-    color: rgba(34, 47, 48, 0.6);
-    background: rgba(247, 247, 245, 0.82);
+    color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    background: color-mix(in srgb, var(--color-bone) 82%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    cursor: pointer;
     transition:
       color 0.25s ease,
       border-color 0.25s ease;
   }
 
   .we1-back:hover {
-    color: var(--color-ink, #222f30);
+    color: var(--color-ink);
     border-color: color-mix(in srgb, var(--acc) 55%, transparent);
-  }
-
-  .we1-sgrid {
-    padding-inline: 24px;
   }
 
   .we1-story {
@@ -733,26 +569,7 @@ const projects = [
     padding-bottom: 96px;
   }
 
-  .we1-gallery {
-    padding-top: clamp(150px, 19vh, 230px);
-    padding-bottom: 120px;
-    gap: 72px;
-  }
-
-  .we1-gframe {
-    border-radius: 22px;
-    background: #ececea;
-    box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.4);
-    aspect-ratio: 4 / 3;
-  }
-
-  /* The lead plate is the door you came through — shown whole, un-cropped */
-  .we1-gfig-lead .we1-gframe {
-    aspect-ratio: auto;
-  }
-
   .we1-endline {
-    cursor: pointer;
     transition: color 0.25s ease;
   }
 
@@ -822,12 +639,6 @@ const projects = [
     .we1-story {
       padding-top: 110px;
       padding-bottom: 24px;
-    }
-
-    .we1-gallery {
-      padding-top: 24px;
-      padding-bottom: 72px;
-      gap: 56px;
     }
   }
 

@@ -1,348 +1,65 @@
-<div id="hero-scope" class="relative bg-bone">
-  <!-- Pinned canvas — sticky for the whole scope, so it holds still while
-       the hero and the section below scroll over it, then leaves with the
-       flow at the end of the scope. -->
-  <div class="hero-bg" aria-hidden="true">
-    <div class="hero-frame">
-      <div class="hero-canvas-wrap">
-        <canvas id="hero-canvas"></canvas>
+<!-- Scrolls over the pinned canvas in PinnedCanvas.astro — no background of
+     its own. Height must match --hero-h, which the pin is measured against. -->
+<section id="hero" class="relative h-[var(--hero-h)]">
+  <div
+    class="relative z-10 h-full flex flex-col justify-between gap-y-[100px] px-6 lg:px-12 pt-[clamp(112px,calc(112px+(100vw-440px)*0.036),148px)] pb-[clamp(32px,calc(32px+(100vw-440px)*0.012),44px)]"
+  >
+    <h1
+      class="hero-enter-mask font-display font-normal text-ink leading-none tracking-[-0.03em] text-hero"
+    >
+      <span>Dominic Clerici.</span>
+    </h1>
+
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div class="max-w-[640px]">
+        <div
+          class="hero-enter flex items-center mb-5"
+          style="--enter-delay: 1.35s"
+        >
+          <span class="label-mono leading-none uppercase text-ink/60">
+            Engineer &amp; Designer&ensp;·&ensp;New York
+          </span>
+        </div>
+        <p
+          class="hero-enter font-display font-normal text-ink/90 leading-[1.2] tracking-[-0.02em] text-lead"
+          style="--enter-delay: 1.35s"
+        >
+          I design and build software that&rsquo;s fast, useful, and worth
+          looking at.
+        </p>
+      </div>
+
+      <div
+        class="hero-enter-cta flex items-center gap-3 shrink-0"
+        style="--enter-delay: 1.75s"
+      >
+        <a
+          href="#work"
+          class="font-mono text-[14px] tracking-[-0.008em] text-ink border border-ink/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink hover:bg-white/25 hover:backdrop-blur-md transition-colors duration-200"
+        >
+          View selected work
+        </a>
+        <a
+          href="#work"
+          aria-label="Scroll to selected work"
+          class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-y-0.5 transition-transform duration-200"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M7 1v11M2 7.5 7 12.5 12 7.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </a>
       </div>
     </div>
   </div>
-
-  <div class="hero-scope-content">
-    <section id="hero" class="relative h-svh min-h-[560px]">
-      <!-- Content -->
-      <div
-        class="relative z-10 h-full flex flex-col justify-between gap-y-[100px] px-6 lg:px-12 pt-[clamp(112px,calc(112px+(100vw-440px)*0.036),148px)] pb-[clamp(32px,calc(32px+(100vw-440px)*0.012),44px)]"
-      >
-        <h1
-          class="hero-enter-mask font-display font-normal text-ink leading-none tracking-[-0.03em] text-[clamp(3.125rem,calc(3.125rem+(100vw-27.5rem)*0.062),7rem)]"
-        >
-          <span>Dominic Clerici.</span>
-        </h1>
-
-        <div
-          class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6"
-        >
-          <div class="max-w-[640px]">
-            <div
-              class="hero-enter flex items-center mb-5"
-              style="--enter-delay: 1.35s"
-            >
-              <span
-                class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/60"
-              >
-                Engineer &amp; Designer&ensp;·&ensp;New York
-              </span>
-            </div>
-            <p
-              class="hero-enter font-display font-normal text-ink/90 leading-[1.2] tracking-[-0.02em] text-[clamp(1.25rem,calc(1.25rem+(100vw-27.5rem)*0.004),1.5rem)]"
-              style="--enter-delay: 1.35s"
-            >
-              I design and build software that&rsquo;s fast, useful, and worth
-              looking at.
-            </p>
-          </div>
-
-          <div
-            class="hero-enter-cta flex items-center gap-3 shrink-0"
-            style="--enter-delay: 1.75s"
-          >
-            <a
-              href="#work"
-              class="font-mono text-[14px] tracking-[-0.008em] text-ink border border-ink/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink hover:bg-white/25 hover:backdrop-blur-md transition-colors duration-200"
-            >
-              View selected work
-            </a>
-            <a
-              href="#work"
-              aria-label="Scroll to selected work"
-              class="w-10 h-10 rounded-lg bg-bio-lime text-ink inline-flex items-center justify-center hover:translate-y-0.5 transition-transform duration-200"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M7 1v11M2 7.5 7 12.5 12 7.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- The section below the hero scrolls over the same pinned canvas -->
-    <slot />
-  </div>
-
-  <!-- Shown only when the WebGL scene can't run and the CPU fallback takes
-       over. Fixed to the bottom-right; JS reveals it while the scope is in
-       view, so it reads as pinned to the hero + about section. -->
-  <div
-    id="hero-gpu-warning"
-    role="status"
-    class="fixed bottom-4 right-4 z-50 hidden items-center gap-2 rounded-lg border border-ink/15 bg-white/70 backdrop-blur-md px-3 h-9 shadow-sm"
-  >
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      class="shrink-0 text-amber-500"
-      aria-hidden="true"
-    >
-      <path
-        d="M12 4 2.5 20.5h19L12 4Z"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linejoin="round"></path>
-      <path
-        d="M12 10.5v4"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"></path>
-      <path
-        d="M12 17.4v.01"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"></path>
-    </svg>
-    <span
-      class="font-mono text-[12px] leading-none tracking-[-0.01em] text-ink/70 whitespace-nowrap"
-    >
-      Enable GPU acceleration for a better experience
-    </span>
-  </div>
-</div>
-
-<script>
-  import {
-    createGlassScene,
-    SPHERE_R_FRAC,
-    type GlassObject,
-  } from "../scripts/glass-scene"
-
-  {
-    const scope = document.getElementById("hero-scope")!
-    const bg = scope.querySelector<HTMLElement>(".hero-bg")!
-    const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!
-    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches
-    const forceCPU = new URLSearchParams(location.search).has("cpu")
-
-    /* ══ Tunable knobs ══════════════════════════════════════════════════
-       Per-object placement/scale plus the hero's scroll response live here;
-       colors and drift phase stay in OBJECTS below. The shared feel knobs
-       (pointer sensitivity, easing, drift, fps caps) are the engine defaults
-       in src/scripts/glass-scene.ts — override them via createGlassScene()
-       options if the hero ever needs its own values. */
-
-    // — Object placement —
-    //   pos: center as a fraction of the viewport (x from left, y-up from
-    //   bottom). scale: multiplier on the base sphere radius (SPHERE_R_FRAC).
-    //   The teal sphere's x is an edge-touch point + one radius (edgeR: 1),
-    //   so it reads a touch differently from the free-placed cube/purple.
-    const TEAL_POS = { x: 0.5, y: 0.56 }
-    const TEAL_SCALE = 1.0
-    const CUBE_POS = { x: 0.05, y: 0.12 }
-    const CUBE_SCALE = 0.7
-    const PURPLE_POS = { x: 0.92, y: -0.1 }
-    const PURPLE_SCALE = 0.55
-
-    // — Sensitivity (how far the objects move for a given input) —
-    const SCROLL_SENSITIVITY = 0.6 // object climb per px scrolled
-
-    /* ══════════════════════════════════════════════════════════════════ */
-
-    /* ── Scroll behavior ──
-       The background is pinned (sticky) for the whole scope. While pinned,
-       the glass cylinders hold still in screen space and the floating objects
-       climb at SCROLL_SENSITIVITY× scroll speed, eased toward the target so
-       the parallax glides. Once the pin ends the background leaves with the
-       flow. The lift clamps at the pin end, so from there objects and glass
-       scroll away together with the page. */
-    let pinEnd = 1 // scroll distance the background stays pinned (px)
-    let scrollQueued = false
-    function onScrollFrame() {
-      scrollQueued = false
-      scene.setScrollTarget(Math.min(window.scrollY, pinEnd) * SCROLL_SENSITIVITY)
-    }
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!scrollQueued) {
-          scrollQueued = true
-          requestAnimationFrame(onScrollFrame)
-        }
-      },
-      { passive: true },
-    )
-
-    // Once the iris-open finishes, drop the clip so no stale clip-path
-    // lingers on the canvas. The animation itself must be removed too: its
-    // fill-mode keeps applying the end keyframe over any inline clip-path
-    // override.
-    wrap.addEventListener("animationend", (e) => {
-      if (e.animationName === "hero-iris-open") {
-        wrap.style.animation = "none"
-        wrap.style.clipPath = "none"
-      }
-    })
-
-    /* ── Scene config ──
-       The glass render itself (WebGL2 + CPU fallback) lives in the shared
-       engine, src/scripts/glass-scene.ts — only the hero's object layout and
-       scroll wiring live here. */
-    // Linear gradients (0% at the top of the sphere → 100% at the bottom)
-    const GRAD_A = {
-      c0: [0.126, 0.997, 0.2],
-      c1: [0.233, 0.979, 0.778],
-      mix: 0.6,
-    } // #04D800 → #22DB14 → #fff
-    const GRAD_B = { c0: [0.0, 0.824, 0.533], mix: 0.4 } // #006C22 → #fff
-
-    // Scene objects, composited back-to-front (smaller/farther first). All
-    // share the same glass material, sensitivity and easing; only color and
-    // drift phase differ here — placement/scale come from the knobs up top.
-    // shape: 0 sphere, 1 cube. edgeR shifts the center right by that many
-    // radii (lets the teal sphere rest against the page's center line).
-    const OBJECTS: GlassObject[] = [
-      {
-        // purple sphere — back, smallest, lower-right
-        shape: 0,
-        mat: 0,
-        rFrac: SPHERE_R_FRAC * PURPLE_SCALE,
-        cx: PURPLE_POS.x,
-        cy: PURPLE_POS.y,
-        edgeR: 0,
-        ga0: [0.541, 0.329, 0.941],
-        ga1: [0.725, 0.549, 1.0],
-        gb0: [0.369, 0.173, 0.753],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.04,
-        driftYScale: 0.7,
-        spdX: 0.17,
-        spdY: 0.11,
-        phX: 2.1,
-        phY: 4.3,
-      },
-      {
-        // blue cube — middle, lower-left
-        shape: 1,
-        mat: 0,
-        rFrac: SPHERE_R_FRAC * CUBE_SCALE,
-        cx: CUBE_POS.x,
-        cy: CUBE_POS.y,
-        edgeR: 0,
-        ga0: [0.133, 0.651, 0.949],
-        ga1: [0.525, 0.847, 1.0],
-        gb0: [0.055, 0.388, 0.784],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.038,
-        driftYScale: 0.7,
-        spdX: 0.19,
-        spdY: 0.13,
-        phX: 0.7,
-        phY: 1.9,
-      },
-      {
-        // teal sphere — front, largest
-        shape: 0,
-        mat: 1,
-        rFrac: SPHERE_R_FRAC * TEAL_SCALE,
-        cx: TEAL_POS.x,
-        cy: TEAL_POS.y,
-        edgeR: 1,
-        ga0: GRAD_A.c0,
-        ga1: GRAD_A.c1,
-        gb0: GRAD_B.c0,
-        gaMix: GRAD_A.mix,
-        gbMix: GRAD_B.mix,
-        driftAmp: 0.05,
-        driftYScale: 0.6,
-        spdX: 0.21,
-        spdY: 0.13,
-        phX: 0.0,
-        phY: 1.7,
-      },
-    ]
-
-    /* ── GPU-acceleration notice ──
-       Revealed only while the CPU fallback is driving the scene (WebGL
-       unavailable, or the context was lost) and the hero scope is on
-       screen, so it reads as pinned to the hero + about section. */
-    const gpuWarning = document.getElementById("hero-gpu-warning")!
-    let usingCPU = false
-    let scopeVisible = true
-    function syncWarning() {
-      gpuWarning.style.display = usingCPU && scopeVisible ? "flex" : "none"
-    }
-    function useCPUBackend() {
-      usingCPU = true
-      syncWarning()
-    }
-
-    const scene = createGlassScene({
-      canvas,
-      wrap,
-      objects: OBJECTS,
-      forceCPU,
-      onCPUFallback: useCPUBackend,
-    })
-
-    new IntersectionObserver(
-      (entries) => {
-        scopeVisible = entries[0].isIntersecting
-        syncWarning()
-      },
-      { threshold: 0 },
-    ).observe(scope)
-
-    function measure() {
-      pinEnd = Math.max(scope.offsetHeight - bg.offsetHeight, 1)
-    }
-
-    let resizeTimer: number | undefined
-    new ResizeObserver(() => {
-      clearTimeout(resizeTimer)
-      resizeTimer = window.setTimeout(() => {
-        measure()
-        scene.resize()
-        onScrollFrame()
-      }, 120)
-    }).observe(scope)
-    measure()
-    scene.resize()
-    onScrollFrame()
-
-    if (reducedMotion) {
-      scene.render(40)
-    } else {
-      new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            entry.isIntersecting ? scene.start() : scene.stop()
-          }
-        },
-        { threshold: 0 },
-      ).observe(scope)
-      document.addEventListener("visibilitychange", () => {
-        document.hidden ? scene.stop() : scene.start()
-      })
-      scene.start()
-    }
-  }
-</script>
+</section>

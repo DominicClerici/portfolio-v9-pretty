@@ -1,0 +1,36 @@
+---
+// The folio line: "Edition 01 · morning edition", with an optional third
+// segment on the inside spread. Extra attributes (data-rise, style) pass
+// through to the paragraph.
+interface Props {
+  index: string;
+  edition: string;
+  suffix?: string;
+  [key: string]: unknown;
+}
+
+const { index, edition, suffix, ...rest } = Astro.props;
+---
+
+<p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45" {...rest}>
+  Edition {index}
+  <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true"></span>
+  <span style="color: var(--acc);">{edition}</span>
+  {
+    suffix && (
+      <>
+        <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
+        {suffix}
+      </>
+    )
+  }
+</p>
+
+<style>
+  .we1-folio-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--acc);
+  }
+</style>

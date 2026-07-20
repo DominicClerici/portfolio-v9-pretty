@@ -1,0 +1,283 @@
+---
+/**
+ * Pinned glass-canvas scope.
+ *
+ * The canvas is sticky for the full height of this component, so everything
+ * passed in via <slot /> scrolls over a background that holds still, and at
+ * the end of the scope the background leaves with the flow.
+ *
+ * Owns the canvas, the scene wiring, and the CPU-fallback notice. The
+ * sections that scroll over it (Hero, About) are just children.
+ */
+---
+
+<div id="hero-scope" class="relative bg-bone">
+  <div
+    data-canvas-bg
+    class="sticky top-0 h-[var(--hero-h)]"
+    aria-hidden="true"
+  >
+    <!-- Full-bleed clipping container; isolated so the inner clip-path
+         animation composites onto its own layer. -->
+    <div class="absolute inset-0 overflow-hidden isolate transform-gpu">
+      <div class="hero-canvas-wrap absolute inset-0 bg-bone">
+        <canvas id="hero-canvas" class="absolute inset-0 w-full h-full"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-scope-content relative z-10">
+    <slot />
+  </div>
+
+  <!-- Shown only when the WebGL scene can't run and the CPU fallback takes
+       over. Fixed to the bottom-right; JS reveals it while the scope is in
+       view, so it reads as pinned to the sections above. -->
+  <div
+    id="hero-gpu-warning"
+    role="status"
+    style="display: none"
+    class="fixed bottom-4 right-4 z-50 items-center gap-2 rounded-lg border border-ink/15 bg-white/70 backdrop-blur-md px-3 h-9 shadow-sm"
+  >
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      class="shrink-0 text-amber-500"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 4 2.5 20.5h19L12 4Z"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linejoin="round"></path>
+      <path
+        d="M12 10.5v4"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"></path>
+      <path
+        d="M12 17.4v.01"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"></path>
+    </svg>
+    <span
+      class="font-mono text-[12px] leading-none tracking-[-0.01em] text-ink/70 whitespace-nowrap"
+    >
+      Enable GPU acceleration for a better experience
+    </span>
+  </div>
+</div>
+
+<script>
+  import {
+    createGlassScene,
+    SPHERE_R_FRAC,
+    type GlassObject,
+  } from "../scripts/glass-scene"
+
+  {
+    const scope = document.getElementById("hero-scope")!
+    const bg = scope.querySelector<HTMLElement>("[data-canvas-bg]")!
+    const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!
+    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+    const forceCPU = new URLSearchParams(location.search).has("cpu")
+
+    /* ══ Tunable knobs ══════════════════════════════════════════════════
+       Per-object placement/scale plus the scroll response live here; colors
+       and drift phase stay in OBJECTS below. The shared feel knobs (pointer
+       sensitivity, easing, drift, fps caps) are the engine defaults in
+       src/scripts/glass-scene.ts — override them via createGlassScene()
+       options if this scene ever needs its own values. */
+
+    // — Object placement —
+    //   pos: center as a fraction of the viewport (x from left, y-up from
+    //   bottom). scale: multiplier on the base sphere radius (SPHERE_R_FRAC).
+    //   The teal sphere's x is an edge-touch point + one radius (edgeR: 1),
+    //   so it reads a touch differently from the free-placed cube/purple.
+    const TEAL_POS = { x: 0.5, y: 0.56 }
+    const TEAL_SCALE = 1.0
+    const CUBE_POS = { x: 0.05, y: 0.12 }
+    const CUBE_SCALE = 0.7
+    const PURPLE_POS = { x: 0.92, y: -0.1 }
+    const PURPLE_SCALE = 0.55
+
+    // — Sensitivity (how far the objects move for a given input) —
+    const SCROLL_SENSITIVITY = 0.6 // object climb per px scrolled
+
+    /* ══════════════════════════════════════════════════════════════════ */
+
+    /* ── Scroll behavior ──
+       The background is pinned (sticky) for the whole scope. While pinned,
+       the glass cylinders hold still in screen space and the floating objects
+       climb at SCROLL_SENSITIVITY× scroll speed, eased toward the target so
+       the parallax glides. Once the pin ends the background leaves with the
+       flow. The lift clamps at the pin end, so from there objects and glass
+       scroll away together with the page. */
+    let pinEnd = 1 // scroll distance the background stays pinned (px)
+    let scrollQueued = false
+    function onScrollFrame() {
+      scrollQueued = false
+      scene.setScrollTarget(Math.min(window.scrollY, pinEnd) * SCROLL_SENSITIVITY)
+    }
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!scrollQueued) {
+          scrollQueued = true
+          requestAnimationFrame(onScrollFrame)
+        }
+      },
+      { passive: true },
+    )
+
+    // Once the iris-open finishes, drop the clip so no stale clip-path
+    // lingers on the canvas. The animation itself must be removed too: its
+    // fill-mode keeps applying the end keyframe over any inline clip-path
+    // override.
+    wrap.addEventListener("animationend", (e) => {
+      if (e.animationName === "hero-iris-open") {
+        wrap.style.animation = "none"
+        wrap.style.clipPath = "none"
+      }
+    })
+
+    /* ── Scene config ──
+       The glass render itself (WebGL2 + CPU fallback) lives in the shared
+       engine, src/scripts/glass-scene.ts — only object layout and scroll
+       wiring live here. */
+    // Scene objects, composited back-to-front (smaller/farther first). All
+    // share the same glass material, sensitivity and easing; only color and
+    // drift phase differ here — placement/scale come from the knobs up top.
+    // shape: 0 sphere, 1 cube. edgeR shifts the center right by that many
+    // radii (lets the teal sphere rest against the page's center line).
+    // Gradients are linear, 0% at the top of the object → 100% at the bottom.
+    const OBJECTS: GlassObject[] = [
+      {
+        // purple sphere — back, smallest, lower-right
+        shape: 0,
+        mat: 0,
+        rFrac: SPHERE_R_FRAC * PURPLE_SCALE,
+        cx: PURPLE_POS.x,
+        cy: PURPLE_POS.y,
+        edgeR: 0,
+        ga0: [0.541, 0.329, 0.941],
+        ga1: [0.725, 0.549, 1.0],
+        gb0: [0.369, 0.173, 0.753],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.04,
+        driftYScale: 0.7,
+        spdX: 0.17,
+        spdY: 0.11,
+        phX: 2.1,
+        phY: 4.3,
+      },
+      {
+        // blue cube — middle, lower-left
+        shape: 1,
+        mat: 0,
+        rFrac: SPHERE_R_FRAC * CUBE_SCALE,
+        cx: CUBE_POS.x,
+        cy: CUBE_POS.y,
+        edgeR: 0,
+        ga0: [0.133, 0.651, 0.949],
+        ga1: [0.525, 0.847, 1.0],
+        gb0: [0.055, 0.388, 0.784],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.038,
+        driftYScale: 0.7,
+        spdX: 0.19,
+        spdY: 0.13,
+        phX: 0.7,
+        phY: 1.9,
+      },
+      {
+        // teal sphere — front, largest. #04D800 → #22DB14 → #fff over
+        // #006C22 → #fff.
+        shape: 0,
+        mat: 1,
+        rFrac: SPHERE_R_FRAC * TEAL_SCALE,
+        cx: TEAL_POS.x,
+        cy: TEAL_POS.y,
+        edgeR: 1,
+        ga0: [0.126, 0.997, 0.2],
+        ga1: [0.233, 0.979, 0.778],
+        gb0: [0.0, 0.824, 0.533],
+        gaMix: 0.6,
+        gbMix: 0.4,
+        driftAmp: 0.05,
+        driftYScale: 0.6,
+        spdX: 0.21,
+        spdY: 0.13,
+        phX: 0.0,
+        phY: 1.7,
+      },
+    ]
+
+    /* ── GPU-acceleration notice ──
+       Revealed only while the CPU fallback is driving the scene (WebGL
+       unavailable, or the context was lost) and the scope is on screen. */
+    const gpuWarning = document.getElementById("hero-gpu-warning")!
+    let usingCPU = false
+    let scopeVisible = true
+    function syncWarning() {
+      gpuWarning.style.display = usingCPU && scopeVisible ? "flex" : "none"
+    }
+
+    const scene = createGlassScene({
+      canvas,
+      wrap,
+      objects: OBJECTS,
+      forceCPU,
+      onCPUFallback: () => {
+        usingCPU = true
+        syncWarning()
+      },
+    })
+
+    function measure() {
+      pinEnd = Math.max(scope.offsetHeight - bg.offsetHeight, 1)
+    }
+
+    let resizeTimer: number | undefined
+    new ResizeObserver(() => {
+      clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(() => {
+        measure()
+        scene.resize()
+        onScrollFrame()
+      }, 120)
+    }).observe(scope)
+    measure()
+    scene.resize()
+    onScrollFrame()
+
+    // One observer drives both the warning and (when motion is allowed) the
+    // render loop — same element, same threshold.
+    new IntersectionObserver(
+      (entries) => {
+        scopeVisible = entries[0].isIntersecting
+        syncWarning()
+        if (reducedMotion) return
+        scopeVisible ? scene.start() : scene.stop()
+      },
+      { threshold: 0 },
+    ).observe(scope)
+
+    if (reducedMotion) {
+      scene.render(40)
+    } else {
+      document.addEventListener("visibilitychange", () => {
+        document.hidden ? scene.stop() : scene.start()
+      })
+      scene.start()
+    }
+  }
+</script>

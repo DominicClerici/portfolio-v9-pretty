@@ -4,17 +4,44 @@
 // same size and leading as the surrounding text so the inputs are visually
 // indistinguishable from it), the message is the letter's body, and the
 // quote signs off as a P.S.
+
+const links = [
+  {
+    label: "GitHub",
+    href: "https://github.com/DominicClerici",
+    external: true,
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/dominic-clerici/",
+    external: true,
+  },
+  {
+    label: "contact@dominicclerici.com",
+    href: "mailto:contact@dominicclerici.com",
+    external: false,
+  },
+]
+
+const FOCUS_RING =
+  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
+
+const LINK_CLASS = `font-mono text-[12px] tracking-[-0.02em] uppercase text-n-400 hover:text-bio-lime transition-colors duration-200 ${FOCUS_RING}`
+
+// Small outline button — the captcha's "start over" and the "write another"
+// affordance. Colour and padding differ per instance; everything else is shared.
+const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transparent border border-[#2c2c2c] cursor-pointer hover:text-bio-lime hover:border-bio-lime/40 ${FOCUS_RING}`
 ---
 
 <section
   id="contact"
-  class="cv2 relative bg-[#0a0a0a] overflow-hidden"
-  aria-label="Contact"
+  class="relative bg-n-950 overflow-hidden"
+  aria-labelledby="contact-heading"
 >
   <div
     class="relative max-w-[860px] mx-auto px-6 md:px-10 py-[clamp(110px,15vh,190px)]"
   >
-    <h2 class="sr-only">Contact</h2>
+    <h2 id="contact-heading" class="sr-only">Contact</h2>
 
     <!-- Notebook margin rule -->
     <div
@@ -76,7 +103,11 @@
           <button
             type="submit"
             aria-label="Prove your humanity"
-            class="cv2-seal group relative w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
+            class:list={[
+              "cv2-seal group relative w-[64px] h-[64px] rounded-full bg-bio-lime text-ink inline-flex items-center justify-center cursor-pointer",
+              "disabled:bg-[#1a1a1a] disabled:text-n-500 disabled:cursor-not-allowed",
+              FOCUS_RING,
+            ]}
           >
             <svg
               class="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -100,17 +131,21 @@
         </span>
         <div>
           <p
-            class="cv2-cta-title font-mono text-[13px] tracking-[-0.02em] text-[#c9c9c9]"
+            class="cv2-cta-title font-mono text-[13px] tracking-[-0.02em] text-n-300"
           >
             Prove your humanity
           </p>
           <p
-            class="cv2-cta-sub font-mono text-[11px] tracking-[-0.02em] text-[#5f5f5f] mt-1.5"
+            class="cv2-cta-sub font-mono text-[11px] tracking-[-0.02em] text-n-500 mt-1.5"
           >
             I promise this won&rsquo;t be your usual captcha.
           </p>
-          <button type="button" class="cv2-again hidden"
-            >Write another letter</button
+          <button
+            type="button"
+            class:list={[
+              "cv2-again hidden mt-3 px-3 py-[7px] text-n-400 transition-colors duration-200",
+              GHOST_BTN,
+            ]}>Write another letter</button
           >
         </div>
       </div>
@@ -129,19 +164,31 @@
           >
             Proof of humanity
           </p>
-          <p class="cv2-cap-line mt-4">
+          <p
+            class="font-display text-[19px] leading-[1.5] tracking-[-0.005em] mt-4"
+          >
             One last thing — sign here.
             <span class="text-white/35">Any scribble counts.</span>
           </p>
-          <div class="cv2-sigwrap mt-5">
+          <div class="relative h-[116px] mt-5">
             <canvas
-              class="cv2-sig"
+              class:list={[
+                "cv2-sig absolute inset-0 w-full h-full touch-none cursor-crosshair",
+                FOCUS_RING,
+              ]}
               tabindex="0"
               role="img"
               aria-label="Signature area. Draw any scribble with your mouse or finger."
             ></canvas>
-            <span class="cv2-sig-x" aria-hidden="true">&times;</span>
-            <div class="cv2-sig-line" aria-hidden="true"></div>
+            <span
+              class="absolute left-1 bottom-[30px] font-mono text-[12px] text-white/25 pointer-events-none"
+              aria-hidden="true">&times;</span
+            >
+            <div
+              class="cv2-sig-line absolute left-0.5 right-0.5 bottom-6 pointer-events-none"
+              aria-hidden="true"
+            >
+            </div>
           </div>
           <div class="flex items-center justify-between gap-4 mt-4">
             <p class="cv2-cap-status" role="status">
@@ -149,18 +196,33 @@
             </p>
             <button
               type="button"
-              class="cv2-cap-reset shrink-0"
+              class:list={[
+                "cv2-cap-reset shrink-0 px-2.5 py-1.5 text-n-300 transition-[color,border-color,opacity] duration-200",
+                GHOST_BTN,
+              ]}
               aria-label="Clear the signature and start over"
             >
               Start over
             </button>
           </div>
-          <button type="button" class="cv2-cap-send mt-5" disabled>
+          <button
+            type="button"
+            class:list={[
+              "cv2-cap-send flex items-center justify-center gap-2 w-full mt-5 py-[11px] cursor-pointer",
+              "font-mono text-[12px] tracking-[-0.02em] uppercase bg-bio-lime text-n-950 transition-colors duration-200",
+              "disabled:bg-[#1a1a1a] disabled:text-n-500 disabled:cursor-not-allowed",
+              FOCUS_RING,
+            ]}
+            disabled
+          >
             <span class="cv2-cap-spinner" aria-hidden="true"></span>
             <span class="cv2-cap-send-label">Awaiting a signature</span>
           </button>
         </div>
-        <div class="cv2-cap-sent" aria-hidden="true">
+        <div
+          class="cv2-cap-sent absolute inset-0 flex flex-col items-center justify-center gap-3 text-bio-lime opacity-0 pointer-events-none transition-opacity duration-300 delay-150"
+          aria-hidden="true"
+        >
           <svg width="40" height="40" viewBox="0 0 14 14" fill="none">
             <path
               d="M2 12 12 2M4.5 2H12v7.5"
@@ -175,7 +237,7 @@
       </div>
     </form>
 
-    <div class="border-t border-[#1e1e1e] mt-16 md:mt-20 pt-10">
+    <div class="border-t border-n-800 mt-16 md:mt-20 pt-10">
       <p
         class="font-display italic text-[19px] md:text-[22px] leading-[1.55] text-white/55 max-w-[560px]"
       >
@@ -184,69 +246,59 @@
       </p>
 
       <div class="flex flex-wrap gap-x-8 gap-y-3 mt-10">
-        <a
-          href="https://github.com/DominicClerici"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cv2-link">GitHub</a
-        >
-        <a
-          href="https://www.linkedin.com/in/dominic-clerici/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cv2-link">LinkedIn</a
-        >
-        <a href="mailto:contact@dominicclerici.com" class="cv2-link"
-          >contact@dominicclerici.com</a
-        >
+        {
+          links.map((link) => (
+            <a
+              href={link.href}
+              class={LINK_CLASS}
+              {...(link.external
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
+            >
+              {link.label}
+            </a>
+          ))
+        }
       </div>
     </div>
   </div>
 </section>
 
 <style>
-  .cv2-margin {
+  /* The notebook margin rule, and its echo inside the captcha slip:
+     one gradient, two fade insets. */
+  .cv2-margin,
+  .cv2-captcha::before {
     background: linear-gradient(
       to bottom,
       transparent,
-      rgba(206, 247, 158, 0.28) 120px,
-      rgba(206, 247, 158, 0.28) calc(100% - 120px),
+      color-mix(in srgb, var(--color-bio-lime) 28%, transparent)
+        var(--rule-fade),
+      color-mix(in srgb, var(--color-bio-lime) 28%, transparent)
+        calc(100% - var(--rule-fade)),
       transparent
     );
   }
 
-  .cv2-line {
+  .cv2-margin {
+    --rule-fade: 120px;
+  }
+
+  /* The letter's voice. The prose lines and the textarea share it exactly, so
+     the body is indistinguishable from the text around it. */
+  .cv2-form {
+    --letter-ink: #e9e9e6;
+  }
+
+  .cv2-line,
+  .cv2-body {
     font-family: var(--font-display);
     font-size: clamp(1.5rem, 3.4vw, 2.125rem);
     line-height: 1.55;
     letter-spacing: -0.005em;
-    color: #e9e9e6;
+    color: var(--letter-ink);
   }
 
-  /* Inline fill-in-the-blank inputs */
-  .cv2-blank {
-    display: inline-block;
-    vertical-align: baseline;
-    width: 10ch;
-    max-width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.35);
-    border-radius: 0;
-    outline: none;
-    padding: 0 0.15em 0.05em;
-    font: inherit;
-    color: var(--color-bio-lime);
-    caret-color: var(--color-bio-lime);
-    transition: border-color 0.2s ease;
-  }
-
-  .cv2-blank:focus {
-    border-bottom-style: solid;
-    border-bottom-color: var(--color-bio-lime);
-  }
-
-  /* The letter body */
   .cv2-body {
     display: block;
     width: 100%;
@@ -255,35 +307,48 @@
     outline: none;
     resize: none;
     padding: 0;
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 3.4vw, 2.125rem);
-    line-height: 1.55;
-    letter-spacing: -0.005em;
-    color: #e9e9e6;
     caret-color: var(--color-bio-lime);
   }
 
   .cv2-body::placeholder {
-    color: rgba(255, 255, 255, 0.22);
+    color: rgb(255 255 255 / 0.22);
     font-style: italic;
   }
 
-  .cv2-link {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    color: #8a8a8a;
-    transition: color 0.2s ease;
+  /* The dashed-blank language: the inline inputs and the signature line are
+     dashed until filled, then solid lime. */
+  .cv2-blank,
+  .cv2-sig-line {
+    border: 0 solid transparent;
+    border-bottom: 1px dashed rgb(255 255 255 / 0.35);
+    transition: border-color 0.2s ease;
   }
 
-  .cv2-link:hover {
+  .cv2-blank:focus,
+  .cv2-captcha.is-ready .cv2-sig-line {
+    border-bottom-style: solid;
+    border-bottom-color: var(--color-bio-lime);
+  }
+
+  .cv2-blank {
+    display: inline-block;
+    vertical-align: baseline;
+    width: 10ch;
+    max-width: 100%;
+    background: transparent;
+    border-radius: 0;
+    outline: none;
+    padding: 0 0.15em 0.05em;
+    font: inherit;
     color: var(--color-bio-lime);
+    caret-color: var(--color-bio-lime);
   }
 
-  .cv2-link:focus-visible {
-    outline: 2px solid var(--color-bio-lime);
-    outline-offset: 4px;
+  /* Sent state: the seal goes quiet. Both the scale and the arrow's nudge have
+     to be withheld — Tailwind drives the nudge through `translate`, not
+     `transform`, so it needs its own reset. */
+  .cv2-seal:disabled svg {
+    translate: none;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -291,21 +356,27 @@
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .cv2-seal:hover {
+    .cv2-seal:not(:disabled):hover {
       transform: scale(1.06) rotate(4deg);
     }
   }
 
+  /* Raised dark surfaces: the captcha slip and the seal's tooltip */
+  .cv2-captcha,
+  .cv2-tip {
+    background: #101010;
+    border: 1px solid var(--color-n-800);
+  }
+
   /* The captcha: a slip of the same letter, in the top layer */
   .cv2-captcha {
+    --rule-fade: 24px;
     position: fixed;
     inset: auto;
     margin: 0;
     width: min(340px, calc(100vw - 32px));
     padding: 22px 24px 18px 30px;
-    background: #101010;
-    border: 1px solid #232323;
-    color: #e9e9e6;
+    color: var(--letter-ink);
     overflow: visible;
     /* keeps the exit transition visible in browsers that drop it from the top layer early */
     z-index: 60;
@@ -331,65 +402,6 @@
     bottom: 14px;
     left: 11px;
     width: 1px;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      rgba(206, 247, 158, 0.28) 24px,
-      rgba(206, 247, 158, 0.28) calc(100% - 24px),
-      transparent
-    );
-    pointer-events: none;
-  }
-
-  .cv2-cap-line {
-    font-family: var(--font-display);
-    font-size: 19px;
-    line-height: 1.5;
-    letter-spacing: -0.005em;
-  }
-
-  .cv2-sigwrap {
-    position: relative;
-    height: 116px;
-  }
-
-  .cv2-sig {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    touch-action: none;
-    cursor: crosshair;
-  }
-
-  .cv2-sig:focus-visible {
-    outline: 2px solid var(--color-bio-lime);
-    outline-offset: 4px;
-  }
-
-  /* Same dashed-blank language as the inline inputs */
-  .cv2-sig-line {
-    position: absolute;
-    left: 2px;
-    right: 2px;
-    bottom: 24px;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.35);
-    transition: border-color 0.2s ease;
-    pointer-events: none;
-  }
-
-  .cv2-captcha.is-ready .cv2-sig-line {
-    border-bottom-style: solid;
-    border-bottom-color: var(--color-bio-lime);
-  }
-
-  .cv2-sig-x {
-    position: absolute;
-    left: 4px;
-    bottom: 30px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.25);
     pointer-events: none;
   }
 
@@ -397,7 +409,7 @@
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: -0.02em;
-    color: #5f5f5f;
+    color: var(--color-n-500);
     transition: color 0.2s ease;
   }
 
@@ -407,21 +419,8 @@
 
   /* Only offered once there's ink to regret */
   .cv2-cap-reset {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    color: #c9c9c9;
-    background: transparent;
-    border: 1px solid #2c2c2c;
-    padding: 6px 10px;
-    cursor: pointer;
     opacity: 0;
     pointer-events: none;
-    transition:
-      color 0.2s ease,
-      border-color 0.2s ease,
-      opacity 0.2s ease;
   }
 
   .cv2-captcha.has-ink .cv2-cap-reset {
@@ -435,16 +434,6 @@
     pointer-events: none;
   }
 
-  .cv2-cap-reset:hover {
-    color: var(--color-bio-lime);
-    border-color: rgba(206, 247, 158, 0.4);
-  }
-
-  .cv2-cap-reset:focus-visible {
-    outline: 2px solid var(--color-bio-lime);
-    outline-offset: 3px;
-  }
-
   .cv2-cap-main {
     transition: opacity 0.25s ease;
   }
@@ -453,43 +442,13 @@
     opacity: 0;
   }
 
-  .cv2-cap-send {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 11px 0;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    background: var(--color-bio-lime);
-    color: #0a0a0a;
-    cursor: pointer;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease;
-  }
-
-  .cv2-cap-send:disabled {
-    background: #1a1a1a;
-    color: #5f5f5f;
-    cursor: not-allowed;
-  }
-
-  .cv2-cap-send:focus-visible {
-    outline: 2px solid var(--color-bio-lime);
-    outline-offset: 3px;
-  }
-
   .cv2-cap-spinner {
     display: none;
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    border: 1.5px solid #4a4a4a;
-    border-top-color: #c9c9c9;
+    border: 1.5px solid var(--color-n-600);
+    border-top-color: var(--color-n-300);
   }
 
   .cv2-captcha.is-sending .cv2-cap-spinner {
@@ -497,33 +456,8 @@
   }
 
   /* "Off it goes." — the seal's arrow, drawn then released */
-  .cv2-cap-sent {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: var(--color-bio-lime);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease 0.15s;
-  }
-
   .cv2-captcha.is-sent-anim .cv2-cap-sent {
     opacity: 1;
-  }
-
-  /* Sent state: seal goes quiet, tooltip explains */
-  .cv2-seal:disabled {
-    background: #1a1a1a;
-    color: #565656;
-    cursor: not-allowed;
-  }
-
-  .cv2-seal:disabled svg {
-    transform: none !important;
   }
 
   .cv2-tip {
@@ -532,13 +466,11 @@
     left: 50%;
     transform: translateX(-50%) translateY(3px);
     white-space: nowrap;
-    background: #101010;
-    border: 1px solid #232323;
     padding: 8px 11px;
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: -0.02em;
-    color: #c9c9c9;
+    color: var(--color-n-300);
     opacity: 0;
     pointer-events: none;
     transition:
@@ -550,32 +482,6 @@
   .cv2-form[data-sent] .cv2-seal-wrap:hover .cv2-tip {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
-  }
-
-  .cv2-again {
-    margin-top: 12px;
-    padding: 7px 12px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    color: #8a8a8a;
-    background: transparent;
-    border: 1px solid #2c2c2c;
-    cursor: pointer;
-    transition:
-      color 0.2s ease,
-      border-color 0.2s ease;
-  }
-
-  .cv2-again:hover {
-    color: var(--color-bio-lime);
-    border-color: rgba(206, 247, 158, 0.4);
-  }
-
-  .cv2-again:focus-visible {
-    outline: 2px solid var(--color-bio-lime);
-    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -641,6 +547,14 @@
 </style>
 
 <script>
+  import {
+    MIN_INK,
+    MIN_SAMPLES,
+    inspectInk,
+    botMessage,
+    type Pt,
+  } from "../scripts/signature"
+
   {
     const form = document.querySelector<HTMLFormElement>(".cv2-form")
     if (form) {
@@ -699,39 +613,11 @@
       const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub")
       const again = form.querySelector<HTMLButtonElement>(".cv2-again")
 
-      const INK = "#cef79e"
-      // Enough path to rule out a stray tap; any real squiggle clears it easily
-      const MIN_INK = 220
-      const MIN_SAMPLES = 14
+      const INK =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--color-bio-lime")
+          .trim() || "#cef79e"
 
-      // Bot tells: a run of ink is "robotic" only when it's literally
-      // perfectly straight — within sub-pixel rounding of its own chord.
-      // Even a careful human hand wobbles more than half a pixel over 30px;
-      // synthetic pointer events don't. Runs need a few samples so a fast
-      // human flick (2–3 sparse points, trivially "straight") doesn't get
-      // accused.
-      const STRAIGHT_DEV = 0.25
-      const MIN_STRAIGHT = 30
-      const MIN_RUN_SAMPLES = 4
-      const ANGLE_TOL = 5
-      const ROBOT_RATIO = 0.75
-
-      const RIGHT_ANGLE_LINES = [
-        "That's an awfully perfect 90° for a human…",
-        "A crisp right angle. Blink twice if you're a robot.",
-      ]
-      const DIAGONAL_LINES = [
-        "A flawless 45° — no human hand owns a protractor that steady.",
-        "Perfect 45s? Beep boop. Try again, but messier.",
-      ]
-      const STRAIGHT_LINES = [
-        "Ruler-straight. Humans wobble — wobble for me.",
-        "That's not a signature, that's a blueprint. Loosen up.",
-      ]
-      const pick = (lines: string[]) =>
-        lines[Math.floor(Math.random() * lines.length)]
-
-      type Pt = { x: number; y: number }
       let strokes: Pt[][] = []
 
       let inkLength = 0
@@ -796,97 +682,6 @@
         if (sendBtn) sendBtn.disabled = true
         if (sendLabel) sendLabel.textContent = "Awaiting a signature"
         setStatus("Sign with a scribble — any scribble.")
-      }
-
-      // Max perpendicular distance of the points between a and b from the
-      // straight chord joining them
-      const chordDeviation = (pts: Pt[], a: number, b: number) => {
-        const ax = pts[a].x
-        const ay = pts[a].y
-        const dx = pts[b].x - ax
-        const dy = pts[b].y - ay
-        const len = Math.hypot(dx, dy) || 1
-        let max = 0
-        for (let i = a + 1; i < b; i++) {
-          const d = Math.abs((pts[i].x - ax) * dy - (pts[i].y - ay) * dx) / len
-          if (d > max) max = d
-        }
-        return max
-      }
-
-      const pathLength = (pts: Pt[], a: number, b: number) => {
-        let l = 0
-        for (let i = a; i < b; i++)
-          l += Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y)
-        return l
-      }
-
-      // Split every stroke into maximal near-straight runs, tally how much of
-      // the ink is robotic, and note any suspiciously perfect corners between
-      // consecutive straight runs
-      const inspectInk = () => {
-        let total = 0
-        let robotic = 0
-        let rightAngle = false
-        let diagonal = false
-        for (const pts of strokes) {
-          if (pts.length < 2) continue
-          total += pathLength(pts, 0, pts.length - 1)
-          const runs: { a: number; b: number }[] = []
-          let a = 0
-          for (let b = a + 2; b < pts.length; b++) {
-            if (chordDeviation(pts, a, b) > STRAIGHT_DEV) {
-              runs.push({ a, b: b - 1 })
-              a = b - 1
-              b = a + 1
-            }
-          }
-          if (pts.length - 1 > a) runs.push({ a, b: pts.length - 1 })
-          let prevDir: number | null = null
-          for (const run of runs) {
-            const chord = Math.hypot(
-              pts[run.b].x - pts[run.a].x,
-              pts[run.b].y - pts[run.a].y,
-            )
-            if (chord < MIN_STRAIGHT || run.b - run.a < MIN_RUN_SAMPLES) {
-              prevDir = null
-              continue
-            }
-            robotic += pathLength(pts, run.a, run.b)
-            const dir =
-              (Math.atan2(
-                pts[run.b].y - pts[run.a].y,
-                pts[run.b].x - pts[run.a].x,
-              ) *
-                180) /
-              Math.PI
-            if (prevDir !== null) {
-              let turn = Math.abs(dir - prevDir) % 360
-              if (turn > 180) turn = 360 - turn
-              if (Math.abs(turn - 90) <= ANGLE_TOL) rightAngle = true
-              else if (
-                Math.abs(turn - 45) <= ANGLE_TOL ||
-                Math.abs(turn - 135) <= ANGLE_TOL
-              )
-                diagonal = true
-            }
-            prevDir = dir
-          }
-        }
-        return {
-          flagged: total > 0 && robotic / total >= ROBOT_RATIO,
-          rightAngle,
-          diagonal,
-        }
-      }
-
-      const botMessage = (verdict: {
-        rightAngle: boolean
-        diagonal: boolean
-      }) => {
-        if (verdict.rightAngle) return pick(RIGHT_ANGLE_LINES)
-        if (verdict.diagonal) return pick(DIAGONAL_LINES)
-        return pick(STRAIGHT_LINES)
       }
 
       const markReady = () => {
@@ -954,7 +749,7 @@
           drawing = false
           last = null
           if (committed) return
-          const verdict = inspectInk()
+          const verdict = inspectInk(strokes)
           if (verdict.flagged) {
             // Too much of the ink is geometrically perfect — revoke the
             // signature until some human wobble dilutes it
@@ -1019,8 +814,14 @@
             const gap = window.innerWidth - html.clientWidth
             html.style.overflow = "hidden"
             if (gap > 0) html.style.paddingRight = `${gap}px`
+            // The slip is positioned by hand, so it only needs to track the
+            // viewport while it's actually up
+            window.addEventListener("resize", placePopover, { passive: true })
+            window.addEventListener("scroll", placePopover, { passive: true })
             return
           }
+          window.removeEventListener("resize", placePopover)
+          window.removeEventListener("scroll", placePopover)
           html.style.overflow = ""
           html.style.paddingRight = ""
           drawing = false
@@ -1029,12 +830,6 @@
             window.clearTimeout(sendT2)
             if (readSent()) applySentState(true)
           }
-        })
-
-        // Auto popovers close on Esc natively; explicit fallback just in case
-        document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && pop.matches(":popover-open"))
-            pop.hidePopover()
         })
 
         again?.addEventListener("click", () => {
@@ -1048,9 +843,6 @@
         })
 
         if (readSent()) applySentState(true)
-
-        window.addEventListener("resize", placePopover, { passive: true })
-        window.addEventListener("scroll", placePopover, { passive: true })
       }
 
       form.addEventListener("submit", (e) => {
