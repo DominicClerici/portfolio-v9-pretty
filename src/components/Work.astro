@@ -615,8 +615,8 @@ const projects = [
       #faf8f2;
     clip-path: inset(var(--ct, 0px) var(--cr, 0px) var(--cb, 0px) var(--cl, 0px) round 999px 999px 26px 26px);
     transition:
-      clip-path 0.82s var(--door-ease),
-      opacity 0.24s ease;
+      clip-path 0.7s var(--door-ease),
+      opacity 0.205s ease;
   }
 
   .we1-portal-col {
@@ -651,7 +651,7 @@ const projects = [
 
   .we1-spread-out {
     opacity: 0;
-    transition: opacity 0.49s ease; /* 60% of the 0.82s door shrink */
+    transition: opacity 0.42s ease; /* 60% of the 0.7s door shrink */
   }
 
   /* Scrolled gallery: the portal's column starts hidden so the spread's
@@ -663,7 +663,7 @@ const projects = [
   /* ...then fades back in at the top of the column near the end */
   .we1-portal-col-in .we1-portal-col {
     opacity: 1;
-    transition: opacity 0.25s ease; /* 30% of the door shrink */
+    transition: opacity 0.21s ease; /* 30% of the door shrink */
   }
 
   /* ── The inside spread ── */
@@ -761,9 +761,9 @@ const projects = [
     opacity: 0.1;
     transform: translateY(6px);
     transition:
-      opacity 0.7s var(--settle-ease),
-      transform 0.7s var(--settle-ease);
-    transition-delay: calc(var(--ri, 0) * 70ms);
+      opacity 0.6s var(--settle-ease),
+      transform 0.6s var(--settle-ease);
+    transition-delay: calc(var(--ri, 0) * 60ms);
   }
 
   .we1-spread.is-in [data-rise] {
@@ -1002,8 +1002,8 @@ const projects = [
       const portal = section.querySelector<HTMLElement>("[data-portal]");
       const portalCol = portal?.querySelector<HTMLElement>("[data-portal-col]");
 
-      const OPEN_MS = 820;
-      const SWAP_MS = 240;
+      const OPEN_MS = 700;
+      const SWAP_MS = 205;
       // Close choreography, scaled to the door shrink (OPEN_MS): content
       // fades over the first 60%; a scrolled gallery's images fade back in
       // starting at 80%, over 30%. Keep the CSS durations in sync
