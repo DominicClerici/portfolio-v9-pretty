@@ -61,6 +61,13 @@ if (!prefersReducedMotion) {
   let running = false
   let lastTime = 0
 
+  // Hard lock (modal popovers etc.): wheel input is swallowed and programmatic
+  // jumps ignored, so the page cannot move until unlocked. The overflow:hidden
+  // the locker also applies covers native inputs (touch, keyboard, scrollbar);
+  // this covers the engine's own scrollTo-driven motion, which overflow:hidden
+  // does not stop.
+  let locked = false
+
   // Registered soft-barrier scroll positions (sorted ascending).
   let barriers: number[] = []
   // Barriers only catch wheel-driven motion; programmatic jumps (tab clicks,
@@ -230,11 +237,23 @@ if (!prefersReducedMotion) {
   // identical to wheel scrolling and don't fight the engine's resync. Barriers
   // are bypassed so a jump lands exactly on its target.
   ;(window as any).__smoothScrollTo = (y: number) => {
+    if (locked) return
     crossingEnabled = false
     mode = "normal"
     entryLead = 0
     target = clamp(y)
     start()
+  }
+
+  // Lock/unlock the engine. Locking freezes any in-flight easing where it is
+  // so momentum can't carry the page after the lock engages.
+  ;(window as any).__smoothScrollLock = (lock: boolean) => {
+    locked = lock
+    if (lock) {
+      target = current = window.scrollY
+      mode = "normal"
+      entryLead = 0
+    }
   }
 
   // Register the soft-barrier scroll positions (absolute document Y). Consumers
@@ -257,6 +276,7 @@ if (!prefersReducedMotion) {
       if ((e.target as Element)?.closest?.("[data-lenis-prevent]")) return
 
       e.preventDefault()
+      if (locked) return
       crossingEnabled = true
       target = clamp(target + e.deltaY * WHEEL_MULTIPLIER)
       start()
@@ -279,6 +299,7 @@ if (!prefersReducedMotion) {
 
   // In-page anchor links ease through the same engine.
   document.addEventListener("click", (e) => {
+    if (locked) return
     const link = (e.target as Element)?.closest?.<HTMLAnchorElement>(
       'a[href^="#"]',
     )
@@ -310,4 +331,6 @@ if (!prefersReducedMotion) {
     window.scrollTo(0, Math.max(0, y))
   ;(window as any).__setScrollBarriers = () => {}
   ;(window as any).__scrollProgressLead = () => 0
+  // Native scrolling here; the locker's overflow:hidden is the whole lock.
+  ;(window as any).__smoothScrollLock = () => {}
 }

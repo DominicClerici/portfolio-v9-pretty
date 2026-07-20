@@ -742,6 +742,9 @@
         pop.addEventListener("toggle", (e) => {
           const open = (e as unknown as { newState: string }).newState === "open";
           const html = document.documentElement;
+          // overflow:hidden blocks native inputs; the engine lock stops the
+          // smooth-scroll's programmatic scrolling, which overflow can't
+          (window as unknown as { __smoothScrollLock?: (l: boolean) => void }).__smoothScrollLock?.(open);
           if (open) {
             const gap = window.innerWidth - html.clientWidth;
             html.style.overflow = "hidden";
