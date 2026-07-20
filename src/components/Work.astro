@@ -1,11 +1,12 @@
 ---
 // "The Morning Editions": Dispatch prints a paper every morning, so the whole
 // shelf is typeset like one — each build is the front page of its own edition,
-// run off the same press across one day: morning, midday, late. Newsreader
-// italic mastheads, an arched plate window for the artwork, one ink per
-// edition (press blue, ocean teal, magenta). Scroll seats each plate like a
-// page coming off the press: the arch rises, its halo ring settles, and the
-// image eases out of overscan. Warm paper, generous margins, no rules.
+// run off the same press across one day: morning, midday, late. Set in the
+// site's own system (Aspekta display, Roboto Mono labels, bone paper, ink),
+// with an arched plate window for the artwork and one ink per edition, drawn
+// from the hero's glass objects (cube blue, sphere green, sphere purple).
+// Scroll seats each plate like a page coming off the press: the arch rises,
+// its halo ring settles, and the image eases out of overscan.
 //
 // The arch is also a door — and before that, a window. Each arch holds a
 // full replica of its spread (paper, wash, and the gallery column) pinned to
@@ -30,8 +31,8 @@ const projects = [
     websiteUrl: "https://dispatch.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/dispatch",
     featured: false,
-    accent: "#33569c",
-    wash: "rgba(51, 86, 156, 0.09)",
+    accent: "#0e63c8",
+    wash: "rgba(14, 99, 200, 0.09)",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
@@ -61,8 +62,8 @@ const projects = [
     websiteUrl: "https://meridian.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/meridian",
     featured: false,
-    accent: "#2c7a6f",
-    wash: "rgba(44, 122, 111, 0.09)",
+    accent: "#006c22",
+    wash: "rgba(0, 108, 34, 0.09)",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2024 — 2025" },
@@ -92,8 +93,8 @@ const projects = [
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
     featured: true,
-    accent: "#b4487f",
-    wash: "rgba(180, 72, 127, 0.1)",
+    accent: "#5e2cc0",
+    wash: "rgba(94, 44, 192, 0.1)",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
@@ -114,16 +115,19 @@ const projects = [
 ---
 
 <section id="work" class="we1 relative" aria-label="Selected work">
-  <header class="max-w-[1200px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)] text-center">
-    <p class="font-mono text-[11px] leading-none tracking-[0.3em] uppercase text-ink/45">
+  <header class="max-w-[1200px] mx-auto px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]">
+    <div class="border-t border-ink/20 mb-10 lg:mb-14" aria-hidden="true"></div>
+    <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45">
       03&hairsp;/&hairsp;04 &mdash; Selected Work
     </p>
     <h2
-      class="font-headline italic font-normal text-ink leading-[1.02] tracking-[-0.01em] mt-7 text-[clamp(2.5rem,6.5vw,4.75rem)]"
+      class="font-display font-normal text-ink leading-[1.02] tracking-[-0.03em] mt-6 text-[clamp(2.5rem,6.5vw,4.75rem)]"
     >
       The Morning Editions
     </h2>
-    <p class="font-body text-[15px] leading-[1.7] text-ink/55 max-w-[540px] mx-auto mt-6">
+    <p
+      class="font-display text-[17px] leading-[1.5] tracking-[-0.01em] text-ink/55 max-w-[540px] mt-5"
+    >
       Three builds, run off the same press across one day &mdash; morning, midday, and late.
     </p>
   </header>
@@ -132,26 +136,26 @@ const projects = [
     projects.map((project, i) => (
       <>
         {i > 0 && (
-          <div class="we1-asterism text-center font-headline text-[18px] tracking-[0.9em] text-ink/30 pl-[0.9em]" aria-hidden="true">
-            &middot;&nbsp;&middot;&nbsp;&middot;
+          <div class="max-w-[1200px] mx-auto px-6 lg:px-12" aria-hidden="true">
+            <div class="border-t border-ink/20"></div>
           </div>
         )}
         <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash};`}>
           <div class="max-w-[1200px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
             <div class={`we1-copy order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`}>
-              <p class="font-mono text-[11px] leading-none tracking-[0.28em] uppercase text-ink/45">
+              <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45">
                 Edition {project.index}
                 <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
                 <span style="color: var(--acc);">{project.edition}</span>
               </p>
-              <h3 class="font-headline italic font-normal text-ink leading-[0.98] tracking-[-0.015em] mt-6 text-[clamp(3rem,8vw,5.5rem)]">
+              <h3 class="font-display font-normal text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
                 {project.title}
               </h3>
-              <p class="font-headline text-[17px] leading-[1.75] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
-              <p class="we1-colophon font-mono text-[11px] leading-[1.9] tracking-[0.14em] uppercase text-ink/45 mt-8">
+              <p class="font-display text-[17px] leading-[1.6] tracking-[-0.01em] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
+              <p class="we1-colophon font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-8">
                 Set in &mdash; {project.stack.join(" · ")}
               </p>
-              <p class="font-mono text-[11px] leading-none tracking-[0.14em] uppercase text-ink/35 mt-3">
+              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 mt-3">
                 {project.fact}
               </p>
               <div class="flex items-center flex-wrap gap-x-7 gap-y-4 mt-9">
@@ -159,13 +163,13 @@ const projects = [
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="we1-link font-headline italic text-[19px] text-ink"
+                  class="we1-link font-display text-[17px] tracking-[-0.01em] text-ink"
                 >
                   Visit the site&nbsp;&nearr;
                 </a>
                 <button
                   type="button"
-                  class="we1-more font-mono text-[12px] tracking-[0.1em] uppercase we1-focus"
+                  class="we1-more font-mono text-[13px] tracking-[-0.02em] uppercase we1-focus"
                   data-open={i}
                 >
                   <span class="we1-more-glyph" aria-hidden="true" />
@@ -176,7 +180,7 @@ const projects = [
                     href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="font-mono text-[12px] tracking-[0.1em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
+                    class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
                   >
                     Source
                   </a>
@@ -185,7 +189,7 @@ const projects = [
             </div>
 
             <figure class={`we1-fig relative order-1 ${i % 2 === 1 ? "lg:order-1" : "lg:order-2"} m-0`}>
-              <span class="we1-no font-headline italic absolute select-none" aria-hidden="true">
+              <span class="we1-no font-display absolute select-none" aria-hidden="true">
                 No.&thinsp;{i + 1}
               </span>
               <div class="we1-arch-wrap relative mx-auto">
@@ -207,7 +211,7 @@ const projects = [
                                 decoding="async"
                               />
                             </div>
-                            <figcaption class="font-mono text-[10px] leading-[1.7] tracking-[0.16em] uppercase text-ink/40 mt-4 text-center">
+                            <figcaption class="font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-ink/40 mt-4 text-center">
                               fig. 0{k + 1} &mdash; {g.caption}
                             </figcaption>
                           </figure>
@@ -217,7 +221,7 @@ const projects = [
                   </div>
                 </button>
                 {project.featured && (
-                  <span class="we1-stamp absolute font-mono text-[10px] leading-none tracking-[0.22em] uppercase">
+                  <span class="we1-stamp absolute font-mono text-[11px] leading-none tracking-[-0.01em] uppercase">
                     Editor&rsquo;s pick
                   </span>
                 )}
@@ -230,7 +234,7 @@ const projects = [
   }
 
   <p
-    class="max-w-[1200px] mx-auto px-6 lg:px-12 pb-14 pt-4 font-mono text-[11px] leading-none tracking-[0.18em] uppercase text-ink/35 text-center"
+    class="max-w-[1200px] mx-auto px-6 lg:px-12 pb-14 pt-4 font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 text-center"
   >
     end of the print run &mdash; back tomorrow, six a.m. sharp
   </p>
@@ -248,13 +252,13 @@ const projects = [
         style={`--acc: ${project.accent}; --wash: ${project.wash};`}
         hidden
       >
-        <button type="button" class="we1-back font-mono text-[11px] leading-none tracking-[0.14em] uppercase we1-focus" data-close>
+        <button type="button" class="we1-back font-mono text-[12px] leading-none tracking-[-0.02em] uppercase we1-focus" data-close>
           &larr;&ensp;Back to the front page
         </button>
 
         <div class="we1-sgrid grid grid-cols-1 gap-x-24">
           <div class="we1-story">
-            <p class="font-mono text-[11px] leading-none tracking-[0.28em] uppercase text-ink/45" data-rise style="--ri: 0;">
+            <p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45" data-rise style="--ri: 0;">
               Edition {project.index}
               <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
               <span style="color: var(--acc);">{project.edition}</span>
@@ -263,18 +267,18 @@ const projects = [
             </p>
             <h3
               id={`we1-spread-title-${i}`}
-              class="font-headline italic font-normal text-ink leading-[0.96] tracking-[-0.015em] mt-6 text-[clamp(3.25rem,7vw,5.75rem)]"
+              class="font-display font-normal text-ink leading-[0.96] tracking-[-0.03em] mt-6 text-[clamp(3rem,6.5vw,5.25rem)]"
               data-rise
               style="--ri: 1;"
             >
               {project.title}
             </h3>
-            <p class="font-headline text-[19px] leading-[1.7] text-ink/75 max-w-[52ch] mt-8" data-rise style="--ri: 2;">
+            <p class="font-display text-[19px] leading-[1.55] tracking-[-0.01em] text-ink/75 max-w-[52ch] mt-8" data-rise style="--ri: 2;">
               {project.description}
             </p>
             <div class="mt-9 space-y-6 max-w-[58ch]">
               {project.story.map((para, j) => (
-                <p class="font-body text-[15px] leading-[1.85] text-ink/65" data-rise style={`--ri: ${3 + j};`}>
+                <p class="font-display text-[16px] leading-[1.75] text-ink/65" data-rise style={`--ri: ${3 + j};`}>
                   {para}
                 </p>
               ))}
@@ -282,13 +286,13 @@ const projects = [
             <dl class="we1-details grid grid-cols-3 gap-6 mt-12 max-w-[52ch]" data-rise style={`--ri: ${3 + project.story.length};`}>
               {project.details.map((d) => (
                 <div>
-                  <dt class="font-mono text-[10px] leading-none tracking-[0.22em] uppercase text-ink/40">{d.label}</dt>
-                  <dd class="font-headline text-[15px] leading-[1.5] text-ink/80 mt-2.5">{d.value}</dd>
+                  <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40">{d.label}</dt>
+                  <dd class="font-display text-[15px] leading-[1.5] text-ink/80 mt-2.5">{d.value}</dd>
                 </div>
               ))}
             </dl>
             <p
-              class="we1-colophon font-mono text-[11px] leading-[1.9] tracking-[0.14em] uppercase text-ink/45 mt-10"
+              class="we1-colophon font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-10"
               data-rise
               style={`--ri: ${4 + project.story.length};`}
             >
@@ -299,7 +303,7 @@ const projects = [
                 href={project.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="we1-link font-headline italic text-[19px] text-ink"
+                class="we1-link font-display text-[17px] tracking-[-0.01em] text-ink"
               >
                 Visit the site&nbsp;&nearr;
               </a>
@@ -308,7 +312,7 @@ const projects = [
                   href={project.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="font-mono text-[12px] tracking-[0.1em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
+                  class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/50 hover:text-ink transition-colors duration-200 we1-focus"
                 >
                   Source
                 </a>
@@ -329,7 +333,7 @@ const projects = [
                     decoding="async"
                   />
                 </div>
-                <figcaption class="font-mono text-[10px] leading-[1.7] tracking-[0.16em] uppercase text-ink/40 mt-4 text-center">
+                <figcaption class="font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-ink/40 mt-4 text-center">
                   fig. 0{k + 1} &mdash; {g.caption}
                 </figcaption>
               </figure>
@@ -338,7 +342,7 @@ const projects = [
         </div>
 
         <div class="pb-16 pt-6 text-center">
-          <button type="button" class="we1-endline font-mono text-[11px] leading-none tracking-[0.18em] uppercase text-ink/35 we1-focus" data-close>
+          <button type="button" class="we1-endline font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 we1-focus" data-close>
             fold the paper &mdash; back to the front page
           </button>
         </div>
@@ -354,7 +358,7 @@ const projects = [
 <style>
   .we1 {
     overflow-x: clip;
-    background: #faf8f2;
+    background: #f7f7f5;
     --door-ease: cubic-bezier(0.77, 0, 0.175, 1);
     --settle-ease: cubic-bezier(0.22, 1, 0.36, 1);
     /* --in: entry progress (0 offscreen → 1 seated), --par: full-traverse
@@ -415,7 +419,7 @@ const projects = [
   .we1-arch {
     aspect-ratio: 0.84;
     border-radius: 999px 999px 26px 26px;
-    background: #faf8f2;
+    background: #f7f7f5;
     box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.45);
     transition: box-shadow 0.55s var(--settle-ease);
   }
@@ -432,7 +436,7 @@ const projects = [
     left: 0;
     width: 100%;
     height: 100%;
-    background: #faf8f2;
+    background: #f7f7f5;
     will-change: transform;
   }
 
@@ -456,13 +460,13 @@ const projects = [
       height: 100dvh;
       background:
         radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-        #faf8f2;
+        #f7f7f5;
     }
 
     .we1-js .we1-flip .we1-view {
       background:
         radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-        #faf8f2;
+        #f7f7f5;
     }
 
     /* No JS / reduced motion: the arch-sized fallback shouldn't inherit the
@@ -548,7 +552,7 @@ const projects = [
     border: 1.5px solid var(--acc);
     border-radius: 999px;
     color: var(--acc);
-    background: rgba(250, 248, 242, 0.85);
+    background: rgba(247, 247, 245, 0.85);
     transform: rotate(6deg);
     pointer-events: none;
   }
@@ -612,7 +616,7 @@ const projects = [
     z-index: 45;
     background:
       radial-gradient(44% 36% at var(--wx, 78%) 6%, var(--pwash, transparent), transparent 70%),
-      #faf8f2;
+      #f7f7f5;
     clip-path: inset(var(--ct, 0px) var(--cr, 0px) var(--cb, 0px) var(--cl, 0px) round 999px 999px 26px 26px);
     transition:
       clip-path 0.7s var(--door-ease),
@@ -676,7 +680,7 @@ const projects = [
     -webkit-overflow-scrolling: touch;
     background:
       radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-      #faf8f2;
+      #f7f7f5;
   }
 
   .we1-spread:focus {
@@ -686,7 +690,7 @@ const projects = [
   .we1-spread-flip {
     background:
       radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-      #faf8f2;
+      #f7f7f5;
   }
 
   .we1-spread-flip .we1-story {
@@ -702,11 +706,11 @@ const projects = [
     top: 22px;
     left: max(22px, env(safe-area-inset-left));
     z-index: 5;
-    padding: 12px 18px;
-    border: 1px solid rgba(34, 47, 48, 0.14);
-    border-radius: 999px;
+    padding: 12px 16px;
+    border: 1px solid rgba(34, 47, 48, 0.35);
+    border-radius: 8px;
     color: rgba(34, 47, 48, 0.6);
-    background: rgba(250, 248, 242, 0.82);
+    background: rgba(247, 247, 245, 0.82);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     cursor: pointer;
@@ -737,7 +741,7 @@ const projects = [
 
   .we1-gframe {
     border-radius: 22px;
-    background: #eef0ea;
+    background: #ececea;
     box-shadow: 0 26px 60px -30px rgba(34, 47, 48, 0.4);
     aspect-ratio: 4 / 3;
   }
