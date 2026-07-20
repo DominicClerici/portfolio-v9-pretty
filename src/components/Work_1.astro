@@ -234,7 +234,7 @@ const projects = [
           &larr;&ensp;Back to the front page
         </button>
 
-        <div class="we1-sgrid grid grid-cols-1 lg:grid-cols-[minmax(0,10fr)_minmax(0,9fr)] gap-x-24 max-w-[1280px] mx-auto px-6 lg:px-12">
+        <div class="we1-sgrid grid grid-cols-1 gap-x-24">
           <div class="we1-story">
             <p class="font-mono text-[11px] leading-none tracking-[0.28em] uppercase text-ink/45" data-rise style="--ri: 0;">
               Edition {project.index}
@@ -641,6 +641,10 @@ const projects = [
     border-color: color-mix(in srgb, var(--acc) 55%, transparent);
   }
 
+  .we1-sgrid {
+    padding-inline: 24px;
+  }
+
   .we1-story {
     padding-top: clamp(120px, 16vh, 180px);
     padding-bottom: 96px;
@@ -689,6 +693,21 @@ const projects = [
   }
 
   @media (min-width: 1024px) {
+    /* Story column sits where the old centered 1280px container put it; the
+       gallery column runs from the gap to the page edge, with half the column
+       gap (48px) as its edge padding */
+    .we1-sgrid {
+      grid-template-columns: minmax(0, 36rem) minmax(0, 1fr);
+      padding-left: calc(max((100vw - 1280px) / 2, 0px) + 48px);
+      padding-right: 48px;
+    }
+
+    .we1-spread-flip .we1-sgrid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 36rem);
+      padding-left: 48px;
+      padding-right: calc(max((100vw - 1280px) / 2, 0px) + 48px);
+    }
+
     .we1-story {
       position: sticky;
       top: 0;
@@ -801,7 +820,18 @@ const projects = [
       let openIndex = -1;
       let busy = false;
       let lastTrigger: HTMLElement | null = null;
+      let detachSpreadScroll: (() => void) | null = null;
       const timers = new Set<ReturnType<typeof setTimeout>>();
+
+      const attachScroll = (spread: HTMLElement) => {
+        detachSpreadScroll?.();
+        detachSpreadScroll = (window as any).__attachSmoothScroll?.(spread) ?? null;
+      };
+
+      const detachScroll = () => {
+        detachSpreadScroll?.();
+        detachSpreadScroll = null;
+      };
 
       const later = (fn: () => void, ms: number) => {
         const id = setTimeout(() => {
@@ -868,6 +898,7 @@ const projects = [
         if (reducedMotion || !portal || !portalImg) {
           spread.hidden = false;
           spread.classList.add("is-in");
+          attachScroll(spread);
           spread.focus({ preventScroll: true });
           return;
         }
@@ -893,6 +924,7 @@ const projects = [
 
         later(() => {
           spread.hidden = false;
+          attachScroll(spread);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => spread.classList.add("is-in"));
           });
@@ -913,6 +945,7 @@ const projects = [
         const arch = archFor(i);
 
         const finish = () => {
+          detachScroll();
           if (spread) {
             spread.classList.remove("is-in");
             spread.hidden = true;

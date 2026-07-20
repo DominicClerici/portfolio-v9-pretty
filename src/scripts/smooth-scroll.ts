@@ -268,6 +268,79 @@ if (!prefersReducedMotion) {
   // lock scrubs *during* the deceleration; it's zero except mid-brake.
   ;(window as any).__scrollProgressLead = () => entryLead
 
+  // Element-scoped variant of the same easing, for overlay scrollers (e.g. the
+  // Work spread dialog) that opt out of the root engine via data-lenis-prevent.
+  // Wheel is eased onto el.scrollTop with the same feel; touch, keyboard, and
+  // scrollbar drags stay native and resync the easer. Nested scrollables inside
+  // el keep native wheel behavior while they can still consume the delta.
+  // Returns a detach function. No barrier support — overlays don't pin.
+  ;(window as any).__attachSmoothScroll = (el: HTMLElement) => {
+    let elTarget = el.scrollTop
+    let elCurrent = el.scrollTop
+    let elRunning = false
+    let elLastTime = 0
+
+    const clampEl = (v: number) =>
+      Math.max(0, Math.min(v, el.scrollHeight - el.clientHeight))
+
+    const elTick = (time: number) => {
+      if (!elRunning) return
+      const dt = elLastTime ? Math.min((time - elLastTime) / 1000, 0.064) : 0
+      elLastTime = time
+      elCurrent += (elTarget - elCurrent) * (1 - Math.exp(-LAMBDA * dt))
+      if (Math.abs(elTarget - elCurrent) < 0.1) elCurrent = elTarget
+      el.scrollTop = elCurrent
+      if (elCurrent === elTarget) {
+        elRunning = false
+        return
+      }
+      requestAnimationFrame(elTick)
+    }
+
+    const elStart = () => {
+      if (elRunning) return
+      elRunning = true
+      elLastTime = 0
+      requestAnimationFrame(elTick)
+    }
+
+    const innerCanScroll = (from: Element | null, dy: number): boolean => {
+      for (let n = from; n && n !== el; n = n.parentElement) {
+        if (!(n instanceof HTMLElement)) continue
+        if (n.scrollHeight <= n.clientHeight + 1) continue
+        const overflowY = getComputedStyle(n).overflowY
+        if (overflowY !== "auto" && overflowY !== "scroll") continue
+        if (dy > 0 && n.scrollTop + n.clientHeight < n.scrollHeight - 1)
+          return true
+        if (dy < 0 && n.scrollTop > 0) return true
+      }
+      return false
+    }
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return
+      if (innerCanScroll(e.target as Element, e.deltaY)) return
+      e.preventDefault()
+      elTarget = clampEl(elTarget + e.deltaY * WHEEL_MULTIPLIER)
+      elStart()
+    }
+
+    const onScroll = () => {
+      if (elRunning) return
+      if (Math.abs(el.scrollTop - elCurrent) < 2) return
+      elTarget = elCurrent = el.scrollTop
+    }
+
+    el.addEventListener("wheel", onWheel, { passive: false })
+    el.addEventListener("scroll", onScroll, { passive: true })
+
+    return () => {
+      elRunning = false
+      el.removeEventListener("wheel", onWheel)
+      el.removeEventListener("scroll", onScroll)
+    }
+  }
+
   window.addEventListener(
     "wheel",
     (e) => {
