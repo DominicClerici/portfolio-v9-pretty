@@ -235,6 +235,20 @@
     border: 1px solid #232323;
     color: #e9e9e6;
     overflow: visible;
+    /* keeps the exit transition visible in browsers that drop it from the top layer early */
+    z-index: 60;
+    opacity: 0;
+    transform: translateY(8px) rotate(-0.5deg);
+  }
+
+  /* After a send, the slip leaves upward — the way the arrow went */
+  .cv2-captcha.is-sent-anim {
+    transform: translateY(-14px) rotate(0.4deg);
+  }
+
+  .cv2-captcha:popover-open {
+    opacity: 1;
+    transform: none;
   }
 
   /* Echo of the notebook margin rule */
@@ -453,12 +467,16 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .cv2-captcha:popover-open {
-      animation: cv2-cap-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    .cv2-captcha {
+      transition:
+        opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        overlay 0.25s ease allow-discrete,
+        display 0.25s ease allow-discrete;
     }
 
-    @keyframes cv2-cap-in {
-      from {
+    @starting-style {
+      .cv2-captcha:popover-open {
         opacity: 0;
         transform: translateY(8px) rotate(-0.5deg);
       }
@@ -718,16 +736,31 @@
           }, 1000);
         });
 
+        // Open locks page scroll (compensating for the vanished scrollbar).
         // Closing early (Esc, light dismiss) abandons an unsent attempt;
         // once the letter is away, closing just finalizes the sent state
         pop.addEventListener("toggle", (e) => {
-          if ((e as unknown as { newState: string }).newState !== "closed") return;
+          const open = (e as unknown as { newState: string }).newState === "open";
+          const html = document.documentElement;
+          if (open) {
+            const gap = window.innerWidth - html.clientWidth;
+            html.style.overflow = "hidden";
+            if (gap > 0) html.style.paddingRight = `${gap}px`;
+            return;
+          }
+          html.style.overflow = "";
+          html.style.paddingRight = "";
           drawing = false;
           if (committed) {
             window.clearTimeout(sendT1);
             window.clearTimeout(sendT2);
             if (readSent()) applySentState(true);
           }
+        });
+
+        // Auto popovers close on Esc natively; explicit fallback just in case
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && pop.matches(":popover-open")) pop.hidePopover();
         });
 
         again?.addEventListener("click", () => {
