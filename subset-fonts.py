@@ -32,15 +32,17 @@ except ImportError:
 ROOT = Path(__file__).parent
 DIST = ROOT / "dist"
 FONTS_DIR = ROOT / "public" / "fonts"
-FULL_FONTS_DIR = FONTS_DIR / "full"
+FULL_FONTS_DIR = ROOT / "fonts-src"
 
 # Tailwind class -> font key
 FONT_CLASSES = {
-    "font-headline": "newsreader",
-    "font-label": "space-grotesk",
+    "font-display": "aspekta",
+    "font-mono": "roboto-mono",
     "font-body": "inter",
 }
 
+# The <body> in Layout.astro carries font-body, so anything that never hits a
+# font-* class inherits Inter. Keep this in sync with that class.
 DEFAULT_FONT = "inter"
 
 # Tags whose text content is not visible and should be skipped.
@@ -187,12 +189,11 @@ def main():
 
     if not FULL_FONTS_DIR.exists():
         print(f"ERROR: {FULL_FONTS_DIR} not found.")
-        print("Place the original (un-subset) .woff2 files in public/fonts/full/")
+        print("Place the original (un-subset) .woff2 files in fonts-src/")
         print("Files needed:")
-        print("  - newsreader-latin.woff2")
-        print("  - newsreader-latin-italic.woff2")
+        print("  - aspekta-400.woff2")
+        print("  - roboto-mono-latin-400.woff2")
         print("  - inter-latin-400.woff2")
-        print("  - space-grotesk-latin.woff2")
         sys.exit(1)
 
     char_sets = collect_chars()
@@ -203,10 +204,9 @@ def main():
     print()
 
     font_files = [
-        ("newsreader-latin.woff2", "newsreader"),
-        ("newsreader-latin-italic.woff2", "newsreader"),
+        ("aspekta-400.woff2", "aspekta"),
+        ("roboto-mono-latin-400.woff2", "roboto-mono"),
         ("inter-latin-400.woff2", "inter"),
-        ("space-grotesk-latin.woff2", "space-grotesk"),
     ]
 
     total_before = 0

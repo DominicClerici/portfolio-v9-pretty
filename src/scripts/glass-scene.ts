@@ -239,11 +239,20 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
 
   function startGL(): Impl | null {
     if (forceCPU) return null
-    const gl = canvas.getContext("webgl2", {
-      antialias: false, // both passes are fullscreen quads — nothing to MSAA
-      alpha: false,
-      powerPreference: "low-power",
-    })
+    // Hardened browsers can throw from getContext instead of returning null;
+    // either way this must resolve to the CPU fallback, not an escaped
+    // exception (the callers register scroll/observer wiring around scene
+    // creation and an escaped throw would strand it).
+    let gl: WebGL2RenderingContext | null = null
+    try {
+      gl = canvas.getContext("webgl2", {
+        antialias: false, // both passes are fullscreen quads — nothing to MSAA
+        alpha: false,
+        powerPreference: "low-power",
+      })
+    } catch {
+      gl = null
+    }
     if (!gl) return null
     glTouched = true
 
@@ -629,7 +638,17 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       canvas = fresh
       glTouched = false
     }
-    const ctx = canvas.getContext("2d")!
+    // Same guard as the GL path: a throwing/null getContext must not escape
+    // createGlassScene. With no 2D context there's nothing to draw into, so
+    // the scene degrades to inert no-ops over the blank canvas.
+    let ctx2d: CanvasRenderingContext2D | null = null
+    try {
+      ctx2d = canvas.getContext("2d")
+    } catch {
+      ctx2d = null
+    }
+    if (!ctx2d) return { render: () => {}, resize: () => {} }
+    const ctx = ctx2d
     const W = 520
     let H = 300
     let cssH = 1 // wrap height in CSS px, for scroll-lift conversion
@@ -644,24 +663,15 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
 
     // One object's ramp ≈ the GL gradient layers after the 45px blur:
     // a top→bottom ramp with a bright lower rim, in the object's colors.
-    function objColor(
-      t: number,
-      ga0: number[],
-      ga1: number[],
-      gbMix: number,
-    ): [number, number, number] {
-      const gA = [
-        lerp(ga0[0], ga1[0], sstep(0, 0.8, t)),
-        lerp(ga0[1], ga1[1], sstep(0, 0.8, t)),
-        lerp(ga0[2], ga1[2], sstep(0, 0.8, t)),
-      ]
+    // Writes into objCol (runs per covered pixel — must not allocate).
+    const objCol = [0, 0, 0]
+    function objColor(t: number, ga0: number[], ga1: number[], gbMix: number) {
+      const s = sstep(0, 0.8, t)
       const w = sstep(0.8, 1, t)
       const dark = 1 - gbMix * (1 - w) * 0.5 // gradient B darkening
-      return [
-        255 * Math.min(1, lerp(gA[0] * dark, 1, w)),
-        255 * Math.min(1, lerp(gA[1] * dark, 1, w)),
-        255 * Math.min(1, lerp(gA[2] * dark, 1, w)),
-      ]
+      objCol[0] = 255 * Math.min(1, lerp(lerp(ga0[0], ga1[0], s) * dark, 1, w))
+      objCol[1] = 255 * Math.min(1, lerp(lerp(ga0[1], ga1[1], s) * dark, 1, w))
+      objCol[2] = 255 * Math.min(1, lerp(lerp(ga0[2], ga1[2], s) * dark, 1, w))
     }
 
     // Reusable per-object scratch — the static fields (color, shape) are set
@@ -677,7 +687,11 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       gbMix: o.gbMix,
     }))
 
-    function render(tSec: number) {
+    function render(tSec: number, sceneDirty = true) {
+      // Unlike the GL backend there's no cheap glass-only pass here — the
+      // whole frame is the expensive scene recompute — so the SCENE_FPS_CAP
+      // gate skips the entire frame and the canvas keeps its last image.
+      if (!sceneDirty) return
       smoothPointer()
       stepScroll()
       const liftCPU = (scrollLift * H) / Math.max(cssH, 1)
@@ -736,10 +750,10 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
             }
             if (cov > 0) {
               const t = Math.min(1, Math.max(0, (dy + ob.R) / (2 * ob.R)))
-              const sc = objColor(t, ob.ga0, ob.ga1, ob.gbMix)
-              r = lerp(r, sc[0], cov)
-              g = lerp(g, sc[1], cov)
-              b = lerp(b, sc[2], cov)
+              objColor(t, ob.ga0, ob.ga1, ob.gbMix)
+              r = lerp(r, objCol[0], cov)
+              g = lerp(g, objCol[1], cov)
+              b = lerp(b, objCol[2], cov)
             }
           }
 

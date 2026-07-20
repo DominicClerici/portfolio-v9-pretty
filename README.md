@@ -9,7 +9,7 @@ My personal developer portfolio — a single-page site built to be fast, minimal
 - **[Astro 6](https://astro.build)** — static site generator that ships zero JavaScript by default
 - **[Tailwind CSS 4](https://tailwindcss.com)** — utility-first styling
 - **Vanilla JS** — for the handful of interactive bits (grid animations, terminal typing effect, mobile menu)
-- **Self-hosted, subset fonts** — Newsreader, Inter, and Space Grotesk served locally as woff2, trimmed to only the exact glyphs used on the site (~38KB total vs ~128KB for the full latin subset)
+- **Self-hosted, subset fonts** — Aspekta, Roboto Mono, and Inter served locally as woff2, trimmed by `subset-fonts.py` to only the exact glyphs used on the site
 
 The whole project runs on just 4 npm dependencies. No React, no Vue, no frameworks beyond Astro itself.
 

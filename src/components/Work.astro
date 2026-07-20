@@ -944,43 +944,63 @@ const projects = [
           });
         };
 
+        let lastUpdateY = -1;
+
         function update() {
           ticking = false;
           const vh = window.innerHeight;
-          for (const w of windows) {
-            const rect = w.plate.getBoundingClientRect();
+          lastUpdateY = window.scrollY;
+
+          // Batched into read → write → read → write phases across all plates:
+          // interleaving them per plate would force a fresh style/layout pass
+          // for every read after a write.
+          const plateRects = windows.map((w) => w.plate.getBoundingClientRect());
+
+          windows.forEach((w, k) => {
+            const rect = plateRects[k];
             // Not laid out (display: none) — nothing to drive
-            if (!rect.height) continue;
+            if (!rect.height) return;
             const raw = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)));
             const eased = raw * raw * (3 - 2 * raw);
             const par = Math.min(1, Math.max(0, (vh - rect.top) / (vh + rect.height)));
             w.plate.style.setProperty("--in", eased.toFixed(3));
             w.plate.style.setProperty("--par", par.toFixed(3));
+          });
 
-            if (!w.view || !w.arch) continue;
+          // Read after --in lands so each arch rect already carries this
+          // frame's entry transform — the scene must not trail the arch
+          const archRects = windows.map((w, k) => {
+            if (!plateRects[k].height || !w.view || !w.arch) return null;
             const g = galRects[w.i];
             if (g === undefined) {
               // Became measurable after an earlier stale measurement
               if (desktop.matches) remeasureSoon();
-              continue;
+              return null;
             }
-            if (!g) continue;
-            // Read after --in lands so the arch rect already carries this
-            // frame's entry transform — the scene must not trail the arch
-            const a = w.arch.getBoundingClientRect();
+            return g ? w.arch.getBoundingClientRect() : null;
+          });
+
+          windows.forEach((w, k) => {
+            const a = archRects[k];
+            if (!a || !w.view) return;
             const t = `translate(${(-a.left).toFixed(2)}px, ${(-a.top).toFixed(2)}px)`;
             if (w.view.style.transform !== t) w.view.style.transform = t;
-          }
+          });
         }
 
         // The smooth-scroll engine moves the page inside its own rAF tick; a
         // plain scroll listener repaints one frame behind it. This hook runs
-        // synchronously after each tick's scrollTo — same frame, no lag.
-        const hook = () => (window as any).__onSmoothScrollTick?.(update) ?? null;
-        let detachTick: (() => void) | null = hook();
+        // synchronously after each tick's scrollTo — same frame, no lag. The
+        // subscription is page-lifetime, so the unsubscribe is discarded.
+        const hook = () => !!(window as any).__onSmoothScrollTick?.(update);
+        let tickAttached = hook();
 
         const onScroll = () => {
-          if (!detachTick) detachTick = hook();
+          if (!tickAttached) tickAttached = hook();
+          // The engine's own scrollTo echoes back here as a scroll event one
+          // frame later; the tick hook already ran update for this position —
+          // skip the echo instead of running the whole pass twice per frame.
+          if (window.scrollY === lastUpdateY) return;
           if (!ticking) {
             ticking = true;
             requestAnimationFrame(update);
