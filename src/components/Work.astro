@@ -54,7 +54,7 @@ import ProjectLinks from "./ProjectLinks.astro";
             <div class="border-t border-ink/20"></div>
           </div>
         )}
-        <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash};`}>
+        <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}>
           <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
             <div class="we1-copy">
               <EditionLine index={project.index} edition={project.edition} />
@@ -123,7 +123,7 @@ import ProjectLinks from "./ProjectLinks.astro";
         role="dialog"
         aria-modal="true"
         aria-labelledby={`we1-spread-title-${i}`}
-        style={`--acc: ${project.accent}; --wash: ${project.wash};`}
+        style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}
         hidden
       >
         <button
@@ -206,6 +206,10 @@ import ProjectLinks from "./ProjectLinks.astro";
     overflow-x: clip;
     background: var(--color-bone);
     --door-ease: cubic-bezier(0.77, 0, 0.175, 1);
+    /* --paper: the stock the inside spread is printed on, set per edition in
+       projects.ts. The front page stays on plain bone; only the spread — and
+       the arch window looking into it — carries the tint. */
+    --paper: var(--color-bone);
     /* --in: entry progress (0 offscreen → 1 seated), --par: full-traverse
        progress for parallax. Defaults render the seated state without JS. */
   }
@@ -281,7 +285,7 @@ import ProjectLinks from "./ProjectLinks.astro";
   .we1-arch {
     aspect-ratio: 0.84;
     border-radius: 999px 999px 26px 26px;
-    background: var(--color-bone);
+    background: var(--paper);
     box-shadow: 0 26px 60px -30px color-mix(in srgb, var(--color-ink) 45%, transparent);
     transition: box-shadow 0.55s var(--ease-settle);
   }
@@ -298,7 +302,7 @@ import ProjectLinks from "./ProjectLinks.astro";
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--color-bone);
+    background: var(--paper);
     will-change: transform;
   }
 
@@ -324,13 +328,13 @@ import ProjectLinks from "./ProjectLinks.astro";
       height: 100dvh;
       background:
         radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-        var(--color-bone);
+        var(--paper);
     }
 
     .we1-js .we1-flip .we1-view {
       background:
         radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-        var(--color-bone);
+        var(--paper);
     }
 
     /* No JS / reduced motion: the arch-sized fallback shouldn't inherit the
@@ -475,7 +479,7 @@ import ProjectLinks from "./ProjectLinks.astro";
     z-index: 45;
     background:
       radial-gradient(44% 36% at var(--wx, 78%) 6%, var(--pwash, transparent), transparent 70%),
-      var(--color-bone);
+      var(--ppaper, var(--color-bone));
     clip-path: inset(var(--ct, 0px) var(--cr, 0px) var(--cb, 0px) var(--cl, 0px) round 999px 999px 26px 26px);
     transition:
       clip-path 0.7s var(--door-ease),
@@ -555,13 +559,13 @@ import ProjectLinks from "./ProjectLinks.astro";
     -webkit-overflow-scrolling: touch;
     background:
       radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-      var(--color-bone);
+      var(--paper);
   }
 
   .we1-spread-flip {
     background:
       radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-      var(--color-bone);
+      var(--paper);
   }
 
   .we1-back {
@@ -573,7 +577,7 @@ import ProjectLinks from "./ProjectLinks.astro";
     border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent);
     border-radius: 8px;
     color: color-mix(in srgb, var(--color-ink) 60%, transparent);
-    background: color-mix(in srgb, var(--color-bone) 82%, transparent);
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     transition:
@@ -992,7 +996,11 @@ import ProjectLinks from "./ProjectLinks.astro";
 
       const dressPortal = (spread: HTMLElement) => {
         if (!portal) return;
-        portal.style.setProperty("--pwash", getComputedStyle(spread).getPropertyValue("--wash") || "transparent");
+        const cs = getComputedStyle(spread);
+        portal.style.setProperty("--pwash", cs.getPropertyValue("--wash") || "transparent");
+        // An empty custom property substitutes as nothing, not as the var()
+        // fallback — so name the bone default outright
+        portal.style.setProperty("--ppaper", cs.getPropertyValue("--paper") || "var(--color-bone)");
         portal.style.setProperty("--wx", spread.classList.contains("we1-spread-flip") ? "22%" : "78%");
       };
 

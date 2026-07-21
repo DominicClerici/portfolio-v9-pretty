@@ -1,6 +1,7 @@
 // Content for the "Morning Editions" work section (src/components/Work.astro).
 // Each project is one edition of the paper: an accent ink, a wash drawn from
-// it, and the copy that fills its front page and inside spread.
+// it, the stock that edition is printed on, and the copy that fills its front
+// page and inside spread.
 // Gallery images and story copy are placeholders to swap for real content.
 
 export type GalleryPlate = {
@@ -21,6 +22,10 @@ export type Project = {
   featured: boolean;
   accent: string;
   wash: string;
+  /** The stock this edition is printed on — bone (#f7f7f5) pulled a few points
+   *  toward the accent. Only the inside spread (and the arch window looking
+   *  into it) is printed on it; the front page stays on plain bone. */
+  paper: string;
   details: { label: string; value: string }[];
   story: string[];
   gallery: GalleryPlate[];
@@ -40,6 +45,7 @@ export const projects: Project[] = [
     featured: false,
     accent: "#0e63c8",
     wash: "rgba(14, 99, 200, 0.09)",
+    paper: "#eef4fc",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
@@ -69,6 +75,7 @@ export const projects: Project[] = [
     featured: false,
     accent: "#006c22",
     wash: "rgba(0, 108, 34, 0.09)",
+    paper: "#edf9f1",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2024 — 2025" },
@@ -98,6 +105,7 @@ export const projects: Project[] = [
     featured: true,
     accent: "#5e2cc0",
     wash: "rgba(94, 44, 192, 0.1)",
+    paper: "#f4f0fd",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },

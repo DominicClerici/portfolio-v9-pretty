@@ -126,6 +126,18 @@
   --bg-h: max(calc(100lvh + 2 * var(--bg-overhang)), 560px);
 }
 
+/* The svh/lvh split and the overhang above only compensate for mobile
+   Safari's collapsing address/toolbar chrome — desktop viewports have no
+   such chrome, so past the mobile breakpoint the bleed is a pure no-op that
+   would otherwise still bleed the background 60px past the hero section on
+   its own. Collapsing it to 0 here makes --bg-h track --hero-h exactly. */
+@media (width >= 64rem) {
+  :root {
+    --bg-overhang: 0px;
+    --bg-h: var(--hero-h);
+  }
+}
+
 /* Shared page gutter + max width. */
 @utility container-page {
   max-width: 1524px;
