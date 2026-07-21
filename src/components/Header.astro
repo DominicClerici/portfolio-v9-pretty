@@ -10,7 +10,7 @@ const navLinks = [
     href: "mailto:contact@dominicclerici.com",
     external: false,
   },
-]
+];
 ---
 
 <!-- Desktop only: on mobile the hero stands alone with no header. -->
@@ -80,107 +80,107 @@ const navLinks = [
     cancelAnim,
     typeText,
     deleteText,
-  } from "../scripts/terminal"
+  } from "../scripts/terminal";
 
   // === Desktop Header Button ===
   const headerEl = document.querySelector<HTMLElement>(
     '[data-terminal="header"]',
-  )
+  );
   if (headerEl) {
-    const hs = makeState(headerEl)
+    const hs = makeState(headerEl);
 
     new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
-          hs.isInView = true
+          hs.isInView = true;
           if (!hs.isHovering) {
             if (hs.visTimer !== null) {
-              clearTimeout(hs.visTimer)
+              clearTimeout(hs.visTimer);
             }
-            hs.visTimer = window.setTimeout(() => startBlink(hs), 5000)
+            hs.visTimer = window.setTimeout(() => startBlink(hs), 5000);
           }
         } else {
-          hs.isInView = false
-          if (!hs.isHovering) stopBlink(hs)
+          hs.isInView = false;
+          if (!hs.isHovering) stopBlink(hs);
           if (hs.visTimer !== null) {
-            clearTimeout(hs.visTimer)
-            hs.visTimer = null
+            clearTimeout(hs.visTimer);
+            hs.visTimer = null;
           }
         }
       }
-    }).observe(headerEl)
+    }).observe(headerEl);
 
     headerEl.addEventListener("mouseenter", () => {
-      hs.isHovering = true
+      hs.isHovering = true;
       if (hs.visTimer !== null) {
-        clearTimeout(hs.visTimer)
-        hs.visTimer = null
+        clearTimeout(hs.visTimer);
+        hs.visTimer = null;
       }
-      typeText(hs)
-    })
+      typeText(hs);
+    });
 
     headerEl.addEventListener("mouseleave", async () => {
-      hs.isHovering = false
-      const completed = await deleteText(hs)
+      hs.isHovering = false;
+      const completed = await deleteText(hs);
       if (completed && !hs.isHovering && hs.isInView) {
-        startBlink(hs)
+        startBlink(hs);
       }
-    })
+    });
   }
 
   // === Desktop Scroll Button ===
   const scrollEl = document.querySelector<HTMLElement>(
     '[data-terminal="scroll"]',
-  )
-  const heroSection = document.getElementById("hero")
+  );
+  const heroSection = document.getElementById("hero");
 
   if (scrollEl && heroSection) {
-    const ss = makeState(scrollEl)
+    const ss = makeState(scrollEl);
 
     new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) {
-          scrollEl.style.opacity = "0.5"
-          scrollEl.classList.remove("pointer-events-none")
-          scrollEl.classList.add("pointer-events-auto")
-          ss.isInView = true
+          scrollEl.style.opacity = "0.5";
+          scrollEl.classList.remove("pointer-events-none");
+          scrollEl.classList.add("pointer-events-auto");
+          ss.isInView = true;
           if (!ss.isHovering) {
             if (ss.visTimer !== null) {
-              clearTimeout(ss.visTimer)
+              clearTimeout(ss.visTimer);
             }
-            ss.visTimer = window.setTimeout(() => startBlink(ss), 5000)
+            ss.visTimer = window.setTimeout(() => startBlink(ss), 5000);
           }
         } else {
-          scrollEl.style.opacity = "0"
-          scrollEl.classList.add("pointer-events-none")
-          scrollEl.classList.remove("pointer-events-auto")
-          ss.isInView = false
-          cancelAnim(ss)
-          stopBlink(ss)
-          ss.textEl.textContent = ">"
+          scrollEl.style.opacity = "0";
+          scrollEl.classList.add("pointer-events-none");
+          scrollEl.classList.remove("pointer-events-auto");
+          ss.isInView = false;
+          cancelAnim(ss);
+          stopBlink(ss);
+          ss.textEl.textContent = ">";
           if (ss.visTimer !== null) {
-            clearTimeout(ss.visTimer)
-            ss.visTimer = null
+            clearTimeout(ss.visTimer);
+            ss.visTimer = null;
           }
         }
       }
-    }).observe(heroSection)
+    }).observe(heroSection);
 
     scrollEl.addEventListener("mouseenter", () => {
-      ss.isHovering = true
+      ss.isHovering = true;
       if (ss.visTimer !== null) {
-        clearTimeout(ss.visTimer)
-        ss.visTimer = null
+        clearTimeout(ss.visTimer);
+        ss.visTimer = null;
       }
-      typeText(ss)
-    })
+      typeText(ss);
+    });
 
     scrollEl.addEventListener("mouseleave", async () => {
-      ss.isHovering = false
-      const completed = await deleteText(ss)
+      ss.isHovering = false;
+      const completed = await deleteText(ss);
       if (completed && !ss.isHovering && ss.isInView) {
-        startBlink(ss)
+        startBlink(ss);
       }
-    })
+    });
   }
 </script>

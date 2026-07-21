@@ -12,14 +12,21 @@ interface Props {
 const { index, edition, suffix, ...rest } = Astro.props;
 ---
 
-<p class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45" {...rest}>
+<p
+  class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-ink/45"
+  {...rest}
+>
   Edition {index}
-  <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true"></span>
+  <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true"
+  ></span>
   <span style="color: var(--acc);">{edition}</span>
   {
     suffix && (
       <>
-        <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true" />
+        <span
+          class="we1-folio-dot inline-block align-middle mx-3"
+          aria-hidden="true"
+        />
         {suffix}
       </>
     )

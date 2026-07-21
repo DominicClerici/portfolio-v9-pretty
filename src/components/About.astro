@@ -2,7 +2,7 @@
 const stats = [
   { label: "Location", value: "New York", sub: "EST. 2004" },
   { label: "Experience", value: "5+ years", sub: "9+ years programming" },
-]
+];
 
 const conceptualSkills = [
   "Full Stack",
@@ -14,7 +14,7 @@ const conceptualSkills = [
   "Internal Tooling",
   "SEO",
   "Data Analysis",
-]
+];
 
 const technicalSkills = [
   "TypeScript",
@@ -30,7 +30,7 @@ const technicalSkills = [
   "Electron",
   "WordPress",
   "Elementor",
-]
+];
 ---
 
 <!-- Scrolls over the pinned hero canvas — no background of its own -->
@@ -70,7 +70,10 @@ const technicalSkills = [
             >
               {stat.value}
             </div>
-            <div class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2" data-reveal="sub">
+            <div
+              class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2"
+              data-reveal="sub"
+            >
               {stat.sub}
             </div>
           </div>
@@ -78,7 +81,10 @@ const technicalSkills = [
       }
 
       <div class="col-span-2 md:col-span-6" data-reveal-col>
-        <div class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4" data-reveal="label">
+        <div
+          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4"
+          data-reveal="label"
+        >
           Focus
         </div>
         <div class="flex flex-wrap gap-x-6 gap-y-3">
@@ -166,44 +172,44 @@ const technicalSkills = [
 
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
-    ).matches
+    ).matches;
 
     // ── Typewriter knobs ──
     // Max characters per chunk. Chunks never span two words — a word longer
     // than this is split into pieces, and each word starts a fresh chunk, so
     // e.g. "…ing a…" reveals as "ing" then "a…", never "ing a".
-    const CHUNK_SIZE = 4
+    const CHUNK_SIZE = 4;
     // How far you scroll (px) to advance one character's worth of triggers —
     // the pacing knob. Larger = more scrolling between chunks firing.
-    const PX_PER_CHAR = 3.5
+    const PX_PER_CHAR = 3.5;
     // The typewriter starts once the top of the text crosses this fraction of
     // the viewport height (0.9 = the top edge of the bottom 10%).
-    const TYPE_VP_FRACTION = 0.9
+    const TYPE_VP_FRACTION = 0.9;
 
     // ── Stats-reveal knobs ──
-    const REVEAL_MS = 650 // duration — matches the hero line-rise
+    const REVEAL_MS = 650; // duration — matches the hero line-rise
     // Trigger once a column's top crosses this fraction of the viewport
     // height (0.8 = the top edge of the bottom 20%).
-    const REVEAL_VP_FRACTION = 0.8
-    const FROM_OPACITY = 0.1
+    const REVEAL_VP_FRACTION = 0.8;
+    const FROM_OPACITY = 0.1;
     // Per-role start offset (px) and stagger delay (s) within a column.
     const ROLE = {
       label: { y: -4, delay: 0 },
       value: { y: 6, delay: 0.08 },
       sub: { y: 4, delay: 0.16 }, // starts + ends slightly after the value
-    }
+    };
     // Focus chips: each fires FOCUS_STAGGER after the previous, offset from
     // the Focus label by FOCUS_BASE.
-    const FOCUS_Y = 6
-    const FOCUS_BASE = 0.08
-    const FOCUS_STAGGER = 0.02
+    const FOCUS_Y = 6;
+    const FOCUS_BASE = 0.08;
+    const FOCUS_STAGGER = 0.02;
 
     const ease = getComputedStyle(document.documentElement)
       .getPropertyValue("--ease-rise")
-      .trim()
+      .trim();
 
     /* ── 1. Intro typewriter ── */
-    const intro = document.getElementById("about-intro")
+    const intro = document.getElementById("about-intro");
 
     if (intro && !reducedMotion) {
       /* Split the paragraph into chunk <span>s in place, preserving nested
@@ -211,113 +217,105 @@ const technicalSkills = [
          become one-or-more chunk spans; whitespace stays as plain text nodes
          so line-wrapping and spacing behave normally. */
       const chunks: { node: HTMLSpanElement; trigger: number; on: boolean }[] =
-        []
-      let cursor = 0
+        [];
+      let cursor = 0;
 
-      const textNodes: Text[] = []
-      const walker = document.createTreeWalker(intro, NodeFilter.SHOW_TEXT)
-      while (walker.nextNode()) textNodes.push(walker.currentNode as Text)
+      const textNodes: Text[] = [];
+      const walker = document.createTreeWalker(intro, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
 
       for (const node of textNodes) {
-        const tokens = (node.textContent || "").match(/\S+|\s+/g)
-        if (!tokens) continue
-        const frag = document.createDocumentFragment()
+        const tokens = (node.textContent || "").match(/\S+|\s+/g);
+        if (!tokens) continue;
+        const frag = document.createDocumentFragment();
         for (const token of tokens) {
           if (/^\s+$/.test(token)) {
-            frag.appendChild(document.createTextNode(token))
-            continue
+            frag.appendChild(document.createTextNode(token));
+            continue;
           }
-          const word = document.createElement("span")
-          word.className = "word"
+          const word = document.createElement("span");
+          word.className = "word";
           for (let i = 0; i < token.length; i += CHUNK_SIZE) {
-            const piece = token.slice(i, i + CHUNK_SIZE)
-            const span = document.createElement("span")
-            span.className = "chunk"
-            span.textContent = piece
-            word.appendChild(span)
-            chunks.push({ node: span, trigger: cursor, on: false })
-            cursor += piece.length
+            const piece = token.slice(i, i + CHUNK_SIZE);
+            const span = document.createElement("span");
+            span.className = "chunk";
+            span.textContent = piece;
+            word.appendChild(span);
+            chunks.push({ node: span, trigger: cursor, on: false });
+            cursor += piece.length;
           }
-          frag.appendChild(word)
+          frag.appendChild(word);
         }
-        node.parentNode!.replaceChild(frag, node)
+        node.parentNode!.replaceChild(frag, node);
       }
 
       function update() {
-        const line = TYPE_VP_FRACTION * window.innerHeight
+        const line = TYPE_VP_FRACTION * window.innerHeight;
         // Characters worth of scroll past the trigger line (0 until crossed).
         const revealed = Math.max(
           0,
           (line - intro!.getBoundingClientRect().top) / PX_PER_CHAR,
-        )
+        );
         for (const c of chunks) {
           // Fire once scroll has advanced past this chunk's trigger point;
           // the CSS transition on .chunk animates the actual motion.
-          const on = revealed > c.trigger
-          if (on === c.on) continue
-          c.on = on
-          c.node.classList.toggle("on", on)
+          const on = revealed > c.trigger;
+          if (on === c.on) continue;
+          c.on = on;
+          c.node.classList.toggle("on", on);
         }
       }
 
-      let queued = false
-      const onScroll = () => {
-        if (queued) return
-        queued = true
-        requestAnimationFrame(() => {
-          queued = false
-          update()
-        })
-      }
-
-      update()
-      window.addEventListener("scroll", onScroll, { passive: true })
-      window.addEventListener("resize", onScroll, { passive: true })
+      update();
+      // Shared bus: engine tick under normal motion, native scroll under
+      // reduced motion. Fires at most once per frame, so no local throttle.
+      (window as any).__onSmoothScrollTick(update);
+      window.addEventListener("resize", update, { passive: true });
     }
 
     /* ── 2. Stats row reveal ── */
-    const cols = document.querySelectorAll<HTMLElement>("[data-reveal-col]")
+    const cols = document.querySelectorAll<HTMLElement>("[data-reveal-col]");
 
     if (cols.length && !reducedMotion) {
       // Remember each element's from-state so we can animate it back out with
       // the same transition + delay when the column scrolls back off-threshold.
-      const primed = new Map<Element, { node: HTMLElement; fromY: number }[]>()
+      const primed = new Map<Element, { node: HTMLElement; fromY: number }[]>();
 
       function prime(node: HTMLElement, fromY: number, delay: number) {
-        node.style.opacity = String(FROM_OPACITY)
-        node.style.transform = `translateY(${fromY}px)`
-        node.style.transition = `opacity ${REVEAL_MS}ms ${ease} ${delay}s, transform ${REVEAL_MS}ms ${ease} ${delay}s`
+        node.style.opacity = String(FROM_OPACITY);
+        node.style.transform = `translateY(${fromY}px)`;
+        node.style.transition = `opacity ${REVEAL_MS}ms ${ease} ${delay}s, transform ${REVEAL_MS}ms ${ease} ${delay}s`;
       }
 
       for (const col of cols) {
-        const targets: { node: HTMLElement; fromY: number }[] = []
-        let itemOrder = 0
+        const targets: { node: HTMLElement; fromY: number }[] = [];
+        let itemOrder = 0;
         col.querySelectorAll<HTMLElement>("[data-reveal]").forEach((node) => {
-          const role = node.dataset.reveal
-          let fromY: number
+          const role = node.dataset.reveal;
+          let fromY: number;
           if (role === "item") {
-            fromY = FOCUS_Y
-            prime(node, fromY, FOCUS_BASE + itemOrder * FOCUS_STAGGER)
-            itemOrder++
+            fromY = FOCUS_Y;
+            prime(node, fromY, FOCUS_BASE + itemOrder * FOCUS_STAGGER);
+            itemOrder++;
           } else {
-            const r = ROLE[role as keyof typeof ROLE] ?? ROLE.value
-            fromY = r.y
-            prime(node, fromY, r.delay)
+            const r = ROLE[role as keyof typeof ROLE] ?? ROLE.value;
+            fromY = r.y;
+            prime(node, fromY, r.delay);
           }
-          targets.push({ node, fromY })
-        })
-        primed.set(col, targets)
+          targets.push({ node, fromY });
+        });
+        primed.set(col, targets);
       }
 
       const io = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            const on = entry.isIntersecting
+            const on = entry.isIntersecting;
             for (const { node, fromY } of primed.get(entry.target) ?? []) {
-              node.style.opacity = on ? "1" : String(FROM_OPACITY)
+              node.style.opacity = on ? "1" : String(FROM_OPACITY);
               node.style.transform = on
                 ? "translateY(0)"
-                : `translateY(${fromY}px)`
+                : `translateY(${fromY}px)`;
             }
           }
         },
@@ -325,8 +323,8 @@ const technicalSkills = [
           threshold: 0,
           rootMargin: `0px 0px -${Math.round((1 - REVEAL_VP_FRACTION) * 100)}% 0px`,
         },
-      )
-      for (const col of cols) io.observe(col)
+      );
+      for (const col of cols) io.observe(col);
     }
   }
 </script>

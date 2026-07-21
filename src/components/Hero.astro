@@ -9,7 +9,7 @@ import IconButton from "./IconButton.astro";
     class="relative z-10 h-full flex flex-col justify-between gap-y-[100px] px-3 sm:px-6 lg:px-12 pt-[clamp(112px,calc(112px+(100vw-440px)*0.036),148px)] pb-[clamp(32px,calc(32px+(100vw-440px)*0.012),44px)]"
   >
     <h1
-      class="hero-enter-mask font-display text-ink leading-none tracking-[-0.03em] text-hero mt-[clamp(0px,calc((100vw-768px)*0.125),32px)]"
+      class="hero-enter-mask font-display text-ink leading-none text-hero mt-[clamp(0px,calc((100vw-768px)*0.125),32px)]"
     >
       <span>Dominic Clerici.</span>
     </h1>
@@ -23,7 +23,9 @@ import IconButton from "./IconButton.astro";
           class="hero-enter flex items-center mb-5"
           style="--enter-delay: 1.35s"
         >
-          <span class="font-mono text-[13px] tracking-[-0.02em] leading-none uppercase text-ink/60">
+          <span
+            class="font-mono text-[13px] leading-none uppercase text-ink/60"
+          >
             Engineer &amp; Designer&ensp;·&ensp;New York
           </span>
         </div>
@@ -42,7 +44,7 @@ import IconButton from "./IconButton.astro";
       >
         <a
           href="#work"
-          class="font-mono text-[14px] tracking-[-0.008em] text-ink border border-ink/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink hover:bg-white/25 hover:backdrop-blur-md transition-colors duration-200"
+          class="font-mono text-[14px] text-ink border border-ink/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink hover:bg-white/25 hover:backdrop-blur-md transition-colors duration-200"
         >
           View selected work
         </a>
@@ -72,7 +74,7 @@ import IconButton from "./IconButton.astro";
 </section>
 
 <script>
-  import { smoothstep } from "../lib/easing"
+  import { smoothstep } from "../lib/easing";
 
   // Fades each [data-hero-fade] element out as it nears the top of the
   // viewport, and back in as it returns — a pure function of live position,
@@ -80,57 +82,37 @@ import IconButton from "./IconButton.astro";
   // Progress is how far up the screen the element's top has travelled (0 at
   // the bottom edge, 1 at the top edge); the fade window sits right before
   // the element would exit, so it's fully gone just ahead of leaving.
-  const FADE_START = 0.8
-  const FADE_END = 0.95
+  const FADE_START = 0.8;
+  const FADE_END = 0.95;
 
-  const section = document.getElementById("hero")
+  const section = document.getElementById("hero");
   const fadeEls = section
     ? Array.from(section.querySelectorAll<HTMLElement>("[data-hero-fade]"))
-    : []
+    : [];
 
-  if (fadeEls.length && matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+  if (
+    fadeEls.length &&
+    matchMedia("(prefers-reduced-motion: no-preference)").matches
+  ) {
     const update = () => {
-      const vh = window.innerHeight
+      const vh = window.innerHeight;
       for (const el of fadeEls) {
-        const rect = el.getBoundingClientRect()
-        const progress = (vh - rect.top) / vh
+        const rect = el.getBoundingClientRect();
+        const progress = (vh - rect.top) / vh;
         const raw = Math.min(
           1,
           Math.max(0, (progress - FADE_START) / (FADE_END - FADE_START)),
-        )
-        const opacity = 1 - smoothstep(raw)
-        el.style.opacity = opacity.toFixed(3)
-        el.style.pointerEvents = opacity < 0.05 ? "none" : ""
+        );
+        const opacity = 1 - smoothstep(raw);
+        el.style.opacity = opacity.toFixed(3);
+        el.style.pointerEvents = opacity < 0.05 ? "none" : "";
       }
-    }
+    };
 
-    let ticking = false
-    let lastUpdateY = -1
-    const runUpdate = () => {
-      update()
-      lastUpdateY = window.scrollY
-      ticking = false
-    }
-
-    // The smooth-scroll engine moves the page inside its own rAF tick; a
-    // plain scroll listener repaints one frame behind it. This hook runs
-    // synchronously after each tick's scrollTo — same frame, no lag.
-    const hook = () => !!(window as any).__onSmoothScrollTick?.(runUpdate)
-    let tickAttached = hook()
-
-    const onScroll = () => {
-      if (!tickAttached) tickAttached = hook()
-      // The engine's own scrollTo echoes back here a frame later; the tick
-      // hook already ran for this position — skip the duplicate pass.
-      if (window.scrollY === lastUpdateY) return
-      if (!ticking) {
-        ticking = true
-        requestAnimationFrame(runUpdate)
-      }
-    }
-
-    window.addEventListener("scroll", onScroll, { passive: true })
-    window.addEventListener("resize", update, { passive: true })
-    update()
+    // Same-frame under the smooth-scroll engine, native-scroll fallback under
+    // reduced motion — the shared bus (Layout head shim) handles both.
+    (window as any).__onSmoothScrollTick(update);
+    window.addEventListener("resize", update, { passive: true });
+    update();
   }
 </script>

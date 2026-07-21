@@ -80,17 +80,17 @@
     createGlassScene,
     SPHERE_R_FRAC,
     type GlassObject,
-  } from "../scripts/glass-scene"
+  } from "../scripts/glass-scene";
 
   {
-    const scope = document.getElementById("hero-scope")!
-    const bg = scope.querySelector<HTMLElement>("[data-canvas-bg]")!
-    const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!
-    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement
+    const scope = document.getElementById("hero-scope")!;
+    const bg = scope.querySelector<HTMLElement>("[data-canvas-bg]")!;
+    const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!;
+    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
-    ).matches
-    const forceCPU = new URLSearchParams(location.search).has("cpu")
+    ).matches;
+    const forceCPU = new URLSearchParams(location.search).has("cpu");
 
     /* ══ Tunable knobs ══════════════════════════════════════════════════
        Per-object placement/scale plus the scroll response live here; colors
@@ -104,15 +104,15 @@
     //   bottom). scale: multiplier on the base sphere radius (SPHERE_R_FRAC).
     //   The teal sphere's x is an edge-touch point + one radius (edgeR: 1),
     //   so it reads a touch differently from the free-placed cube/purple.
-    const TEAL_POS = { x: 0.5, y: 0.56 }
-    const TEAL_SCALE = 1.0
-    const CUBE_POS = { x: 0.05, y: 0.12 }
-    const CUBE_SCALE = 0.7
-    const PURPLE_POS = { x: 0.92, y: -0.1 }
-    const PURPLE_SCALE = 0.55
+    const TEAL_POS = { x: 0.5, y: 0.56 };
+    const TEAL_SCALE = 1.0;
+    const CUBE_POS = { x: 0.05, y: 0.12 };
+    const CUBE_SCALE = 0.7;
+    const PURPLE_POS = { x: 0.92, y: -0.1 };
+    const PURPLE_SCALE = 0.55;
 
     // — Sensitivity (how far the objects move for a given input) —
-    const SCROLL_SENSITIVITY = 0.45 // object climb per px scrolled
+    const SCROLL_SENSITIVITY = 0.45; // object climb per px scrolled
 
     /* ══════════════════════════════════════════════════════════════════ */
 
@@ -123,24 +123,16 @@
        the parallax glides. Once the pin ends the background leaves with the
        flow. The lift clamps at the pin end, so from there objects and glass
        scroll away together with the page. */
-    let pinEnd = 1 // scroll distance the background stays pinned (px)
-    let scrollQueued = false
+    let pinEnd = 1; // scroll distance the background stays pinned (px)
     function onScrollFrame() {
-      scrollQueued = false
       scene.setScrollTarget(
         Math.min(window.scrollY, pinEnd) * SCROLL_SENSITIVITY,
-      )
+      );
     }
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!scrollQueued) {
-          scrollQueued = true
-          requestAnimationFrame(onScrollFrame)
-        }
-      },
-      { passive: true },
-    )
+    // Shared scroll bus (Layout head shim) — fires once per frame; the scene's
+    // own render loop eases toward the target, so frame-exact timing isn't
+    // required, but this keeps it to one listener across the site.
+    (window as any).__onSmoothScrollTick(onScrollFrame);
 
     // Once the iris-open finishes, drop the clip so no stale clip-path
     // lingers on the canvas. The animation itself must be removed too: its
@@ -148,10 +140,10 @@
     // override.
     wrap.addEventListener("animationend", (e) => {
       if (e.animationName === "hero-iris-open") {
-        wrap.style.animation = "none"
-        wrap.style.clipPath = "none"
+        wrap.style.animation = "none";
+        wrap.style.clipPath = "none";
       }
-    })
+    });
 
     /* ── Scene config ──
        The glass render itself (WebGL2 + CPU fallback) lives in the shared
@@ -225,16 +217,16 @@
         phX: 0.0,
         phY: 1.7,
       },
-    ]
+    ];
 
     /* ── GPU-acceleration notice ──
        Revealed only while the CPU fallback is driving the scene (WebGL
        unavailable, or the context was lost) and the scope is on screen. */
-    const gpuWarning = document.getElementById("hero-gpu-warning")!
-    let usingCPU = false
-    let scopeVisible = true
+    const gpuWarning = document.getElementById("hero-gpu-warning")!;
+    let usingCPU = false;
+    let scopeVisible = true;
     function syncWarning() {
-      gpuWarning.style.display = usingCPU && scopeVisible ? "flex" : "none"
+      gpuWarning.style.display = usingCPU && scopeVisible ? "flex" : "none";
     }
 
     const scene = createGlassScene({
@@ -243,47 +235,47 @@
       objects: OBJECTS,
       forceCPU,
       onCPUFallback: () => {
-        usingCPU = true
-        syncWarning()
+        usingCPU = true;
+        syncWarning();
       },
-    })
+    });
 
     function measure() {
-      pinEnd = Math.max(scope.offsetHeight - bg.offsetHeight, 1)
+      pinEnd = Math.max(scope.offsetHeight - bg.offsetHeight, 1);
     }
 
-    let resizeTimer: number | undefined
+    let resizeTimer: number | undefined;
     new ResizeObserver(() => {
-      clearTimeout(resizeTimer)
+      clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
-        measure()
-        scene.resize()
-        onScrollFrame()
-      }, 120)
-    }).observe(scope)
-    measure()
-    scene.resize()
-    onScrollFrame()
+        measure();
+        scene.resize();
+        onScrollFrame();
+      }, 120);
+    }).observe(scope);
+    measure();
+    scene.resize();
+    onScrollFrame();
 
     // One observer drives both the warning and (when motion is allowed) the
     // render loop — same element, same threshold.
     new IntersectionObserver(
       (entries) => {
-        scopeVisible = entries[0].isIntersecting
-        syncWarning()
-        if (reducedMotion) return
-        scopeVisible ? scene.start() : scene.stop()
+        scopeVisible = entries[0].isIntersecting;
+        syncWarning();
+        if (reducedMotion) return;
+        scopeVisible ? scene.start() : scene.stop();
       },
       { threshold: 0 },
-    ).observe(scope)
+    ).observe(scope);
 
     if (reducedMotion) {
-      scene.render(40)
+      scene.render(40);
     } else {
       document.addEventListener("visibilitychange", () => {
-        document.hidden ? scene.stop() : scene.start()
-      })
-      scene.start()
+        document.hidden ? scene.stop() : scene.start();
+      });
+      scene.start();
     }
   }
 </script>

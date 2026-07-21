@@ -35,6 +35,60 @@ const {
     <title>{title}</title>
     <link rel="preload" href="/fonts/aspekta-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/roboto-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+
+    <script is:inline>
+      // Shared scroll bus. Defined here in <head>, inline, so it exists before
+      // any bundled module script runs — every consumer can subscribe the
+      // instant it executes, with no load-order race against the smooth-scroll
+      // engine (a deferred module) that drives it.
+      //
+      // Consumers subscribe once via window.__onSmoothScrollTick(cb) and never
+      // touch a scroll listener of their own. The bus fires each subscriber on
+      // every scroll-position change, from two sources:
+      //   1. The engine's rAF tick calls __flushScrollBus() synchronously right
+      //      after its scrollTo — same frame, before paint — so pixel-locked
+      //      consumers stay glued to the page instead of trailing by a frame.
+      //   2. The native scroll listener below covers everything the tick does
+      //      NOT drive: keyboard, scrollbar, find-in-page and touch while the
+      //      engine is idle under normal motion, plus *all* scrolling under
+      //      reduced motion, where there is no engine at all.
+      ;(function () {
+        var subs = new Set()
+        var lastY = -1
+        var queued = false
+        function run() {
+          lastY = window.scrollY
+          subs.forEach(function (cb) {
+            cb()
+          })
+        }
+        function onFrame() {
+          queued = false
+          run()
+        }
+        window.__onSmoothScrollTick = function (cb) {
+          subs.add(cb)
+          return function () {
+            subs.delete(cb)
+          }
+        }
+        window.__flushScrollBus = run
+        window.addEventListener(
+          "scroll",
+          function () {
+            // The engine's own scrollTo echoes back here a frame later; the
+            // tick already flushed this exact position, so skip the duplicate.
+            if (window.scrollY === lastY) return
+            if (!queued) {
+              queued = true
+              requestAnimationFrame(onFrame)
+            }
+          },
+          { passive: true },
+        )
+      })()
+    </script>
+
     <slot name="head" />
   </head>
   <body class="bg-n-950 font-display selection:bg-bio-lime selection:text-ink">

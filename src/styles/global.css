@@ -161,6 +161,18 @@ body {
   scrollbar-gutter: stable;
 }
 
+span, p {
+  letter-spacing: -0.02em;
+}
+
+a {
+  letter-spacing: -0.01em;
+}
+ 
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.03em;
+}
+
 /* ── Dot grid ──
    Viewport-anchored rather than element-anchored, so adjacent sections that
    use it (Career -> Quote) share one continuous grid with no seam. */

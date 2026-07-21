@@ -12,7 +12,10 @@ interface Props {
 const { websiteUrl, githubUrl, class: className = "", ...rest } = Astro.props;
 ---
 
-<div class:list={["flex items-center flex-wrap gap-x-7 gap-y-4", className]} {...rest}>
+<div
+  class:list={["flex items-center flex-wrap gap-x-7 gap-y-4", className]}
+  {...rest}
+>
   <a
     href={websiteUrl}
     target="_blank"

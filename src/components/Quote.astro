@@ -20,7 +20,9 @@
   </div>
 
   <div class="relative max-w-3xl mx-auto text-center pointer-events-none">
-    <p class="font-mono text-[11px] md:text-xs uppercase tracking-[0.3em] text-white/40 mb-8 md:mb-12">
+    <p
+      class="font-mono text-[11px] md:text-xs uppercase tracking-[0.3em] text-white/40 mb-8 md:mb-12"
+    >
       // an interlude
     </p>
 
@@ -33,7 +35,9 @@
         aria-hidden="true"></span>
     </blockquote>
 
-    <cite class="block mt-8 md:mt-12 font-mono not-italic text-[11px] md:text-sm uppercase tracking-[0.3em] text-bio-lime">
+    <cite
+      class="block mt-8 md:mt-12 font-mono not-italic text-[11px] md:text-sm uppercase tracking-[0.3em] text-bio-lime"
+    >
       Alan Kay
     </cite>
   </div>
@@ -51,7 +55,9 @@
   const ctx = canvas?.getContext("2d");
 
   if (section && canvas && ctx) {
-    const motionOK = matchMedia("(prefers-reduced-motion: no-preference)").matches;
+    const motionOK = matchMedia(
+      "(prefers-reduced-motion: no-preference)",
+    ).matches;
 
     const LIME =
       getComputedStyle(document.documentElement)
@@ -85,7 +91,15 @@
       "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>+.<<.+++.------.--------.>>+.", // Brainfuck
     ];
 
-    type P = { t: string; x: number; y: number; vx: number; vy: number; s: number; a: number };
+    type P = {
+      t: string;
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      s: number;
+      a: number;
+    };
     let w = 0;
     let h = 0;
     let parts: P[] = [];
@@ -163,7 +177,7 @@
         inView = entries[0].isIntersecting;
         inView && !document.hidden ? start() : stop();
       },
-      { threshold: 0.05 }
+      { threshold: 0.05 },
     ).observe(section);
 
     document.addEventListener("visibilitychange", () => {
@@ -183,7 +197,7 @@
         mouse.x = e.clientX - r.left;
         mouse.y = e.clientY - r.top;
       },
-      { passive: true }
+      { passive: true },
     );
     section.addEventListener("pointerleave", () => {
       mouse.x = -1e4;

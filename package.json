@@ -18,6 +18,8 @@
     "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
+    "prettier": "^3.9.5",
+    "prettier-plugin-astro": "^0.14.1",
     "rollup-plugin-visualizer": "^7.0.1"
   }
 }

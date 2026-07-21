@@ -1,9 +1,9 @@
 ---
-import IconButton from "./IconButton.astro"
+import IconButton from "./IconButton.astro";
 
-const RANGE_START = 2019
-const RANGE_END = 2027
-const SPAN = RANGE_END - RANGE_START
+const RANGE_START = 2019;
+const RANGE_END = 2027;
+const SPAN = RANGE_END - RANGE_START;
 
 const entries = [
   {
@@ -69,32 +69,32 @@ const entries = [
     tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
     url: "https://www.mcdonalds.com/us/en-us.html",
   },
-]
+];
 
 // Vertical axis: oldest at the top, so a year maps to distance from RANGE_START
-const yPct = (v: number) => ((v - RANGE_START) / SPAN) * 100
-const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i)
+const yPct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
+const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
 
 // Render order oldest-first while keeping each entry's original index for
 // selection/hover-sync wiring (data-select keys off the original i).
-const orderedEntries = entries.map((entry, i) => ({ entry, i })).reverse()
+const orderedEntries = entries.map((entry, i) => ({ entry, i })).reverse();
 
 // Scroll-pin choreography ----------------------------------------------------
 // Each entry gets one viewport of scroll, plus one extra "run-out" viewport
 // after the last entry so the marker travels off the final pill to the end of
 // the spine before the scroll releases. Total travel is therefore N viewports
 // (N-1 to step through the entries + 1 to run out), so the section is N+1 tall.
-const N = entries.length
-const stepPct = orderedEntries.map(({ entry }) => yPct(entry.start))
+const N = entries.length;
+const stepPct = orderedEntries.map(({ entry }) => yPct(entry.start));
 // Desktop playhead rides the year-scaled positions so it lines up with the bars.
-const railStart = stepPct[0]
+const railStart = stepPct[0];
 // Mobile markers are evenly spaced, sitting in the first N-1/N of the rail; the
 // trailing segment (last dot -> end) is the run-out, mirroring the desktop spine.
-const evenPct = orderedEntries.map((_, s) => (N > 0 ? (s / N) * 100 : 0))
+const evenPct = orderedEntries.map((_, s) => (N > 0 ? (s / N) * 100 : 0));
 // step index (oldest-first) -> original entry index
-const stepMap = orderedEntries.map(({ i }) => i)
+const stepMap = orderedEntries.map(({ i }) => i);
 // The section rests on the oldest entry when the pin engages (progress 0).
-const initialIndex = stepMap[0]
+const initialIndex = stepMap[0];
 ---
 
 <section
@@ -111,7 +111,7 @@ const initialIndex = stepMap[0]
        scrolls past, which reads as a scroll-lock without trapping the wheel. -->
   <div class="v1-pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
     <div
-      class="relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
+      class="v1-frame relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
       <h2
         class="v1-heading font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
@@ -143,11 +143,14 @@ const initialIndex = stepMap[0]
           <div
             class="v1-rail-tip-h absolute top-1/2 w-[11px] h-[11px] rounded-full bg-bio-lime -translate-x-1/2 -translate-y-1/2"
             style="left: 0%"
-          />
+          >
+          </div>
         </div>
       </div>
 
-      <div class="grid lg:grid-cols-[360px_1fr] gap-4 lg:gap-14 items-start">
+      <div
+        class="v1-main grid lg:grid-cols-[360px_1fr] gap-4 lg:gap-14 items-start"
+      >
         <!-- Rail: time spine + employer tabs.
              min-w-0 lets this grid column shrink to the viewport so the tab
              strip below scrolls horizontally instead of forcing an overflow. -->
@@ -303,7 +306,7 @@ const initialIndex = stepMap[0]
                       href={entry.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="font-mono text-[13px] tracking-[-0.008em] text-n-100 border border-n-700 rounded-lg h-10 px-4 inline-flex items-center hover:border-n-400 transition-colors duration-200"
+                      class="font-mono text-[13px]  text-n-100 border border-n-700 rounded-lg h-10 px-4 inline-flex items-center hover:border-n-400 transition-colors duration-200"
                     >
                       Visit {entry.company}
                     </a>
@@ -445,6 +448,29 @@ const initialIndex = stepMap[0]
     }
   }
 
+  /* Short desktop viewports: reclaim vertical space by halving the frame's
+     top padding (12svh -> 6svh). */
+  @media (min-width: 1024px) and (max-height: 799px) {
+    .v1-frame {
+      padding-top: 6svh;
+    }
+  }
+
+  /* Tall desktop viewports: float the two-column content out of flow so its
+     vertical midline lands on the viewport's 55% line (5% above dead center).
+     The heading stays put in flow; the frame is the positioning context, sits
+     at the viewport top (sticky top-0 + items-start), and left/right: 3rem
+     mirrors the frame's lg:px-12 so horizontal alignment is unchanged. */
+  @media (min-width: 1024px) and (min-height: 1121px) {
+    .v1-main {
+      position: absolute;
+      left: 3rem;
+      right: 3rem;
+      top: 55svh;
+      transform: translateY(-50%);
+    }
+  }
+
   @media (max-width: 1023px) {
     /* The pin is offset upward by the height of everything above the rail, so
        the heading scrolls off the top of the viewport *before* the section
@@ -525,107 +551,107 @@ const initialIndex = stepMap[0]
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".career-v1")
+    const section = document.querySelector<HTMLElement>(".career-v1");
     if (section) {
-      const tabs = section.querySelectorAll<HTMLButtonElement>(".v1-tab")
-      const bars = section.querySelectorAll<HTMLElement>(".v1-bar")
-      const panels = section.querySelectorAll<HTMLElement>("[data-panel]")
-      const pin = section.querySelector<HTMLElement>(".v1-pin")
+      const tabs = section.querySelectorAll<HTMLButtonElement>(".v1-tab");
+      const bars = section.querySelectorAll<HTMLElement>(".v1-bar");
+      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
+      const pin = section.querySelector<HTMLElement>(".v1-pin");
       // Mobile: the tab chips live in a horizontal scroller; the selected chip
       // is kept centered as selection moves (see select()).
-      const tablist = section.querySelector<HTMLElement>("[role='group']")
+      const tablist = section.querySelector<HTMLElement>("[role='group']");
 
-      const stepPct: number[] = JSON.parse(section.dataset.stepPct || "[]")
-      const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]")
-      const N = stepPct.length
+      const stepPct: number[] = JSON.parse(section.dataset.stepPct || "[]");
+      const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]");
+      const N = stepPct.length;
 
       // Desktop: horizontal playhead, positioned in the spine's year-% space.
-      const playhead = section.querySelector<HTMLElement>(".v1-playhead")
+      const playhead = section.querySelector<HTMLElement>(".v1-playhead");
       // Mobile: evenly-spaced rail, so the tip travels linearly with progress.
-      const fillH = section.querySelector<HTMLElement>(".v1-rail-fill-h")
-      const tipH = section.querySelector<HTMLElement>(".v1-rail-tip-h")
+      const fillH = section.querySelector<HTMLElement>(".v1-rail-fill-h");
+      const tipH = section.querySelector<HTMLElement>(".v1-rail-tip-h");
 
       const select = (id: string | undefined) => {
-        if (!id) return
+        if (!id) return;
         tabs.forEach((t) =>
           t.setAttribute("aria-current", String(t.dataset.select === id)),
-        )
+        );
         // Bring the newly selected chip into view within the mobile strip.
         // The guard scopes this to when the strip actually overflows (mobile);
         // on desktop the tabs stack vertically and this is a no-op.
         if (tablist && tablist.scrollWidth > tablist.clientWidth) {
           const active = tablist.querySelector<HTMLElement>(
             `[data-select="${id}"]`,
-          )
+          );
           if (active) {
-            const cRect = tablist.getBoundingClientRect()
-            const aRect = active.getBoundingClientRect()
+            const cRect = tablist.getBoundingClientRect();
+            const aRect = active.getBoundingClientRect();
             const delta =
-              aRect.left - cRect.left - (tablist.clientWidth - aRect.width) / 2
+              aRect.left - cRect.left - (tablist.clientWidth - aRect.width) / 2;
             tablist.scrollTo({
               left: tablist.scrollLeft + delta,
               behavior: "smooth",
-            })
+            });
           }
         }
         bars.forEach((b) =>
           b.setAttribute("data-on", String(b.dataset.select === id)),
-        )
+        );
         panels.forEach((panel) => {
-          const show = panel.dataset.panel === id
-          panel.hidden = !show
+          const show = panel.dataset.panel === id;
+          panel.hidden = !show;
           if (show) {
             // retrigger the entrance animation
-            const inner = panel.querySelector<HTMLElement>(".v1-enter")
+            const inner = panel.querySelector<HTMLElement>(".v1-enter");
             if (inner) {
-              inner.style.animation = "none"
-              void inner.offsetWidth
-              inner.style.animation = ""
+              inner.style.animation = "none";
+              void inner.offsetWidth;
+              inner.style.animation = "";
             }
           }
-        })
-      }
+        });
+      };
 
       // Scroll-pin: map scroll progress through the tall section to a travelling
       // tip (marker to marker) and the active entry (flips when the tip lands on
       // the next pill).
-      let activeStep = -1
+      let activeStep = -1;
 
       const render = (p: number) => {
         // pages: 0..N. Pages [0, N-1] step through the entries; the last page
         // [N-1, N] is the run-out that carries the marker to the spine's end.
-        const pages = p * N
+        const pages = p * N;
 
         // Desktop playhead (year-scaled, in the spine's coordinate space).
-        let yearPct: number
+        let yearPct: number;
         if (N <= 1) {
-          yearPct = stepPct[0] ?? 0
+          yearPct = stepPct[0] ?? 0;
         } else if (pages <= N - 1) {
           // Step phase: travel marker to marker, landing on each bar.
-          const s = Math.max(0, Math.min(Math.floor(pages), N - 2))
-          const f = pages - s
-          yearPct = stepPct[s] + (stepPct[s + 1] - stepPct[s]) * f
+          const s = Math.max(0, Math.min(Math.floor(pages), N - 2));
+          const f = pages - s;
+          yearPct = stepPct[s] + (stepPct[s + 1] - stepPct[s]) * f;
         } else {
           // Run-out phase: from the last bar down to the end of the spine (100%).
-          const runF = Math.min(pages - (N - 1), 1)
-          yearPct = stepPct[N - 1] + (100 - stepPct[N - 1]) * runF
+          const runF = Math.min(pages - (N - 1), 1);
+          yearPct = stepPct[N - 1] + (100 - stepPct[N - 1]) * runF;
         }
-        if (playhead) playhead.style.top = `${yearPct}%`
+        if (playhead) playhead.style.top = `${yearPct}%`;
 
         // Mobile rail is evenly spaced with a trailing run-out segment, so the
         // tip is linear across the whole track (last dot at (N-1)/N, end at 1).
-        const linPct = p * 100
-        if (fillH) fillH.style.width = `${linPct}%`
-        if (tipH) tipH.style.left = `${linPct}%`
+        const linPct = p * 100;
+        if (fillH) fillH.style.width = `${linPct}%`;
+        if (tipH) tipH.style.left = `${linPct}%`;
 
         // Small bias so arriving at a marker selects it even when the scroll
         // position lands a sub-pixel short of the exact page boundary.
-        const step = Math.max(0, Math.min(Math.floor(pages + 0.01), N - 1))
+        const step = Math.max(0, Math.min(Math.floor(pages + 0.01), N - 1));
         if (step !== activeStep) {
-          activeStep = step
-          select(String(stepMap[step]))
+          activeStep = step;
+          select(String(stepMap[step]));
         }
-      }
+      };
 
       // Register the pin's entry/exit scroll positions as soft barriers so the
       // smooth-scroll engine eases into and out of the lock instead of snapping.
@@ -634,148 +660,150 @@ const initialIndex = stepMap[0]
       // Both values are scroll-invariant, so they only actually move on resize
       // or a late layout shift. Recomputing every frame is cheap but publishing
       // every frame is pointless churn, so only push when they change.
-      let lastTop = NaN
-      let lastTv = NaN
+      let lastTop = NaN;
+      let lastTv = NaN;
       const registerBarriers = (rectTop: number, tv: number) => {
         const setBarriers = (window as any).__setScrollBarriers as
-          | ((ys: number[]) => void)
-          | undefined
-        if (!setBarriers) return
-        const top = rectTop + window.scrollY
-        if (top === lastTop && tv === lastTv) return
-        lastTop = top
-        lastTv = tv
-        setBarriers(tv > 0 ? [top, top + tv] : [])
-      }
+          ((ys: number[]) => void) | undefined;
+        if (!setBarriers) return;
+        const top = rectTop + window.scrollY;
+        if (top === lastTop && tv === lastTv) return;
+        lastTop = top;
+        lastTv = tv;
+        setBarriers(tv > 0 ? [top, top + tv] : []);
+      };
 
       // Mobile only: let the heading scroll off before the pin engages, by
       // pulling the pin's sticky top up by everything above the rail. RAIL_PAD
       // is the gap the rail keeps below the viewport top once stuck.
-      const railH = section.querySelector<HTMLElement>(".v1-rail-h")
-      const RAIL_PAD = 20
-      const mobileMQ = window.matchMedia("(max-width: 1023px)")
-      const heading = section.querySelector<HTMLElement>(".v1-heading")
-      let headH = 0
+      const railH = section.querySelector<HTMLElement>(".v1-rail-h");
+      const RAIL_PAD = 20;
+      const mobileMQ = window.matchMedia("(max-width: 1023px)");
+      const heading = section.querySelector<HTMLElement>(".v1-heading");
+      let headH = 0;
       // Scroll-invariant (see the barrier note above), so it is measured here
       // and read from cache in the scroll frame — offsetHeight in a scroll
       // handler forces a synchronous layout on every frame, page-wide, and
       // this section is 500svh.
-      let travelPx = 0
+      let travelPx = 0;
       const measure = () => {
         if (railH) {
-          const mobile = mobileMQ.matches
-          headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0
-          section.style.setProperty("--v1-head-h", `${headH}px`)
+          const mobile = mobileMQ.matches;
+          headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0;
+          section.style.setProperty("--v1-head-h", `${headH}px`);
         }
         // Must follow the write above: --v1-head-h feeds .v1-pin's height, so
         // reading the pin before it settles would measure the stale box.
-        travelPx = section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight)
-      }
+        travelPx =
+          section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight);
+      };
 
-      let ticking = false
-      const onScroll = () => {
-        if (ticking) return
-        ticking = true
-        requestAnimationFrame(() => {
-          ticking = false
-          const rect = section.getBoundingClientRect()
-          const tv = travelPx
-          // entryLead (px) is progress the smooth-scroll engine has advanced
-          // ahead of the real scroll while braking into the lock, so the pin
-          // scrubs *during* the entry deceleration instead of dwelling at zero.
-          const lead =
-            ((window as any).__scrollProgressLead as (() => number) | undefined)?.() ?? 0
-          const p = tv > 0 ? Math.max(0, Math.min((-rect.top + lead) / tv, 1)) : 0
-          registerBarriers(rect.top, tv)
-          render(p)
+      // On the shared bus this runs inside the engine's tick — the same frame
+      // as its scrollTo — so __scrollProgressLead below reports the entry-brake
+      // lead the engine set this very frame and the pin scrubs *during* the
+      // deceleration with no one-frame trail. The bus fires it at most once per
+      // frame, so no local rAF throttle is needed; under reduced motion its
+      // native scroll listener drives this instead.
+      const frame = () => {
+        const rect = section.getBoundingClientRect();
+        const tv = travelPx;
+        // entryLead (px) is progress the smooth-scroll engine has advanced
+        // ahead of the real scroll while braking into the lock, so the pin
+        // scrubs *during* the entry deceleration instead of dwelling at zero.
+        const lead =
+          (
+            (window as any).__scrollProgressLead as (() => number) | undefined
+          )?.() ?? 0;
+        const p =
+          tv > 0 ? Math.max(0, Math.min((-rect.top + lead) / tv, 1)) : 0;
+        registerBarriers(rect.top, tv);
+        render(p);
 
-          // Mobile: the heading fades out the moment the section crosses into
-          // its sticky lock (rect.top past -headH) and fades back in once
-          // scrolling leaves that pinned range.
-          if (heading) {
-            const stuck = mobileMQ.matches && headH > 0 && rect.top <= -headH
-            heading.style.opacity = stuck ? "0" : ""
-          }
-        })
-      }
+        // Mobile: the heading fades out the moment the section crosses into
+        // its sticky lock (rect.top past -headH) and fades back in once
+        // scrolling leaves that pinned range.
+        if (heading) {
+          const stuck = mobileMQ.matches && headH > 0 && rect.top <= -headH;
+          heading.style.opacity = stuck ? "0" : "";
+        }
+      };
 
-      window.addEventListener("scroll", onScroll, { passive: true })
+      (window as any).__onSmoothScrollTick(frame);
       window.addEventListener("resize", () => {
-        measure()
-        onScroll()
-      })
-      measure()
-      onScroll()
+        measure();
+        frame();
+      });
+      measure();
+      frame();
 
       if ("ResizeObserver" in window) {
         const ro = new ResizeObserver(() => {
-          measure()
-          onScroll()
-        })
+          measure();
+          frame();
+        });
         // The heading's wrapped height depends on font loading and the panel's
         // own reflow, both of which land after this runs.
-        if (railH) ro.observe(railH.parentElement ?? railH)
+        if (railH) ro.observe(railH.parentElement ?? railH);
         // travelPx is derived from these two boxes, so observing them directly
         // is what keeps the cache honest between resize events.
-        ro.observe(section)
-        if (pin) ro.observe(pin)
+        ro.observe(section);
+        if (pin) ro.observe(pin);
       }
 
       // Clicking a tab / bar selects it and scrolls the page to that entry's slot
       // in the pin, reusing the site's smooth-scroll easing.
       section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
         el.addEventListener("click", () => {
-          const id = el.dataset.select
-          if (id == null) return
-          const step = stepMap.indexOf(Number(id))
-          if (step < 0) return
+          const id = el.dataset.select;
+          if (id == null) return;
+          const step = stepMap.indexOf(Number(id));
+          if (step < 0) return;
           // Selection is driven by the scroll handler as the page eases to the
           // target, so the panels scrub through en route rather than flashing.
-          const tv = travelPx
+          const tv = travelPx;
           // step k is reached at pages = k, i.e. progress k/N (never in run-out).
-          const targetP = N > 0 ? step / N : 0
+          const targetP = N > 0 ? step / N : 0;
           const y =
-            section.getBoundingClientRect().top + window.scrollY + targetP * tv
+            section.getBoundingClientRect().top + window.scrollY + targetP * tv;
           const smooth = (window as any).__smoothScrollTo as
-            | ((y: number) => void)
-            | undefined
-          if (smooth) smooth(y)
-          else window.scrollTo(0, y)
-        })
-      })
+            ((y: number) => void) | undefined;
+          if (smooth) smooth(y);
+          else window.scrollTo(0, y);
+        });
+      });
 
       // Hover sync between spine bars and tab rows — both carry data-select, so
       // grouping by that value pairs each bar with its tab.
-      const groups = new Map<string, HTMLElement[]>()
+      const groups = new Map<string, HTMLElement[]>();
       section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
-        const key = el.dataset.select!
-        if (!groups.has(key)) groups.set(key, [])
-        groups.get(key)!.push(el)
-      })
+        const key = el.dataset.select!;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(el);
+      });
       groups.forEach((els) => {
         const toggle = (on: boolean) => () =>
-          els.forEach((el) => el.classList.toggle("hl", on))
+          els.forEach((el) => el.classList.toggle("hl", on));
         els.forEach((el) => {
-          el.addEventListener("mouseenter", toggle(true))
-          el.addEventListener("mouseleave", toggle(false))
-        })
-      })
+          el.addEventListener("mouseenter", toggle(true));
+          el.addEventListener("mouseleave", toggle(false));
+        });
+      });
 
       // Grow-in trigger
-      const spine = section.querySelector<HTMLElement>(".v1-spine")
+      const spine = section.querySelector<HTMLElement>(".v1-spine");
       if (spine) {
         const io = new IntersectionObserver(
           (obs) => {
             obs.forEach((e) => {
               if (e.isIntersecting) {
-                e.target.classList.add("in")
-                io.unobserve(e.target)
+                e.target.classList.add("in");
+                io.unobserve(e.target);
               }
-            })
+            });
           },
           { threshold: 0.25 },
-        )
-        io.observe(spine)
+        );
+        io.observe(spine);
       }
     }
   }

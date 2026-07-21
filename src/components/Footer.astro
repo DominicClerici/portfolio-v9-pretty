@@ -1,14 +1,14 @@
 ---
-import IconButton from "./IconButton.astro"
+import IconButton from "./IconButton.astro";
 
-const year = new Date().getFullYear()
+const year = new Date().getFullYear();
 
 const navigate = [
   { label: "About", href: "#about" },
   { label: "Career", href: "#career" },
   { label: "Work", href: "#work" },
   { label: "Contact", href: "#contact" },
-]
+];
 
 const connect = [
   {
@@ -31,7 +31,7 @@ const connect = [
     href: "/DominicClerici_CV.pdf",
     external: true,
   },
-]
+];
 ---
 
 <footer
@@ -47,7 +47,10 @@ const connect = [
        the footer's background: fixed to the *visual* viewport, it also covers
        the strip below an svh-tall footer when mobile chrome retracts.
        Lazily initialized as the footer approaches the viewport (see script). -->
-  <div class="footer-canvas-wrap fixed inset-0 -z-10 bg-bone" aria-hidden="true">
+  <div
+    class="footer-canvas-wrap fixed inset-0 -z-10 bg-bone"
+    aria-hidden="true"
+  >
     <canvas id="footer-canvas" class="absolute inset-0 w-full h-full"></canvas>
   </div>
 
@@ -120,7 +123,7 @@ const connect = [
         <div class="flex items-center gap-3 mt-8">
           <a
             href="#contact"
-            class="font-mono text-[14px] tracking-[-0.008em] uppercase text-bone bg-ink rounded-lg h-10 px-5 inline-flex items-center hover:bg-ink/85 transition-colors duration-200"
+            class="font-mono text-[14px] uppercase text-bone bg-ink rounded-lg h-10 px-5 inline-flex items-center hover:bg-ink/85 transition-colors duration-200"
           >
             Get in touch
           </a>
@@ -262,36 +265,38 @@ const connect = [
     createGlassScene,
     SPHERE_R_FRAC,
     type GlassObject,
-  } from "../scripts/glass-scene"
+  } from "../scripts/glass-scene";
   import {
     makeState,
     typeText,
     cancelAnim,
     stopBlink,
-  } from "../scripts/terminal"
+  } from "../scripts/terminal";
 
   {
-    const footer = document.getElementById("site-footer")!
-    const wrap = footer.querySelector<HTMLElement>(".footer-canvas-wrap")!
-    const canvas = document.getElementById("footer-canvas") as HTMLCanvasElement
-    const name = footer.querySelector<HTMLElement>(".footer-name")!
+    const footer = document.getElementById("site-footer")!;
+    const wrap = footer.querySelector<HTMLElement>(".footer-canvas-wrap")!;
+    const canvas = document.getElementById(
+      "footer-canvas",
+    ) as HTMLCanvasElement;
+    const name = footer.querySelector<HTMLElement>(".footer-name")!;
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
-    ).matches
-    const forceCPU = new URLSearchParams(location.search).has("cpu")
+    ).matches;
+    const forceCPU = new URLSearchParams(location.search).has("cpu");
 
     /* ── Giant name ──
        Sized to span the content width exactly, reference-style: measure at a
        fixed size, then scale so the text's edges meet the padding. */
     function fitName() {
-      name.style.fontSize = "100px"
-      const parent = name.parentElement!
-      const cs = getComputedStyle(parent)
+      name.style.fontSize = "100px";
+      const parent = name.parentElement!;
+      const cs = getComputedStyle(parent);
       const width =
         parent.clientWidth -
         parseFloat(cs.paddingLeft) -
-        parseFloat(cs.paddingRight)
-      name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`
+        parseFloat(cs.paddingRight);
+      name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`;
     }
 
     /* ── Scene config ──
@@ -360,43 +365,34 @@ const connect = [
         phX: 0.8,
         phY: 2.6,
       },
-    ]
+    ];
 
     /* ── Glass scroll parallax ──
        The pin itself is CSS (the wrap is `position: fixed`) — nothing here
        counters the scroll. This only feeds the *objects'* climb, which is
        eased in the render loop, so it stays smooth even when scroll events
        trail the compositor as they do during native touch scrolling. */
-    const SCROLL_SENSITIVITY = 0.3
+    const SCROLL_SENSITIVITY = 0.3;
 
-    let scene: ReturnType<typeof createGlassScene> | null = null
-    let scrollQueued = false
+    let scene: ReturnType<typeof createGlassScene> | null = null;
     function onScrollFrame() {
-      scrollQueued = false
       // fT: the footer's top edge in viewport space — positive while it's still
       // rising in from the bottom, 0 once its top reaches the viewport top.
       // Objects climb with how far the footer has entered the viewport.
-      const fT = footer.getBoundingClientRect().top
+      const fT = footer.getBoundingClientRect().top;
       scene?.setScrollTarget(
         Math.max(0, window.innerHeight - fT) * SCROLL_SENSITIVITY,
-      )
+      );
     }
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!scrollQueued) {
-          scrollQueued = true
-          requestAnimationFrame(onScrollFrame)
-        }
-      },
-      { passive: true },
-    )
+    // Shared scroll bus (Layout head shim) — one listener per frame; the
+    // render loop eases toward the target so frame-exact timing isn't needed.
+    (window as any).__onSmoothScrollTick(onScrollFrame);
 
     function ensureScene() {
-      if (scene) return
-      scene = createGlassScene({ canvas, wrap, objects: OBJECTS, forceCPU })
-      scene.resize()
-      onScrollFrame()
+      if (scene) return;
+      scene = createGlassScene({ canvas, wrap, objects: OBJECTS, forceCPU });
+      scene.resize();
+      onScrollFrame();
     }
 
     // Create the scene ahead of arrival so the first frame is already painted
@@ -406,112 +402,104 @@ const connect = [
     new IntersectionObserver(
       (entries, io) => {
         if (entries.some((e) => e.isIntersecting)) {
-          ensureScene()
-          io.disconnect()
+          ensureScene();
+          io.disconnect();
         }
       },
       { rootMargin: "600px 0px" },
-    ).observe(footer)
+    ).observe(footer);
 
-    let footerVisible = false
+    let footerVisible = false;
     new IntersectionObserver(
       (entries) => {
-        footerVisible = entries[0].isIntersecting
+        footerVisible = entries[0].isIntersecting;
         if (footerVisible) {
-          ensureScene()
-          scene!.start()
+          ensureScene();
+          scene!.start();
         } else {
-          scene?.stop()
+          scene?.stop();
         }
       },
       { threshold: 0 },
-    ).observe(footer)
+    ).observe(footer);
 
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) scene?.stop()
-      else if (footerVisible) scene?.start()
-    })
+      if (document.hidden) scene?.stop();
+      else if (footerVisible) scene?.start();
+    });
 
     /* ── Header echo ──
        The cap-bar header echo fades in only while the page is scrolled to its
        very bottom (within 6px), reversing on the way out. Each fresh entry
        replays the terminal typing from scratch once the rise/fade settles;
        each exit cancels the typing and resets the prompt. */
-    const headerEcho = footer.querySelector<HTMLElement>(".footer-header")!
+    const headerEcho = footer.querySelector<HTMLElement>(".footer-header")!;
     const echoState = makeState(
       footer.querySelector<HTMLElement>('[data-terminal="footer"]')!,
-    )
-    let echoVisible = false
+    );
+    let echoVisible = false;
 
     function setEchoVisible(visible: boolean) {
-      if (visible === echoVisible) return
-      echoVisible = visible
+      if (visible === echoVisible) return;
+      echoVisible = visible;
       if (visible) {
-        headerEcho.classList.add("is-visible")
+        headerEcho.classList.add("is-visible");
       } else {
-        headerEcho.classList.remove("is-visible")
-        cancelAnim(echoState)
-        stopBlink(echoState)
-        echoState.textEl.textContent = ">"
+        headerEcho.classList.remove("is-visible");
+        cancelAnim(echoState);
+        stopBlink(echoState);
+        echoState.textEl.textContent = ">";
       }
     }
 
     headerEcho.addEventListener("transitionend", (e) => {
-      if (e.propertyName === "opacity" && echoVisible) typeText(echoState)
-    })
+      if (e.propertyName === "opacity" && echoVisible) typeText(echoState);
+    });
 
     // Reading documentElement.scrollHeight forces a full-document layout, so
     // it is cached rather than re-read per scroll frame. It moves only when
     // the page's height does, which the observer below is the signal for.
-    let docScrollH = document.documentElement.scrollHeight
+    let docScrollH = document.documentElement.scrollHeight;
     function measureDocH() {
-      docScrollH = document.documentElement.scrollHeight
+      docScrollH = document.documentElement.scrollHeight;
     }
 
-    let echoQueued = false
     function onEchoScroll() {
-      echoQueued = false
-      const distanceFromBottom = docScrollH - (window.scrollY + window.innerHeight)
-      setEchoVisible(distanceFromBottom <= 6)
+      const distanceFromBottom =
+        docScrollH - (window.scrollY + window.innerHeight);
+      setEchoVisible(distanceFromBottom <= 6);
     }
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!echoQueued) {
-          echoQueued = true
-          requestAnimationFrame(onEchoScroll)
-        }
-      },
-      { passive: true },
-    )
-    onEchoScroll()
+    // Shared scroll bus — functional (not decorative), so it must run under
+    // reduced motion too, which the bus's native scroll listener guarantees.
+    (window as any).__onSmoothScrollTick(onEchoScroll);
+    onEchoScroll();
 
-    let resizeTimer: number | undefined
+    let resizeTimer: number | undefined;
     new ResizeObserver(() => {
-      clearTimeout(resizeTimer)
+      clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         // fitName writes a font size, then reads metrics back, then writes
         // again — two forced layouts on the largest text node on the page.
         // The footer is h-svh, so mobile URL-bar show/hide retriggers this
         // observer mid-scroll; it belongs behind the same debounce as the
         // canvas resize rather than running on every one of those ticks.
-        fitName()
-        scene?.resize()
-        onScrollFrame()
-        onEchoScroll()
-      }, 120)
-    }).observe(footer)
+        fitName();
+        scene?.resize();
+        onScrollFrame();
+        onEchoScroll();
+      }, 120);
+    }).observe(footer);
 
     // Page height moves with content well outside the footer — Work's spreads
     // expand — so the echo's distance-from-bottom test is invalidated from the
     // document box, not from the footer observer above.
     new ResizeObserver(() => {
-      measureDocH()
-      onEchoScroll()
-    }).observe(document.documentElement)
+      measureDocH();
+      onEchoScroll();
+    }).observe(document.documentElement);
 
-    fitName()
+    fitName();
     // Refit once the display face arrives — metrics differ from the fallback.
-    document.fonts?.ready.then(fitName)
+    document.fonts?.ready.then(fitName);
   }
 </script>

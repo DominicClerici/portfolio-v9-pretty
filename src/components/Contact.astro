@@ -21,16 +21,16 @@ const links = [
     href: "mailto:contact@dominicclerici.com",
     external: false,
   },
-]
+];
 
 const FOCUS_RING =
-  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime"
+  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bio-lime";
 
-const LINK_CLASS = `font-mono text-[12px] tracking-[-0.02em] uppercase text-n-400 hover:text-bio-lime transition-colors duration-200 ${FOCUS_RING}`
+const LINK_CLASS = `font-mono text-[12px] tracking-[-0.02em] uppercase text-n-400 hover:text-bio-lime transition-colors duration-200 ${FOCUS_RING}`;
 
 // Small outline button — the captcha's "start over" and the "write another"
 // affordance. Colour and padding differ per instance; everything else is shared.
-const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transparent border border-n-700 cursor-pointer hover:text-bio-lime hover:border-bio-lime/40 ${FOCUS_RING}`
+const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transparent border border-n-700 cursor-pointer hover:text-bio-lime hover:border-bio-lime/40 ${FOCUS_RING}`;
 ---
 
 <section
@@ -547,40 +547,40 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     inspectInk,
     botMessage,
     type Pt,
-  } from "../scripts/signature"
+  } from "../scripts/signature";
 
   {
-    const form = document.querySelector<HTMLFormElement>(".cv2-form")
+    const form = document.querySelector<HTMLFormElement>(".cv2-form");
     if (form) {
-      const message = form.querySelector<HTMLTextAreaElement>("#cv2-message")
-      const error = form.querySelector<HTMLElement>(".cv2-error")
+      const message = form.querySelector<HTMLTextAreaElement>("#cv2-message");
+      const error = form.querySelector<HTMLElement>(".cv2-error");
 
       // Blanks grow with their contents, like handwriting filling a line
       form.querySelectorAll<HTMLInputElement>("[data-fit]").forEach((input) => {
-        const min = Number(input.dataset.fit) || 10
+        const min = Number(input.dataset.fit) || 10;
         const fit = () => {
-          input.style.width = `${Math.max(min, input.value.length + 2)}ch`
-        }
-        input.addEventListener("input", fit)
-        fit()
-      })
+          input.style.width = `${Math.max(min, input.value.length + 2)}ch`;
+        };
+        input.addEventListener("input", fit);
+        fit();
+      });
 
       if (message) {
         message.addEventListener("input", () => {
-          message.style.height = "auto"
-          message.style.height = `${message.scrollHeight}px`
-          error?.classList.add("hidden")
-        })
+          message.style.height = "auto";
+          message.style.height = `${message.scrollHeight}px`;
+          error?.classList.add("hidden");
+        });
       }
 
       const sendLetter = () => {
-        const data = new FormData(form)
-        const name = String(data.get("name") || "").trim()
-        const email = String(data.get("email") || "").trim()
-        const body = String(data.get("message") || "").trim()
+        const data = new FormData(form);
+        const name = String(data.get("name") || "").trim();
+        const email = String(data.get("email") || "").trim();
+        const body = String(data.get("message") || "").trim();
         const subject = name
           ? `A letter from ${name}`
-          : "A letter from your portfolio"
+          : "A letter from your portfolio";
         const lines = [
           "Hi Dominic —",
           "",
@@ -589,274 +589,279 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           name ? `— ${name}` : "",
           email ? `Reply to: ${email}` : "",
           "✍ signed by hand",
-        ].filter(Boolean)
-        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`
-      }
+        ].filter(Boolean);
+        window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+      };
 
       // --- The captcha: sign the letter ---
-      const SENT_KEY = "cv2-letter-sent"
-      const seal = form.querySelector<HTMLButtonElement>(".cv2-seal")
-      const pop = form.querySelector<HTMLElement>("#cv2-captcha")
-      const canvas = pop?.querySelector<HTMLCanvasElement>(".cv2-sig")
-      const status = pop?.querySelector<HTMLElement>(".cv2-cap-status")
-      const ctx = canvas?.getContext("2d")
-      const sendBtn = pop?.querySelector<HTMLButtonElement>(".cv2-cap-send")
-      const resetSig = pop?.querySelector<HTMLButtonElement>(".cv2-cap-reset")
-      const sendLabel = pop?.querySelector<HTMLElement>(".cv2-cap-send-label")
-      const ctaTitle = form.querySelector<HTMLElement>(".cv2-cta-title")
-      const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub")
-      const again = form.querySelector<HTMLButtonElement>(".cv2-again")
+      const SENT_KEY = "cv2-letter-sent";
+      const seal = form.querySelector<HTMLButtonElement>(".cv2-seal");
+      const pop = form.querySelector<HTMLElement>("#cv2-captcha");
+      const canvas = pop?.querySelector<HTMLCanvasElement>(".cv2-sig");
+      const status = pop?.querySelector<HTMLElement>(".cv2-cap-status");
+      const ctx = canvas?.getContext("2d");
+      const sendBtn = pop?.querySelector<HTMLButtonElement>(".cv2-cap-send");
+      const resetSig = pop?.querySelector<HTMLButtonElement>(".cv2-cap-reset");
+      const sendLabel = pop?.querySelector<HTMLElement>(".cv2-cap-send-label");
+      const ctaTitle = form.querySelector<HTMLElement>(".cv2-cta-title");
+      const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub");
+      const again = form.querySelector<HTMLButtonElement>(".cv2-again");
 
       const INK =
         getComputedStyle(document.documentElement)
           .getPropertyValue("--color-bio-lime")
-          .trim() || "#cef79e"
+          .trim() || "#cef79e";
 
-      let strokes: Pt[][] = []
+      let strokes: Pt[][] = [];
 
-      let inkLength = 0
-      let samples = 0
-      let ready = false
-      let committed = false
-      let drawing = false
-      let last: { x: number; y: number; t: number; w: number } | null = null
-      let sendT1 = 0
-      let sendT2 = 0
+      let inkLength = 0;
+      let samples = 0;
+      let ready = false;
+      let committed = false;
+      let drawing = false;
+      let last: { x: number; y: number; t: number; w: number } | null = null;
+      let sendT1 = 0;
+      let sendT2 = 0;
 
       // localStorage can throw in strict privacy modes — treat as "never sent"
       const readSent = () => {
         try {
-          return Boolean(localStorage.getItem(SENT_KEY))
+          return Boolean(localStorage.getItem(SENT_KEY));
         } catch {
-          return false
+          return false;
         }
-      }
+      };
 
       const applySentState = (sent: boolean) => {
-        if (seal) seal.disabled = sent
-        if (sent) form.setAttribute("data-sent", "")
-        else form.removeAttribute("data-sent")
+        if (seal) seal.disabled = sent;
+        if (sent) form.setAttribute("data-sent", "");
+        else form.removeAttribute("data-sent");
         if (ctaTitle)
-          ctaTitle.textContent = sent ? "Letter sent." : "Prove your humanity"
+          ctaTitle.textContent = sent ? "Letter sent." : "Prove your humanity";
         if (ctaSub)
           ctaSub.textContent = sent
             ? "One letter is plenty — I promise I read them."
-            : "I promise this won’t be your usual captcha."
-        again?.classList.toggle("hidden", !sent)
-      }
+            : "I promise this won’t be your usual captcha.";
+        again?.classList.toggle("hidden", !sent);
+      };
 
       const setStatus = (text: string) => {
-        if (status) status.textContent = text
-      }
+        if (status) status.textContent = text;
+      };
 
       const resetPad = () => {
-        if (!canvas || !ctx) return
-        const dpr = window.devicePixelRatio || 1
-        canvas.width = canvas.clientWidth * dpr
-        canvas.height = canvas.clientHeight * dpr
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-        ctx.lineCap = "round"
-        ctx.lineJoin = "round"
-        ctx.strokeStyle = INK
-        ctx.fillStyle = INK
-        inkLength = 0
-        samples = 0
-        strokes = []
-        ready = false
-        committed = false
-        drawing = false
-        last = null
+        if (!canvas || !ctx) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = INK;
+        ctx.fillStyle = INK;
+        inkLength = 0;
+        samples = 0;
+        strokes = [];
+        ready = false;
+        committed = false;
+        drawing = false;
+        last = null;
         pop?.classList.remove(
           "is-ready",
           "is-signed",
           "is-sending",
           "is-sent-anim",
           "has-ink",
-        )
-        if (sendBtn) sendBtn.disabled = true
-        if (sendLabel) sendLabel.textContent = "Awaiting a signature"
-        setStatus("Sign with a scribble — any scribble.")
-      }
+        );
+        if (sendBtn) sendBtn.disabled = true;
+        if (sendLabel) sendLabel.textContent = "Awaiting a signature";
+        setStatus("Sign with a scribble — any scribble.");
+      };
 
       const markReady = () => {
-        ready = true
-        pop?.classList.add("is-ready")
-        if (sendBtn) sendBtn.disabled = false
-        if (sendLabel) sendLabel.textContent = "Send the letter"
-      }
+        ready = true;
+        pop?.classList.add("is-ready");
+        if (sendBtn) sendBtn.disabled = false;
+        if (sendLabel) sendLabel.textContent = "Send the letter";
+      };
 
       const placePopover = () => {
-        if (!pop || !seal || !pop.matches(":popover-open")) return
-        const r = seal.getBoundingClientRect()
-        const w = pop.offsetWidth
-        const h = pop.offsetHeight
-        const pad = 12
-        let top = r.top - h - 14
+        if (!pop || !seal || !pop.matches(":popover-open")) return;
+        const r = seal.getBoundingClientRect();
+        const w = pop.offsetWidth;
+        const h = pop.offsetHeight;
+        const pad = 12;
+        let top = r.top - h - 14;
         if (top < pad)
-          top = Math.min(r.bottom + 14, window.innerHeight - h - pad)
+          top = Math.min(r.bottom + 14, window.innerHeight - h - pad);
         const left = Math.min(
           Math.max(r.left, pad),
           window.innerWidth - w - pad,
-        )
-        pop.style.top = `${top}px`
-        pop.style.left = `${left}px`
-      }
+        );
+        pop.style.top = `${top}px`;
+        pop.style.left = `${left}px`;
+      };
 
       if (pop && canvas && ctx && seal && sendBtn) {
         // Ink with a live nib: slower strokes pool wider, like a real pen
         canvas.addEventListener("pointerdown", (e) => {
-          if (committed) return
-          canvas.setPointerCapture(e.pointerId)
-          drawing = true
-          strokes.push([{ x: e.offsetX, y: e.offsetY }])
-          pop.classList.add("has-ink")
-          last = { x: e.offsetX, y: e.offsetY, t: e.timeStamp, w: 2.4 }
-          ctx.beginPath()
-          ctx.arc(e.offsetX, e.offsetY, 1.2, 0, Math.PI * 2)
-          ctx.fill()
-        })
+          if (committed) return;
+          canvas.setPointerCapture(e.pointerId);
+          drawing = true;
+          strokes.push([{ x: e.offsetX, y: e.offsetY }]);
+          pop.classList.add("has-ink");
+          last = { x: e.offsetX, y: e.offsetY, t: e.timeStamp, w: 2.4 };
+          ctx.beginPath();
+          ctx.arc(e.offsetX, e.offsetY, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
 
         canvas.addEventListener("pointermove", (e) => {
-          if (!drawing || !last || committed) return
-          const x = e.offsetX
-          const y = e.offsetY
-          const dist = Math.hypot(x - last.x, y - last.y)
-          if (dist < 1) return
-          const speed = dist / Math.max(e.timeStamp - last.t, 1)
-          const target = Math.min(Math.max(3.4 - speed * 1.1, 1.1), 3.4)
-          const width = last.w + (target - last.w) * 0.3
-          ctx.lineWidth = width
-          ctx.beginPath()
-          ctx.moveTo(last.x, last.y)
-          ctx.lineTo(x, y)
-          ctx.stroke()
-          inkLength += dist
-          samples += 1
-          strokes[strokes.length - 1]?.push({ x, y })
-          last = { x, y, t: e.timeStamp, w: width }
+          if (!drawing || !last || committed) return;
+          const x = e.offsetX;
+          const y = e.offsetY;
+          const dist = Math.hypot(x - last.x, y - last.y);
+          if (dist < 1) return;
+          const speed = dist / Math.max(e.timeStamp - last.t, 1);
+          const target = Math.min(Math.max(3.4 - speed * 1.1, 1.1), 3.4);
+          const width = last.w + (target - last.w) * 0.3;
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          ctx.moveTo(last.x, last.y);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+          inkLength += dist;
+          samples += 1;
+          strokes[strokes.length - 1]?.push({ x, y });
+          last = { x, y, t: e.timeStamp, w: width };
           if (!ready && inkLength > MIN_INK && samples > MIN_SAMPLES)
-            markReady()
-        })
+            markReady();
+        });
 
         const liftPen = () => {
-          if (!drawing) return
-          drawing = false
-          last = null
-          if (committed) return
-          const verdict = inspectInk(strokes)
+          if (!drawing) return;
+          drawing = false;
+          last = null;
+          if (committed) return;
+          const verdict = inspectInk(strokes);
           if (verdict.flagged) {
             // Too much of the ink is geometrically perfect — revoke the
             // signature until some human wobble dilutes it
-            ready = false
-            pop.classList.remove("is-ready", "is-signed")
-            sendBtn.disabled = true
-            if (sendLabel) sendLabel.textContent = "Awaiting a signature"
-            setStatus(botMessage(verdict))
+            ready = false;
+            pop.classList.remove("is-ready", "is-signed");
+            sendBtn.disabled = true;
+            if (sendLabel) sendLabel.textContent = "Awaiting a signature";
+            setStatus(botMessage(verdict));
           } else if (ready) {
-            pop.classList.add("is-signed")
-            setStatus("Good enough for me — send it.")
+            pop.classList.add("is-signed");
+            setStatus("Good enough for me — send it.");
           } else if (samples < 3) {
-            setStatus("That's a dot. I need a whole scribble.")
+            setStatus("That's a dot. I need a whole scribble.");
           } else {
-            setStatus("Almost — keep the scribble going.")
+            setStatus("Almost — keep the scribble going.");
           }
-        }
-        canvas.addEventListener("pointerup", liftPen)
-        canvas.addEventListener("pointercancel", liftPen)
+        };
+        canvas.addEventListener("pointerup", liftPen);
+        canvas.addEventListener("pointercancel", liftPen);
 
         resetSig?.addEventListener("click", () => {
-          if (committed) return
-          resetPad()
-          canvas.focus({ preventScroll: true })
-        })
+          if (committed) return;
+          resetPad();
+          canvas.focus({ preventScroll: true });
+        });
 
         sendBtn.addEventListener("click", () => {
-          if (!ready || committed) return
-          committed = true
-          sendBtn.disabled = true
-          pop.classList.add("is-sending")
-          if (sendLabel) sendLabel.textContent = "Sealing…"
+          if (!ready || committed) return;
+          committed = true;
+          sendBtn.disabled = true;
+          pop.classList.add("is-sending");
+          if (sendLabel) sendLabel.textContent = "Sealing…";
           sendT1 = window.setTimeout(() => {
             try {
-              localStorage.setItem(SENT_KEY, new Date().toISOString())
+              localStorage.setItem(SENT_KEY, new Date().toISOString());
             } catch {
               /* still send; the page just won't remember */
             }
-            sendLetter()
-            setStatus("Sent — off it goes.")
-            pop.classList.add("is-sent-anim")
+            sendLetter();
+            setStatus("Sent — off it goes.");
+            pop.classList.add("is-sent-anim");
             sendT2 = window.setTimeout(() => {
-              if (pop.matches(":popover-open")) pop.hidePopover()
-              else applySentState(true)
-            }, 2000)
-          }, 1000)
-        })
+              if (pop.matches(":popover-open")) pop.hidePopover();
+              else applySentState(true);
+            }, 2000);
+          }, 1000);
+        });
+
+        // The slip tracks its anchor only while the popover is up: subscribe to
+        // the shared scroll bus on open, unsubscribe on close.
+        let unsubPopover: (() => void) | null = null;
 
         // Open locks page scroll (compensating for the vanished scrollbar).
         // Closing early (Esc, light dismiss) abandons an unsent attempt;
         // once the letter is away, closing just finalizes the sent state
         pop.addEventListener("toggle", (e) => {
           const open =
-            (e as unknown as { newState: string }).newState === "open"
-          const html = document.documentElement
+            (e as unknown as { newState: string }).newState === "open";
+          const html = document.documentElement;
           // overflow:hidden blocks native inputs; the engine lock stops the
           // smooth-scroll's programmatic scrolling, which overflow can't
-          ;(
+          (
             window as unknown as { __smoothScrollLock?: (l: boolean) => void }
-          ).__smoothScrollLock?.(open)
+          ).__smoothScrollLock?.(open);
           if (open) {
-            const gap = window.innerWidth - html.clientWidth
-            html.style.overflow = "hidden"
-            if (gap > 0) html.style.paddingRight = `${gap}px`
+            const gap = window.innerWidth - html.clientWidth;
+            html.style.overflow = "hidden";
+            if (gap > 0) html.style.paddingRight = `${gap}px`;
             // The slip is positioned by hand, so it only needs to track the
             // viewport while it's actually up
-            window.addEventListener("resize", placePopover, { passive: true })
-            window.addEventListener("scroll", placePopover, { passive: true })
-            return
+            window.addEventListener("resize", placePopover, { passive: true });
+            unsubPopover = (window as any).__onSmoothScrollTick(placePopover);
+            return;
           }
-          window.removeEventListener("resize", placePopover)
-          window.removeEventListener("scroll", placePopover)
-          html.style.overflow = ""
-          html.style.paddingRight = ""
-          drawing = false
+          window.removeEventListener("resize", placePopover);
+          unsubPopover?.();
+          unsubPopover = null;
+          html.style.overflow = "";
+          html.style.paddingRight = "";
+          drawing = false;
           if (committed) {
-            window.clearTimeout(sendT1)
-            window.clearTimeout(sendT2)
-            if (readSent()) applySentState(true)
+            window.clearTimeout(sendT1);
+            window.clearTimeout(sendT2);
+            if (readSent()) applySentState(true);
           }
-        })
+        });
 
         again?.addEventListener("click", () => {
           try {
-            localStorage.removeItem(SENT_KEY)
+            localStorage.removeItem(SENT_KEY);
           } catch {
             /* nothing to clear */
           }
-          applySentState(false)
-          seal.focus()
-        })
+          applySentState(false);
+          seal.focus();
+        });
 
-        if (readSent()) applySentState(true)
+        if (readSent()) applySentState(true);
       }
 
       form.addEventListener("submit", (e) => {
-        e.preventDefault()
-        if (readSent()) return
-        const body = String(new FormData(form).get("message") || "").trim()
+        e.preventDefault();
+        if (readSent()) return;
+        const body = String(new FormData(form).get("message") || "").trim();
         if (!body) {
-          error?.classList.remove("hidden")
-          message?.focus()
-          return
+          error?.classList.remove("hidden");
+          message?.focus();
+          return;
         }
         if (pop && canvas && ctx && typeof pop.showPopover === "function") {
-          pop.showPopover()
-          resetPad()
-          placePopover()
-          canvas.focus({ preventScroll: true })
+          pop.showPopover();
+          resetPad();
+          placePopover();
+          canvas.focus({ preventScroll: true });
         } else {
-          sendLetter()
+          sendLetter();
         }
-      })
+      });
     }
   }
 </script>

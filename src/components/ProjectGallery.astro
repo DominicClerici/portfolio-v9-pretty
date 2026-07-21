@@ -16,7 +16,8 @@ const { gallery, decorative = false, leadOnly = false } = Astro.props;
 
 const plates = leadOnly ? gallery.slice(0, 1) : gallery;
 
-const srcset = (src: string) => `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
+const srcset = (src: string) =>
+  `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
 ---
 
 <div class:list={["we1-gallery flex flex-col", leadOnly && "we1-ghero"]}>
@@ -28,7 +29,11 @@ const srcset = (src: string) => `${src} 1x, ${src.replace(".webp", "-2x.webp")} 
             src={g.src}
             srcset={srcset(g.src)}
             alt={decorative ? "" : g.alt}
-            class={k === 0 ? "block w-full h-auto" : "absolute inset-0 w-full h-full object-cover object-top"}
+            class={
+              k === 0
+                ? "block w-full h-auto"
+                : "absolute inset-0 w-full h-full object-cover object-top"
+            }
             loading="lazy"
             decoding="async"
           />
@@ -51,7 +56,8 @@ const srcset = (src: string) => `${src} 1x, ${src.replace(".webp", "-2x.webp")} 
   .we1-gframe {
     border-radius: 22px;
     background: #ececea;
-    box-shadow: 0 26px 60px -30px color-mix(in srgb, var(--color-ink) 40%, transparent);
+    box-shadow: 0 26px 60px -30px
+      color-mix(in srgb, var(--color-ink) 40%, transparent);
     aspect-ratio: 4 / 3;
   }
 
