@@ -20,7 +20,7 @@ const { websiteUrl, githubUrl, class: className = "", ...rest } = Astro.props;
     href={websiteUrl}
     target="_blank"
     rel="noopener noreferrer"
-    class="we1-link font-display text-[17px] tracking-[-0.01em] text-ink"
+    class="we1-link we1-focus font-display text-[17px] tracking-[-0.01em] text-ink"
   >
     Visit the site&nbsp;&nearr;
   </a>
@@ -42,21 +42,12 @@ const { websiteUrl, githubUrl, class: className = "", ...rest } = Astro.props;
 <style>
   /* Accent underline that draws back on hover */
   .we1-link {
-    background-image: linear-gradient(var(--acc), var(--acc));
-    background-repeat: no-repeat;
-    background-size: 100% 1.5px;
-    background-position: 0 96%;
+    background: linear-gradient(var(--acc), var(--acc)) no-repeat 0 96% / 100% 1.5px;
     padding-bottom: 3px;
     transition: background-size 0.35s var(--ease-settle);
   }
 
   .we1-link:hover {
     background-size: 38% 1.5px;
-  }
-
-  .we1-link:focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 4px;
-    border-radius: 2px;
   }
 </style>

@@ -17,14 +17,14 @@ const { index, edition, suffix, ...rest } = Astro.props;
   {...rest}
 >
   Edition {index}
-  <span class="we1-folio-dot inline-block align-middle mx-3" aria-hidden="true"
+  <span class="folio-dot inline-block align-middle mx-3" aria-hidden="true"
   ></span>
-  <span style="color: var(--acc);">{edition}</span>
+  <span class="text-[var(--acc)]">{edition}</span>
   {
     suffix && (
       <>
         <span
-          class="we1-folio-dot inline-block align-middle mx-3"
+          class="folio-dot inline-block align-middle mx-3"
           aria-hidden="true"
         />
         {suffix}
@@ -34,7 +34,7 @@ const { index, edition, suffix, ...rest } = Astro.props;
 </p>
 
 <style>
-  .we1-folio-dot {
+  .folio-dot {
     width: 5px;
     height: 5px;
     border-radius: 999px;

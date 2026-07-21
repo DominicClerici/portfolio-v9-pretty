@@ -17,7 +17,7 @@
      before the next section. -->
 <div
   id="hero-scope"
-  class="relative bg-bone mb-[calc(var(--bg-overhang)_*_(-1))]"
+  class="relative bg-bone mb-[calc(var(--bg-overhang)*-1)]"
 >
   <div data-canvas-bg class="sticky top-0 h-[var(--bg-h)]" aria-hidden="true">
     <!-- Full-bleed clipping container; isolated so the inner clip-path
@@ -40,32 +40,24 @@
   <div
     id="hero-gpu-warning"
     role="status"
-    style="display: none"
-    class="fixed bottom-4 right-4 z-50 items-center gap-2 rounded-lg border border-ink/15 bg-white/70 backdrop-blur-md px-3 h-9 shadow-sm"
+    class="hidden fixed bottom-4 right-4 z-50 items-center gap-2 rounded-lg border border-ink/15 bg-white/70 backdrop-blur-md px-3 h-9 shadow-sm"
   >
     <svg
       width="15"
       height="15"
       viewBox="0 0 24 24"
       fill="none"
+      stroke="currentColor"
       class="shrink-0 text-amber-500"
       aria-hidden="true"
     >
       <path
         d="M12 4 2.5 20.5h19L12 4Z"
-        stroke="currentColor"
         stroke-width="1.6"
         stroke-linejoin="round"></path>
-      <path
-        d="M12 10.5v4"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"></path>
-      <path
-        d="M12 17.4v.01"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"></path>
+      <path d="M12 10.5v4" stroke-width="1.6" stroke-linecap="round"></path>
+      <path d="M12 17.4v.01" stroke-width="1.8" stroke-linecap="round"
+      ></path>
     </svg>
     <span
       class="font-mono text-[12px] leading-none tracking-[-0.01em] text-ink/70 whitespace-nowrap"

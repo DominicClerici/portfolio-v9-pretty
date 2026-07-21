@@ -296,11 +296,8 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
   .cv2-body {
     display: block;
     width: 100%;
-    background: transparent;
-    border: none;
     outline: none;
     resize: none;
-    padding: 0;
     caret-color: var(--color-bio-lime);
   }
 
@@ -313,7 +310,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
      dashed until filled, then solid lime. */
   .cv2-blank,
   .cv2-sig-line {
-    border: 0 solid transparent;
     border-bottom: 1px dashed rgb(255 255 255 / 0.35);
     transition: border-color 0.2s ease;
   }
@@ -329,11 +325,8 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     vertical-align: baseline;
     width: 10ch;
     max-width: 100%;
-    background: transparent;
-    border-radius: 0;
     outline: none;
     padding: 0 0.15em 0.05em;
-    font: inherit;
     color: var(--color-bio-lime);
     caret-color: var(--color-bio-lime);
   }
@@ -365,7 +358,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
   /* The captcha: a slip of the same letter, in the top layer */
   .cv2-captcha {
     --rule-fade: 24px;
-    position: fixed;
     inset: auto;
     margin: 0;
     width: min(340px, calc(100vw - 32px));
@@ -402,7 +394,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
   .cv2-cap-status {
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: -0.02em;
     color: var(--color-n-400);
     transition: color 0.2s ease;
   }
@@ -463,7 +454,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     padding: 8px 11px;
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: -0.02em;
     color: var(--color-n-300);
     opacity: 0;
     pointer-events: none;

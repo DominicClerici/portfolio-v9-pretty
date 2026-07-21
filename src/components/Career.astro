@@ -99,7 +99,7 @@ const initialIndex = stepMap[0];
 
 <section
   id="career"
-  class="career-v1 relative bg-n-950"
+  class="relative bg-n-950"
   style={`height: ${(N + 1) * 100}svh`}
   data-step-pct={JSON.stringify(stepPct)}
   data-step-map={JSON.stringify(stepMap)}
@@ -109,29 +109,27 @@ const initialIndex = stepMap[0];
 
   <!-- The pinned frame: everything inside stays in view while the tall section
        scrolls past, which reads as a scroll-lock without trapping the wheel. -->
-  <div class="v1-pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
+  <div class="pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
     <div
-      class="v1-frame relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
+      class="frame relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
       <h2
-        class="v1-heading font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
+        class="heading font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
       >
         Time on one axis,
         <span class="text-white/45">the story on the other.</span>
       </h2>
 
       <!-- Mobile: horizontal timeline above the card strip (oldest left). -->
-      <div class="v1-rail-h lg:hidden relative h-8 mb-5" aria-hidden="true">
+      <div class="rail-h lg:hidden relative h-8 mb-5" aria-hidden="true">
         <div class="absolute inset-x-[7px] top-1/2 -translate-y-1/2">
           <div
             class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-n-800"
-          >
-          </div>
+          />
           <div
-            class="v1-rail-fill-h absolute left-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-bio-lime"
+            class="rail-fill-h absolute left-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-bio-lime"
             style="width: 0%"
-          >
-          </div>
+          />
           {
             orderedEntries.map((_, s) => (
               <span
@@ -141,31 +139,29 @@ const initialIndex = stepMap[0];
             ))
           }
           <div
-            class="v1-rail-tip-h absolute top-1/2 w-[11px] h-[11px] rounded-full bg-bio-lime -translate-x-1/2 -translate-y-1/2"
+            class="rail-tip-h absolute top-1/2 w-[11px] h-[11px] rounded-full bg-bio-lime -translate-x-1/2 -translate-y-1/2"
             style="left: 0%"
-          >
-          </div>
+          />
         </div>
       </div>
 
       <div
-        class="v1-main grid lg:grid-cols-[360px_1fr] gap-4 lg:gap-14 items-start"
+        class="main grid lg:grid-cols-[360px_1fr] gap-4 lg:gap-14 items-start"
       >
         <!-- Rail: time spine + employer tabs.
              min-w-0 lets this grid column shrink to the viewport so the tab
              strip below scrolls horizontally instead of forcing an overflow. -->
         <div class="min-w-0 lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
           <!-- The spine — V3's chart, rotated vertical -->
-          <div class="v1-spine relative hidden lg:block">
+          <div class="spine relative hidden lg:block">
             <div class="absolute inset-x-0 top-2 bottom-2">
               <!-- Progress playhead: a horizontal marker line that sweeps down the
                    timeline (top -> bottom), landing on each bar as it's selected. -->
               <div
-                class="v1-playhead absolute left-0 right-0"
+                class="playhead absolute left-0 right-0"
                 style={`top: ${railStart}%`}
                 aria-hidden="true"
-              >
-              </div>
+              />
               {
                 years.map((y) => (
                   <div
@@ -183,7 +179,7 @@ const initialIndex = stepMap[0];
               {
                 orderedEntries.map(({ entry, i }) => (
                   <span
-                    class="v1-bar absolute w-[14px] rounded-full border border-n-700"
+                    class="bar absolute w-[14px] rounded-full border border-n-700"
                     style={`top: ${yPct(entry.start)}%; height: ${yPct(entry.end) - yPct(entry.start)}%; left: ${30 + entry.lane * 20}px; --d: ${i * 120}ms`}
                     data-select={i}
                     data-on={i === initialIndex ? "true" : "false"}
@@ -191,7 +187,7 @@ const initialIndex = stepMap[0];
                   >
                     {entry.now && (
                       <span class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]">
-                        <span class="v1-ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
+                        <span class="ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
                         <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
                       </span>
                     )}
@@ -216,7 +212,7 @@ const initialIndex = stepMap[0];
               orderedEntries.map(({ entry, i }) => (
                 <button
                   type="button"
-                  class="v1-tab shrink-0 lg:w-full text-left"
+                  class="tab shrink-0 lg:w-full text-left"
                   aria-current={i === initialIndex ? "true" : "false"}
                   data-select={i}
                 >
@@ -224,9 +220,9 @@ const initialIndex = stepMap[0];
                     <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-n-400 block">
                       {entry.period}
                     </span>
-                    <span class="v1-tab-name font-display leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
+                    <span class="tab-name font-display leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
                       <span
-                        class="v1-tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0"
+                        class="tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0"
                         aria-hidden="true"
                       />
                       {entry.company}
@@ -242,7 +238,7 @@ const initialIndex = stepMap[0];
              slot never changes height as entries switch, which keeps the
              anchored (centered) layout from re-centering / jiggling. Below lg
              it carries no height and is inert. -->
-        <div class="v1-dossier-wrap min-w-0 lg:h-[615px]">
+        <div class="min-w-0 lg:h-[615px]">
           <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
                of expanding past the viewport on small screens. -->
           <div
@@ -263,7 +259,7 @@ const initialIndex = stepMap[0];
                   {Math.floor(entry.start)}
                 </span>
 
-                <div class="relative v1-enter">
+                <div class="relative enter">
                   <div class="flex items-center gap-2.5">
                     <span
                       class:list={[
@@ -311,7 +307,7 @@ const initialIndex = stepMap[0];
                       href={entry.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="font-mono text-[13px]  text-n-100 border border-n-700 rounded-lg h-10 px-4 inline-flex items-center hover:border-n-400 transition-colors duration-200"
+                      class="font-mono text-[13px] text-n-100 border border-n-700 rounded-lg h-10 px-4 inline-flex items-center hover:border-n-400 transition-colors duration-200"
                     >
                       Visit {entry.company}
                     </a>
@@ -358,12 +354,12 @@ const initialIndex = stepMap[0];
   /* Mobile-only: opacity is toggled in JS as the section crosses the sticky
      lock boundary; this transition is what makes that toggle read as a fade
      instead of a snap. Desktop never sets the inline style, so it's inert there. */
-  .v1-heading {
+  .heading {
     transition: opacity 0.3s ease;
   }
 
   /* Progress playhead — horizontal marker line (desktop), sweeps top -> bottom */
-  .v1-playhead {
+  .playhead {
     height: 2px;
     background: var(--color-bio-lime);
     transform: translateY(-50%);
@@ -371,7 +367,7 @@ const initialIndex = stepMap[0];
       color-mix(in srgb, var(--color-bio-lime) 45%, transparent);
   }
 
-  .v1-playhead::before {
+  .playhead::before {
     content: "";
     position: absolute;
     left: 0;
@@ -385,13 +381,13 @@ const initialIndex = stepMap[0];
       color-mix(in srgb, var(--color-bio-lime) 18%, transparent);
   }
 
-  .v1-rail-tip-h {
+  .rail-tip-h {
     box-shadow: 0 0 0 4px
       color-mix(in srgb, var(--color-bio-lime) 18%, transparent);
   }
 
   /* Spine bars */
-  .v1-bar {
+  .bar {
     background: var(--color-n-850);
     cursor: pointer;
     /* transform is inert unless the grow-in below is active, so it can live in
@@ -403,33 +399,37 @@ const initialIndex = stepMap[0];
       border-color 0.2s ease;
   }
 
-  .v1-bar:hover,
-  .v1-bar.hl {
+  .bar:hover,
+  .bar.hl {
     border-color: color-mix(in srgb, var(--color-bio-lime) 50%, transparent);
     background: var(--color-n-800);
   }
 
-  .v1-bar[data-on="true"] {
+  .bar[data-on="true"] {
     background: var(--color-bio-lime);
     border-color: var(--color-bio-lime);
   }
 
   /* Tabs */
-  .v1-tab-name {
+  .tab {
+    cursor: pointer;
+  }
+
+  .tab-name {
     color: var(--color-n-400);
     transition: color 0.2s ease;
   }
 
-  .v1-tab:hover .v1-tab-name,
-  .v1-tab.hl .v1-tab-name {
+  .tab:hover .tab-name,
+  .tab.hl .tab-name {
     color: var(--color-n-300);
   }
 
-  .v1-tab[aria-current="true"] .v1-tab-name {
+  .tab[aria-current="true"] .tab-name {
     color: var(--color-n-100);
   }
 
-  .v1-tab-dot {
+  .tab-dot {
     opacity: 0;
     transform: scale(0.4);
     transition:
@@ -437,19 +437,18 @@ const initialIndex = stepMap[0];
       transform 0.25s ease;
   }
 
-  .v1-tab[aria-current="true"] .v1-tab-dot {
+  .tab[aria-current="true"] .tab-dot {
     opacity: 1;
     transform: scale(1);
   }
 
   @media (min-width: 1024px) {
-    .v1-tab {
+    .tab {
       padding: 20px 0;
       border-top: 1px solid var(--color-n-800);
-      cursor: pointer;
     }
 
-    .v1-tab:last-child {
+    .tab:last-child {
       border-bottom: 1px solid var(--color-n-800);
     }
   }
@@ -457,7 +456,7 @@ const initialIndex = stepMap[0];
   /* Short desktop viewports: reclaim vertical space by halving the frame's
      top padding (12svh -> 6svh). */
   @media (min-width: 1024px) and (max-height: 799px) {
-    .v1-frame {
+    .frame {
       padding-top: 6svh;
     }
   }
@@ -470,7 +469,7 @@ const initialIndex = stepMap[0];
      wrapper keeps this box a constant height, so translateY(-50%) never
      re-centers (jiggles) as entries switch. */
   @media (min-width: 1024px) and (min-height: 1121px) {
-    .v1-main {
+    .main {
       position: absolute;
       left: 3rem;
       right: 3rem;
@@ -486,27 +485,26 @@ const initialIndex = stepMap[0];
        measured in JS (--v1-head-h) since the heading wraps at unpredictable
        widths; it already accounts for the padding the rail should keep above
        it once stuck. */
-    .v1-pin {
+    .pin {
       top: calc(-1 * var(--v1-head-h, 0px));
       height: calc(100svh + var(--v1-head-h, 0px));
     }
 
     /* The selection state is already carried by the chip's border and fill on
        mobile, so the dot is redundant width in a strip that is tight for it. */
-    .v1-tab-dot {
+    .tab-dot {
       display: none;
     }
 
-    .v1-tab {
+    .tab {
       border: 1px solid var(--color-n-800);
       border-radius: 14px;
       padding: 12px 18px;
       background: var(--color-n-900);
-      cursor: pointer;
       white-space: nowrap;
     }
 
-    .v1-tab[aria-current="true"] {
+    .tab[aria-current="true"] {
       border-color: var(--color-n-600);
       background: var(--color-n-850);
     }
@@ -514,16 +512,16 @@ const initialIndex = stepMap[0];
 
   @media (prefers-reduced-motion: no-preference) {
     /* Bars grow down the spine when it scrolls into view */
-    .v1-bar {
+    .bar {
       transform: scaleY(0);
       transform-origin: top center;
     }
 
-    .v1-spine.in .v1-bar {
+    .spine.in .bar {
       transform: scaleY(1);
     }
 
-    .v1-ping {
+    .ping {
       animation: v1-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
     }
 
@@ -540,7 +538,7 @@ const initialIndex = stepMap[0];
     }
 
     /* Panel content entrance on tab switch */
-    .v1-enter {
+    .enter {
       animation: v1-rise 0.5s var(--ease-rise) both;
     }
 
@@ -559,12 +557,12 @@ const initialIndex = stepMap[0];
 
 <script>
   {
-    const section = document.querySelector<HTMLElement>(".career-v1");
+    const section = document.querySelector<HTMLElement>("#career");
     if (section) {
-      const tabs = section.querySelectorAll<HTMLButtonElement>(".v1-tab");
-      const bars = section.querySelectorAll<HTMLElement>(".v1-bar");
+      const tabs = section.querySelectorAll<HTMLButtonElement>(".tab");
+      const bars = section.querySelectorAll<HTMLElement>(".bar");
       const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
-      const pin = section.querySelector<HTMLElement>(".v1-pin");
+      const pin = section.querySelector<HTMLElement>(".pin");
       // Mobile: the tab chips live in a horizontal scroller; the selected chip
       // is kept centered as selection moves (see select()).
       const tablist = section.querySelector<HTMLElement>("[role='group']");
@@ -574,10 +572,10 @@ const initialIndex = stepMap[0];
       const N = stepPct.length;
 
       // Desktop: horizontal playhead, positioned in the spine's year-% space.
-      const playhead = section.querySelector<HTMLElement>(".v1-playhead");
+      const playhead = section.querySelector<HTMLElement>(".playhead");
       // Mobile: evenly-spaced rail, so the tip travels linearly with progress.
-      const fillH = section.querySelector<HTMLElement>(".v1-rail-fill-h");
-      const tipH = section.querySelector<HTMLElement>(".v1-rail-tip-h");
+      const fillH = section.querySelector<HTMLElement>(".rail-fill-h");
+      const tipH = section.querySelector<HTMLElement>(".rail-tip-h");
 
       const select = (id: string | undefined) => {
         if (!id) return;
@@ -610,7 +608,7 @@ const initialIndex = stepMap[0];
           panel.hidden = !show;
           if (show) {
             // retrigger the entrance animation
-            const inner = panel.querySelector<HTMLElement>(".v1-enter");
+            const inner = panel.querySelector<HTMLElement>(".enter");
             if (inner) {
               inner.style.animation = "none";
               void inner.offsetWidth;
@@ -684,10 +682,10 @@ const initialIndex = stepMap[0];
       // Mobile only: let the heading scroll off before the pin engages, by
       // pulling the pin's sticky top up by everything above the rail. RAIL_PAD
       // is the gap the rail keeps below the viewport top once stuck.
-      const railH = section.querySelector<HTMLElement>(".v1-rail-h");
+      const railH = section.querySelector<HTMLElement>(".rail-h");
       const RAIL_PAD = 20;
       const mobileMQ = window.matchMedia("(max-width: 1023px)");
-      const heading = section.querySelector<HTMLElement>(".v1-heading");
+      const heading = section.querySelector<HTMLElement>(".heading");
       let headH = 0;
       // Scroll-invariant (see the barrier note above), so it is measured here
       // and read from cache in the scroll frame — offsetHeight in a scroll
@@ -700,7 +698,7 @@ const initialIndex = stepMap[0];
           headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0;
           section.style.setProperty("--v1-head-h", `${headH}px`);
         }
-        // Must follow the write above: --v1-head-h feeds .v1-pin's height, so
+        // Must follow the write above: --v1-head-h feeds .pin's height, so
         // reading the pin before it settles would measure the stale box.
         travelPx =
           section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight);
@@ -798,7 +796,7 @@ const initialIndex = stepMap[0];
       });
 
       // Grow-in trigger
-      const spine = section.querySelector<HTMLElement>(".v1-spine");
+      const spine = section.querySelector<HTMLElement>(".spine");
       if (spine) {
         const io = new IntersectionObserver(
           (obs) => {

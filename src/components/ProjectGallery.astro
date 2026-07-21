@@ -23,7 +23,7 @@ const srcset = (src: string) =>
 <div class:list={["we1-gallery flex flex-col", leadOnly && "we1-ghero"]}>
   {
     plates.map((g, k) => (
-      <figure class={`m-0 ${k === 0 ? "we1-gfig-lead" : ""}`}>
+      <figure class:list={["m-0", k === 0 && "we1-gfig-lead"]}>
         <div class="we1-gframe relative overflow-hidden">
           <img
             src={g.src}
