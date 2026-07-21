@@ -23,9 +23,12 @@ export type Project = {
   accent: string;
   wash: string;
   /** The stock this edition is printed on — bone (#f7f7f5) pulled a few points
-   *  toward the accent. Only the inside spread (and the arch window looking
+   *  toward the accent. Only the inside spread (and the shaped window looking
    *  into it) is printed on it; the front page stays on plain bone. */
   paper: string;
+  /** The window this edition is read through (see src/lib/workShapes.ts):
+   *  a rounded diamond, a grid of circles, or a stack of bars. */
+  shape: "diamond" | "circles" | "bars";
   details: { label: string; value: string }[];
   story: string[];
   gallery: GalleryPlate[];
@@ -46,6 +49,7 @@ export const projects: Project[] = [
     accent: "#0e63c8",
     wash: "rgba(14, 99, 200, 0.09)",
     paper: "#f3f6fb",
+    shape: "diamond",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
@@ -76,6 +80,7 @@ export const projects: Project[] = [
     accent: "#006c22",
     wash: "rgba(0, 108, 34, 0.09)",
     paper: "#f2f8f3",
+    shape: "circles",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2024 — 2025" },
@@ -106,6 +111,7 @@ export const projects: Project[] = [
     accent: "#5e2cc0",
     wash: "rgba(94, 44, 192, 0.1)",
     paper: "#f6f4fc",
+    shape: "bars",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
