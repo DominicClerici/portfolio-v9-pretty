@@ -45,7 +45,7 @@ export const projects: Project[] = [
     featured: false,
     accent: "#0e63c8",
     wash: "rgba(14, 99, 200, 0.09)",
-    paper: "#eef4fc",
+    paper: "#f3f6fb",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
@@ -75,7 +75,7 @@ export const projects: Project[] = [
     featured: false,
     accent: "#006c22",
     wash: "rgba(0, 108, 34, 0.09)",
-    paper: "#edf9f1",
+    paper: "#f2f8f3",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2024 — 2025" },
@@ -105,7 +105,7 @@ export const projects: Project[] = [
     featured: true,
     accent: "#5e2cc0",
     wash: "rgba(94, 44, 192, 0.1)",
-    paper: "#f4f0fd",
+    paper: "#f6f4fc",
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
