@@ -18,9 +18,10 @@
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/roboto-mono-latin-400.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
-    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
 }
 
 @theme {
@@ -57,10 +58,12 @@
   --color-n-100: #f5f5f5;
 
   /* Fonts */
-  --font-display: "Aspekta", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, monospace;
+  --font-display:
+    "Aspekta", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono:
+    "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
 
   /* ── Fluid type scale ──
      Every step is anchored at a 27.5rem (440px) viewport and grows linearly
@@ -76,7 +79,11 @@
     calc(1.625rem + (100vw - 27.5rem) * 0.02),
     2.625rem
   );
-  --text-lead: clamp(1.25rem, calc(1.25rem + (100vw - 27.5rem) * 0.004), 1.5rem);
+  --text-lead: clamp(
+    1.25rem,
+    calc(1.25rem + (100vw - 27.5rem) * 0.004),
+    1.5rem
+  );
 
   /* ── Shared easings ──
      Only curves used by more than one component live here. The one-off
@@ -161,15 +168,21 @@ body {
   scrollbar-gutter: stable;
 }
 
-span, p {
+span,
+p {
   letter-spacing: -0.02em;
 }
 
 a {
   letter-spacing: -0.01em;
 }
- 
-h1, h2, h3, h4, h5, h6 {
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   letter-spacing: -0.03em;
 }
 
