@@ -238,11 +238,16 @@ const initialIndex = stepMap[0];
           </div>
         </div>
 
-        <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
-             of expanding past the viewport on small screens. -->
-        <div
-          class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-900 lg:min-h-[460px] overflow-hidden"
-        >
+        <!-- Vertical-alignment wrapper: a fixed 615px box at lg+ so the card
+             slot never changes height as entries switch, which keeps the
+             anchored (centered) layout from re-centering / jiggling. Below lg
+             it carries no height and is inert. -->
+        <div class="v1-dossier-wrap min-w-0 lg:h-[615px]">
+          <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
+               of expanding past the viewport on small screens. -->
+          <div
+            class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-900 lg:min-h-[460px] overflow-hidden"
+          >
           {
             entries.map((entry, i) => (
               <div
@@ -342,6 +347,7 @@ const initialIndex = stepMap[0];
               </div>
             ))
           }
+          </div>
         </div>
       </div>
     </div>
@@ -457,16 +463,18 @@ const initialIndex = stepMap[0];
   }
 
   /* Tall desktop viewports: float the two-column content out of flow so its
-     vertical midline lands on the viewport's 55% line (5% above dead center).
-     The heading stays put in flow; the frame is the positioning context, sits
-     at the viewport top (sticky top-0 + items-start), and left/right: 3rem
-     mirrors the frame's lg:px-12 so horizontal alignment is unchanged. */
+     vertical midline lands on the viewport's 45% line. The heading stays put in
+     flow; the frame is the positioning context, sits at the viewport top
+     (sticky top-0 + items-start), and left/right: 3rem mirrors the frame's
+     lg:px-12 so horizontal alignment is unchanged. The dossier's fixed-height
+     wrapper keeps this box a constant height, so translateY(-50%) never
+     re-centers (jiggles) as entries switch. */
   @media (min-width: 1024px) and (min-height: 1121px) {
     .v1-main {
       position: absolute;
       left: 3rem;
       right: 3rem;
-      top: 55svh;
+      top: 46svh;
       transform: translateY(-50%);
     }
   }
