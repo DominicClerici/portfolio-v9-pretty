@@ -5,7 +5,7 @@
 // bars. One parametric definition feeds three consumers:
 //
 //   1. Build time (Work.astro frontmatter): an SVG data-URI mask for the
-//      static window, and scaled-outline paths for the halo rings.
+//      static window, and per-sub boxes for the halo outlines.
 //   2. Runtime (Work.astro script): per-frame `clip-path: path(...)` values
 //      for the walk-through-the-door portal. Multi-part figures can't be
 //      expressed as CSS-interpolable basic shapes, so the door animation is
@@ -117,20 +117,27 @@ export const subsInBox = (v: Variant, w: number, h: number, dx = 0, dy = 0): Sub
   );
 };
 
-/** The whole figure scaled about its own center — the halo rings. Scaling
- *  (rather than inflating each sub) grows the gaps too, so multi-part
- *  figures never collide with their own rings. `grow` is the ring's reach
- *  past the figure's edge, in unit-width units. */
-export const ringSubs = (v: Variant, grow: number): Sub[] => {
-  const k = (100 + 2 * grow) / 100;
-  const cx = 50;
-  const cy = v.h / 2;
-  return v.subs.map((s) =>
+// ── Halo outlines ──
+// The outlines used to be the whole figure under a transform scale, which
+// multiplies the gaps between sub-shapes along with the sub-shapes
+// themselves — on a figure of several small parts the outline ends up
+// floating somewhere inside the window instead of tracing its edge. They are
+// now one element per sub, inflated by a flat number of pixels in CSS (see
+// .we1-ringp), which is the only way the gap can read the same on every edge
+// of every part: an offset baked into this unit space would shrink with the
+// plate, and the plate's rendered width isn't known here.
+
+export type RingBox = { x: number; y: number; w: number; h: number; r: number; rot: number };
+
+/** Each sub as a plain box in unit space, for the halo outlines. Circles come
+ *  through as squares with a half-width radius — a border-radius rounds them
+ *  right back into circles once CSS has added its pixel inset. */
+export const ringBoxes = (v: Variant): RingBox[] =>
+  v.subs.map((s) =>
     s.kind === "circle"
-      ? { kind: "circle", cx: cx + (s.cx - cx) * k, cy: cy + (s.cy - cy) * k, r: s.r * k }
-      : { ...s, cx: cx + (s.cx - cx) * k, cy: cy + (s.cy - cy) * k, w: s.w * k, h: s.h * k, r: s.r * k },
+      ? { x: s.cx, y: s.cy, w: s.r * 2, h: s.r * 2, r: s.r, rot: 0 }
+      : { x: s.cx, y: s.cy, w: s.w, h: s.h, r: s.r, rot: s.rot },
   );
-};
 
 export const lerpSubs = (from: Sub[], to: Sub[], t: number): Sub[] =>
   from.map((a, i) => {

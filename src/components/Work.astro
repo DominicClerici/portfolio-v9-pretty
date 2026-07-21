@@ -1,9 +1,9 @@
 ---
-import { projects } from "../data/projects";
-import { SHAPES, maskUri, pathOf, ringSubs } from "../lib/workShapes";
-import EditionLine from "./EditionLine.astro";
-import ProjectGallery from "./ProjectGallery.astro";
-import ProjectLinks from "./ProjectLinks.astro";
+import { projects } from "../data/projects"
+import { SHAPES, maskUri, ringBoxes } from "../lib/workShapes"
+import EditionLine from "./EditionLine.astro"
+import ProjectGallery from "./ProjectGallery.astro"
+import ProjectLinks from "./ProjectLinks.astro"
 
 // "The Morning Editions": Dispatch prints a paper every morning, so the whole
 // shelf is typeset like one — each build is the front page of its own edition,
@@ -35,24 +35,25 @@ import ProjectLinks from "./ProjectLinks.astro";
 //
 // Copy and imagery live in src/data/projects.ts.
 
-// Static assets per shape: the mask the window is cut with, the halo-ring
-// outlines (the figure scaled about its own center, so multi-part shapes
-// never collide with their rings), and the aspect each variant locks to.
+// Static assets per shape: the mask the window is cut with, the boxes the
+// halo outlines are drawn from (one per sub-shape — see .we1-ringp), and the
+// aspect each variant locks to.
 const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
-  const s = SHAPES[id];
+  const s = SHAPES[id]
   const variant = (v: (typeof s)["desktop"]) => ({
     h: v.h,
     ar: 100 / v.h,
     mask: maskUri(v),
-    ring: pathOf(ringSubs(v, 3.6)),
-    ring2: pathOf(ringSubs(v, 6)),
-  });
-  return { d: variant(s.desktop), m: variant(s.mobile) };
-};
+    rings: ringBoxes(v),
+  })
+  return { d: variant(s.desktop), m: variant(s.mobile) }
+}
 ---
 
 <section id="work" class="we1 relative" aria-label="Selected work">
-  <header class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]">
+  <header
+    class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]"
+  >
     <div class="border-t border-ink/20 mb-10 lg:mb-14" aria-hidden="true"></div>
     <h2
       class="font-display text-ink leading-[1.02] tracking-[-0.03em] mt-6 text-[clamp(2.5rem,6.5vw,4.75rem)]"
@@ -62,81 +63,126 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     <p
       class="font-display text-[17px] leading-[1.5] tracking-[-0.01em] text-ink/55 max-w-[540px] mt-5"
     >
-      Three builds, run off the same press across one day &mdash; morning, midday, and late.
+      Three builds, run off the same press across one day &mdash; morning,
+      midday, and late.
     </p>
   </header>
 
   {
     projects.map((project, i) => {
-      const shape = shapeAssets(project.shape);
+      const shape = shapeAssets(project.shape)
       return (
-      <>
-        {i > 0 && (
-          <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12" aria-hidden="true">
-            <div class="border-t border-ink/20"></div>
-          </div>
-        )}
-        <article class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`} data-plate={i} data-shape={project.shape} style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}>
-          <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
-            <div class="we1-copy">
-              <EditionLine index={project.index} edition={project.edition} />
-              <h3 class="font-display text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
-                {project.title}
-              </h3>
-              <p class="font-display text-[17px] leading-[1.6] tracking-[-0.01em] text-ink/70 max-w-[52ch] mt-7">{project.description}</p>
-              <p class="font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-8">
-                Set in &mdash; {project.stack.join(" · ")}
-              </p>
-              <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 mt-3">
-                {project.fact}
-              </p>
-              <ProjectLinks websiteUrl={project.websiteUrl} githubUrl={project.githubUrl} class="mt-9">
-                <button
-                  type="button"
-                  class="we1-more we1-focus font-mono text-[13px] tracking-[-0.02em] uppercase inline-flex items-center gap-[9px] cursor-pointer"
-                  data-open={i}
-                >
-                  <span class="we1-more-glyph" aria-hidden="true" style={`--gm: ${shape.d.mask}; --gar: ${shape.d.ar.toFixed(4)};`} />
-                  Learn more
-                </button>
-              </ProjectLinks>
+        <>
+          {i > 0 && (
+            <div
+              class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12"
+              aria-hidden="true"
+            >
+              <div class="border-t border-ink/20" />
             </div>
-
-            <figure class="we1-fig relative m-0">
-              <span class="we1-no font-display absolute select-none" aria-hidden="true">
-                No.&thinsp;{i + 1}
-              </span>
-              <div
-                class="we1-arch-wrap relative mx-auto"
-                style={`--ar-d: ${shape.d.ar.toFixed(4)}; --ar-m: ${shape.m.ar.toFixed(4)}; --mask-d: ${shape.d.mask}; --mask-m: ${shape.m.mask};`}
-              >
-                <svg class="we1-rings we1-rings-d absolute" viewBox={`0 0 100 ${shape.d.h}`} preserveAspectRatio="none" aria-hidden="true">
-                  <path class="we1-ringp" d={shape.d.ring} vector-effect="non-scaling-stroke" />
-                  <path class="we1-ringp2" d={shape.d.ring2} vector-effect="non-scaling-stroke" />
-                </svg>
-                <svg class="we1-rings we1-rings-m absolute" viewBox={`0 0 100 ${shape.m.h}`} preserveAspectRatio="none" aria-hidden="true">
-                  <path class="we1-ringp" d={shape.m.ring} vector-effect="non-scaling-stroke" />
-                  <path class="we1-ringp2" d={shape.m.ring2} vector-effect="non-scaling-stroke" />
-                </svg>
-                <span class="we1-shade absolute" aria-hidden="true" />
-                <button type="button" class="we1-door block w-full cursor-pointer" data-open={i} aria-label={`Read the full story — ${project.title}`}>
-                  <div class="we1-arch relative overflow-hidden">
-                    <div class="we1-view absolute" data-view aria-hidden="true">
-                      <ProjectGallery gallery={project.gallery} decorative />
-                    </div>
-                  </div>
-                </button>
-                {project.featured && (
-                  <span class="we1-stamp absolute font-mono text-[11px] leading-none tracking-[-0.01em] uppercase">
-                    Editor&rsquo;s pick
-                  </span>
-                )}
+          )}
+          <article
+            class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`}
+            data-plate={i}
+            data-shape={project.shape}
+            style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}
+          >
+            <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
+              <div class="we1-copy">
+                <EditionLine index={project.index} edition={project.edition} />
+                <h3 class="font-display text-ink leading-[0.98] tracking-[-0.03em] mt-6 text-[clamp(2.75rem,7vw,5rem)]">
+                  {project.title}
+                </h3>
+                <p class="font-display text-[17px] leading-[1.6] tracking-[-0.01em] text-ink/70 max-w-[52ch] mt-7">
+                  {project.description}
+                </p>
+                <p class="font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-8">
+                  Set in &mdash; {project.stack.join(" · ")}
+                </p>
+                <p class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 mt-3">
+                  {project.fact}
+                </p>
+                <ProjectLinks
+                  websiteUrl={project.websiteUrl}
+                  githubUrl={project.githubUrl}
+                  class="mt-9"
+                >
+                  <button
+                    type="button"
+                    class="we1-more we1-focus font-mono text-[13px] tracking-[-0.02em] uppercase inline-flex items-center gap-[9px] cursor-pointer"
+                    data-open={i}
+                  >
+                    <span
+                      class="we1-more-glyph"
+                      aria-hidden="true"
+                      style={`--gm: ${shape.d.mask}; --gar: ${shape.d.ar.toFixed(4)};`}
+                    />
+                    Learn more
+                  </button>
+                </ProjectLinks>
               </div>
-            </figure>
-          </div>
-        </article>
-      </>
-      );
+
+              <figure class="we1-fig relative m-0">
+                <span
+                  class="we1-no font-display absolute select-none"
+                  aria-hidden="true"
+                >
+                  No.&thinsp;{i + 1}
+                </span>
+                <div
+                  class="we1-arch-wrap relative mx-auto"
+                  style={`--ar-d: ${shape.d.ar.toFixed(4)}; --ar-m: ${shape.m.ar.toFixed(4)}; --mask-d: ${shape.d.mask}; --mask-m: ${shape.m.mask};`}
+                >
+                  <div
+                    class="we1-rings we1-rings-d absolute"
+                    aria-hidden="true"
+                  >
+                    {shape.d.rings.map((b) => (
+                      <span
+                        class="we1-ringp absolute"
+                        style={`--x: ${b.x}; --y: ${b.y}; --w: ${b.w}; --h: ${b.h}; --rr: ${b.r}; --rot: ${b.rot}deg;`}
+                      />
+                    ))}
+                  </div>
+                  <div
+                    class="we1-rings we1-rings-m absolute"
+                    aria-hidden="true"
+                  >
+                    {shape.m.rings.map((b) => (
+                      <span
+                        class="we1-ringp absolute"
+                        style={`--x: ${b.x}; --y: ${b.y}; --w: ${b.w}; --h: ${b.h}; --rr: ${b.r}; --rot: ${b.rot}deg;`}
+                      />
+                    ))}
+                  </div>
+                  <span class="we1-shade absolute" aria-hidden="true" />
+                  <button
+                    type="button"
+                    class="we1-door block w-full cursor-pointer"
+                    data-open={i}
+                    aria-label={`Read the full story — ${project.title}`}
+                  >
+                    <div class="we1-arch relative overflow-hidden">
+                      <div
+                        class="we1-view absolute"
+                        data-view
+                        aria-hidden="true"
+                      >
+                        <ProjectGallery gallery={project.gallery} decorative />
+                      </div>
+                    </div>
+                  </button>
+                  {project.featured && (
+                    <span class="we1-stamp absolute font-mono text-[11px] leading-none tracking-[-0.01em] uppercase">
+                      Editor&rsquo;s pick
+                    </span>
+                  )}
+                </div>
+              </figure>
+            </div>
+          </article>
+        </>
+      )
     })
   }
 
@@ -170,7 +216,13 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-3 sm:px-6">
           <ProjectGallery gallery={project.gallery} leadOnly />
           <div class="we1-story">
-            <EditionLine index={project.index} edition={project.edition} suffix="the full story" data-rise style="--ri: 0;" />
+            <EditionLine
+              index={project.index}
+              edition={project.edition}
+              suffix="the full story"
+              data-rise
+              style="--ri: 0;"
+            />
             <h3
               id={`we1-spread-title-${i}`}
               class="font-display text-ink leading-[0.96] tracking-[-0.03em] mt-6 text-[clamp(3rem,6.5vw,5.25rem)]"
@@ -179,21 +231,37 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             >
               {project.title}
             </h3>
-            <p class="font-display text-[19px] leading-[1.55] tracking-[-0.01em] text-ink/75 max-w-[52ch] mt-8" data-rise style="--ri: 2;">
+            <p
+              class="font-display text-[19px] leading-[1.55] tracking-[-0.01em] text-ink/75 max-w-[52ch] mt-8"
+              data-rise
+              style="--ri: 2;"
+            >
               {project.description}
             </p>
             <div class="mt-9 space-y-6 max-w-[58ch]">
               {project.story.map((para, j) => (
-                <p class="font-display text-[16px] leading-[1.75] text-ink/65" data-rise style={`--ri: ${3 + j};`}>
+                <p
+                  class="font-display text-[16px] leading-[1.75] text-ink/65"
+                  data-rise
+                  style={`--ri: ${3 + j};`}
+                >
                   {para}
                 </p>
               ))}
             </div>
-            <dl class="we1-details grid grid-cols-3 gap-6 mt-12 max-w-[52ch]" data-rise style={`--ri: ${3 + project.story.length};`}>
+            <dl
+              class="we1-details grid grid-cols-3 gap-6 mt-12 max-w-[52ch]"
+              data-rise
+              style={`--ri: ${3 + project.story.length};`}
+            >
               {project.details.map((d) => (
                 <div>
-                  <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40">{d.label}</dt>
-                  <dd class="font-display text-[15px] leading-[1.5] text-ink/80 mt-2.5">{d.value}</dd>
+                  <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40">
+                    {d.label}
+                  </dt>
+                  <dd class="font-display text-[15px] leading-[1.5] text-ink/80 mt-2.5">
+                    {d.value}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -259,12 +327,20 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(46% 62% at 74% 50%, var(--wash), transparent 72%);
+    background: radial-gradient(
+      46% 62% at 74% 50%,
+      var(--wash),
+      transparent 72%
+    );
     opacity: var(--in);
   }
 
   .we1-flip::before {
-    background: radial-gradient(46% 62% at 26% 50%, var(--wash), transparent 72%);
+    background: radial-gradient(
+      46% 62% at 26% 50%,
+      var(--wash),
+      transparent 72%
+    );
   }
 
   /* Column order: copy under figure on mobile, sides swapping per edition on
@@ -300,6 +376,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   }
 
   .we1-arch-wrap {
+    /* The halo outlines size themselves off this box in cqw (see .we1-ringp);
+       inline-size, not size, so the arch still sets the block axis */
+    container-type: inline-size;
     max-width: 440px;
     transform: translateY(calc((1 - var(--in)) * 70px));
     opacity: calc(0.2 + var(--in) * 0.8);
@@ -334,41 +413,56 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     background: var(--paper);
     -webkit-mask: var(--mask-d) center / 100% 100% no-repeat;
     mask: var(--mask-d) center / 100% 100% no-repeat;
-    filter: drop-shadow(0 22px 24px color-mix(in srgb, var(--color-ink) 28%, transparent));
+    filter: drop-shadow(
+      0 22px 24px color-mix(in srgb, var(--color-ink) 28%, transparent)
+    );
     transition: filter 0.55s var(--ease-settle);
     pointer-events: none;
   }
 
-  /* Halo rings: the figure's own outline scaled outward, one svg per
-     breakpoint variant. overflow: visible lets the rings paint past the
-     window's box; non-scaling-stroke keeps them hairlines at any size. */
+  /* Halo outlines, one layer per breakpoint variant. The layer carries the
+     figure-wide entry motion; each outline inside it is its own element. */
   .we1-rings {
+    /* Daylight between the window's edge and its outline, on every side.
+       The hover state below just raises it — see .we1-ringp. */
+    --ring-gap: 6px;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
     pointer-events: none;
-  }
-
-  .we1-rings path {
-    fill: none;
-    stroke: var(--acc);
-    transform-box: fill-box;
+    opacity: var(--in);
+    transform: scale(calc(0.965 + var(--in) * 0.035));
     transform-origin: center;
   }
 
-  .we1-ringp {
-    opacity: calc(var(--in) * 0.55);
-    transform: scale(calc(0.965 + var(--in) * 0.035));
-  }
+  /* One element per sub-shape, sized to that sub exactly — the visible ring
+     is its outline, held --ring-gap off the box on all four sides.
+     outline-offset is doing real work here: it insets by a flat length and
+     grows the corner radius to match, so it is a true offset of the shape at
+     any size, and raising it on hover widens every gap by the same number of
+     pixels. A transform scale can't do that — a single factor moves a wide
+     edge further than a narrow one, and per-axis factors would have to be
+     1 + 2 * gap / size, which mixes cqw with px and so can't be expressed in
+     CSS (calc can't divide a length by a length) and would change with the
+     plate's rendered width besides.
 
-  /* Second ring, hover only — glows outward when the door is "unlatched" */
-  .we1-ringp2 {
-    opacity: 0;
-    transform: scale(0.97);
+     cqw reads off .we1-arch-wrap, whose aspect is locked to the variant's, so
+     one unit of shape geometry is 1cqw down both axes. Circles arrive as
+     squares and the half-width border-radius rounds them back off. */
+  .we1-ringp {
+    left: calc(var(--x) * 1cqw);
+    top: calc(var(--y) * 1cqw);
+    width: calc(var(--w) * 1cqw);
+    height: calc(var(--h) * 1cqw);
+    /* left/top place the sub's center; back up by half its box */
+    margin-left: calc(var(--w) * 1cqw / -2);
+    margin-top: calc(var(--h) * 1cqw / -2);
+    border-radius: calc(var(--rr) * 1cqw);
+    outline: 1px solid var(--acc);
+    outline-offset: var(--ring-gap);
+    opacity: var(--ro, 0.55);
+    transform: rotate(var(--rot));
     transition:
       opacity 0.55s var(--ease-settle),
-      transform 0.55s var(--ease-settle);
+      outline-offset 0.55s var(--ease-settle);
   }
 
   .we1-rings-m {
@@ -435,7 +529,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(85% 55% at 50% 104%, color-mix(in srgb, var(--acc) 32%, transparent), transparent 72%);
+    background: radial-gradient(
+      85% 55% at 50% 104%,
+      color-mix(in srgb, var(--acc) 32%, transparent),
+      transparent 72%
+    );
     opacity: 0;
     transition: opacity 0.55s var(--ease-settle);
   }
@@ -457,7 +555,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     & .we1-shade {
       filter: drop-shadow(
         0 30px 30px
-          color-mix(in srgb, var(--acc) 34%, color-mix(in srgb, var(--color-ink) 45%, transparent))
+          color-mix(
+            in srgb,
+            var(--acc) 34%,
+            color-mix(in srgb, var(--color-ink) 45%, transparent)
+          )
       );
     }
 
@@ -465,9 +567,10 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       opacity: 1;
     }
 
-    & .we1-ringp2 {
-      opacity: 0.85;
-      transform: scale(1);
+    /* Every gap widens by the same 3px, on every edge of every sub-shape */
+    & .we1-ringp {
+      --ro: 0.85;
+      --ring-gap: 16px;
     }
 
     & .we1-more-glyph {
@@ -549,7 +652,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     inset: 0;
     z-index: 45;
     background:
-      radial-gradient(44% 36% at var(--wx, 78%) 6%, var(--pwash, transparent), transparent 70%),
+      radial-gradient(
+        44% 36% at var(--wx, 78%) 6%,
+        var(--pwash, transparent),
+        transparent 70%
+      ),
       var(--ppaper, var(--color-bone));
     transition: opacity 0.205s ease;
   }
@@ -791,7 +898,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     }
 
     .we1-shade,
-    .we1-ringp2,
+    .we1-ringp,
     .we1-arch::after,
     .we1-spread [data-rise] {
       transition: none !important;
@@ -814,35 +921,44 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     cubicBezier,
     type ShapeId,
     type Sub,
-  } from "../lib/workShapes";
+  } from "../lib/workShapes"
 
   {
-    const section = document.querySelector<HTMLElement>(".we1");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const section = document.querySelector<HTMLElement>(".we1")
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
 
     if (section) {
-      const spreads = Array.from(section.querySelectorAll<HTMLElement>("[data-spread]"));
-      const desktop = window.matchMedia("(min-width: 1024px)");
+      const spreads = Array.from(
+        section.querySelectorAll<HTMLElement>("[data-spread]"),
+      )
+      const desktop = window.matchMedia("(min-width: 1024px)")
 
-      const spreadFor = (i: number) => spreads.find((s) => s.dataset.spread === String(i));
+      const spreadFor = (i: number) =>
+        spreads.find((s) => s.dataset.spread === String(i))
       // The full gallery column — the mobile hero also wears .we1-gallery, skip it
-      const galleryFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-gallery:not(.we1-ghero)");
-      const heroFor = (spread: HTMLElement) => spread.querySelector<HTMLElement>(".we1-ghero");
+      const galleryFor = (spread: HTMLElement) =>
+        spread.querySelector<HTMLElement>(".we1-gallery:not(.we1-ghero)")
+      const heroFor = (spread: HTMLElement) =>
+        spread.querySelector<HTMLElement>(".we1-ghero")
       // Both scroll containers: the spread itself (gallery) and the sticky
       // story column, which scrolls independently on desktop
       const resetScroll = (spread: HTMLElement) => {
-        spread.scrollTop = 0;
-        const story = spread.querySelector<HTMLElement>(".we1-story");
-        if (story) story.scrollTop = 0;
-      };
+        spread.scrollTop = 0
+        const story = spread.querySelector<HTMLElement>(".we1-story")
+        if (story) story.scrollTop = 0
+      }
 
-      const windows = Array.from(section.querySelectorAll<HTMLElement>("[data-plate]")).map((plate) => ({
+      const windows = Array.from(
+        section.querySelectorAll<HTMLElement>("[data-plate]"),
+      ).map((plate) => ({
         plate,
         i: Number(plate.dataset.plate),
         arch: plate.querySelector<HTMLElement>(".we1-arch"),
         view: plate.querySelector<HTMLElement>("[data-view]"),
         replica: plate.querySelector<HTMLElement>("[data-view] .we1-gallery"),
-      }));
+      }))
 
       // ── The window: each arch looks through at its spread's gallery ──
       // The spread is a fixed overlay, so its gallery's rect at scrollTop 0 is
@@ -850,233 +966,254 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // that rect (on measure), and the viewport-sized view around it is
       // translated by minus the arch's own viewport position every frame —
       // pinning the scene to the viewport while the arch sweeps over it.
-      type GalRect = { left: number; top: number; width: number };
+      type GalRect = { left: number; top: number; width: number }
       // undefined = stale, retry when visible; null = windows off (mobile)
-      const galRects: (GalRect | null | undefined)[] = [];
+      const galRects: (GalRect | null | undefined)[] = []
 
       // Run fn with the spread laid out (but invisible) so rects are measurable
       const measured = <T,>(spread: HTMLElement, fn: () => T): T => {
-        const wasHidden = spread.hidden;
+        const wasHidden = spread.hidden
         if (wasHidden) {
-          spread.style.visibility = "hidden";
-          spread.hidden = false;
+          spread.style.visibility = "hidden"
+          spread.hidden = false
         }
-        const out = fn();
+        const out = fn()
         if (wasHidden) {
-          spread.hidden = true;
-          spread.style.visibility = "";
+          spread.hidden = true
+          spread.style.visibility = ""
         }
-        return out;
-      };
+        return out
+      }
 
       // An element's rect at scrollTop 0 — the spread is a fixed overlay, so
       // these are landing coordinates in viewport space. Zero width means we
       // measured before layout settled — retry later.
-      const landingRect = (spread: HTMLElement, el: HTMLElement | null | undefined): GalRect | undefined => {
-        if (!el) return undefined;
-        const r = el.getBoundingClientRect();
-        const rect = { left: r.left, top: r.top + spread.scrollTop, width: r.width };
-        return rect.width > 0 ? rect : undefined;
-      };
+      const landingRect = (
+        spread: HTMLElement,
+        el: HTMLElement | null | undefined,
+      ): GalRect | undefined => {
+        if (!el) return undefined
+        const r = el.getBoundingClientRect()
+        const rect = {
+          left: r.left,
+          top: r.top + spread.scrollTop,
+          width: r.width,
+        }
+        return rect.width > 0 ? rect : undefined
+      }
 
       const galRectOf = (spread: HTMLElement): GalRect | undefined =>
-        measured(spread, () => landingRect(spread, galleryFor(spread)));
+        measured(spread, () => landingRect(spread, galleryFor(spread)))
 
       // Mobile door: the hero plate's image frame — where the flight lands.
       // Only left/top/width matter; height follows the image on both copies.
       const heroFrameOf = (spread: HTMLElement): GalRect | undefined =>
-        measured(spread, () => landingRect(spread, heroFor(spread)?.querySelector<HTMLElement>(".we1-gframe")));
+        measured(spread, () =>
+          landingRect(
+            spread,
+            heroFor(spread)?.querySelector<HTMLElement>(".we1-gframe"),
+          ),
+        )
 
       // ...and the same plate's frame as rendered inside the arch — where the
       // flight starts (getBoundingClientRect folds in the drift transform)
       const replicaFrameFor = (i: number) =>
-        section.querySelector<HTMLElement>(`[data-plate="${i}"] [data-view] .we1-gfig-lead .we1-gframe`);
+        section.querySelector<HTMLElement>(
+          `[data-plate="${i}"] [data-view] .we1-gfig-lead .we1-gframe`,
+        )
 
       const measureAll = () => {
         for (const w of windows) {
-          const spread = spreadFor(w.i);
-          galRects[w.i] = desktop.matches ? (spread && galRectOf(spread)) : null;
-          if (!w.view || !w.replica) continue;
-          const g = galRects[w.i];
+          const spread = spreadFor(w.i)
+          galRects[w.i] = desktop.matches ? spread && galRectOf(spread) : null
+          if (!w.view || !w.replica) continue
+          const g = galRects[w.i]
           if (g) {
-            w.replica.style.left = `${g.left}px`;
-            w.replica.style.top = `${g.top}px`;
-            w.replica.style.width = `${g.width}px`;
+            w.replica.style.left = `${g.left}px`
+            w.replica.style.top = `${g.top}px`
+            w.replica.style.width = `${g.width}px`
           } else {
-            w.replica.style.left = "";
-            w.replica.style.top = "";
-            w.replica.style.width = "";
-            w.view.style.transform = "";
+            w.replica.style.left = ""
+            w.replica.style.top = ""
+            w.replica.style.width = ""
+            w.view.style.transform = ""
           }
         }
-      };
+      }
 
       if (!reducedMotion) {
-        section.classList.add("we1-js");
-        let ticking = false;
-        let measureQueued = false;
+        section.classList.add("we1-js")
+        let ticking = false
+        let measureQueued = false
 
         const remeasureSoon = () => {
-          if (measureQueued) return;
-          measureQueued = true;
+          if (measureQueued) return
+          measureQueued = true
           requestAnimationFrame(() => {
-            measureQueued = false;
-            measureAll();
-            update();
-          });
-        };
+            measureQueued = false
+            measureAll()
+            update()
+          })
+        }
 
-        let lastUpdateY = -1;
+        let lastUpdateY = -1
 
         function update() {
-          ticking = false;
-          const vh = window.innerHeight;
-          lastUpdateY = window.scrollY;
+          ticking = false
+          const vh = window.innerHeight
+          lastUpdateY = window.scrollY
 
           // Batched into read → write → read → write phases across all plates:
           // interleaving them per plate would force a fresh style/layout pass
           // for every read after a write.
-          const plateRects = windows.map((w) => w.plate.getBoundingClientRect());
+          const plateRects = windows.map((w) => w.plate.getBoundingClientRect())
 
           windows.forEach((w, k) => {
-            const rect = plateRects[k];
+            const rect = plateRects[k]
             // Not laid out (display: none) — nothing to drive
-            if (!rect.height) return;
-            const raw = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)));
-            const eased = raw * raw * (3 - 2 * raw);
-            const par = Math.min(1, Math.max(0, (vh - rect.top) / (vh + rect.height)));
-            w.plate.style.setProperty("--in", eased.toFixed(3));
-            w.plate.style.setProperty("--par", par.toFixed(3));
-          });
+            if (!rect.height) return
+            const raw = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)))
+            const eased = raw * raw * (3 - 2 * raw)
+            const par = Math.min(
+              1,
+              Math.max(0, (vh - rect.top) / (vh + rect.height)),
+            )
+            w.plate.style.setProperty("--in", eased.toFixed(3))
+            w.plate.style.setProperty("--par", par.toFixed(3))
+          })
 
           // Read after --in lands so each arch rect already carries this
           // frame's entry transform — the scene must not trail the arch
           const archRects = windows.map((w, k) => {
-            if (!plateRects[k].height || !w.view || !w.arch) return null;
-            const g = galRects[w.i];
+            if (!plateRects[k].height || !w.view || !w.arch) return null
+            const g = galRects[w.i]
             if (g === undefined) {
               // Became measurable after an earlier stale measurement
-              if (desktop.matches) remeasureSoon();
-              return null;
+              if (desktop.matches) remeasureSoon()
+              return null
             }
-            return g ? w.arch.getBoundingClientRect() : null;
-          });
+            return g ? w.arch.getBoundingClientRect() : null
+          })
 
           windows.forEach((w, k) => {
-            const a = archRects[k];
-            if (!a || !w.view) return;
-            const t = `translate(${(-a.left).toFixed(2)}px, ${(-a.top).toFixed(2)}px)`;
-            if (w.view.style.transform !== t) w.view.style.transform = t;
-          });
+            const a = archRects[k]
+            if (!a || !w.view) return
+            const t = `translate(${(-a.left).toFixed(2)}px, ${(-a.top).toFixed(2)}px)`
+            if (w.view.style.transform !== t) w.view.style.transform = t
+          })
         }
 
         // The smooth-scroll engine moves the page inside its own rAF tick; a
         // plain scroll listener repaints one frame behind it. This hook runs
         // synchronously after each tick's scrollTo — same frame, no lag. The
         // subscription is page-lifetime, so the unsubscribe is discarded.
-        const hook = () => !!(window as any).__onSmoothScrollTick?.(update);
-        let tickAttached = hook();
+        const hook = () => !!(window as any).__onSmoothScrollTick?.(update)
+        let tickAttached = hook()
 
         const onScroll = () => {
-          if (!tickAttached) tickAttached = hook();
+          if (!tickAttached) tickAttached = hook()
           // The engine's own scrollTo echoes back here as a scroll event one
           // frame later; the tick hook already ran update for this position —
           // skip the echo instead of running the whole pass twice per frame.
-          if (window.scrollY === lastUpdateY) return;
+          if (window.scrollY === lastUpdateY) return
           if (!ticking) {
-            ticking = true;
-            requestAnimationFrame(update);
+            ticking = true
+            requestAnimationFrame(update)
           }
-        };
+        }
 
-        let resizeRaf = 0;
+        let resizeRaf = 0
         const onResize = () => {
-          cancelAnimationFrame(resizeRaf);
+          cancelAnimationFrame(resizeRaf)
           resizeRaf = requestAnimationFrame(() => {
-            measureAll();
-            update();
-          });
-        };
+            measureAll()
+            update()
+          })
+        }
 
-        window.addEventListener("scroll", onScroll, { passive: true });
-        window.addEventListener("resize", onResize, { passive: true });
-        measureAll();
-        update();
+        window.addEventListener("scroll", onScroll, { passive: true })
+        window.addEventListener("resize", onResize, { passive: true })
+        measureAll()
+        update()
       }
 
       // ── Walk-through-the-door open/close ──
-      const portal = section.querySelector<HTMLElement>("[data-portal]");
-      const portalCol = portal?.querySelector<HTMLElement>("[data-portal-col]");
+      const portal = section.querySelector<HTMLElement>("[data-portal]")
+      const portalCol = portal?.querySelector<HTMLElement>("[data-portal-col]")
 
-      const OPEN_MS = 700;
-      const SWAP_MS = 205;
+      const OPEN_MS = 700
+      const SWAP_MS = 205
       // Close choreography, scaled to the door shrink (OPEN_MS): content
       // fades over the first 60%; a scrolled gallery's images fade back in
       // starting at 80%, over 30%. Keep the CSS durations in sync
       // (.we1-spread-out, .we1-portal-col-in).
-      const CLOSE_FADE_MS = Math.round(OPEN_MS * 0.6);
-      const COL_IN_AT_MS = Math.round(OPEN_MS * 0.8);
-      const COL_IN_MS = Math.round(OPEN_MS * 0.3);
+      const CLOSE_FADE_MS = Math.round(OPEN_MS * 0.6)
+      const COL_IN_AT_MS = Math.round(OPEN_MS * 0.8)
+      const COL_IN_MS = Math.round(OPEN_MS * 0.3)
 
-      let openIndex = -1;
-      let busy = false;
-      let lastTrigger: HTMLElement | null = null;
-      let detachSpreadScroll: (() => void) | null = null;
-      const timers = new Set<ReturnType<typeof setTimeout>>();
+      let openIndex = -1
+      let busy = false
+      let lastTrigger: HTMLElement | null = null
+      let detachSpreadScroll: (() => void) | null = null
+      const timers = new Set<ReturnType<typeof setTimeout>>()
 
       const attachScroll = (spread: HTMLElement) => {
-        detachSpreadScroll?.();
-        detachSpreadScroll = (window as any).__attachSmoothScroll?.(spread) ?? null;
-      };
+        detachSpreadScroll?.()
+        detachSpreadScroll =
+          (window as any).__attachSmoothScroll?.(spread) ?? null
+      }
 
       const detachScroll = () => {
-        detachSpreadScroll?.();
-        detachSpreadScroll = null;
-      };
+        detachSpreadScroll?.()
+        detachSpreadScroll = null
+      }
 
       const later = (fn: () => void, ms: number) => {
         const id = setTimeout(() => {
-          timers.delete(id);
-          fn();
-        }, ms);
-        timers.add(id);
-      };
+          timers.delete(id)
+          fn()
+        }, ms)
+        timers.add(id)
+      }
 
       const clearTimers = () => {
-        for (const id of timers) clearTimeout(id);
-        timers.clear();
-      };
+        for (const id of timers) clearTimeout(id)
+        timers.clear()
+      }
 
       const lock = (on: boolean) => {
-        const html = document.documentElement;
+        const html = document.documentElement
         if (on) {
           // Killing the scrollbar widens the viewport and shifts the centered
           // layout under the fixed overlay — which is why the closing door
           // used to land a few pixels off its window and snap on unlock.
           // Reserve the gutter so the page never moves.
-          const gutter = window.innerWidth - html.clientWidth;
-          html.style.overflow = "hidden";
-          html.style.paddingRight = gutter > 0 ? `${gutter}px` : "";
+          const gutter = window.innerWidth - html.clientWidth
+          html.style.overflow = "hidden"
+          html.style.paddingRight = gutter > 0 ? `${gutter}px` : ""
         } else {
-          html.style.overflow = "";
-          html.style.paddingRight = "";
+          html.style.overflow = ""
+          html.style.paddingRight = ""
         }
         // The smooth-scroll engine drives window.scrollTo itself, so it must be
         // frozen alongside overflow (see smooth-scroll.ts hard lock)
-        (window as any).__smoothScrollLock?.(on);
-      };
+        ;(window as any).__smoothScrollLock?.(on)
+      }
 
-      const archFor = (i: number) => section.querySelector<HTMLElement>(`[data-plate="${i}"] .we1-arch`);
+      const archFor = (i: number) =>
+        section.querySelector<HTMLElement>(`[data-plate="${i}"] .we1-arch`)
 
       const shapeOf = (i: number): ShapeId =>
-        (section.querySelector<HTMLElement>(`[data-plate="${i}"]`)?.dataset.shape ?? "diamond") as ShapeId;
+        (section.querySelector<HTMLElement>(`[data-plate="${i}"]`)?.dataset
+          .shape ?? "diamond") as ShapeId
 
       // The window's figure seated at its live on-screen rect, in viewport
       // coordinates — the closed end of the door animation
       const figureAt = (i: number, rect: DOMRect): Sub[] => {
-        const variant = SHAPES[shapeOf(i)][desktop.matches ? "desktop" : "mobile"];
-        return subsInBox(variant, rect.width, rect.height, rect.left, rect.top);
-      };
+        const variant =
+          SHAPES[shapeOf(i)][desktop.matches ? "desktop" : "mobile"]
+        return subsInBox(variant, rect.width, rect.height, rect.left, rect.top)
+      }
 
       // ── The door driver ──
       // The clip is written inline every frame as a path() — the figures are
@@ -1084,64 +1221,68 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // frame set before the portal is ever displayed) also retires the two
       // old failure modes: Chrome missing the display-flip transition and
       // snapping, and flashes of the unclipped rectangle.
-      const doorEase = cubicBezier(0.77, 0, 0.175, 1);
-      let doorRaf = 0;
+      const doorEase = cubicBezier(0.77, 0, 0.175, 1)
+      let doorRaf = 0
 
       const stopDoor = () => {
-        if (doorRaf) cancelAnimationFrame(doorRaf);
-        doorRaf = 0;
-      };
+        if (doorRaf) cancelAnimationFrame(doorRaf)
+        doorRaf = 0
+      }
 
       const setClip = (subs: Sub[]) => {
-        if (portal) portal.style.clipPath = `path("${pathOf(subs)}")`;
-      };
+        if (portal) portal.style.clipPath = `path("${pathOf(subs)}")`
+      }
 
       // Mobile flight state: the transform that lays the column's plate over
       // the frame seen inside the window ({0,0,1} = seated at its landing rect)
-      type FlyState = { x: number; y: number; s: number };
-      const FLY_HOME: FlyState = { x: 0, y: 0, s: 1 };
+      type FlyState = { x: number; y: number; s: number }
+      const FLY_HOME: FlyState = { x: 0, y: 0, s: 1 }
 
       const flyState = (from: DOMRect, to: GalRect): FlyState => ({
         x: from.left - to.left,
         y: from.top - to.top,
         s: from.width / to.width,
-      });
+      })
 
       const flyCss = (f: FlyState) =>
         f.x === 0 && f.y === 0 && f.s === 1
           ? ""
-          : `translate(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px) scale(${f.s.toFixed(4)})`;
+          : `translate(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px) scale(${f.s.toFixed(4)})`
 
-      const animateDoor = (from: Sub[], to: Sub[], fly: { from: FlyState; to: FlyState } | null) => {
-        stopDoor();
+      const animateDoor = (
+        from: Sub[],
+        to: Sub[],
+        fly: { from: FlyState; to: FlyState } | null,
+      ) => {
+        stopDoor()
         // Paint the closed end synchronously so the portal never shows a frame
         // without its clip
-        setClip(from);
-        if (fly && portalCol) portalCol.style.transform = flyCss(fly.from);
-        const t0 = performance.now();
+        setClip(from)
+        if (fly && portalCol) portalCol.style.transform = flyCss(fly.from)
+        const t0 = performance.now()
         const frame = (now: number) => {
-          doorRaf = 0;
-          const p = Math.min(1, (now - t0) / OPEN_MS);
-          const e = doorEase(p);
-          setClip(lerpSubs(from, to, e));
+          doorRaf = 0
+          const p = Math.min(1, (now - t0) / OPEN_MS)
+          const e = doorEase(p)
+          setClip(lerpSubs(from, to, e))
           if (fly && portalCol) {
             portalCol.style.transform = flyCss({
               x: fly.from.x + (fly.to.x - fly.from.x) * e,
               y: fly.from.y + (fly.to.y - fly.from.y) * e,
               s: fly.from.s + (fly.to.s - fly.from.s) * e,
-            });
+            })
           }
-          if (p < 1) doorRaf = requestAnimationFrame(frame);
-        };
-        doorRaf = requestAnimationFrame(frame);
-      };
+          if (p < 1) doorRaf = requestAnimationFrame(frame)
+        }
+        doorRaf = requestAnimationFrame(frame)
+      }
 
       const setColRect = (g: GalRect) => {
-        if (!portal) return;
-        portal.style.setProperty("--fx", `${g.left}px`);
-        portal.style.setProperty("--fy", `${g.top}px`);
-        portal.style.setProperty("--fw", `${g.width}px`);
-      };
+        if (!portal) return
+        portal.style.setProperty("--fx", `${g.left}px`)
+        portal.style.setProperty("--fy", `${g.top}px`)
+        portal.style.setProperty("--fw", `${g.width}px`)
+      }
 
       // The portal's cast: desktop clones the whole gallery column (the
       // stationary scene the arch window shows), mobile just the hero plate.
@@ -1152,211 +1293,260 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // are cached (the arch replica shows the same srcset), so eager + sync
       // decoding costs nothing and makes the first painted frame complete.
       const fillPortal = (source: HTMLElement | null) => {
-        if (!portalCol || !source) return;
-        const clone = source.cloneNode(true) as HTMLElement;
+        if (!portalCol || !source) return
+        const clone = source.cloneNode(true) as HTMLElement
         for (const img of clone.querySelectorAll("img")) {
-          img.loading = "eager";
-          img.decoding = "sync";
+          img.loading = "eager"
+          img.decoding = "sync"
         }
-        portalCol.replaceChildren(clone);
-      };
+        portalCol.replaceChildren(clone)
+      }
 
       const dressPortal = (spread: HTMLElement) => {
-        if (!portal) return;
-        const cs = getComputedStyle(spread);
-        portal.style.setProperty("--pwash", cs.getPropertyValue("--wash") || "transparent");
+        if (!portal) return
+        const cs = getComputedStyle(spread)
+        portal.style.setProperty(
+          "--pwash",
+          cs.getPropertyValue("--wash") || "transparent",
+        )
         // An empty custom property substitutes as nothing, not as the var()
         // fallback — so name the bone default outright
-        portal.style.setProperty("--ppaper", cs.getPropertyValue("--paper") || "var(--color-bone)");
-        portal.style.setProperty("--wx", spread.classList.contains("we1-spread-flip") ? "22%" : "78%");
-      };
+        portal.style.setProperty(
+          "--ppaper",
+          cs.getPropertyValue("--paper") || "var(--color-bone)",
+        )
+        portal.style.setProperty(
+          "--wx",
+          spread.classList.contains("we1-spread-flip") ? "22%" : "78%",
+        )
+      }
 
       const resetPortal = () => {
-        stopDoor();
+        stopDoor()
         portal?.classList.remove(
           "we1-portal-on",
           "we1-portal-fade",
           "we1-portal-col-hide",
           "we1-portal-col-in",
-        );
-        portal?.style.removeProperty("clip-path");
-        if (portalCol) portalCol.style.transform = "";
-      };
+        )
+        portal?.style.removeProperty("clip-path")
+        if (portalCol) portalCol.style.transform = ""
+      }
 
       const open = (i: number, trigger: HTMLElement) => {
-        if (busy || openIndex >= 0) return;
-        const spread = spreadFor(i);
-        const arch = archFor(i);
-        if (!spread || !arch) return;
+        if (busy || openIndex >= 0) return
+        const spread = spreadFor(i)
+        const arch = archFor(i)
+        if (!spread || !arch) return
 
         // Mobile door: no pinned scene to walk into — the plate itself steps
         // through instead. Measured up front so a failed measure can fall
         // back to the snap path below.
-        const mobile = !desktop.matches;
-        const archFrame = mobile ? replicaFrameFor(i)?.getBoundingClientRect() : undefined;
-        const heroFrame = mobile ? heroFrameOf(spread) : undefined;
-        const hero = mobile ? heroFor(spread) : null;
+        const mobile = !desktop.matches
+        const archFrame = mobile
+          ? replicaFrameFor(i)?.getBoundingClientRect()
+          : undefined
+        const heroFrame = mobile ? heroFrameOf(spread) : undefined
+        const hero = mobile ? heroFor(spread) : null
 
-        openIndex = i;
-        lastTrigger = trigger;
-        lock(true);
-        history.pushState({ we1: i }, "");
+        openIndex = i
+        lastTrigger = trigger
+        lock(true)
+        history.pushState({ we1: i }, "")
 
-        if (reducedMotion || !portal || !portalCol || (mobile && !(archFrame && heroFrame && hero))) {
-          spread.hidden = false;
-          resetScroll(spread);
-          spread.classList.add("is-in");
-          attachScroll(spread);
-          spread.focus({ preventScroll: true });
-          return;
+        if (
+          reducedMotion ||
+          !portal ||
+          !portalCol ||
+          (mobile && !(archFrame && heroFrame && hero))
+        ) {
+          spread.hidden = false
+          resetScroll(spread)
+          spread.classList.add("is-in")
+          attachScroll(spread)
+          spread.focus({ preventScroll: true })
+          return
         }
 
-        busy = true;
+        busy = true
 
         if (mobile) {
           // The hero clone is seated at its landing frame; the door driver
           // starts it transformed back over the window's plate and flies it
           // home as the mask opens
-          fillPortal(hero!);
-          dressPortal(spread);
-          setColRect(heroFrame!);
+          fillPortal(hero!)
+          dressPortal(spread)
+          setColRect(heroFrame!)
         } else {
           // The gallery's landing rect (measured with the spread laid out but
           // invisible) — the portal freezes the whole column there
-          const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
-          fillPortal(galleryFor(spread));
-          dressPortal(spread);
-          setColRect(g);
+          const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 }
+          fillPortal(galleryFor(spread))
+          dressPortal(spread)
+          setColRect(g)
         }
-        const closed = figureAt(i, arch.getBoundingClientRect());
+        const closed = figureAt(i, arch.getBoundingClientRect())
         animateDoor(
           closed,
-          expandTargets(shapeOf(i), closed, window.innerWidth, window.innerHeight),
-          mobile ? { from: flyState(archFrame!, heroFrame!), to: FLY_HOME } : null,
-        );
-        portal.classList.add("we1-portal-on");
+          expandTargets(
+            shapeOf(i),
+            closed,
+            window.innerWidth,
+            window.innerHeight,
+          ),
+          mobile
+            ? { from: flyState(archFrame!, heroFrame!), to: FLY_HOME }
+            : null,
+        )
+        portal.classList.add("we1-portal-on")
 
         later(() => {
-          spread.hidden = false;
-          resetScroll(spread);
-          attachScroll(spread);
+          spread.hidden = false
+          resetScroll(spread)
+          attachScroll(spread)
           requestAnimationFrame(() => {
-            requestAnimationFrame(() => spread.classList.add("is-in"));
-          });
-          portal.classList.add("we1-portal-fade");
+            requestAnimationFrame(() => spread.classList.add("is-in"))
+          })
+          portal.classList.add("we1-portal-fade")
           later(() => {
-            resetPortal();
-            busy = false;
-            spread.focus({ preventScroll: true });
-          }, SWAP_MS);
-        }, OPEN_MS);
-      };
+            resetPortal()
+            busy = false
+            spread.focus({ preventScroll: true })
+          }, SWAP_MS)
+        }, OPEN_MS)
+      }
 
       const close = () => {
-        if (openIndex < 0) return;
-        const i = openIndex;
-        openIndex = -1;
-        const spread = spreadFor(i);
-        const arch = archFor(i);
+        if (openIndex < 0) return
+        const i = openIndex
+        openIndex = -1
+        const spread = spreadFor(i)
+        const arch = archFor(i)
 
         const finish = () => {
-          detachScroll();
+          detachScroll()
           if (spread) {
-            spread.classList.remove("is-in", "we1-spread-close", "we1-spread-out", "we1-hero-off");
-            resetScroll(spread);
-            spread.hidden = true;
+            spread.classList.remove(
+              "is-in",
+              "we1-spread-close",
+              "we1-spread-out",
+              "we1-hero-off",
+            )
+            resetScroll(spread)
+            spread.hidden = true
           }
-          lastTrigger?.focus({ preventScroll: true });
-        };
-
-        // Mobile door: the reverse flight, measured up front like open
-        const mobile = !desktop.matches;
-        const canFly = mobile && !reducedMotion && !busy && !!spread;
-        const archFrame = canFly ? replicaFrameFor(i)?.getBoundingClientRect() : undefined;
-        const heroFrame = canFly && spread ? heroFrameOf(spread) : undefined;
-        const hero = canFly && spread ? heroFor(spread) : null;
-
-        // Mid-open interrupt or reduced motion: snap closed
-        if (reducedMotion || busy || !portal || !portalCol || !arch || !spread || (mobile && !(archFrame && heroFrame && hero))) {
-          clearTimers();
-          resetPortal();
-          busy = false;
-          finish();
-          lock(false);
-          return;
+          lastTrigger?.focus({ preventScroll: true })
         }
 
-        busy = true;
+        // Mobile door: the reverse flight, measured up front like open
+        const mobile = !desktop.matches
+        const canFly = mobile && !reducedMotion && !busy && !!spread
+        const archFrame = canFly
+          ? replicaFrameFor(i)?.getBoundingClientRect()
+          : undefined
+        const heroFrame = canFly && spread ? heroFrameOf(spread) : undefined
+        const hero = canFly && spread ? heroFor(spread) : null
+
+        // Mid-open interrupt or reduced motion: snap closed
+        if (
+          reducedMotion ||
+          busy ||
+          !portal ||
+          !portalCol ||
+          !arch ||
+          !spread ||
+          (mobile && !(archFrame && heroFrame && hero))
+        ) {
+          clearTimers()
+          resetPortal()
+          busy = false
+          finish()
+          lock(false)
+          return
+        }
+
+        busy = true
         // Portal scene is the scrollTop-0 state (what the shaped window
         // shows); landingRect compensates if the spread was scrolled. If the
         // content was scrolled, the portal's copy fades out with the spread
         // (its column starts hidden) and fades back in near the end of the
         // flight; if not, the identical copy keeps the images steady under
         // the fade.
-        const scrolled = spread.scrollTop > 1;
+        const scrolled = spread.scrollTop > 1
         if (mobile) {
-          fillPortal(hero!);
-          dressPortal(spread);
-          setColRect(heroFrame!);
+          fillPortal(hero!)
+          dressPortal(spread)
+          setColRect(heroFrame!)
         } else {
-          const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
-          fillPortal(galleryFor(spread));
-          dressPortal(spread);
-          setColRect(g);
+          const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 }
+          fillPortal(galleryFor(spread))
+          dressPortal(spread)
+          setColRect(g)
         }
         // The figure at the window's live rect is the landing state; the
         // final rAF frame paints exactly this, so the reveal underneath can't
         // be offset from it
-        const closed = figureAt(i, arch.getBoundingClientRect());
-        portal.classList.add("we1-portal-on");
-        portal.classList.toggle("we1-portal-col-hide", scrolled);
-        spread.classList.add("we1-spread-close");
+        const closed = figureAt(i, arch.getBoundingClientRect())
+        portal.classList.add("we1-portal-on")
+        portal.classList.toggle("we1-portal-col-hide", scrolled)
+        spread.classList.add("we1-spread-close")
         // Unscrolled mobile close: the flying clone takes over for the
         // spread's hero, whose own copy must vanish instantly beneath it
-        if (mobile) spread.classList.toggle("we1-hero-off", !scrolled);
+        if (mobile) spread.classList.toggle("we1-hero-off", !scrolled)
         // Same frame: the door starts shrinking and the content starts fading
         animateDoor(
-          expandTargets(shapeOf(i), closed, window.innerWidth, window.innerHeight),
+          expandTargets(
+            shapeOf(i),
+            closed,
+            window.innerWidth,
+            window.innerHeight,
+          ),
           closed,
-          mobile ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) } : null,
-        );
-        spread.classList.add("we1-spread-out");
+          mobile
+            ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) }
+            : null,
+        )
+        spread.classList.add("we1-spread-out")
 
-        later(finish, CLOSE_FADE_MS);
-        if (scrolled) later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS);
-        later(() => {
-          resetPortal();
-          lock(false);
-          busy = false;
-        }, scrolled ? COL_IN_AT_MS + COL_IN_MS : OPEN_MS);
-      };
+        later(finish, CLOSE_FADE_MS)
+        if (scrolled)
+          later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS)
+        later(
+          () => {
+            resetPortal()
+            lock(false)
+            busy = false
+          },
+          scrolled ? COL_IN_AT_MS + COL_IN_MS : OPEN_MS,
+        )
+      }
 
       const requestClose = () => {
-        if (openIndex < 0 || busy) return;
+        if (openIndex < 0 || busy) return
         if (history.state && history.state.we1 != null) {
-          history.back();
+          history.back()
         } else {
-          close();
+          close()
         }
-      };
+      }
 
       section.addEventListener("click", (e) => {
-        const target = e.target as HTMLElement;
-        const opener = target.closest<HTMLElement>("[data-open]");
+        const target = e.target as HTMLElement
+        const opener = target.closest<HTMLElement>("[data-open]")
         if (opener?.dataset.open != null) {
-          open(Number(opener.dataset.open), opener);
-          return;
+          open(Number(opener.dataset.open), opener)
+          return
         }
-        if (target.closest("[data-close]")) requestClose();
-      });
+        if (target.closest("[data-close]")) requestClose()
+      })
 
       window.addEventListener("popstate", () => {
-        if (openIndex >= 0) close();
-      });
+        if (openIndex >= 0) close()
+      })
 
       window.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") requestClose();
-      });
+        if (e.key === "Escape") requestClose()
+      })
     }
   }
 </script>
