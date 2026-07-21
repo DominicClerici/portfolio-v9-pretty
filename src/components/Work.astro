@@ -1182,9 +1182,26 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         timers.clear()
       }
 
+      // Where the page sat when the door opened. Every viewport-space rect
+      // the door animates between (arch, replica frame, landing rects)
+      // assumes the page behind the overlay is still exactly there.
+      let lockedY = 0
+      let prevScrollRestoration: History["scrollRestoration"] | null = null
+
       const lock = (on: boolean) => {
         const html = document.documentElement
         if (on) {
+          lockedY = window.scrollY
+          // history.back() (the close path) makes the browser restore the
+          // window scroll of the previous entry on its own async schedule.
+          // On desktop the wheel engine owns scroll so the saved position
+          // always matches; on mobile scrolling is native and the entry's
+          // saved position can be stale — the restore then yanks the page
+          // (and the arch with it) out from under the portal mid-door. The
+          // door owns the page position while open; restoration returns on
+          // unlock.
+          prevScrollRestoration = history.scrollRestoration
+          history.scrollRestoration = "manual"
           // Killing the scrollbar widens the viewport and shifts the centered
           // layout under the fixed overlay — which is why the closing door
           // used to land a few pixels off its window and snap on unlock.
@@ -1193,12 +1210,28 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           html.style.overflow = "hidden"
           html.style.paddingRight = gutter > 0 ? `${gutter}px` : ""
         } else {
+          repinPage()
           html.style.overflow = ""
           html.style.paddingRight = ""
+          if (prevScrollRestoration != null) {
+            history.scrollRestoration = prevScrollRestoration
+            prevScrollRestoration = null
+          }
         }
         // The smooth-scroll engine drives window.scrollTo itself, so it must be
         // frozen alongside overflow (see smooth-scroll.ts hard lock)
         ;(window as any).__smoothScrollLock?.(on)
+      }
+
+      // On mobile the lock is only overflow: hidden — native scrolling means
+      // the page behind the overlay can still move (URL-bar chrome, scroll
+      // restoration, overscroll quirks), unlike desktop where the frozen
+      // wheel engine pins it absolutely. If it drifted, the arch is no
+      // longer where the door's geometry says it is — the close would then
+      // animate toward an off-screen figure. Re-assert the locked position
+      // before trusting any measurement; a no-op when nothing moved.
+      const repinPage = () => {
+        if (window.scrollY !== lockedY) window.scrollTo(0, lockedY)
       }
 
       const archFor = (i: number) =>
@@ -1414,6 +1447,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // Scroll is already locked, so the rects measured above hold still
         // across the (usually sub-frame) wait for the clone's bitmaps
         whenPortalReady(() => {
+          repinPage()
           animateDoor(
             closed,
             expandTargets(
@@ -1466,6 +1500,13 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           }
           lastTrigger?.focus({ preventScroll: true })
         }
+
+        // If native mobile scrolling moved the locked page while the spread
+        // was open, put it back before measuring — the arch must be where
+        // it was when the door opened, or the close animates toward a
+        // figure that is no longer on screen. Invisible: the page is fully
+        // covered by the spread at this point.
+        repinPage()
 
         // Mobile door: the reverse flight, measured up front like open
         const mobile = !desktop.matches
@@ -1520,6 +1561,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // wait — the handoff (hero-off, spread-out, the portal itself) must
         // land in one frame, and only once the clone can actually paint
         whenPortalReady(() => {
+          // The browser's scroll restoration can land during the wait —
+          // re-pin so the page matches the geometry captured above
+          repinPage()
           portal.classList.add("we1-portal-on")
           portal.classList.toggle("we1-portal-col-hide", scrolled)
           spread.classList.add("we1-spread-close")
