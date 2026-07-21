@@ -543,38 +543,39 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
      it along with it and break the illusion; the invitation is all light:
      deeper shadow, inner glow, outer ring, and the Learn more glyph filling
      with ink. All four live here so the :has() trigger is written once.
-     :active covers touch, where hover never fires — the press itself unlatches. */
-  .we1-plate:has(
-    .we1-door:hover,
-    .we1-more:hover,
-    .we1-door:active,
-    .we1-more:active,
-    .we1-door:focus-visible,
-    .we1-more:focus-visible
-  ) {
-    & .we1-shade {
-      filter: drop-shadow(
-        0 30px 30px
-          color-mix(
-            in srgb,
-            var(--acc) 34%,
-            color-mix(in srgb, var(--color-ink) 45%, transparent)
-          )
-      );
-    }
+     Hover-capable pointers only: on touch a press goes straight through the
+     door, and a sticky :hover would leave the outlines flared after the tap. */
+  @media (hover: hover) {
+    .we1-plate:has(
+      .we1-door:hover,
+      .we1-more:hover,
+      .we1-door:focus-visible,
+      .we1-more:focus-visible
+    ) {
+      & .we1-shade {
+        filter: drop-shadow(
+          0 30px 30px
+            color-mix(
+              in srgb,
+              var(--acc) 34%,
+              color-mix(in srgb, var(--color-ink) 45%, transparent)
+            )
+        );
+      }
 
-    & .we1-arch::after {
-      opacity: 1;
-    }
+      & .we1-arch::after {
+        opacity: 1;
+      }
 
-    /* Every gap widens by the same 3px, on every edge of every sub-shape */
-    & .we1-ringp {
-      --ro: 0.85;
-      --ring-gap: 16px;
-    }
+      /* Every gap widens by the same 3px, on every edge of every sub-shape */
+      & .we1-ringp {
+        --ro: 0.85;
+        --ring-gap: 16px;
+      }
 
-    & .we1-more-glyph {
-      background: var(--acc);
+      & .we1-more-glyph {
+        background: var(--acc);
+      }
     }
   }
 
@@ -1289,9 +1290,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // A fresh clone's images have no decoded bitmap yet, and the gallery's
       // decoding="async"/loading="lazy" let the browser paint that first frame
       // without them — one blank frame over the copy already on screen, which
-      // is the flicker at the start of both the open and the close. The bytes
-      // are cached (the arch replica shows the same srcset), so eager + sync
-      // decoding costs nothing and makes the first painted frame complete.
+      // is the flicker at the start of both the open and the close. Eager +
+      // sync decoding starts the fetch at once, but hints alone can't make
+      // the first frame wait (the mobile hero sits in a hidden spread, so its
+      // images may never have been fetched at all) — whenPortalReady below is
+      // what actually holds the door until the bitmaps are paint-ready.
       const fillPortal = (source: HTMLElement | null) => {
         if (!portalCol || !source) return
         const clone = source.cloneNode(true) as HTMLElement
@@ -1321,8 +1324,30 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         )
       }
 
+      // Nothing may hand visibility to the portal — no class flips, no door
+      // frames — until every cloned image can paint. img.decode() settles
+      // once the bitmap is ready (fetching first if the source never loaded);
+      // the race cap keeps a broken image from wedging the door shut, and the
+      // generation counter drops the callback if an interrupt reset the
+      // portal while we waited, so a snap-close can't be overpainted by a
+      // stale open.
+      let doorGen = 0
+      const whenPortalReady = (fn: () => void) => {
+        const gen = ++doorGen
+        const imgs = portalCol
+          ? Array.from(portalCol.querySelectorAll("img"))
+          : []
+        Promise.race([
+          Promise.allSettled(imgs.map((img) => img.decode())),
+          new Promise((r) => setTimeout(r, 150)),
+        ]).then(() => {
+          if (gen === doorGen) fn()
+        })
+      }
+
       const resetPortal = () => {
         stopDoor()
+        doorGen++
         portal?.classList.remove(
           "we1-portal-on",
           "we1-portal-fade",
@@ -1386,34 +1411,38 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           setColRect(g)
         }
         const closed = figureAt(i, arch.getBoundingClientRect())
-        animateDoor(
-          closed,
-          expandTargets(
-            shapeOf(i),
+        // Scroll is already locked, so the rects measured above hold still
+        // across the (usually sub-frame) wait for the clone's bitmaps
+        whenPortalReady(() => {
+          animateDoor(
             closed,
-            window.innerWidth,
-            window.innerHeight,
-          ),
-          mobile
-            ? { from: flyState(archFrame!, heroFrame!), to: FLY_HOME }
-            : null,
-        )
-        portal.classList.add("we1-portal-on")
+            expandTargets(
+              shapeOf(i),
+              closed,
+              window.innerWidth,
+              window.innerHeight,
+            ),
+            mobile
+              ? { from: flyState(archFrame!, heroFrame!), to: FLY_HOME }
+              : null,
+          )
+          portal.classList.add("we1-portal-on")
 
-        later(() => {
-          spread.hidden = false
-          resetScroll(spread)
-          attachScroll(spread)
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => spread.classList.add("is-in"))
-          })
-          portal.classList.add("we1-portal-fade")
           later(() => {
-            resetPortal()
-            busy = false
-            spread.focus({ preventScroll: true })
-          }, SWAP_MS)
-        }, OPEN_MS)
+            spread.hidden = false
+            resetScroll(spread)
+            attachScroll(spread)
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => spread.classList.add("is-in"))
+            })
+            portal.classList.add("we1-portal-fade")
+            later(() => {
+              resetPortal()
+              busy = false
+              spread.focus({ preventScroll: true })
+            }, SWAP_MS)
+          }, OPEN_MS)
+        })
       }
 
       const close = () => {
@@ -1487,38 +1516,43 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // final rAF frame paints exactly this, so the reveal underneath can't
         // be offset from it
         const closed = figureAt(i, arch.getBoundingClientRect())
-        portal.classList.add("we1-portal-on")
-        portal.classList.toggle("we1-portal-col-hide", scrolled)
-        spread.classList.add("we1-spread-close")
-        // Unscrolled mobile close: the flying clone takes over for the
-        // spread's hero, whose own copy must vanish instantly beneath it
-        if (mobile) spread.classList.toggle("we1-hero-off", !scrolled)
-        // Same frame: the door starts shrinking and the content starts fading
-        animateDoor(
-          expandTargets(
-            shapeOf(i),
+        // The spread stays fully visible and interactive-looking across the
+        // wait — the handoff (hero-off, spread-out, the portal itself) must
+        // land in one frame, and only once the clone can actually paint
+        whenPortalReady(() => {
+          portal.classList.add("we1-portal-on")
+          portal.classList.toggle("we1-portal-col-hide", scrolled)
+          spread.classList.add("we1-spread-close")
+          // Unscrolled mobile close: the flying clone takes over for the
+          // spread's hero, whose own copy must vanish instantly beneath it
+          if (mobile) spread.classList.toggle("we1-hero-off", !scrolled)
+          // Same frame: the door starts shrinking and the content starts fading
+          animateDoor(
+            expandTargets(
+              shapeOf(i),
+              closed,
+              window.innerWidth,
+              window.innerHeight,
+            ),
             closed,
-            window.innerWidth,
-            window.innerHeight,
-          ),
-          closed,
-          mobile
-            ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) }
-            : null,
-        )
-        spread.classList.add("we1-spread-out")
+            mobile
+              ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) }
+              : null,
+          )
+          spread.classList.add("we1-spread-out")
 
-        later(finish, CLOSE_FADE_MS)
-        if (scrolled)
-          later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS)
-        later(
-          () => {
-            resetPortal()
-            lock(false)
-            busy = false
-          },
-          scrolled ? COL_IN_AT_MS + COL_IN_MS : OPEN_MS,
-        )
+          later(finish, CLOSE_FADE_MS)
+          if (scrolled)
+            later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS)
+          later(
+            () => {
+              resetPortal()
+              lock(false)
+              busy = false
+            },
+            scrolled ? COL_IN_AT_MS + COL_IN_MS : OPEN_MS,
+          )
+        })
       }
 
       const requestClose = () => {

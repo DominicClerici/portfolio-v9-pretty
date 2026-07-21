@@ -62,8 +62,8 @@ export const SHAPES: Record<ShapeId, Shape> = {
   diamond: {
     desktop: { h: 100, subs: [diamond(50, 50, 100)] },
     mobile: {
-      h: 47.5,
-      subs: [diamond(23.75, 23.75, 47.5), diamond(76.25, 23.75, 47.5)],
+      h: 48.5,
+      subs: [diamond(24.25, 24.25, 48.5), diamond(75.75, 24.25, 48.5)],
     },
   },
   circles: {
@@ -72,7 +72,7 @@ export const SHAPES: Record<ShapeId, Shape> = {
   },
   bars: {
     desktop: barStack(4, 119, 6, 7),
-    mobile: barStack(3, 50, 5, 5),
+    mobile: barStack(3, 70, 5, 5),
   },
 };
 
