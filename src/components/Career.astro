@@ -590,8 +590,6 @@ const initialIndex = stepMap[0]
       // tip (marker to marker) and the active entry (flips when the tip lands on
       // the next pill).
       let activeStep = -1
-      const travel = () =>
-        section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight)
 
       const render = (p: number) => {
         // pages: 0..N. Pages [0, N-1] step through the entries; the last page
@@ -658,11 +656,20 @@ const initialIndex = stepMap[0]
       const mobileMQ = window.matchMedia("(max-width: 1023px)")
       const heading = section.querySelector<HTMLElement>(".v1-heading")
       let headH = 0
-      const measureHead = () => {
-        if (!railH) return
-        const mobile = mobileMQ.matches
-        headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0
-        section.style.setProperty("--v1-head-h", `${headH}px`)
+      // Scroll-invariant (see the barrier note above), so it is measured here
+      // and read from cache in the scroll frame — offsetHeight in a scroll
+      // handler forces a synchronous layout on every frame, page-wide, and
+      // this section is 500svh.
+      let travelPx = 0
+      const measure = () => {
+        if (railH) {
+          const mobile = mobileMQ.matches
+          headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0
+          section.style.setProperty("--v1-head-h", `${headH}px`)
+        }
+        // Must follow the write above: --v1-head-h feeds .v1-pin's height, so
+        // reading the pin before it settles would measure the stale box.
+        travelPx = section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight)
       }
 
       let ticking = false
@@ -672,7 +679,7 @@ const initialIndex = stepMap[0]
         requestAnimationFrame(() => {
           ticking = false
           const rect = section.getBoundingClientRect()
-          const tv = travel()
+          const tv = travelPx
           // entryLead (px) is progress the smooth-scroll engine has advanced
           // ahead of the real scroll while braking into the lock, so the pin
           // scrubs *during* the entry deceleration instead of dwelling at zero.
@@ -694,19 +701,24 @@ const initialIndex = stepMap[0]
 
       window.addEventListener("scroll", onScroll, { passive: true })
       window.addEventListener("resize", () => {
-        measureHead()
+        measure()
         onScroll()
       })
-      measureHead()
+      measure()
       onScroll()
 
-      // The heading's wrapped height depends on font loading and the panel's
-      // own reflow, both of which land after this runs.
-      if (railH && "ResizeObserver" in window) {
-        new ResizeObserver(() => {
-          measureHead()
+      if ("ResizeObserver" in window) {
+        const ro = new ResizeObserver(() => {
+          measure()
           onScroll()
-        }).observe(railH.parentElement ?? railH)
+        })
+        // The heading's wrapped height depends on font loading and the panel's
+        // own reflow, both of which land after this runs.
+        if (railH) ro.observe(railH.parentElement ?? railH)
+        // travelPx is derived from these two boxes, so observing them directly
+        // is what keeps the cache honest between resize events.
+        ro.observe(section)
+        if (pin) ro.observe(pin)
       }
 
       // Clicking a tab / bar selects it and scrolls the page to that entry's slot
@@ -719,7 +731,7 @@ const initialIndex = stepMap[0]
           if (step < 0) return
           // Selection is driven by the scroll handler as the page eases to the
           // target, so the panels scrub through en route rather than flashing.
-          const tv = travel()
+          const tv = travelPx
           // step k is reached at pages = k, i.e. progress k/N (never in run-out).
           const targetP = N > 0 ? step / N : 0
           const y =

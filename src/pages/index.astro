@@ -12,6 +12,19 @@ import Footer from "../components/Footer.astro";
 ---
 
 <Layout>
+  {/* The hero sphere's texture sits three hops deep — the page must first
+      fetch and run PinnedCanvas, which statically imports glass-scene, which
+      only then sets matcap.src. Until it lands the sphere renders with a flat
+      placeholder. Preloading here starts the fetch off the HTML parse instead,
+      collapsing two round trips. It lives on the page rather than in Layout
+      because 404 has no canvas and would otherwise pay 21KB for nothing. */}
+  <link
+    slot="head"
+    rel="preload"
+    href="/glass-matcap.avif"
+    as="image"
+    type="image/avif"
+  />
   <Header />
   <main>
     <PinnedCanvas>

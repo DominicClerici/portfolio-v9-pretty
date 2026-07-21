@@ -460,12 +460,18 @@ const connect = [
       if (e.propertyName === "opacity" && echoVisible) typeText(echoState)
     })
 
+    // Reading documentElement.scrollHeight forces a full-document layout, so
+    // it is cached rather than re-read per scroll frame. It moves only when
+    // the page's height does, which the observer below is the signal for.
+    let docScrollH = document.documentElement.scrollHeight
+    function measureDocH() {
+      docScrollH = document.documentElement.scrollHeight
+    }
+
     let echoQueued = false
     function onEchoScroll() {
       echoQueued = false
-      const distanceFromBottom =
-        document.documentElement.scrollHeight -
-        (window.scrollY + window.innerHeight)
+      const distanceFromBottom = docScrollH - (window.scrollY + window.innerHeight)
       setEchoVisible(distanceFromBottom <= 6)
     }
     window.addEventListener(
@@ -482,14 +488,27 @@ const connect = [
 
     let resizeTimer: number | undefined
     new ResizeObserver(() => {
-      fitName()
       clearTimeout(resizeTimer)
       resizeTimer = window.setTimeout(() => {
+        // fitName writes a font size, then reads metrics back, then writes
+        // again — two forced layouts on the largest text node on the page.
+        // The footer is h-svh, so mobile URL-bar show/hide retriggers this
+        // observer mid-scroll; it belongs behind the same debounce as the
+        // canvas resize rather than running on every one of those ticks.
+        fitName()
         scene?.resize()
         onScrollFrame()
         onEchoScroll()
       }, 120)
     }).observe(footer)
+
+    // Page height moves with content well outside the footer — Work's spreads
+    // expand — so the echo's distance-from-bottom test is invalidated from the
+    // document box, not from the footer observer above.
+    new ResizeObserver(() => {
+      measureDocH()
+      onEchoScroll()
+    }).observe(document.documentElement)
 
     fitName()
     // Refit once the display face arrives — metrics differ from the fallback.

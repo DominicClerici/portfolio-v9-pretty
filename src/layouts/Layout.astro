@@ -35,6 +35,7 @@ const {
     <title>{title}</title>
     <link rel="preload" href="/fonts/aspekta-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/roboto-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+    <slot name="head" />
   </head>
   <body class="bg-n-950 font-display selection:bg-bio-lime selection:text-ink">
     <slot />
