@@ -72,6 +72,8 @@ import IconButton from "./IconButton.astro";
 </section>
 
 <script>
+  import { smoothstep } from "../lib/easing"
+
   // Fades each [data-hero-fade] element out as it nears the top of the
   // viewport, and back in as it returns — a pure function of live position,
   // so reversing scroll direction reverses the fade with no extra state.
@@ -92,10 +94,11 @@ import IconButton from "./IconButton.astro";
       for (const el of fadeEls) {
         const rect = el.getBoundingClientRect()
         const progress = (vh - rect.top) / vh
-        const opacity = Math.min(
+        const raw = Math.min(
           1,
-          Math.max(0, 1 - (progress - FADE_START) / (FADE_END - FADE_START)),
+          Math.max(0, (progress - FADE_START) / (FADE_END - FADE_START)),
         )
+        const opacity = 1 - smoothstep(raw)
         el.style.opacity = opacity.toFixed(3)
         el.style.pointerEvents = opacity < 0.05 ? "none" : ""
       }

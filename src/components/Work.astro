@@ -917,6 +917,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     type ShapeId,
     type Sub,
   } from "../lib/workShapes"
+  import { smoothstep } from "../lib/easing"
 
   {
     const section = document.querySelector<HTMLElement>(".we1")
@@ -1056,6 +1057,10 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         function update() {
           ticking = false
           const vh = window.innerHeight
+          // Fade distance at each edge — a plate eases in over the bottom
+          // 50% of the viewport, then eases out over the top 35% as it exits.
+          const enterSpan = vh * 0.5
+          const exitSpan = vh * 0.35
           lastUpdateY = window.scrollY
 
           // Batched into read → write → read → write phases across all plates:
@@ -1067,8 +1072,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             const rect = plateRects[k]
             // Not laid out (display: none) — nothing to drive
             if (!rect.height) return
-            const raw = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)))
-            const eased = raw * raw * (3 - 2 * raw)
+            // Entering: 0 at the bottom edge → 1 once settled enterSpan in.
+            // Exiting: measured from the top edge — 1 while settled → 0 as
+            // the plate's bottom clears the top, over exitSpan.
+            const enter = Math.min(1, Math.max(0, (vh - rect.top) / enterSpan))
+            const exit = Math.min(1, Math.max(0, rect.bottom / exitSpan))
+            const eased = smoothstep(Math.min(enter, exit))
             const par = Math.min(
               1,
               Math.max(0, (vh - rect.top) / (vh + rect.height)),
