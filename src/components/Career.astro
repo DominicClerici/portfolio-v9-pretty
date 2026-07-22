@@ -80,10 +80,11 @@ const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
 const orderedEntries = entries.map((entry, i) => ({ entry, i })).reverse();
 
 // Scroll-pin choreography ----------------------------------------------------
-// Each entry gets one viewport of scroll, plus one extra "run-out" viewport
-// after the last entry so the marker travels off the final pill to the end of
-// the spine before the scroll releases. Total travel is therefore N viewports
-// (N-1 to step through the entries + 1 to run out), so the section is N+1 tall.
+// Each entry gets half a viewport of scroll, plus one extra "run-out" half
+// viewport after the last entry so the marker travels off the final pill to
+// the end of the spine before the scroll releases. Total travel is therefore
+// N half-viewports (N-1 to step through the entries + 1 to run out), so the
+// section is (N+1) * 50vh tall.
 const N = entries.length;
 const stepPct = orderedEntries.map(({ entry }) => yPct(entry.start));
 // Desktop playhead rides the year-scaled positions so it lines up with the bars.
@@ -100,7 +101,7 @@ const initialIndex = stepMap[0];
 <section
   id="career"
   class="relative bg-n-950"
-  style={`height: ${(N + 1) * 100}svh`}
+  style={`height: ${(N + 1) * 50}svh`}
   data-step-pct={JSON.stringify(stepPct)}
   data-step-map={JSON.stringify(stepMap)}
   aria-label="Career"
