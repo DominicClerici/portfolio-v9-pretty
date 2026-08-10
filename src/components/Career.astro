@@ -114,13 +114,6 @@ const initialIndex = stepMap[0];
     <div
       class="frame relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
-      <h2
-        class="heading font-display text-n-100 leading-[1.2] tracking-[-0.006em] max-w-[880px] text-[clamp(1.5rem,calc(1.5rem+(100vw-27.5rem)*0.018),2.5rem)] mb-6 lg:mb-12"
-      >
-        Time on one axis,
-        <span class="text-white/45">the story on the other.</span>
-      </h2>
-
       <!-- Mobile: horizontal timeline above the card strip (oldest left). -->
       <div class="rail-h lg:hidden relative h-8 mb-5" aria-hidden="true">
         <div class="absolute inset-x-[7px] top-1/2 -translate-y-1/2">
@@ -352,13 +345,6 @@ const initialIndex = stepMap[0];
 </section>
 
 <style>
-  /* Mobile-only: opacity is toggled in JS as the section crosses the sticky
-     lock boundary; this transition is what makes that toggle read as a fade
-     instead of a snap. Desktop never sets the inline style, so it's inert there. */
-  .heading {
-    transition: opacity 0.3s ease;
-  }
-
   /* Progress playhead — horizontal marker line (desktop), sweeps top -> bottom */
   .playhead {
     height: 2px;
@@ -463,8 +449,8 @@ const initialIndex = stepMap[0];
   }
 
   /* Tall desktop viewports: float the two-column content out of flow so its
-     vertical midline lands on the viewport's 45% line. The heading stays put in
-     flow; the frame is the positioning context, sits at the viewport top
+     vertical midline lands on the viewport's 45% line. The frame is the
+     positioning context, sits at the viewport top
      (sticky top-0 + items-start), and left/right: 3rem mirrors the frame's
      lg:px-12 so horizontal alignment is unchanged. The dossier's fixed-height
      wrapper keeps this box a constant height, so translateY(-50%) never
@@ -481,10 +467,10 @@ const initialIndex = stepMap[0];
 
   @media (max-width: 1023px) {
     /* The pin is offset upward by the height of everything above the rail, so
-       the heading scrolls off the top of the viewport *before* the section
+       that band scrolls off the top of the viewport *before* the section
        locks — buying back that vertical space on short screens. The offset is
-       measured in JS (--v1-head-h) since the heading wraps at unpredictable
-       widths; it already accounts for the padding the rail should keep above
+       measured in JS (--v1-head-h) since that band's height varies with
+       width; it already accounts for the padding the rail should keep above
        it once stuck. */
     .pin {
       top: calc(-1 * var(--v1-head-h, 0px));
@@ -680,13 +666,12 @@ const initialIndex = stepMap[0];
         setBarriers(tv > 0 ? [top, top + tv] : []);
       };
 
-      // Mobile only: let the heading scroll off before the pin engages, by
-      // pulling the pin's sticky top up by everything above the rail. RAIL_PAD
+      // Mobile only: let everything above the rail scroll off before the pin
+      // engages, by pulling the pin's sticky top up by that height. RAIL_PAD
       // is the gap the rail keeps below the viewport top once stuck.
       const railH = section.querySelector<HTMLElement>(".rail-h");
       const RAIL_PAD = 20;
       const mobileMQ = window.matchMedia("(max-width: 1023px)");
-      const heading = section.querySelector<HTMLElement>(".heading");
       let headH = 0;
       // Scroll-invariant (see the barrier note above), so it is measured here
       // and read from cache in the scroll frame — offsetHeight in a scroll
@@ -725,14 +710,6 @@ const initialIndex = stepMap[0];
           tv > 0 ? Math.max(0, Math.min((-rect.top + lead) / tv, 1)) : 0;
         registerBarriers(rect.top, tv);
         render(p);
-
-        // Mobile: the heading fades out the moment the section crosses into
-        // its sticky lock (rect.top past -headH) and fades back in once
-        // scrolling leaves that pinned range.
-        if (heading) {
-          const stuck = mobileMQ.matches && headH > 0 && rect.top <= -headH;
-          heading.style.opacity = stuck ? "0" : "";
-        }
       };
 
       (window as any).__onSmoothScrollTick(frame);
@@ -748,7 +725,7 @@ const initialIndex = stepMap[0];
           measure();
           frame();
         });
-        // The heading's wrapped height depends on font loading and the panel's
+        // The height above the rail depends on font loading and the panel's
         // own reflow, both of which land after this runs.
         if (railH) ro.observe(railH.parentElement ?? railH);
         // travelPx is derived from these two boxes, so observing them directly
