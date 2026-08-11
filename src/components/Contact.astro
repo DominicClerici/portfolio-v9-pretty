@@ -92,6 +92,19 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
         />.
       </p>
 
+      <!-- Honeypot: off-screen, unfocusable and hidden from the a11y tree, so
+           only a form-filling script ever puts anything in it -->
+      <div class="cv2-hp" aria-hidden="true">
+        <label for="cv2-website">Leave this field empty</label>
+        <input
+          id="cv2-website"
+          name="website"
+          type="text"
+          tabindex="-1"
+          autocomplete="off"
+        />
+      </div>
+
       <div class="flex items-center gap-6 mt-14 md:mt-16">
         <span class="cv2-seal-wrap relative shrink-0">
           <button
@@ -209,7 +222,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
             ]}
             disabled
           >
-            <span class="cv2-cap-spinner" aria-hidden="true"></span>
             <span class="cv2-cap-send-label">Awaiting a signature</span>
           </button>
         </div>
@@ -227,6 +239,32 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
               stroke-linejoin="round"></path>
           </svg>
           <p class="font-mono text-[12px] tracking-[-0.02em]">Off it goes.</p>
+        </div>
+        <!-- The same stage as "Off it goes", played the other way: the arrow
+             becomes an X that stays put, and the slip hands the pen back -->
+        <div
+          class="cv2-cap-failed absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#e0a68b] opacity-0 pointer-events-none transition-opacity duration-300 delay-150"
+          aria-hidden="true"
+        >
+          <svg width="40" height="40" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M2.5 2.5 11.5 11.5"
+              pathLength="1"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"></path>
+            <path
+              d="M11.5 2.5 2.5 11.5"
+              pathLength="1"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"></path>
+          </svg>
+          <p
+            class="cv2-cap-fail-msg font-mono text-[12px] leading-[1.5] tracking-[-0.02em] text-center px-5"
+          >
+            Something went wrong.
+          </p>
         </div>
       </div>
     </form>
@@ -299,6 +337,14 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     outline: none;
     resize: none;
     caret-color: var(--color-bio-lime);
+  }
+
+  .cv2-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
   }
 
   .cv2-body::placeholder {
@@ -413,35 +459,22 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     pointer-events: auto;
   }
 
-  .cv2-captcha.is-sending .cv2-cap-reset,
-  .cv2-captcha.is-sent-anim .cv2-cap-reset {
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .cv2-cap-main {
     transition: opacity 0.25s ease;
   }
 
+  /* The moment send is pressed the letter is out of the visitor's hands, so the
+     slip empties and stays empty for as long as the request takes — whatever
+     lands next gets a blank stage to play on */
+  .cv2-captcha.is-sending .cv2-cap-main,
   .cv2-captcha.is-sent-anim .cv2-cap-main {
     opacity: 0;
-  }
-
-  .cv2-cap-spinner {
-    display: none;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1.5px solid var(--color-n-600);
-    border-top-color: var(--color-n-300);
-  }
-
-  .cv2-captcha.is-sending .cv2-cap-spinner {
-    display: inline-block;
+    pointer-events: none;
   }
 
   /* "Off it goes." — the seal's arrow, drawn then released */
-  .cv2-captcha.is-sent-anim .cv2-cap-sent {
+  .cv2-captcha.is-sent-anim .cv2-cap-sent,
+  .cv2-captcha.is-failed .cv2-cap-failed {
     opacity: 1;
   }
 
@@ -484,16 +517,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
       }
     }
 
-    .cv2-cap-spinner {
-      animation: cv2-spin 0.7s linear infinite;
-    }
-
-    @keyframes cv2-spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
     .cv2-captcha.is-sent-anim .cv2-cap-sent path {
       stroke-dasharray: 1;
       stroke-dashoffset: 1;
@@ -520,6 +543,22 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     .cv2-captcha.is-sent-anim .cv2-cap-sent p {
       opacity: 0;
       animation: cv2-appear 0.3s ease 1.2s forwards;
+    }
+
+    /* The X draws one stroke after the other, then the reason for it */
+    .cv2-captcha.is-failed .cv2-cap-failed path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: cv2-draw 0.3s ease 0.15s forwards;
+    }
+
+    .cv2-captcha.is-failed .cv2-cap-failed path + path {
+      animation-delay: 0.42s;
+    }
+
+    .cv2-captcha.is-failed .cv2-cap-failed p {
+      opacity: 0;
+      animation: cv2-appear 0.3s ease 0.78s forwards;
     }
 
     @keyframes cv2-appear {
@@ -555,6 +594,12 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
         fit();
       });
 
+      const showError = (text: string) => {
+        if (!error) return;
+        error.textContent = text;
+        error.classList.remove("hidden");
+      };
+
       if (message) {
         message.addEventListener("input", () => {
           message.style.height = "auto";
@@ -563,7 +608,15 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
         });
       }
 
-      const sendLetter = () => {
+      const emailField = form.querySelector<HTMLInputElement>("#cv2-email");
+      emailField?.addEventListener("input", () =>
+        error?.classList.add("hidden"),
+      );
+
+      // Last-resort path for browsers without the popover API: no captcha means
+      // no signature, and /api/contact refuses an unsigned letter — so hand the
+      // letter to the visitor's own mail client instead.
+      const sendByMail = () => {
         const data = new FormData(form);
         const name = String(data.get("name") || "").trim();
         const email = String(data.get("email") || "").trim();
@@ -578,9 +631,74 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           "",
           name ? `— ${name}` : "",
           email ? `Reply to: ${email}` : "",
-          "✍ signed by hand",
         ].filter(Boolean);
         window.location.href = `mailto:contact@dominicclerici.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+      };
+
+      const OFFLINE = "The post office is closed — try again in a moment.";
+
+      // The server issues a one-use token when the slip opens; its age doubles
+      // as a measure of how long the signature took to draw.
+      let token = "";
+      let challenge: Promise<void> | null = null;
+
+      const fetchChallenge = () => {
+        challenge = (async () => {
+          token = "";
+          try {
+            const res = await fetch("/api/challenge", {
+              headers: { accept: "application/json" },
+            });
+            const body = await res.json();
+            if (body?.ok && body.token) token = String(body.token);
+          } catch {
+            /* the send surfaces it — nothing useful to say yet */
+          }
+        })();
+        return challenge;
+      };
+
+      const postLetter = async (): Promise<{
+        ok: boolean;
+        error?: string;
+        message?: string;
+      }> => {
+        const data = new FormData(form);
+        // Trimmed to what the server actually checks: one decimal of position
+        // and whole milliseconds from the first mark, which keeps a dense
+        // scribble to a few KB
+        const start = strokes[0]?.[0]?.t ?? 0;
+        const round = (n: number) => Math.round(n * 10) / 10;
+
+        try {
+          const res = await fetch("/api/contact", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              token,
+              name: String(data.get("name") || ""),
+              email: String(data.get("email") || ""),
+              message: String(data.get("message") || ""),
+              website: String(data.get("website") || ""),
+              strokes: strokes.map((stroke) =>
+                stroke.map((p) => ({
+                  x: round(p.x),
+                  y: round(p.y),
+                  t: Math.round((p.t ?? 0) - start),
+                })),
+              ),
+            }),
+          });
+          const body = await res.json().catch(() => null);
+          if (res.ok && body?.ok) return { ok: true };
+          return {
+            ok: false,
+            error: String(body?.error || "send"),
+            message: String(body?.message || OFFLINE),
+          };
+        } catch {
+          return { ok: false, error: "network", message: OFFLINE };
+        }
       };
 
       // --- The captcha: sign the letter ---
@@ -593,6 +711,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
       const sendBtn = pop?.querySelector<HTMLButtonElement>(".cv2-cap-send");
       const resetSig = pop?.querySelector<HTMLButtonElement>(".cv2-cap-reset");
       const sendLabel = pop?.querySelector<HTMLElement>(".cv2-cap-send-label");
+      const failMsg = pop?.querySelector<HTMLElement>(".cv2-cap-fail-msg");
       const ctaTitle = form.querySelector<HTMLElement>(".cv2-cta-title");
       const ctaSub = form.querySelector<HTMLElement>(".cv2-cta-sub");
       const again = form.querySelector<HTMLButtonElement>(".cv2-again");
@@ -610,8 +729,8 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
       let committed = false;
       let drawing = false;
       let last: { x: number; y: number; t: number; w: number } | null = null;
-      let sendT1 = 0;
       let sendT2 = 0;
+      let failT = 0;
 
       // localStorage can throw in strict privacy modes — treat as "never sent"
       const readSent = () => {
@@ -641,6 +760,10 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
 
       const resetPad = () => {
         if (!canvas || !ctx) return;
+        // A pending outcome belongs to the attempt being cleared, not the next
+        // one — otherwise closing and reopening mid-send wipes a fresh scribble
+        window.clearTimeout(sendT2);
+        window.clearTimeout(failT);
         const dpr = window.devicePixelRatio || 1;
         canvas.width = canvas.clientWidth * dpr;
         canvas.height = canvas.clientHeight * dpr;
@@ -661,6 +784,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           "is-signed",
           "is-sending",
           "is-sent-anim",
+          "is-failed",
           "has-ink",
         );
         if (sendBtn) sendBtn.disabled = true;
@@ -698,7 +822,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           if (committed) return;
           canvas.setPointerCapture(e.pointerId);
           drawing = true;
-          strokes.push([{ x: e.offsetX, y: e.offsetY }]);
+          strokes.push([{ x: e.offsetX, y: e.offsetY, t: e.timeStamp }]);
           pop.classList.add("has-ink");
           last = { x: e.offsetX, y: e.offsetY, t: e.timeStamp, w: 2.4 };
           ctx.beginPath();
@@ -722,7 +846,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           ctx.stroke();
           inkLength += dist;
           samples += 1;
-          strokes[strokes.length - 1]?.push({ x, y });
+          strokes[strokes.length - 1]?.push({ x, y, t: e.timeStamp });
           last = { x, y, t: e.timeStamp, w: width };
           if (!ready && inkLength > MIN_INK && samples > MIN_SAMPLES)
             markReady();
@@ -760,26 +884,58 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           canvas.focus({ preventScroll: true });
         });
 
-        sendBtn.addEventListener("click", () => {
+        sendBtn.addEventListener("click", async () => {
           if (!ready || committed) return;
           committed = true;
           sendBtn.disabled = true;
           pop.classList.add("is-sending");
-          if (sendLabel) sendLabel.textContent = "Sealing…";
-          sendT1 = window.setTimeout(() => {
-            try {
-              localStorage.setItem(SENT_KEY, new Date().toISOString());
-            } catch {
-              /* still send; the page just won't remember */
-            }
-            sendLetter();
-            setStatus("Sent — off it goes.");
-            pop.classList.add("is-sent-anim");
-            sendT2 = window.setTimeout(() => {
-              if (pop.matches(":popover-open")) pop.hidePopover();
-              else applySentState(true);
-            }, 2000);
-          }, 1000);
+          setStatus("Sealing the envelope…");
+
+          // Whichever way it goes, the outcome plays on an empty slip: hold the
+          // result until the content has finished fading, however fast the
+          // network answers.
+          const blankUntil = Date.now() + 380;
+
+          await challenge;
+          if (!token) await fetchChallenge();
+
+          const result = token
+            ? await postLetter()
+            : { ok: false, error: "network", message: OFFLINE };
+
+          await new Promise((r) =>
+            window.setTimeout(r, Math.max(0, blankUntil - Date.now())),
+          );
+
+          if (!result.ok) {
+            const note = result.message || OFFLINE;
+            if (failMsg) failMsg.textContent = note;
+            pop.classList.add("is-failed");
+            setStatus(note);
+            // The token is spent or stale either way; a replacement is on its
+            // way before they have finished reading the X
+            fetchChallenge();
+            failT = window.setTimeout(() => {
+              // resetPad clears is-failed and is-sending, so the pad fades back
+              // in behind the X on its way out
+              resetPad();
+              setStatus(note);
+              canvas.focus({ preventScroll: true });
+            }, 2400);
+            return;
+          }
+
+          try {
+            localStorage.setItem(SENT_KEY, new Date().toISOString());
+          } catch {
+            /* it sent; the page just won't remember */
+          }
+          setStatus("Sent — off it goes.");
+          pop.classList.add("is-sent-anim");
+          sendT2 = window.setTimeout(() => {
+            if (pop.matches(":popover-open")) pop.hidePopover();
+            else applySentState(true);
+          }, 2250);
         });
 
         // The slip tracks its anchor only while the popover is up: subscribe to
@@ -815,8 +971,8 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           html.style.paddingRight = "";
           drawing = false;
           if (committed) {
-            window.clearTimeout(sendT1);
             window.clearTimeout(sendT2);
+            window.clearTimeout(failT);
             if (readSent()) applySentState(true);
           }
         });
@@ -837,19 +993,32 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         if (readSent()) return;
-        const body = String(new FormData(form).get("message") || "").trim();
+        const data = new FormData(form);
+        const body = String(data.get("message") || "").trim();
         if (!body) {
-          error?.classList.remove("hidden");
+          showError("The letter needs a body — write anything at all.");
           message?.focus();
+          return;
+        }
+        // Caught here rather than after the signature, so nobody scribbles for
+        // nothing over a typo the server would only reject at the end
+        const addr = String(data.get("email") || "").trim();
+        if (addr && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(addr)) {
+          showError(
+            "That address doesn't look like one — fix it or leave it blank.",
+          );
+          emailField?.focus();
           return;
         }
         if (pop && canvas && ctx && typeof pop.showPopover === "function") {
           pop.showPopover();
           resetPad();
+          // Runs while they sign, so the token is waiting by the time they send
+          fetchChallenge();
           placePopover();
           canvas.focus({ preventScroll: true });
         } else {
-          sendLetter();
+          sendByMail();
         }
       });
     }
