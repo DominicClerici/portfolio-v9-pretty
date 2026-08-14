@@ -38,9 +38,6 @@ const srcset = (src: string) =>
             decoding="async"
           />
         </div>
-        <figcaption class="font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-ink/40 mt-4 text-center">
-          fig. 0{k + 1} &mdash; {g.caption}
-        </figcaption>
       </figure>
     ))
   }
@@ -58,7 +55,7 @@ const srcset = (src: string) =>
     background: #ececea;
     box-shadow: 0 26px 60px -30px
       color-mix(in srgb, var(--color-ink) 40%, transparent);
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
   }
 
   /* The lead plate is the door you came through — shown whole, un-cropped */

@@ -5,9 +5,10 @@
 // Gallery images and story copy are placeholders to swap for real content.
 
 export type GalleryPlate = {
+  /** The 1x plate (1280x720). A matching `-2x` file (2560x1440) sits beside it
+   *  in /public/photos and is picked up by ProjectGallery's srcset. */
   src: string;
   alt: string;
-  caption: string;
 };
 
 export type Project = {
@@ -61,9 +62,18 @@ export const projects: Project[] = [
       "GitHub Actions runs it on a schedule, so the edition is sitting there when I wake up. I haven't had to touch it in months, which is the part I'm happiest about.",
     ],
     gallery: [
-      { src: "/photos/dispatch.webp", alt: "Dispatch front page", caption: "The front page of a live edition." },
-      { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — the triage pipeline's scoring pass." },
-      { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — a story moving from shortlist to print." },
+      {
+        src: "/photos/dispatch-01.webp",
+        alt: "Dispatch newsletter page — the four delivery options and the subscribe form",
+      },
+      {
+        src: "/photos/dispatch-02.webp",
+        alt: "Dispatch daily snapshots index, listing recent editions by date",
+      },
+      {
+        src: "/photos/dispatch-03.webp",
+        alt: "Dispatch search page with filters and a list of matching dispatches",
+      },
     ],
   },
   {
@@ -92,9 +102,18 @@ export const projects: Project[] = [
       "The recommendation engine learns which sites you open and when, and does all of it locally — nothing gets sent anywhere. That was the whole reason I built it, and it's the piece I'd show someone first.",
     ],
     gallery: [
-      { src: "/photos/meridian.webp", alt: "Meridian new tab", caption: "A fresh tab." },
-      { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the module registry at work." },
-      { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the on-device recommendation pass." },
+      {
+        src: "/photos/meridian-01.webp",
+        alt: "Meridian's landing page — “Your new tab, reimagined”",
+      },
+      {
+        src: "/photos/meridian-02.webp",
+        alt: "Meridian's five dashboard widgets: clock, Spotify, weather, calendar, and to-do",
+      },
+      {
+        src: "/photos/meridian-03.webp",
+        alt: "Meridian's appearance settings — accent colors, light and dark modes, and image backgrounds",
+      },
     ],
   },
   {
@@ -123,9 +142,15 @@ export const projects: Project[] = [
       "It runs on a design system I put together called Neon Riff: bright color on near-black, which is roughly what a guitar pedal looks like.",
     ],
     gallery: [
-      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox fretboard", caption: "The fretboard, mid-chord." },
-      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox placeholder plate", caption: "Placeholder plate — interval breakdown for a found chord." },
-      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox placeholder plate", caption: "Placeholder plate — Neon Riff tokens in the wild." },
+      { src: "/photos/fuzzbox.webp", alt: "Fuzzbox fretboard" },
+      {
+        src: "/photos/fuzzbox-02.webp",
+        alt: "Fuzzbox's chord analyzer naming a six-note voicing as Gbm7, with its intervals broken out",
+      },
+      {
+        src: "/photos/fuzzbox-03.webp",
+        alt: "Fuzzbox's closing call to action — “Ready to plug in?”",
+      },
     ],
   },
 ];
