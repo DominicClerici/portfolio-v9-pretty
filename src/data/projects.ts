@@ -107,7 +107,7 @@ export const projects: Project[] = [
     stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
-    featured: true,
+    featured: false,
     accent: "#5e2cc0",
     wash: "rgba(94, 44, 192, 0.1)",
     paper: "#f6f4fc",
@@ -115,7 +115,7 @@ export const projects: Project[] = [
     details: [
       { label: "Role", value: "Design & build — solo" },
       { label: "Timeline", value: "2025 — ongoing" },
-      { label: "Status", value: "Editor's pick — in beta" },
+      { label: "Status", value: "In beta" },
     ],
     story: [
       "Fuzzbox started with a chord I found by accident and couldn't name. Every tool I tried wanted me to already know the answer; I wanted one that would meet me at the fretboard.",
