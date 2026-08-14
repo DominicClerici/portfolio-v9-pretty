@@ -45,7 +45,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
 
     <!-- Notebook margin rule -->
     <div
-      class="cv2-margin absolute top-0 bottom-0 left-3 md:-left-8 w-px pointer-events-none"
+      class="cv2-margin hidden md:block absolute top-0 bottom-0 md:-left-8 w-px pointer-events-none"
       aria-hidden="true"
     >
     </div>
@@ -270,14 +270,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     </form>
 
     <div class="border-t border-n-800 mt-16 md:mt-20 pt-10">
-      <p
-        class="font-display italic text-[19px] md:text-[22px] leading-[1.55] text-white/55 max-w-[560px]"
-      >
-        P.S. — The first language was a disaster. Everything since has been
-        <span class="text-bio-lime not-italic">on purpose</span>.
-      </p>
-
-      <div class="flex flex-wrap gap-x-8 gap-y-3 mt-10">
+      <div class="flex flex-wrap gap-x-8 gap-y-3">
         {
           links.map((link) => (
             <a

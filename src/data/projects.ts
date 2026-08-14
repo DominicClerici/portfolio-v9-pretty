@@ -41,7 +41,7 @@ export const projects: Project[] = [
     edition: "morning edition",
     fact: "writes itself every morning",
     description:
-      "The last 24 hours of tech news, compressed into a 10 minute read. Two decoupled AI pipelines research, triage, and write it; GitHub Actions runs the whole thing while I sleep.",
+      "The last 24 hours of tech news in a 10 minute read. One AI pipeline finds and ranks the stories, a second one writes them up, and GitHub Actions runs the whole thing overnight.",
     stack: ["Astro", "TypeScript", "OpenAI API", "Tailwind", "Vercel"],
     websiteUrl: "https://dispatch.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/dispatch",
@@ -56,12 +56,12 @@ export const projects: Project[] = [
       { label: "Status", value: "In print daily" },
     ],
     story: [
-      "Dispatch exists because I kept losing whole mornings to tab sprawl — four newsletters, two aggregators, and a feed that never ended. The brief I set myself was narrow: everything that mattered in tech in the last twenty-four hours, printed as one calm page, readable before the coffee goes cold.",
-      "Two decoupled pipelines run the press. The first is a researcher: it sweeps sources overnight, scores stories against each other, and throws most of them away. The second is a writer: it takes the surviving shortlist and sets it in plain language, with a hard budget of ten minutes of reading. Neither pipeline knows the other exists — they only share an editorial contract.",
-      "GitHub Actions is the night shift. It runs the whole edition while I sleep, and the only moving part I ever touch is reading the paper it leaves behind.",
+      "I was reading four newsletters and two aggregators every morning and still felt behind on everything. Dispatch is what I built instead: one page, everything from the last 24 hours in tech that's actually worth knowing, about ten minutes to get through.",
+      "It runs as two separate pipelines. The first goes out overnight, pulls from a long list of sources, and scores stories against each other — most of them get cut. The second takes what survives and writes it up in plain English. They never talk to each other; the researcher drops a shortlist where the writer expects to find one.",
+      "GitHub Actions runs it on a schedule, so the edition is sitting there when I wake up. I haven't had to touch it in months, which is the part I'm happiest about.",
     ],
     gallery: [
-      { src: "/photos/dispatch.webp", alt: "Dispatch front page", caption: "The front page of a live edition, printed at six sharp." },
+      { src: "/photos/dispatch.webp", alt: "Dispatch front page", caption: "The front page of a live edition." },
       { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — the triage pipeline's scoring pass." },
       { src: "/photos/dispatch.webp", alt: "Dispatch placeholder plate", caption: "Placeholder plate — a story moving from shortlist to print." },
     ],
@@ -72,7 +72,7 @@ export const projects: Project[] = [
     edition: "midday edition",
     fact: "0 npm dependencies",
     description:
-      "A new-tab extension for Chrome and Firefox with zero npm dependencies. Eleven feature modules, a reactive storage layer, and a recommendation engine that never lets data leave the browser.",
+      "A new-tab extension for Chrome and Firefox, built with zero npm dependencies. Eleven feature modules sitting on a reactive storage layer, plus a recommendation engine that keeps everything on your machine.",
     stack: ["TypeScript", "esbuild", "Chrome APIs", "Firefox Add-ons"],
     websiteUrl: "https://meridian.dominicclerici.com/",
     githubUrl: "https://github.com/DominicClerici/meridian",
@@ -87,12 +87,12 @@ export const projects: Project[] = [
       { label: "Status", value: "Live on two stores" },
     ],
     story: [
-      "Meridian is a protest against the modern new-tab page — the weather widgets, the sponsored links, the quiet phone-home. It ships with zero npm dependencies: every line that runs in the browser is a line I wrote and can read.",
-      "Under the hood it is eleven feature modules seated on a reactive storage layer. Each module owns its slice of state; the layer broadcasts changes and the page settles itself, no framework in the room.",
-      "The recommendation engine is the part I'm proudest of: it learns what you open and when, and never lets a byte of that leave the machine. Your habits stay yours.",
+      "Every new-tab extension I tried wanted to show me the weather, a sponsored link, and — going by the network tab — a bit of my browsing history. Meridian is the one I wanted instead. It ships with zero npm dependencies, so every line running in your browser is one I wrote.",
+      "There are eleven feature modules sitting on a small reactive storage layer. Each module owns its own slice of state and the layer tells the others when it changes. No framework, mostly because I wanted to find out whether I could get away without one.",
+      "The recommendation engine learns which sites you open and when, and does all of it locally — nothing gets sent anywhere. That was the whole reason I built it, and it's the piece I'd show someone first.",
     ],
     gallery: [
-      { src: "/photos/meridian.webp", alt: "Meridian new tab", caption: "A fresh tab, seated and quiet." },
+      { src: "/photos/meridian.webp", alt: "Meridian new tab", caption: "A fresh tab." },
       { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the module registry at work." },
       { src: "/photos/meridian.webp", alt: "Meridian placeholder plate", caption: "Placeholder plate — the on-device recommendation pass." },
     ],
@@ -103,7 +103,7 @@ export const projects: Project[] = [
     edition: "late edition",
     fact: "design system: Neon Riff",
     description:
-      "The companion I wished I had when learning guitar. Place notes on an interactive fretboard and it explains the chord you found — the intervals, the theory, why it sounds the way it does.",
+      "A chord finder that works backwards. Put notes on an interactive fretboard and it works out what you've found, then explains the intervals and the theory behind why it sounds like that.",
     stack: ["TypeScript", "Next.js", "React Native", "Prisma", "PostgreSQL"],
     websiteUrl: "https://fuzzbox.dominicclerici.com/",
     githubUrl: null,
@@ -118,9 +118,9 @@ export const projects: Project[] = [
       { label: "Status", value: "In beta" },
     ],
     story: [
-      "Fuzzbox started with a chord I found by accident and couldn't name. Every tool I tried wanted me to already know the answer; I wanted one that would meet me at the fretboard.",
-      "Place notes on the interactive fretboard and Fuzzbox explains what you've built — the intervals, the theory, why it rings the way it does. It is the companion I wished I had in the first year of playing.",
-      "The whole thing wears a design system called Neon Riff — stage-light color on deep black, built to feel like the back room of a guitar shop after hours.",
+      "I found a chord by accident, liked it, and had no idea what it was called. Every tool I looked at assumed I already knew the answer — you type in a chord name and it draws you the shape. I needed it the other way round.",
+      "So Fuzzbox works backwards. Put notes on the fretboard and it tells you what you've made and why it sounds like that. It's the thing I could have used in my first year of playing, when I was mostly guessing.",
+      "It runs on a design system I put together called Neon Riff: bright color on near-black, which is roughly what a guitar pedal looks like.",
     ],
     gallery: [
       { src: "/photos/fuzzbox.webp", alt: "Fuzzbox fretboard", caption: "The fretboard, mid-chord." },

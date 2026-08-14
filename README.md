@@ -1,6 +1,6 @@
 # dominicclerici.com
 
-My personal developer portfolio — a single-page site built to be fast, minimal, and easy on the eyes. Dark theme, warm gold accents, and just enough animation to keep things interesting without getting in the way.
+My personal developer portfolio. One page, no framework, loads fast. Mostly dark with a lime accent, and a fair amount of scroll-driven animation that I tried to keep out of the way of actually reading it.
 
 **Live at [dominicclerici.com](https://www.dominicclerici.com)**
 
