@@ -117,7 +117,10 @@ const { d, dx, dy } = ICONS[icon];
        enough to drive the whole choreography from one block. */
     --ab-gap: calc(16px * var(--ab-s));
     --ab-pr: calc(8px * var(--ab-s));
-    --ab-shrink: 0.875;
+    /* Their 0.875 lands at 40px tall as a 5px nudge that the simultaneous
+       colour inversion swallows whole. The seam opening is
+       43.1 - 38.1 * shrink px, so 0.8 takes it from 5px to ~12.6px. */
+    --ab-shrink: 0.8;
     --ab-scale: 1;
     --ab-out: translate(0, 0);
     --ab-in: translate(calc(-1 * var(--ab-dx)), calc(-1 * var(--ab-dy)));
@@ -304,8 +307,12 @@ const { d, dx, dy } = ICONS[icon];
     --ab-line: var(--ab-line-h);
     --ab-fg: var(--ab-fg-h);
     --ab-blob-bg: var(--ab-blob-bg-h);
-    --ab-gap: calc(12px * var(--ab-s));
-    --ab-pr: calc(14px * var(--ab-s));
+    /* Reference deltas are 16->12 and 8->14. Roughly doubled here: a solid
+       pill advancing 5px reads, a 1px outline advancing 5px does not. The
+       label body swells 8.3px while its tail retracts 6.7px into it, so the
+       net width change stays at their ~1.7px and nothing reflows. */
+    --ab-gap: calc(8px * var(--ab-s));
+    --ab-pr: calc(18px * var(--ab-s));
     --ab-scale: var(--ab-shrink);
     --ab-out: translate(var(--ab-dx), var(--ab-dy));
     --ab-in: translate(0, 0);
