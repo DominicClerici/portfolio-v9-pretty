@@ -2,19 +2,31 @@
 // Text CTA + icon blob as ONE anchor, with the interlocking silhouette and
 // hover choreography adapted from integratedbio.com's hero button.
 //
-// Geometry is theirs, verbatim: the label's tail wedge and the blob's bitten
-// left edge are the same paths their theme ships, authored against a 48px
-// button. Ours is 40px, so everything is expressed as `N * --ab-s` off that
-// 48px reference — the two SVGs keep their original viewBoxes and scale
-// uniformly (18/48 and 51/48 are exactly 15/40 and 42.5/40), so the seam
-// stays true at any height. Change --ab-s alone to resize the whole thing.
+// Geometry is theirs: the label's tail wedge and the blob's bitten left edge
+// are the paths their theme ships, authored against a 48px button. Ours is
+// 40px, so everything is expressed as `N * --ab-s` off that 48px reference —
+// the two SVGs keep their original viewBoxes and scale uniformly (18/48 and
+// 51/48 are exactly 15/40 and 42.5/40), so the seam stays true at any height.
+// Change --ab-s alone to resize the whole thing.
 //
-// On hover the two halves trade colours, the label leans right into the
-// seam, and the blob retreats out of its socket (origin: center right).
-// Meanwhile the arrow slides off in the direction it points and a second,
-// pre-tinted copy slides in behind it. The two copies are the point: a lone
-// arrow cross-fading its own colour against an inverting fill passes through
-// the same midpoint the fill does, and vanishes for a few frames.
+// The signature move is the seam swivelling: at rest the wedge is widest at
+// y=14.91 and the blob's bite sits top-left, so the join slants one way; on
+// hover both mirror about the horizontal centreline and the slant runs the
+// other way, sweeping through vertical at the midpoint. Their site does this
+// with GSAP's MorphSVGPlugin. We transition the CSS `d` property instead,
+// which needs no library but only interpolates between paths with identical
+// segment structures — so both states are normalised to all-cubic form and
+// the flipped path is derived by reflecting the rest path's control points.
+// That makes segment i morph into segment i by construction. (Their own two
+// strings are the same shapes but with rotated point lists, which is why
+// they need MorphSVG's point-matching and we can't just paste them in.)
+//
+// Underneath that: the halves trade colours, the label leans right into the
+// seam, the blob retreats out of its socket, and the arrow slides off in the
+// direction it points while a second, pre-tinted copy slides in behind it.
+// The two copies are the point — a lone arrow cross-fading its own colour
+// against an inverting fill passes through the same midpoint the fill does,
+// and vanishes for a few frames.
 
 // Slide vector per glyph — the arrow exits the way it points.
 const ICONS = {
@@ -23,15 +35,16 @@ const ICONS = {
   external: { d: "M2 12 12 2M4.5 2H12v7.5", dx: "21px", dy: "-21px" },
 };
 
-// Closed wedge for the fill; the same outline reopened for the stroke, which
-// drops the x=0 edge so the line reads as a continuation of the label's own
-// top and bottom borders rather than a box closed against them.
-const CORNER_FILL =
-  "M0 0h5.63c7.808 0 13.536 7.337 11.642 14.91l-6.09 24.359A11.527 11.527 0 0 1 0 48V0Z";
-const CORNER_LINE =
-  "M0 0h5.63c7.808 0 13.536 7.337 11.642 14.91l-6.09 24.359A11.527 11.527 0 0 1 0 48";
-const BLOB =
-  "M6.728 9.09A12 12 0 0 1 18.369 0H39c6.627 0 12 5.373 12 12v24c0 6.627-5.373 12-12 12H12.37C4.561 48-1.167 40.663.727 33.09l6-24Z";
+// Rest shapes carry the `d` attribute as well, so a browser without CSS `d`
+// support renders the correct silhouette and simply skips the swivel.
+const CORNER_FILL_REST =
+  "M0 0C1.877 0 3.753 0 5.63 0C13.438 0 19.166 7.337 17.272 14.91C15.242 23.03 13.212 31.149 11.182 39.269C9.903 44.383 5.272 48 0 48C0 32 0 16 0 0Z";
+// Reopened for the stroke: drops the x=0 edge so the line reads as a
+// continuation of the label's own top and bottom borders.
+const CORNER_LINE_REST =
+  "M0 0C1.877 0 3.753 0 5.63 0C13.438 0 19.166 7.337 17.272 14.91C15.242 23.03 13.212 31.149 11.182 39.269C9.903 44.383 5.272 48 0 48";
+const BLOB_REST =
+  "M6.728 9.09C8.059 3.766 12.881 0 18.369 0C25.246 0 32.123 0 39 0C45.627 0 51 5.373 51 12C51 20 51 28 51 36C51 42.627 45.627 48 39 48C30.123 48 21.247 48 12.37 48C4.561 48 -1.167 40.663 0.727 33.09C2.727 25.09 4.727 17.09 6.727 9.09Z";
 
 interface Props {
   href: string;
@@ -66,12 +79,12 @@ const { d, dx, dy } = ICONS[icon];
     <slot />
     <span class="ab-corner">
       <svg viewBox="0 0 18 48" fill="none" aria-hidden="true">
-        <path class="ab-corner-fill" d={CORNER_FILL}></path>
+        <path class="ab-corner-fill" d={CORNER_FILL_REST}></path>
         {/* Inset by half a stroke so the 1px line lands on the label's own
             border-box edge instead of straddling it. */}
         <path
           class="ab-corner-line"
-          d={CORNER_LINE}
+          d={CORNER_LINE_REST}
           transform="translate(0.216 0.6) scale(0.975)"
           vector-effect="non-scaling-stroke"></path>
       </svg>
@@ -80,7 +93,7 @@ const { d, dx, dy } = ICONS[icon];
 
   <span class="ab-icon" aria-hidden="true">
     <svg class="ab-blob" viewBox="0 0 51 48" fill="none">
-      <path d={BLOB}></path>
+      <path d={BLOB_REST}></path>
     </svg>
     <span class="ab-glyph ab-glyph--out">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -111,16 +124,40 @@ const { d, dx, dy } = ICONS[icon];
     --ab-s: 0.8333;
     --ab-dur: 0.6s;
     --ab-ease: cubic-bezier(0.25, 1, 0.5, 1);
+    /* The swivel runs faster than the colour inversion, as it does on their
+       site: gsap.to(..., { duration: .3, ease: "power2.out" }). */
+    --ab-morph-dur: 0.3s;
+    --ab-morph-ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+
+    /* Each shape's two states, and the slot that selects between them. */
+    --ab-corner-rest: path(
+      "M0 0C1.877 0 3.753 0 5.63 0C13.438 0 19.166 7.337 17.272 14.91C15.242 23.03 13.212 31.149 11.182 39.269C9.903 44.383 5.272 48 0 48C0 32 0 16 0 0Z"
+    );
+    --ab-corner-flip: path(
+      "M0 48C1.877 48 3.753 48 5.63 48C13.438 48 19.166 40.663 17.272 33.09C15.242 24.97 13.212 16.851 11.182 8.731C9.903 3.617 5.272 0 0 0C0 16 0 32 0 48Z"
+    );
+    --ab-line-rest: path(
+      "M0 0C1.877 0 3.753 0 5.63 0C13.438 0 19.166 7.337 17.272 14.91C15.242 23.03 13.212 31.149 11.182 39.269C9.903 44.383 5.272 48 0 48"
+    );
+    --ab-line-flip: path(
+      "M0 48C1.877 48 3.753 48 5.63 48C13.438 48 19.166 40.663 17.272 33.09C15.242 24.97 13.212 16.851 11.182 8.731C9.903 3.617 5.272 0 0 0"
+    );
+    --ab-blob-rest: path(
+      "M6.728 9.09C8.059 3.766 12.881 0 18.369 0C25.246 0 32.123 0 39 0C45.627 0 51 5.373 51 12C51 20 51 28 51 36C51 42.627 45.627 48 39 48C30.123 48 21.247 48 12.37 48C4.561 48 -1.167 40.663 0.727 33.09C2.727 25.09 4.727 17.09 6.727 9.09Z"
+    );
+    --ab-blob-flip: path(
+      "M6.728 38.91C8.059 44.234 12.881 48 18.369 48C25.246 48 32.123 48 39 48C45.627 48 51 42.627 51 36C51 28 51 20 51 12C51 5.373 45.627 0 39 0C30.123 0 21.247 0 12.37 0C4.561 0 -1.167 7.337 0.727 14.91C2.727 22.91 4.727 30.91 6.727 38.91Z"
+    );
+    --ab-corner-d: var(--ab-corner-rest);
+    --ab-line-d: var(--ab-line-rest);
+    --ab-blob-d: var(--ab-blob-rest);
 
     /* Animated state. Hover swaps these; every dependent property is a real
-       transitionable property reading the var, so redefining them here is
+       transitionable property reading the var, so redefining them there is
        enough to drive the whole choreography from one block. */
     --ab-gap: calc(16px * var(--ab-s));
     --ab-pr: calc(8px * var(--ab-s));
-    /* Their 0.875 lands at 40px tall as a 5px nudge that the simultaneous
-       colour inversion swallows whole. The seam opening is
-       43.1 - 38.1 * shrink px, so 0.8 takes it from 5px to ~12.6px. */
-    --ab-shrink: 0.8;
+    --ab-shrink: 0.875;
     --ab-scale: 1;
     --ab-out: translate(0, 0);
     --ab-in: translate(calc(-1 * var(--ab-dx)), calc(-1 * var(--ab-dy)));
@@ -186,15 +223,21 @@ const { d, dx, dy } = ICONS[icon];
   }
 
   .ab-corner-fill {
+    d: var(--ab-corner-d);
     fill: var(--ab-bg);
-    transition: fill var(--ab-dur) var(--ab-ease);
+    transition:
+      d var(--ab-morph-dur) var(--ab-morph-ease),
+      fill var(--ab-dur) var(--ab-ease);
   }
 
   .ab-corner-line {
+    d: var(--ab-line-d);
     fill: none;
     stroke: var(--ab-line);
     stroke-width: 1;
-    transition: stroke var(--ab-dur) var(--ab-ease);
+    transition:
+      d var(--ab-morph-dur) var(--ab-morph-ease),
+      stroke var(--ab-dur) var(--ab-ease);
   }
 
   /* ── Blob ── */
@@ -219,8 +262,11 @@ const { d, dx, dy } = ICONS[icon];
   }
 
   .ab-blob path {
+    d: var(--ab-blob-d);
     fill: var(--ab-blob-bg);
-    transition: fill var(--ab-dur) var(--ab-ease);
+    transition:
+      d var(--ab-morph-dur) var(--ab-morph-ease),
+      fill var(--ab-dur) var(--ab-ease);
   }
 
   /* Centred on the blob's round lobe, not on its bitten left edge. */
@@ -303,16 +349,15 @@ const { d, dx, dy } = ICONS[icon];
      gets the motion too, not just the ring. */
   .ab:hover,
   .ab:focus-visible {
+    --ab-corner-d: var(--ab-corner-flip);
+    --ab-line-d: var(--ab-line-flip);
+    --ab-blob-d: var(--ab-blob-flip);
     --ab-bg: var(--ab-bg-h);
     --ab-line: var(--ab-line-h);
     --ab-fg: var(--ab-fg-h);
     --ab-blob-bg: var(--ab-blob-bg-h);
-    /* Reference deltas are 16->12 and 8->14. Roughly doubled here: a solid
-       pill advancing 5px reads, a 1px outline advancing 5px does not. The
-       label body swells 8.3px while its tail retracts 6.7px into it, so the
-       net width change stays at their ~1.7px and nothing reflows. */
-    --ab-gap: calc(8px * var(--ab-s));
-    --ab-pr: calc(18px * var(--ab-s));
+    --ab-gap: calc(12px * var(--ab-s));
+    --ab-pr: calc(14px * var(--ab-s));
     --ab-scale: var(--ab-shrink);
     --ab-out: translate(var(--ab-dx), var(--ab-dy));
     --ab-in: translate(0, 0);
@@ -325,10 +370,15 @@ const { d, dx, dy } = ICONS[icon];
   }
 
   /* ── Reduced motion ──
-     Nothing translates or resizes; the arrows cross-fade in place instead,
-     which keeps the two-copy colour trick doing its job. */
+     Nothing translates, resizes or swivels; aliasing each flip target back to
+     its rest shape pins the silhouette without touching the hover block. The
+     arrows cross-fade in place instead, which keeps the two-copy colour trick
+     doing its job. */
   @media (prefers-reduced-motion: reduce) {
     .ab {
+      --ab-corner-flip: var(--ab-corner-rest);
+      --ab-line-flip: var(--ab-line-rest);
+      --ab-blob-flip: var(--ab-blob-rest);
       --ab-shrink: 1;
       --ab-fade-out: 1;
       --ab-fade-in: 0;
