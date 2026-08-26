@@ -1,0 +1,362 @@
+---
+// Text CTA + lime icon blob, joined by an angled seam that swivels on hover.
+// The silhouette is adapted from integratedbio.com's hero button: the label's
+// right edge and the blob's left edge lean the same way, so the gap between
+// them stays constant and the pair reads as one shape cut in two.
+//
+// Their site morphs two SVG paths with GSAP's MorphSVGPlugin, which slides the
+// shapes' points vertically — the seam is momentarily horizontal at the
+// halfway mark. We want a real pivot instead (20deg -> 0 -> -20deg), and a
+// skewX transition gives exactly that for free: skewX leaves y untouched, so
+// horizontal edges stay horizontal and only the vertical one leans. No path
+// data, no JS, and it stays correct at any label width.
+//
+// The catch is that skewX would lean the *other* end of the box too. So each
+// half is built as a straight-edged box plus a fixed-size, overflow-hidden
+// "cap" holding the skewed shape:
+//
+//     .ab-text ────────────┐ .ab-cap        .ab-icon ┌──────────────┐
+//     ┌────────────────────┼──────╮                  │ ╭────────────┤
+//     │ View selected work │       ╲                 │╱  .ab-icon-  │
+//     └────────────────────┼────╮   ╲               ╱│  cap + lobe  │
+//                          └────┴────┘             └─┴──────────────┘
+//                          clipped at the label's border-box edge
+//
+// Because skewX preserves y, the cap's top and bottom borders stay exactly
+// collinear with the label's own — the join needs no fudging.
+//
+// GEOMETRY (all derived for height 40px, corner radius 8px, tilt 20deg):
+//   lean  = 20 * tan20      = 7.28px   (horizontal shift at the top/bottom edge)
+//   r/cos = 8 / cos20       = 8.51px   (half-width of a sheared corner circle)
+//   The label cap's shape sits with its right edge 17.5px in, so at rest its
+//   bottom corner lands 2.2px past the label (>0, or the bottom border would
+//   be clipped short) and its widest point reaches 22.4px (< the 25.5px cap,
+//   or the tip would be clipped). The icon's seam sits 6px in, leaving its
+//   widest corner 1.1px clear of the cap's left edge. Change --ab-tilt and
+//   those two clearances are what to re-check.
+
+const ICONS = {
+  down: { d: "M7 1v11M2 7.5 7 12.5 12 7.5", gx: "0px", gy: "26px" },
+  right: { d: "M1 7h11M6.5 2 12 7l-5.5 5", gx: "26px", gy: "0px" },
+  external: { d: "M2 12 12 2M4.5 2H12v7.5", gx: "18px", gy: "-18px" },
+};
+
+interface Props {
+  href: string;
+  icon: keyof typeof ICONS;
+  variant?: "light" | "dark" | "solid";
+  size?: "sm" | "md";
+  caps?: boolean;
+  class?: string;
+  [key: string]: unknown;
+}
+
+const {
+  href,
+  icon,
+  variant = "light",
+  size = "md",
+  caps = false,
+  class: className = "",
+  ...rest
+} = Astro.props;
+
+const { target, rel } = rest as { target?: string; rel?: string };
+const { d, gx, gy } = ICONS[icon];
+---
+
+<span
+  class:list={["ab", className]}
+  data-variant={variant}
+  data-size={size}
+  style={`--ab-gx:${gx};--ab-gy:${gy}`}
+>
+  <a href={href} class:list={["ab-text", caps && "ab-text--caps"]} {...rest}>
+    <slot />
+    <span class="ab-cap" aria-hidden="true"><span class="ab-cap-shape"></span></span>
+  </a>
+
+  {/* Same destination as the text link — a visual affordance, not a second
+      link. Hidden from AT and out of the tab order so each CTA is announced
+      once, while still following a click that lands on it. */}
+  <a
+    href={href}
+    target={target}
+    rel={rel}
+    class="ab-icon"
+    aria-hidden="true"
+    tabindex="-1"
+  >
+    <span class="ab-icon-cap"><span class="ab-icon-shape"></span></span>
+    <span class="ab-icon-lobe"></span>
+    <span class="ab-glyph ab-glyph--out">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path
+          d={d}
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+    <span class="ab-glyph ab-glyph--in">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path
+          d={d}
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+  </a>
+</span>
+
+<style>
+  .ab {
+    --ab-skew: -20deg;
+    --ab-blob: var(--color-bio-lime);
+    --ab-blob-fg: var(--color-ink);
+    --ab-gap: 17px;
+    --ab-pr: 6px;
+    --ab-blob-scale: 1;
+    --ab-swivel: 500ms;
+    --ab-tint: 250ms;
+
+    /* Block-level and shrink-wrapped rather than inline-flex: as an inline-level
+       box it would sit on the parent's baseline and drag the line-box strut
+       along with it, adding stray descender space under Career's and Footer's
+       CTAs. */
+    display: flex;
+    align-items: stretch;
+    height: 40px;
+    width: fit-content;
+    gap: var(--ab-gap);
+    font-family: var(--font-mono);
+    transition: gap var(--ab-swivel) var(--ease-settle);
+  }
+
+  .ab a {
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Left half: the label plate ──
+     No right border: the cap carries the outline across the seam. */
+  .ab-text {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-size: 14px;
+    padding: 0 var(--ab-pr) 0 16px;
+    border: 1px solid var(--ab-line);
+    border-right: 0;
+    border-radius: 8px 0 0 8px;
+    background-color: var(--ab-bg);
+    color: var(--ab-fg);
+    transition:
+      background-color var(--ab-tint) ease,
+      border-color var(--ab-tint) ease,
+      color var(--ab-tint) ease,
+      padding-right var(--ab-swivel) var(--ease-settle);
+  }
+
+  .ab[data-size="sm"] .ab-text {
+    font-size: 13px;
+  }
+
+  .ab-text--caps {
+    text-transform: uppercase;
+  }
+
+  /* Overlaps the plate by half a pixel so the two fills never leave a hairline
+     at a fractional label width; both are opaque, so the lap is invisible. */
+  .ab-cap {
+    position: absolute;
+    left: calc(100% - 0.5px);
+    top: -1px;
+    bottom: -1px;
+    width: 25.5px;
+    overflow: hidden;
+  }
+
+  /* Runs far off to the left so that however far the skew drags its top and
+     bottom edges, they still reach the clip and meet the plate's borders. */
+  .ab-cap-shape {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -80px;
+    right: 8px;
+    border: 1px solid var(--ab-line);
+    border-left: 0;
+    border-radius: 0 8px 8px 0;
+    background-color: var(--ab-bg);
+    transform: skewX(var(--ab-skew));
+    transform-origin: center;
+    transition:
+      transform var(--ab-swivel) var(--ease-settle),
+      background-color var(--ab-tint) ease,
+      border-color var(--ab-tint) ease;
+  }
+
+  /* ── Right half: the blob ──
+     Clips the arrows on their way out. Its own box edges coincide with the
+     blob's on every side but the seam, which the arrows never cross. */
+  .ab-icon {
+    position: relative;
+    flex: none;
+    width: 46px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: 0 8px 8px 0;
+    color: var(--ab-blob-fg);
+    transform: scale(var(--ab-blob-scale));
+    transform-origin: center right;
+    transition: transform var(--ab-swivel) var(--ease-settle);
+  }
+
+  .ab-icon-cap {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    overflow: hidden;
+  }
+
+  .ab-icon-shape {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 6px;
+    right: -80px;
+    border-radius: 8px 0 0 8px;
+    background-color: var(--ab-blob);
+    transform: skewX(var(--ab-skew));
+    transform-origin: center;
+    transition:
+      transform var(--ab-swivel) var(--ease-settle),
+      background-color var(--ab-tint) ease;
+  }
+
+  /* Starts inside the cap's clip so the seam is only ever drawn by the shape
+     above, never by this square edge. */
+  .ab-icon-lobe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 22px;
+    right: 0;
+    border-radius: 0 8px 8px 0;
+    background-color: var(--ab-blob);
+    transition: background-color var(--ab-tint) ease;
+  }
+
+  /* Centred on the blob's own mass (seam at x=6, edge at x=46), not the box. */
+  .ab-glyph {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 6px;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 450ms var(--ease-settle),
+      opacity var(--ab-tint) ease;
+  }
+
+  .ab-glyph--in {
+    transform: translate(calc(-1 * var(--ab-gx)), calc(-1 * var(--ab-gy)));
+    opacity: 0;
+  }
+
+  /* ── Palettes ── */
+
+  .ab[data-variant="light"] {
+    --ab-bg: transparent;
+    --ab-line: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    --ab-line-h: var(--color-ink);
+    --ab-fg: var(--color-ink);
+    --ab-focus: var(--color-ink);
+  }
+
+  .ab[data-variant="dark"] {
+    --ab-bg: transparent;
+    --ab-line: var(--color-n-700);
+    --ab-line-h: var(--color-n-400);
+    --ab-fg: var(--color-n-100);
+    --ab-focus: var(--color-bio-lime);
+  }
+
+  /* The hover fill is ink at 85% resolved against bone rather than left
+     translucent: the plate and its cap are two boxes, and a translucent fill
+     would double up where they lap. */
+  .ab[data-variant="solid"] {
+    --ab-bg: var(--color-ink);
+    --ab-bg-h: color-mix(in srgb, var(--color-ink) 85%, var(--color-bone));
+    --ab-line: var(--color-ink);
+    --ab-line-h: color-mix(in srgb, var(--color-ink) 85%, var(--color-bone));
+    --ab-fg: var(--color-bone);
+    --ab-focus: var(--color-ink);
+  }
+
+  /* ── Hover / focus ──
+     After the palettes so the -h values win. The seam swivels through vertical
+     while the plate leans into the gap by the same 3px the gap gives up, and
+     the blob retreats into its socket by about as much — so the two edges keep
+     their distance while both halves move. */
+  .ab:hover,
+  .ab:focus-within {
+    --ab-skew: 20deg;
+    --ab-gap: 14px;
+    --ab-pr: 9px;
+    --ab-blob-scale: 0.94;
+    --ab-line: var(--ab-line-h);
+    --ab-bg: var(--ab-bg-h, transparent);
+  }
+
+  .ab:hover .ab-glyph--out,
+  .ab:focus-within .ab-glyph--out {
+    transform: translate(var(--ab-gx), var(--ab-gy));
+    opacity: 0;
+  }
+
+  .ab:hover .ab-glyph--in,
+  .ab:focus-within .ab-glyph--in {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+
+  .ab-text:focus-visible {
+    outline: 2px solid var(--ab-focus);
+    outline-offset: 4px;
+  }
+
+  /* ── Reduced motion ──
+     Nothing swivels, leans or travels; the arrows still cross-fade in place so
+     the hover keeps its beat. */
+  @media (prefers-reduced-motion: reduce) {
+    .ab:hover,
+    .ab:focus-within {
+      --ab-skew: -20deg;
+      --ab-gap: 17px;
+      --ab-pr: 6px;
+      --ab-blob-scale: 1;
+    }
+
+    .ab:hover .ab-glyph--out,
+    .ab:focus-within .ab-glyph--out {
+      transform: translate(0, 0);
+    }
+
+    .ab-glyph--in {
+      transform: translate(0, 0);
+    }
+  }
+</style>
