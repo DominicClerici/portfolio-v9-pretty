@@ -44,7 +44,7 @@ const ICONS = {
 interface Props {
   href: string;
   icon: keyof typeof ICONS;
-  variant?: "light" | "dark" | "solid";
+  variant?: "light" | "dark" | "solid" | "solid-dark";
   size?: "sm" | "md";
   caps?: boolean;
   class?: string;
@@ -271,9 +271,13 @@ const { d, gx, gy } = ICONS[icon];
       opacity var(--ab-tint) ease;
   }
 
+  /* Its colour is the *hovered* blob's foreground from the moment it exists —
+     the arrows never transition colour, they just trade places, so the glyph
+     stays legible through a blob fill that is swapping underneath it. */
   .ab-glyph--in {
     transform: translate(calc(-1 * var(--ab-gx)), calc(-1 * var(--ab-gy)));
     opacity: 0;
+    color: var(--ab-blob-fg-h, var(--ab-blob-fg));
   }
 
   /* ── Palettes ── */
@@ -294,16 +298,43 @@ const { d, gx, gy } = ICONS[icon];
     --ab-focus: var(--color-bio-lime);
   }
 
-  /* The hover fill is ink at 85% resolved against bone rather than left
-     translucent: the plate and its cap are two boxes, and a translucent fill
-     would double up where they lap. */
+  /* Unlike the outline variants, these two hover by *swapping* their halves:
+     the plate takes the blob's lime and the blob takes the plate's dark, each
+     with the other's foreground. Fills are opaque rather than translucent
+     because the plate and its cap are two boxes that lap by half a pixel. The
+     line follows the plate's fill so the lime reads as one shape, not an
+     outlined one.
+
+     Both variants are the same recipe over two tones, so the swap is written
+     once here and each variant below only names its dark/light pair. */
+  .ab[data-variant="solid"],
+  .ab[data-variant="solid-dark"] {
+    --ab-bg: var(--ab-solid-dark);
+    --ab-bg-h: var(--color-bio-lime);
+    --ab-line: var(--ab-solid-dark);
+    --ab-line-h: var(--color-bio-lime);
+    --ab-fg: var(--ab-solid-light);
+    --ab-blob-fg-h: var(--ab-solid-light);
+    --ab-focus: var(--ab-solid-dark);
+  }
+
+  /* On the light sections (Hero over the canvas, Footer over bone) the plate
+     is the brand ink and its text the warm bone. */
   .ab[data-variant="solid"] {
-    --ab-bg: var(--color-ink);
-    --ab-bg-h: color-mix(in srgb, var(--color-ink) 85%, var(--color-bone));
-    --ab-line: var(--color-ink);
-    --ab-line-h: color-mix(in srgb, var(--color-ink) 85%, var(--color-bone));
-    --ab-fg: var(--color-bone);
-    --ab-focus: var(--color-ink);
+    --ab-solid-dark: var(--color-ink);
+    --ab-solid-light: var(--color-bone);
+  }
+
+  /* Same button on Career's n-900 card. Ink there would sit at ~1.4:1 against
+     the card and the seam — the whole point of the shape — would disappear;
+     n-800 is the first ramp step that still holds an edge against n-900. The
+     text follows the ramp to n-100 rather than bone, which is warm and does
+     not belong in the dark sections. Focus goes lime because an ink ring is
+     just as invisible here as the ink plate was. */
+  .ab[data-variant="solid-dark"] {
+    --ab-solid-dark: var(--color-n-800);
+    --ab-solid-light: var(--color-n-100);
+    --ab-focus: var(--color-bio-lime);
   }
 
   /* ── Hover / focus ──
@@ -319,6 +350,14 @@ const { d, gx, gy } = ICONS[icon];
     --ab-blob-scale: 0.94;
     --ab-line: var(--ab-line-h);
     --ab-bg: var(--ab-bg-h, transparent);
+  }
+
+  .ab[data-variant="solid"]:hover,
+  .ab[data-variant="solid"]:focus-within,
+  .ab[data-variant="solid-dark"]:hover,
+  .ab[data-variant="solid-dark"]:focus-within {
+    --ab-fg: var(--ab-solid-dark);
+    --ab-blob: var(--ab-solid-dark);
   }
 
   .ab:hover .ab-glyph--out,
