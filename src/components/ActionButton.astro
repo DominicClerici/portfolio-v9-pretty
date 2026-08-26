@@ -1,0 +1,348 @@
+---
+// Text CTA + icon blob as ONE anchor, with the interlocking silhouette and
+// hover choreography adapted from integratedbio.com's hero button.
+//
+// Geometry is theirs, verbatim: the label's tail wedge and the blob's bitten
+// left edge are the same paths their theme ships, authored against a 48px
+// button. Ours is 40px, so everything is expressed as `N * --ab-s` off that
+// 48px reference — the two SVGs keep their original viewBoxes and scale
+// uniformly (18/48 and 51/48 are exactly 15/40 and 42.5/40), so the seam
+// stays true at any height. Change --ab-s alone to resize the whole thing.
+//
+// On hover the two halves trade colours, the label leans right into the
+// seam, and the blob retreats out of its socket (origin: center right).
+// Meanwhile the arrow slides off in the direction it points and a second,
+// pre-tinted copy slides in behind it. The two copies are the point: a lone
+// arrow cross-fading its own colour against an inverting fill passes through
+// the same midpoint the fill does, and vanishes for a few frames.
+
+// Slide vector per glyph — the arrow exits the way it points.
+const ICONS = {
+  down: { d: "M7 1v11M2 7.5 7 12.5 12 7.5", dx: "0px", dy: "30px" },
+  right: { d: "M1 7h11M6.5 2 12 7l-5.5 5", dx: "30px", dy: "0px" },
+  external: { d: "M2 12 12 2M4.5 2H12v7.5", dx: "21px", dy: "-21px" },
+};
+
+// Closed wedge for the fill; the same outline reopened for the stroke, which
+// drops the x=0 edge so the line reads as a continuation of the label's own
+// top and bottom borders rather than a box closed against them.
+const CORNER_FILL =
+  "M0 0h5.63c7.808 0 13.536 7.337 11.642 14.91l-6.09 24.359A11.527 11.527 0 0 1 0 48V0Z";
+const CORNER_LINE =
+  "M0 0h5.63c7.808 0 13.536 7.337 11.642 14.91l-6.09 24.359A11.527 11.527 0 0 1 0 48";
+const BLOB =
+  "M6.728 9.09A12 12 0 0 1 18.369 0H39c6.627 0 12 5.373 12 12v24c0 6.627-5.373 12-12 12H12.37C4.561 48-1.167 40.663.727 33.09l6-24Z";
+
+interface Props {
+  href: string;
+  icon: keyof typeof ICONS;
+  variant?: "light" | "dark" | "solid";
+  size?: "sm" | "md";
+  class?: string;
+  [key: string]: unknown;
+}
+
+const {
+  href,
+  icon,
+  variant = "light",
+  size = "md",
+  class: className = "",
+  ...rest
+} = Astro.props;
+
+const { d, dx, dy } = ICONS[icon];
+---
+
+<a
+  href={href}
+  class:list={["ab", className]}
+  data-variant={variant}
+  data-size={size}
+  style={`--ab-dx:${dx};--ab-dy:${dy}`}
+  {...rest}
+>
+  <span class="ab-label">
+    <slot />
+    <span class="ab-corner">
+      <svg viewBox="0 0 18 48" fill="none" aria-hidden="true">
+        <path class="ab-corner-fill" d={CORNER_FILL}></path>
+        {/* Inset by half a stroke so the 1px line lands on the label's own
+            border-box edge instead of straddling it. */}
+        <path
+          class="ab-corner-line"
+          d={CORNER_LINE}
+          transform="translate(0.216 0.6) scale(0.975)"
+          vector-effect="non-scaling-stroke"></path>
+      </svg>
+    </span>
+  </span>
+
+  <span class="ab-icon" aria-hidden="true">
+    <svg class="ab-blob" viewBox="0 0 51 48" fill="none">
+      <path d={BLOB}></path>
+    </svg>
+    <span class="ab-glyph ab-glyph--out">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path
+          d={d}
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+    <span class="ab-glyph ab-glyph--in">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path
+          d={d}
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+  </span>
+</a>
+
+<style>
+  .ab {
+    /* 40px tall, drawn from a 48px reference (see the note above). */
+    --ab-s: 0.8333;
+    --ab-dur: 0.6s;
+    --ab-ease: cubic-bezier(0.25, 1, 0.5, 1);
+
+    /* Animated state. Hover swaps these; every dependent property is a real
+       transitionable property reading the var, so redefining them here is
+       enough to drive the whole choreography from one block. */
+    --ab-gap: calc(16px * var(--ab-s));
+    --ab-pr: calc(8px * var(--ab-s));
+    --ab-shrink: 0.875;
+    --ab-scale: 1;
+    --ab-out: translate(0, 0);
+    --ab-in: translate(calc(-1 * var(--ab-dx)), calc(-1 * var(--ab-dy)));
+
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    width: fit-content;
+    height: calc(48px * var(--ab-s));
+    font-family: var(--font-mono);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ab[data-size="sm"] {
+    font-size: 13px;
+  }
+  .ab[data-size="md"] {
+    font-size: 14px;
+  }
+
+  /* ── Label ── */
+
+  .ab-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    padding: calc(8px * var(--ab-s)) var(--ab-pr) calc(8px * var(--ab-s))
+      calc(20px * var(--ab-s));
+    margin-right: var(--ab-gap);
+    /* No right border: the wedge's stroke carries the outline across the gap. */
+    border: 1px solid var(--ab-line);
+    border-right: 0;
+    border-radius: calc(12px * var(--ab-s)) 0 0 calc(12px * var(--ab-s));
+    background-color: var(--ab-bg);
+    color: var(--ab-fg);
+    transition-property: background-color, border-color, color, margin-right,
+      padding-right;
+    transition-duration: var(--ab-dur);
+    transition-timing-function: var(--ab-ease);
+  }
+
+  /* Overhangs the label by 2 reference units so fill meets fill with no seam. */
+  .ab-corner {
+    position: absolute;
+    /* The label's own 1px border insets the padding box this resolves
+       against; the wedge has to span the border box to line up with it. */
+    top: -1px;
+    bottom: -1px;
+    right: calc(-1 * var(--ab-gap));
+    width: calc(18px * var(--ab-s));
+    transition: right var(--ab-dur) var(--ab-ease);
+  }
+
+  .ab-corner svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .ab-corner-fill {
+    fill: var(--ab-bg);
+    transition: fill var(--ab-dur) var(--ab-ease);
+  }
+
+  .ab-corner-line {
+    fill: none;
+    stroke: var(--ab-line);
+    stroke-width: 1;
+    transition: stroke var(--ab-dur) var(--ab-ease);
+  }
+
+  /* ── Blob ── */
+
+  .ab-icon {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    width: calc(51px * var(--ab-s));
+    height: 100%;
+    overflow: hidden;
+    transform: scale(var(--ab-scale));
+    transform-origin: center right;
+    transition: transform var(--ab-dur) var(--ab-ease);
+  }
+
+  .ab-blob {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ab-blob path {
+    fill: var(--ab-blob-bg);
+    transition: fill var(--ab-dur) var(--ab-ease);
+  }
+
+  /* Centred on the blob's round lobe, not on its bitten left edge. */
+  .ab-glyph {
+    position: absolute;
+    top: 0;
+    left: calc(4px * var(--ab-s));
+    width: calc(100% - 4px * var(--ab-s));
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition-property: transform, opacity;
+    transition-duration: var(--ab-dur);
+    transition-timing-function: var(--ab-ease);
+  }
+
+  .ab-glyph--out {
+    color: var(--ab-blob-fg);
+    transform: var(--ab-out);
+  }
+
+  .ab-glyph--in {
+    color: var(--ab-blob-fg-h);
+    transform: var(--ab-in);
+  }
+
+  /* ── Palettes ──
+     Every variant is the same idea: at rest the accent sits in the blob, on
+     hover it moves to the label and the blob takes the label's old weight.
+     Only the blob's hover fill differs, because "dark plate" has to be read
+     against three different backgrounds. */
+
+  .ab[data-variant="light"] {
+    --ab-bg: transparent;
+    --ab-line: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    --ab-fg: var(--color-ink);
+    --ab-bg-h: var(--color-bio-lime);
+    --ab-line-h: var(--color-bio-lime);
+    --ab-fg-h: var(--color-ink);
+    --ab-blob-bg: var(--color-bio-lime);
+    --ab-blob-bg-h: var(--color-ink);
+    --ab-blob-fg: var(--color-ink);
+    --ab-blob-fg-h: var(--color-bio-lime);
+    --ab-focus: var(--color-ink);
+  }
+
+  /* On the n-900 card, ink is only 1.35:1 — the blob would disappear. n-700
+     is the lightest step that still reads as the label's old outline weight. */
+  .ab[data-variant="dark"] {
+    --ab-bg: transparent;
+    --ab-line: var(--color-n-700);
+    --ab-fg: var(--color-n-100);
+    --ab-bg-h: var(--color-bio-lime);
+    --ab-line-h: var(--color-bio-lime);
+    --ab-fg-h: var(--color-ink);
+    --ab-blob-bg: var(--color-bio-lime);
+    --ab-blob-bg-h: var(--color-n-700);
+    --ab-blob-fg: var(--color-ink);
+    --ab-blob-fg-h: var(--color-bio-lime);
+    --ab-focus: var(--color-bio-lime);
+  }
+
+  .ab[data-variant="solid"] {
+    --ab-bg: var(--color-ink);
+    --ab-line: var(--color-ink);
+    --ab-fg: var(--color-bone);
+    --ab-bg-h: var(--color-bio-lime);
+    --ab-line-h: var(--color-bio-lime);
+    --ab-fg-h: var(--color-ink);
+    --ab-blob-bg: var(--color-bio-lime);
+    --ab-blob-bg-h: var(--color-ink);
+    --ab-blob-fg: var(--color-ink);
+    --ab-blob-fg-h: var(--color-bio-lime);
+    --ab-focus: var(--color-ink);
+  }
+
+  /* ── Hover / focus ──
+     Must follow the palettes: same specificity, later wins. Keyboard focus
+     gets the motion too, not just the ring. */
+  .ab:hover,
+  .ab:focus-visible {
+    --ab-bg: var(--ab-bg-h);
+    --ab-line: var(--ab-line-h);
+    --ab-fg: var(--ab-fg-h);
+    --ab-blob-bg: var(--ab-blob-bg-h);
+    --ab-gap: calc(12px * var(--ab-s));
+    --ab-pr: calc(14px * var(--ab-s));
+    --ab-scale: var(--ab-shrink);
+    --ab-out: translate(var(--ab-dx), var(--ab-dy));
+    --ab-in: translate(0, 0);
+  }
+
+  .ab:focus-visible {
+    outline: 2px solid var(--ab-focus);
+    outline-offset: 4px;
+    border-radius: calc(12px * var(--ab-s));
+  }
+
+  /* ── Reduced motion ──
+     Nothing translates or resizes; the arrows cross-fade in place instead,
+     which keeps the two-copy colour trick doing its job. */
+  @media (prefers-reduced-motion: reduce) {
+    .ab {
+      --ab-shrink: 1;
+      --ab-fade-out: 1;
+      --ab-fade-in: 0;
+    }
+
+    .ab:hover,
+    .ab:focus-visible {
+      --ab-gap: calc(16px * var(--ab-s));
+      --ab-pr: calc(8px * var(--ab-s));
+      --ab-out: translate(0, 0);
+      --ab-in: translate(0, 0);
+      --ab-fade-out: 0;
+      --ab-fade-in: 1;
+    }
+
+    .ab-glyph--out {
+      opacity: var(--ab-fade-out);
+    }
+
+    .ab-glyph--in {
+      opacity: var(--ab-fade-in);
+    }
+  }
+</style>

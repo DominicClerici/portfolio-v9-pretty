@@ -1,5 +1,5 @@
 ---
-import IconButton from "./IconButton.astro";
+import ActionButton from "./ActionButton.astro";
 ---
 
 <!-- Scrolls over the pinned canvas in PinnedCanvas.astro — no background of
@@ -32,33 +32,10 @@ import IconButton from "./IconButton.astro";
         </p>
       </div>
 
-      <div class="hero-enter-cta flex items-center gap-3 shrink-0">
-        <a
-          href="#work"
-          class="font-mono text-[14px] text-ink border border-ink/35 rounded-lg h-10 px-4 inline-flex items-center hover:border-ink hover:bg-white/25 hover:backdrop-blur-md transition-colors duration-200"
-        >
+      <div class="hero-enter-cta shrink-0">
+        <ActionButton href="#work" icon="down" variant="light">
           View selected work
-        </a>
-        <IconButton
-          href="#work"
-          aria-label="Scroll to selected work"
-          class="hover:translate-y-0.5"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M7 1v11M2 7.5 7 12.5 12 7.5"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"></path>
-          </svg>
-        </IconButton>
+        </ActionButton>
       </div>
     </div>
   </div>
