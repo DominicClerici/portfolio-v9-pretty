@@ -186,6 +186,16 @@ h6 {
   letter-spacing: -0.03em;
 }
 
+/* Shared focus ring for the Work section's controls — worn by ProjectLinks,
+   the door, "Learn more", and the spread's two back controls. Global because
+   those components render on the front page and on /projects/<slug>, and the
+   section component that used to host the rule only exists on the former. */
+.we1-focus:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
 /* ── Dot grid ──
    Viewport-anchored rather than element-anchored, so adjacent sections that
    use it (Career -> Quote) share one continuous grid with no seam. */

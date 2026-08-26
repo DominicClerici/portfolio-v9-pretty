@@ -1,0 +1,332 @@
+---
+// The inside spread of one edition — the story, the details, and the full
+// gallery column, printed on that edition's stock.
+//
+// Rendered twice from the same source, and the two must be pixel-identical:
+//
+//   mode="overlay"  Work.astro, on the front page. Hidden until the window
+//                   opens, then shown as a fixed dialog the door expands into.
+//   mode="page"     src/pages/projects/[slug].astro, the edition's own URL —
+//                   what a crawler indexes, and what a reload of that URL
+//                   lands on. Same fixed full-viewport scroller, so the
+//                   soft-navigated overlay and the real page are the same
+//                   object; anything that diverged here would show up as a
+//                   jump the first time someone refreshed.
+//
+// Only four things differ: the dialog semantics, whether it starts hidden,
+// whether the rise-in is pre-settled, and where the two back controls point
+// (a close button on the front page, a real link back to the front page from
+// the standalone one).
+import type { Project } from "../data/projects";
+import ProjectGallery from "./ProjectGallery.astro";
+import ProjectLinks from "./ProjectLinks.astro";
+
+interface Props {
+  project: Project;
+  index: number;
+  mode: "overlay" | "page";
+}
+
+const { project, index: i, mode } = Astro.props;
+
+const overlay = mode === "overlay";
+// The standalone page is the edition's own document, so its title is the
+// document's heading; in the overlay it is one section of the front page.
+const Heading = overlay ? "h3" : "h1";
+// Cold landings leave through the front door: /#from-<slug> tells the index
+// which window to run the door back into (see Work.astro's arrive()).
+const backHref = `/#from-${project.slug}`;
+const backProps = overlay
+  ? { type: "button" as const, "data-close": true }
+  : { href: backHref };
+const BackTag = overlay ? "button" : "a";
+---
+
+<div
+  class:list={[
+    "we1-spread focus:outline-none",
+    i % 2 === 1 && "we1-spread-flip",
+    !overlay && "is-in",
+  ]}
+  data-spread={i}
+  data-lenis-prevent
+  tabindex={overlay ? "-1" : undefined}
+  role={overlay ? "dialog" : undefined}
+  aria-modal={overlay ? "true" : undefined}
+  aria-labelledby={overlay ? `we1-spread-title-${i}` : undefined}
+  style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}
+  hidden={overlay}
+>
+  <BackTag
+    class="we1-back we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase cursor-pointer"
+    {...backProps}
+  >
+    &larr;&ensp;Back to the front page
+  </BackTag>
+
+  <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-3 sm:px-6">
+    <ProjectGallery gallery={project.gallery} leadOnly />
+    <div class="we1-story">
+      <Heading
+        id={`we1-spread-title-${i}`}
+        class="font-display text-ink leading-[0.96] tracking-[-0.03em] text-[clamp(3rem,6.5vw,5.25rem)]"
+        data-rise
+        style="--ri: 0;"
+      >
+        {project.title}
+      </Heading>
+      <p
+        class="font-display text-[19px] leading-[1.55] tracking-[-0.01em] text-ink/75 max-w-[52ch] mt-8"
+        data-rise
+        style="--ri: 1;"
+      >
+        {project.description}
+      </p>
+      <div class="mt-9 space-y-6 max-w-[58ch]">
+        {
+          project.story.map((para, j) => (
+            <p
+              class="font-display text-[16px] leading-[1.75] text-ink/65"
+              data-rise
+              style={`--ri: ${2 + j};`}
+            >
+              {para}
+            </p>
+          ))
+        }
+      </div>
+      <dl
+        class="grid grid-cols-3 gap-6 mt-12 max-w-[52ch]"
+        data-rise
+        style={`--ri: ${2 + project.story.length};`}
+      >
+        {
+          project.details.map((d) => (
+            <div>
+              <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40">
+                {d.label}
+              </dt>
+              <dd class="font-display text-[15px] leading-[1.5] text-ink/80 mt-2.5">
+                {d.value}
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+      <p
+        class="font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-10"
+        data-rise
+        style={`--ri: ${3 + project.story.length};`}
+      >
+        Set in &mdash; {project.stack.join(" · ")}
+      </p>
+      <ProjectLinks
+        websiteUrl={project.websiteUrl}
+        githubUrl={project.githubUrl}
+        class="mt-10"
+        data-rise
+        style={`--ri: ${4 + project.story.length};`}
+      />
+    </div>
+
+    <ProjectGallery gallery={project.gallery} />
+  </div>
+
+  <div class="pb-16 pt-6 text-center">
+    {
+      overlay ? (
+        <button
+          type="button"
+          class="we1-endline we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 cursor-pointer"
+          data-close
+        >
+          that&rsquo;s the whole story &mdash; back to the front page
+        </button>
+      ) : (
+        <a
+          href={backHref}
+          class="we1-endline we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 cursor-pointer"
+        >
+          that&rsquo;s the whole story &mdash; back to the front page
+        </a>
+      )
+    }
+  </div>
+</div>
+
+<style>
+  /* ── The inside spread ── */
+  /* A fixed full-viewport scroller in both modes. On the front page that is
+     what makes it a dialog the door can expand into; on its own page it is
+     what makes the two identical. */
+  .we1-spread {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background:
+      radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
+      var(--paper);
+  }
+
+  .we1-spread-flip {
+    background:
+      radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
+      var(--paper);
+  }
+
+  .we1-back {
+    position: fixed;
+    top: 22px;
+    left: max(22px, env(safe-area-inset-left));
+    z-index: 5;
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent);
+    border-radius: 8px;
+    color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition:
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .we1-back:hover {
+    color: var(--color-ink);
+    border-color: color-mix(in srgb, var(--acc) 55%, transparent);
+  }
+
+  .we1-story {
+    padding-top: clamp(120px, 16vh, 180px);
+    padding-bottom: 96px;
+  }
+
+  .we1-endline {
+    transition: color 0.25s ease;
+  }
+
+  .we1-endline:hover {
+    color: var(--acc);
+  }
+
+  /* Content rises in staggered once the portal dissolves. The standalone page
+     ships with .is-in already set, so it reads settled with no JS. */
+  .we1-spread [data-rise] {
+    opacity: 0.1;
+    transform: translateY(6px);
+    transition:
+      opacity 0.6s var(--ease-settle),
+      transform 0.6s var(--ease-settle);
+    transition-delay: calc(var(--ri, 0) * 60ms);
+  }
+
+  .we1-spread.is-in [data-rise] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── Closing: content dissolves over the shrinking portal ── */
+  /* The spread lifts above the portal and fades as one layer. Inside the
+     clip the portal paints the same paper + column at scrollTop 0, so an
+     unscrolled gallery reads as perfectly still while only the text (and,
+     outside the clip, the paper) dissolves into the revealed page.
+     Overlay-only states, but they live here with the element they style —
+     the compound selector below has to outrank .we1-spread's own z-index. */
+  .we1-spread.we1-spread-close {
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .we1-spread-out {
+    opacity: 0;
+    transition: opacity 0.42s ease; /* 60% of the 0.7s door shrink */
+  }
+
+  /* Unscrolled mobile close: the portal's flying clone takes over for the
+     spread's hero the instant the close starts, so the spread's own copy must
+     vanish with no fade — otherwise a static ghost would sit over the flight */
+  .we1-hero-off :global(.we1-ghero) {
+    opacity: 0;
+  }
+
+  @media (min-width: 1024px) {
+    /* Sides swap on desktop only — the mobile spread always runs hero →
+       story → remaining plates */
+    .we1-spread-flip .we1-story {
+      order: 2;
+    }
+
+    /* :global — rendered by ProjectGallery.astro */
+    .we1-spread-flip :global(.we1-gallery) {
+      order: 1;
+    }
+
+    /* The hero plate is a mobile-only element */
+    .we1-spread :global(.we1-ghero) {
+      display: none;
+    }
+
+    /* Story column sits where the old centered 1280px container put it; the
+       gallery column runs from the gap to the page edge, with half the column
+       gap (48px) as its edge padding */
+    .we1-sgrid {
+      grid-template-columns: minmax(0, 36rem) minmax(0, 1fr);
+      padding-left: calc(max((100vw - 1280px) / 2, 0px) + 48px);
+      padding-right: 48px;
+    }
+
+    .we1-spread-flip .we1-sgrid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 36rem);
+      padding-left: 48px;
+      padding-right: calc(max((100vw - 1280px) / 2, 0px) + 48px);
+    }
+
+    .we1-story {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100dvh;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .we1-story::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .we1-story {
+      padding-top: 44px;
+      padding-bottom: 24px;
+    }
+
+    /* The lead plate leads the mobile spread — the door you tapped, seated as
+       the story's cover. It takes over the top clearance (under the fixed
+       back button) that the story used to carry. Specificity bump over
+       ProjectGallery's own .we1-gallery.we1-ghero padding reset. */
+    .we1-spread :global(.we1-gallery.we1-ghero) {
+      padding-top: 96px;
+      width: 100%;
+      max-width: 640px;
+      margin-inline: auto;
+    }
+
+    /* ...so the in-flow gallery drops its own copy of the lead (the hero is
+       fig. 01; the column resumes at fig. 02) */
+    .we1-spread :global(.we1-gallery:not(.we1-ghero) .we1-gfig-lead) {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .we1-spread [data-rise] {
+      transition: none !important;
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

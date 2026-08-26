@@ -1,0 +1,64 @@
+---
+// One edition's own page. This is what a search engine indexes and what a
+// reload of /projects/<slug> lands on; the front page's walk-through-the-
+// window renders the very same spread as an overlay and only moves the URL
+// here, so the two are the same object seen two ways.
+import Layout from "../../layouts/Layout.astro";
+import ProjectSpread from "../../components/ProjectSpread.astro";
+import { projects } from "../../data/projects";
+
+export function getStaticPaths() {
+  return projects.map((project, index) => ({
+    params: { slug: project.slug },
+    props: { project, index },
+  }));
+}
+
+const { project, index } = Astro.props;
+
+const title = `${project.title} — Dominic Clerici`;
+const canonical = new URL(`/projects/${project.slug}/`, Astro.site).href;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "CreativeWork",
+  name: project.title,
+  description: project.description,
+  url: canonical,
+  sameAs: [project.websiteUrl, project.githubUrl].filter(Boolean),
+  keywords: project.stack.join(", "),
+  author: {
+    "@type": "Person",
+    name: "Dominic Clerici",
+    url: new URL("/", Astro.site).href,
+  },
+};
+---
+
+<Layout title={title} description={project.description} canonical={canonical}>
+  <script
+    slot="head"
+    type="application/ld+json"
+    is:inline
+    set:html={JSON.stringify(jsonLd)}
+  />
+  <main>
+    <ProjectSpread project={project} index={index} mode="page" />
+  </main>
+</Layout>
+
+<script>
+  // Imported for its ordering guarantee, not its exports: Layout pulls in the
+  // same module, and naming it here makes the bundler run it before this file
+  // — otherwise __attachSmoothScroll may not exist yet when we reach for it.
+  import "../../scripts/smooth-scroll.ts";
+
+  // The spread is a fixed full-viewport scroller in both modes — that is what
+  // keeps this page and the front page's overlay identical — so the root
+  // scroll engine has nothing to drive here (the element opts out of it with
+  // data-lenis-prevent). Hand it the element-scoped easer instead, so reading
+  // an edition feels the same whether you walked in through the window or
+  // landed on the URL.
+  const spread = document.querySelector<HTMLElement>(".we1-spread");
+  if (spread) (window as any).__attachSmoothScroll?.(spread);
+</script>

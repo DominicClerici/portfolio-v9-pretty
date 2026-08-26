@@ -3,6 +3,7 @@ import { projects } from "../data/projects";
 import { SHAPES, maskUri, ringBoxes } from "../lib/workShapes";
 import ProjectGallery from "./ProjectGallery.astro";
 import ProjectLinks from "./ProjectLinks.astro";
+import ProjectSpread from "./ProjectSpread.astro";
 
 // "The Morning Editions": Dispatch prints a paper every morning, so the whole
 // shelf is typeset like one — each build is the front page of its own edition,
@@ -73,6 +74,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             class={`we1-plate relative ${i % 2 === 1 ? "we1-flip" : ""}`}
             data-plate={i}
             data-shape={project.shape}
+            data-slug={project.slug}
+            data-doc-title={`${project.title} — Dominic Clerici`}
+            data-doc-desc={project.description}
             style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}
           >
             <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
@@ -94,8 +98,8 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
                   githubUrl={project.githubUrl}
                   class="mt-9"
                 >
-                  <button
-                    type="button"
+                  <a
+                    href={`/projects/${project.slug}/`}
                     class="we1-more we1-focus font-mono text-[13px] tracking-[-0.02em] uppercase inline-flex items-center gap-[9px] cursor-pointer"
                     data-open={i}
                   >
@@ -105,7 +109,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
                       style={`--gm: ${shape.d.mask}; --gar: ${shape.d.ar.toFixed(4)};`}
                     />
                     Learn more
-                  </button>
+                  </a>
                 </ProjectLinks>
               </div>
 
@@ -143,8 +147,8 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
                     ))}
                   </div>
                   <span class="we1-shade absolute" aria-hidden="true" />
-                  <button
-                    type="button"
+                  <a
+                    href={`/projects/${project.slug}/`}
                     class="we1-door block w-full cursor-pointer"
                     data-open={i}
                     aria-label={`Read the full story — ${project.title}`}
@@ -158,7 +162,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
                         <ProjectGallery gallery={project.gallery} decorative />
                       </div>
                     </div>
-                  </button>
+                  </a>
                   {project.featured && (
                     <span class="we1-stamp absolute font-mono text-[11px] leading-none tracking-[-0.01em] uppercase">
                       Editor&rsquo;s pick
@@ -182,99 +186,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
 
   {
     projects.map((project, i) => (
-      <div
-        class={`we1-spread focus:outline-none ${i % 2 === 1 ? "we1-spread-flip" : ""}`}
-        data-spread={i}
-        data-lenis-prevent
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={`we1-spread-title-${i}`}
-        style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}
-        hidden
-      >
-        <button
-          type="button"
-          class="we1-back we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase cursor-pointer"
-          data-close
-        >
-          &larr;&ensp;Back to the front page
-        </button>
-
-        <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-3 sm:px-6">
-          <ProjectGallery gallery={project.gallery} leadOnly />
-          <div class="we1-story">
-            <h3
-              id={`we1-spread-title-${i}`}
-              class="font-display text-ink leading-[0.96] tracking-[-0.03em] text-[clamp(3rem,6.5vw,5.25rem)]"
-              data-rise
-              style="--ri: 0;"
-            >
-              {project.title}
-            </h3>
-            <p
-              class="font-display text-[19px] leading-[1.55] tracking-[-0.01em] text-ink/75 max-w-[52ch] mt-8"
-              data-rise
-              style="--ri: 1;"
-            >
-              {project.description}
-            </p>
-            <div class="mt-9 space-y-6 max-w-[58ch]">
-              {project.story.map((para, j) => (
-                <p
-                  class="font-display text-[16px] leading-[1.75] text-ink/65"
-                  data-rise
-                  style={`--ri: ${2 + j};`}
-                >
-                  {para}
-                </p>
-              ))}
-            </div>
-            <dl
-              class="grid grid-cols-3 gap-6 mt-12 max-w-[52ch]"
-              data-rise
-              style={`--ri: ${2 + project.story.length};`}
-            >
-              {project.details.map((d) => (
-                <div>
-                  <dt class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/40">
-                    {d.label}
-                  </dt>
-                  <dd class="font-display text-[15px] leading-[1.5] text-ink/80 mt-2.5">
-                    {d.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p
-              class="font-mono text-[12px] leading-[1.9] tracking-[-0.02em] uppercase text-ink/45 mt-10"
-              data-rise
-              style={`--ri: ${3 + project.story.length};`}
-            >
-              Set in &mdash; {project.stack.join(" · ")}
-            </p>
-            <ProjectLinks
-              websiteUrl={project.websiteUrl}
-              githubUrl={project.githubUrl}
-              class="mt-10"
-              data-rise
-              style={`--ri: ${4 + project.story.length};`}
-            />
-          </div>
-
-          <ProjectGallery gallery={project.gallery} />
-        </div>
-
-        <div class="pb-16 pt-6 text-center">
-          <button
-            type="button"
-            class="we1-endline we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 cursor-pointer"
-            data-close
-          >
-            that&rsquo;s the whole story &mdash; back to the front page
-          </button>
-        </div>
-      </div>
+      <ProjectSpread project={project} index={i} mode="overlay" />
     ))
   }
 
@@ -593,13 +505,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     transform: rotate(-6deg);
   }
 
-  /* :global — also worn by the Source link inside ProjectLinks.astro */
-  :global(.we1-focus:focus-visible) {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 4px;
-    border-radius: 2px;
-  }
-
   /* ── Learn more: mono button with the edition's own figure as its glyph ── */
   .we1-more {
     color: var(--acc);
@@ -660,28 +565,8 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   }
 
   /* ── Closing: content dissolves over the shrinking portal ── */
-  /* The spread lifts above the portal and fades as one layer. Inside the
-     clip the portal paints the same paper + column at scrollTop 0, so an
-     unscrolled gallery reads as perfectly still while only the text (and,
-     outside the clip, the paper) dissolves into the revealed page. */
-  /* Compound selector: must outrank .we1-spread's own z-index below */
-  .we1-spread.we1-spread-close {
-    z-index: 50;
-    pointer-events: none;
-  }
-
-  .we1-spread-out {
-    opacity: 0;
-    transition: opacity 0.42s ease; /* 60% of the 0.7s door shrink */
-  }
-
-  /* Unscrolled mobile close: the portal's flying clone takes over for the
-     spread's hero the instant the close starts, so the spread's own copy must
-     vanish with no fade — otherwise a static ghost would sit over the flight */
-  .we1-hero-off :global(.we1-ghero) {
-    opacity: 0;
-  }
-
+  /* The spread's own fade lives with the spread (ProjectSpread.astro); what
+     stays here is the portal's half of the same choreography. */
   /* Scrolled gallery: the portal's column starts hidden so the spread's
      scrolled images genuinely fade out with it... */
   .we1-portal-col-hide .we1-portal-col {
@@ -692,121 +577,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   .we1-portal-col-in .we1-portal-col {
     opacity: 1;
     transition: opacity 0.21s ease; /* 30% of the door shrink */
-  }
-
-  /* ── The inside spread ── */
-  .we1-spread {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    background:
-      radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
-      var(--paper);
-  }
-
-  .we1-spread-flip {
-    background:
-      radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
-      var(--paper);
-  }
-
-  .we1-back {
-    position: fixed;
-    top: 22px;
-    left: max(22px, env(safe-area-inset-left));
-    z-index: 5;
-    padding: 12px 16px;
-    border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent);
-    border-radius: 8px;
-    color: color-mix(in srgb, var(--color-ink) 60%, transparent);
-    background: color-mix(in srgb, var(--paper) 82%, transparent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition:
-      color 0.25s ease,
-      border-color 0.25s ease;
-  }
-
-  .we1-back:hover {
-    color: var(--color-ink);
-    border-color: color-mix(in srgb, var(--acc) 55%, transparent);
-  }
-
-  .we1-story {
-    padding-top: clamp(120px, 16vh, 180px);
-    padding-bottom: 96px;
-  }
-
-  .we1-endline {
-    transition: color 0.25s ease;
-  }
-
-  .we1-endline:hover {
-    color: var(--acc);
-  }
-
-  /* Content rises in staggered once the portal dissolves */
-  .we1-spread [data-rise] {
-    opacity: 0.1;
-    transform: translateY(6px);
-    transition:
-      opacity 0.6s var(--ease-settle),
-      transform 0.6s var(--ease-settle);
-    transition-delay: calc(var(--ri, 0) * 60ms);
-  }
-
-  .we1-spread.is-in [data-rise] {
-    opacity: 1;
-    transform: none;
-  }
-
-  @media (min-width: 1024px) {
-    /* Sides swap on desktop only — the mobile spread always runs hero →
-       story → remaining plates */
-    .we1-spread-flip .we1-story {
-      order: 2;
-    }
-
-    /* :global — rendered by ProjectGallery.astro (see .we1-view above) */
-    .we1-spread-flip :global(.we1-gallery) {
-      order: 1;
-    }
-
-    /* The hero plate is a mobile-only element */
-    .we1-spread :global(.we1-ghero) {
-      display: none;
-    }
-
-    /* Story column sits where the old centered 1280px container put it; the
-       gallery column runs from the gap to the page edge, with half the column
-       gap (48px) as its edge padding */
-    .we1-sgrid {
-      grid-template-columns: minmax(0, 36rem) minmax(0, 1fr);
-      padding-left: calc(max((100vw - 1280px) / 2, 0px) + 48px);
-      padding-right: 48px;
-    }
-
-    .we1-spread-flip .we1-sgrid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 36rem);
-      padding-left: 48px;
-      padding-right: calc(max((100vw - 1280px) / 2, 0px) + 48px);
-    }
-
-    .we1-story {
-      position: sticky;
-      top: 0;
-      align-self: start;
-      max-height: 100dvh;
-      overflow-y: auto;
-      scrollbar-width: none;
-    }
-
-    .we1-story::-webkit-scrollbar {
-      display: none;
-    }
   }
 
   @media (max-width: 1023px) {
@@ -842,28 +612,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     .we1-plate {
       padding: clamp(64px, 9vh, 110px) 0;
     }
-
-    .we1-story {
-      padding-top: 44px;
-      padding-bottom: 24px;
-    }
-
-    /* The lead plate leads the mobile spread — the door you tapped, seated as
-       the story's cover. It takes over the top clearance (under the fixed
-       back button) that the story used to carry. Specificity bump over
-       ProjectGallery's own .we1-gallery.we1-ghero padding reset. */
-    .we1-spread :global(.we1-gallery.we1-ghero) {
-      padding-top: 96px;
-      width: 100%;
-      max-width: 640px;
-      margin-inline: auto;
-    }
-
-    /* ...so the in-flow gallery drops its own copy of the lead (the hero is
-       fig. 01; the column resumes at fig. 02) */
-    .we1-spread :global(.we1-gallery:not(.we1-ghero) .we1-gfig-lead) {
-      display: none;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -878,14 +626,8 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
 
     .we1-shade,
     .we1-ringp,
-    .we1-arch::after,
-    .we1-spread [data-rise] {
+    .we1-arch::after {
       transition: none !important;
-    }
-
-    .we1-spread [data-rise] {
-      opacity: 1;
-      transform: none;
     }
   }
 </style>
@@ -939,6 +681,60 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         view: plate.querySelector<HTMLElement>("[data-view]"),
         replica: plate.querySelector<HTMLElement>("[data-view] .we1-gallery"),
       }));
+
+      // ── The address bar ──
+      // Every edition is a real prerendered page at /projects/<slug> (see
+      // src/pages/projects/[slug].astro), printing this same spread — that is
+      // what search engines index and what a reload of the URL lands on. What
+      // stays client-side is the *walk* between them: the door needs the
+      // window and the spread alive in one document, which no cross-document
+      // navigation can give us. So opening a window is a history push and a
+      // head swap, and the page itself never unloads — which is also why the
+      // front page is still sitting at the same scroll position when the door
+      // closes again.
+      const slugs = windows.map((w) => w.plate.dataset.slug ?? "");
+      const projectPath = (i: number) => `/projects/${slugs[i]}/`;
+      const indexOfSlug = (slug: string) => slugs.indexOf(slug);
+      const indexOfPath = (path: string) =>
+        indexOfSlug(path.replace(/^\/projects\//, "").replace(/\/$/, ""));
+
+      const meta = (sel: string) =>
+        document.head.querySelector<HTMLMetaElement>(sel);
+      const canonicalEl = document.head.querySelector<HTMLLinkElement>(
+        'link[rel="canonical"]',
+      );
+      const descEl = meta('meta[name="description"]');
+      const ogTitleEl = meta('meta[property="og:title"]');
+      const ogDescEl = meta('meta[property="og:description"]');
+      const ogUrlEl = meta('meta[property="og:url"]');
+
+      // The front page's own head, captured before anything moves it
+      const homeHead = {
+        title: document.title,
+        desc: descEl?.content ?? "",
+        url: canonicalEl?.href ?? `${location.origin}/`,
+      };
+
+      const writeHead = (title: string, desc: string, url: string) => {
+        document.title = title;
+        if (descEl) descEl.content = desc;
+        if (canonicalEl) canonicalEl.href = url;
+        if (ogTitleEl) ogTitleEl.content = title;
+        if (ogDescEl) ogDescEl.content = desc;
+        if (ogUrlEl) ogUrlEl.content = url;
+      };
+
+      const setHead = (i: number) => {
+        const d = windows[i].plate.dataset;
+        writeHead(
+          d.docTitle ?? homeHead.title,
+          d.docDesc ?? homeHead.desc,
+          `${location.origin}${projectPath(i)}`,
+        );
+      };
+
+      const restoreHead = () =>
+        writeHead(homeHead.title, homeHead.desc, homeHead.url);
 
       // ── The window: each arch looks through at its spread's gallery ──
       // The spread is a fixed overlay, so its gallery's rect at scrollTop 0 is
@@ -1360,7 +1156,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         if (portalCol) portalCol.style.transform = "";
       };
 
-      const open = (i: number, trigger: HTMLElement) => {
+      const open = (i: number, trigger: HTMLElement, push = true) => {
         if (busy || openIndex >= 0) return;
         const spread = spreadFor(i);
         const arch = archFor(i);
@@ -1379,7 +1175,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         openIndex = i;
         lastTrigger = trigger;
         lock(true);
-        history.pushState({ we1: i }, "");
+        // push is false when the browser put us here (the forward button):
+        // the entry already exists, and adding a second one would take two
+        // presses of Back to leave the same window.
+        if (push) history.pushState({ we1: i }, "", projectPath(i));
+        setHead(i);
 
         if (
           reducedMotion ||
@@ -1452,6 +1252,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         if (openIndex < 0) return;
         const i = openIndex;
         openIndex = -1;
+        restoreHead();
         const spread = spreadFor(i);
         const arch = archFor(i);
 
@@ -1584,6 +1385,21 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         const target = e.target as HTMLElement;
         const opener = target.closest<HTMLElement>("[data-open]");
         if (opener?.dataset.open != null) {
+          // Both openers are real <a> elements pointing at the edition's page.
+          // Leave every browser-native way of following one alone — modified
+          // clicks, middle clicks, anything already handled — and intercept
+          // only the plain left click, which walks through the window instead
+          // of navigating away from the page the window is cut into.
+          if (
+            e.defaultPrevented ||
+            e.button !== 0 ||
+            e.metaKey ||
+            e.ctrlKey ||
+            e.shiftKey ||
+            e.altKey
+          )
+            return;
+          e.preventDefault();
           open(Number(opener.dataset.open), opener);
           return;
         }
@@ -1591,12 +1407,176 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       });
 
       window.addEventListener("popstate", () => {
-        if (openIndex >= 0) close();
+        // The URL is the state of record: Back off an edition closes its door,
+        // Forward onto one opens it again. (Edition-to-edition is unreachable
+        // — nothing links one spread to another — so a differing index while
+        // one is open can only mean "leave this one".)
+        const want = indexOfPath(location.pathname);
+        if (want === openIndex) return;
+        if (openIndex >= 0) {
+          close();
+          return;
+        }
+        if (want >= 0) {
+          const door = section.querySelector<HTMLElement>(
+            `[data-plate="${want}"] .we1-door`,
+          );
+          if (door) open(want, door, false);
+        }
       });
 
       window.addEventListener("keydown", (e) => {
         if (e.key === "Escape") requestClose();
       });
+
+      // ── Arriving from an edition's own page ──
+      // A cold visitor — a search result, a shared link — never walked through
+      // the window, so leaving /projects/<slug> is a real navigation to
+      // /#from-<slug>. The front page then builds the far end of that walk
+      // backwards: seat the window this edition is read through in the middle
+      // of the viewport, and run the door *closed* from full screen down into
+      // it, so the visitor lands on the front page already looking at the
+      // window they just came out of.
+      //
+      // The seam a page load would otherwise show is covered by the curtain
+      // (index.astro raises it in <head>, before first paint, painted this
+      // edition's own paper and wash). The portal takes over from it in the
+      // same frame with the same paint, so the hand-off has nothing to see.
+      const htmlEl = document.documentElement;
+      const dropCurtain = () => htmlEl.removeAttribute("data-we1-arrive");
+      // The curtain also took scroll restoration off the browser so a reload
+      // couldn't yank the page out from under the door.
+      const releaseRestoration = () => {
+        history.scrollRestoration = "auto";
+      };
+
+      // Seat the window in the middle of the viewport — where the door will
+      // come to rest, and where the visitor should find themselves standing
+      // once it has.
+      //
+      // It takes more than one pass. A plate carries an entry transform driven
+      // by how far into the viewport it has scrolled (--in, worth up to 70px
+      // of lift), so the rect measured from up the page is not the rect the
+      // window will occupy once we have scrolled to it: the first jump lands
+      // 70px out, and correcting it is what the second pass is for. Three is
+      // the ceiling, not the expectation — the loop exits the moment the
+      // window is within half a pixel of centre, and a plate near the end of
+      // the document simply runs out of scroll and stops early.
+      const centerOn = (arch: HTMLElement) => {
+        for (let pass = 0; pass < 3; pass++) {
+          const r = arch.getBoundingClientRect();
+          const off = r.top + r.height / 2 - window.innerHeight / 2;
+          if (Math.abs(off) < 0.5) break;
+          const max = htmlEl.scrollHeight - window.innerHeight;
+          const y = Math.max(0, Math.min(max, window.scrollY + off));
+          if (y === window.scrollY) break;
+          window.scrollTo(0, y);
+          // Synchronous, before the next pass reads a rect back: --in is
+          // written by the same update that counter-translates the pinned
+          // scene behind each window, and neither may be a frame stale.
+          (window as any).__flushScrollBus?.();
+        }
+      };
+
+      const arrive = (i: number) => {
+        const spread = spreadFor(i);
+        const arch = archFor(i);
+        if (!spread || !arch) {
+          dropCurtain();
+          releaseRestoration();
+          return;
+        }
+
+        if (!reducedMotion) measureAll();
+        centerOn(arch);
+
+        const mobile = !desktop.matches;
+        const archFrame = mobile
+          ? replicaFrameFor(i)?.getBoundingClientRect()
+          : undefined;
+        const heroFrame = mobile ? heroFrameOf(spread) : undefined;
+        const hero = mobile ? heroFor(spread) : null;
+
+        if (
+          reducedMotion ||
+          !portal ||
+          !portalCol ||
+          (mobile && !(archFrame && heroFrame && hero))
+        ) {
+          dropCurtain();
+          releaseRestoration();
+          return;
+        }
+
+        busy = true;
+        lock(true);
+
+        if (mobile) {
+          fillPortal(hero!);
+          dressPortal(spread);
+          setColRect(heroFrame!);
+        } else {
+          fillPortal(galleryFor(spread));
+          dressPortal(spread);
+          setColRect(galRectOf(spread) ?? { left: 0, top: 0, width: 100 });
+        }
+
+        // The gallery resolves in over the last third of the door rather than
+        // being there from the first frame. A visitor can leave the story from
+        // anywhere in it, so there is no scroll position those images could
+        // honestly continue from — paper alone carries the hand-off, and the
+        // column fades up only as the door converges on the window that is
+        // already showing it. (Same treatment the close gives a spread that
+        // was scrolled; see we1-portal-col-hide.)
+        portal.classList.add("we1-portal-col-hide");
+
+        const closed = figureAt(i, arch.getBoundingClientRect());
+        whenPortalReady(() => {
+          repinPage();
+          portal.classList.add("we1-portal-on");
+          animateDoor(
+            expandTargets(
+              shapeOf(i),
+              closed,
+              window.innerWidth,
+              window.innerHeight,
+            ),
+            closed,
+            mobile
+              ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) }
+              : null,
+          );
+          // animateDoor painted the full-screen end of the clip synchronously
+          // above, so the portal is already showing exactly what the curtain
+          // is showing — this frame is where one becomes the other.
+          dropCurtain();
+
+          later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS);
+          later(() => {
+            resetPortal();
+            lock(false);
+            // After the unlock, which restores whatever the curtain left set
+            releaseRestoration();
+            busy = false;
+          }, COL_IN_AT_MS + COL_IN_MS);
+        });
+      };
+
+      const arriveSlug = /^#from-(.+)$/.exec(location.hash);
+      const arriveAt = arriveSlug
+        ? indexOfSlug(decodeURIComponent(arriveSlug[1]))
+        : -1;
+      if (arriveAt >= 0) {
+        history.replaceState({}, "", location.pathname + location.search);
+        // Let the faces land before measuring. An arch's position is the sum
+        // of every block above it, and a late-swapping font moves all of them
+        // — measure too early and the door closes onto where the window used
+        // to be. Capped, so a face that never arrives can't strand the curtain.
+        const fonts = (document as any).fonts?.ready ?? Promise.resolve();
+        Promise.race([fonts, new Promise((r) => setTimeout(r, 250))]).then(() =>
+          requestAnimationFrame(() => arrive(arriveAt)),
+        );
+      }
     }
   }
 </script>

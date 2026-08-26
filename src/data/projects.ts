@@ -13,6 +13,10 @@ export type GalleryPlate = {
 
 export type Project = {
   index: string;
+  /** URL segment for this edition's own page: /projects/<slug>. Also the
+   *  marker the front page reads on arrival (/#from-<slug>) to know which
+   *  window to close the door back into. */
+  slug: string;
   title: string;
   edition: string;
   fact: string;
@@ -38,6 +42,7 @@ export type Project = {
 export const projects: Project[] = [
   {
     index: "01",
+    slug: "dispatch",
     title: "Dispatch",
     edition: "morning edition",
     fact: "writes itself every morning",
@@ -78,6 +83,7 @@ export const projects: Project[] = [
   },
   {
     index: "02",
+    slug: "meridian",
     title: "Meridian",
     edition: "midday edition",
     fact: "0 npm dependencies",
@@ -118,6 +124,7 @@ export const projects: Project[] = [
   },
   {
     index: "03",
+    slug: "fuzzbox",
     title: "Fuzzbox",
     edition: "late edition",
     fact: "design system: Neon Riff",

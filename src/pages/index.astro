@@ -9,6 +9,21 @@ import Quote from "../components/Quote.astro";
 import Work from "../components/Work.astro";
 import Contact from "../components/Contact.astro";
 import Footer from "../components/Footer.astro";
+import { projects } from "../data/projects";
+
+// The paint each edition arrives under. A visitor coming back from
+// /projects/<slug> lands on /#from-<slug>, and the door that runs from full
+// screen down into that edition's window (Work.astro's arrive()) has to be
+// handed a page that already looks like the spread they just left — which
+// means the very first paint, before any module script has run. So the stock
+// and wash of all three editions ship in the head, keyed by slug, and the
+// inline script below picks the one the hash names.
+const arrivals = Object.fromEntries(
+  projects.map((p, i) => [
+    p.slug,
+    { paper: p.paper, wash: p.wash, wx: i % 2 === 1 ? "22%" : "78%" },
+  ]),
+);
 ---
 
 <Layout>
@@ -25,6 +40,35 @@ import Footer from "../components/Footer.astro";
     as="image"
     type="image/avif"
   />
+
+  {/* Raised before first paint, so nothing of the page load shows through:
+      not the hero at scroll 0, and not the jump down to the window the door
+      is about to close into. Work.astro's arrive() hands the curtain off to
+      the portal — identically painted — and takes it down in the same frame.
+      Scroll restoration goes manual for the same span: a reload of this URL
+      would otherwise put the page back where it was mid-door, moving the
+      window out from under the animation. The timer is the failsafe — a
+      curtain that outlives a broken script would be a blank site. */}
+  <script slot="head" is:inline define:vars={{ arrivals }}>
+    ;(function () {
+      var m = /^#from-(.+)$/.exec(window.location.hash || "")
+      if (!m) return
+      var a = arrivals[decodeURIComponent(m[1])]
+      if (!a) return
+      var el = document.documentElement
+      el.setAttribute("data-we1-arrive", "")
+      el.style.setProperty("--arrive-paper", a.paper)
+      el.style.setProperty("--arrive-wash", a.wash)
+      el.style.setProperty("--arrive-wx", a.wx)
+      history.scrollRestoration = "manual"
+      setTimeout(function () {
+        el.removeAttribute("data-we1-arrive")
+        history.scrollRestoration = "auto"
+      }, 2000)
+    })()
+  </script>
+
+  <div class="we1-curtain" aria-hidden="true"></div>
   <Header />
   <main>
     <PinnedCanvas>
@@ -49,3 +93,26 @@ import Footer from "../components/Footer.astro";
     <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
   </a>
 </Layout>
+
+<style>
+  /* Same two layers, in the same order, as the spread's own background and the
+     portal's — the hand-off from one to the next is a swap of identical paint. */
+  .we1-curtain {
+    display: none;
+  }
+
+  :global(html[data-we1-arrive]) .we1-curtain {
+    display: block;
+    position: fixed;
+    inset: 0;
+    /* Over everything, the portal (45) and the header (70) included */
+    z-index: 100;
+    background:
+      radial-gradient(
+        44% 36% at var(--arrive-wx, 78%) 6%,
+        var(--arrive-wash, transparent),
+        transparent 70%
+      ),
+      var(--arrive-paper, var(--color-bone));
+  }
+</style>
