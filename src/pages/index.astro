@@ -11,19 +11,16 @@ import Contact from "../components/Contact.astro";
 import Footer from "../components/Footer.astro";
 import { projects } from "../data/projects";
 
-// The paint each edition arrives under. A visitor coming back from
-// /projects/<slug> lands on /#from-<slug>, and the door that runs from full
-// screen down into that edition's window (Work.astro's arrive()) has to be
-// handed a page that already looks like the spread they just left — which
-// means the very first paint, before any module script has run. So the stock
-// and wash of all three editions ship in the head, keyed by slug, and the
-// inline script below picks the one the hash names.
-const arrivals = Object.fromEntries(
-  projects.map((p, i) => [
-    p.slug,
-    { paper: p.paper, wash: p.wash, wx: i % 2 === 1 ? "22%" : "78%" },
-  ]),
-);
+// A visitor coming back from /projects/<slug> lands on /#from-<slug>, and the
+// door that runs from full screen down into that edition's window (Work.astro's
+// arrive()) has to be handed a page that already looks like the spread they
+// just left — at the very first paint, before any module script has run.
+//
+// The page is already carrying one: every edition's spread is rendered into
+// the front page as a hidden overlay, so the thing to show is not a painted
+// stand-in but the spread itself. All the head needs is which one, hence a
+// slug → index map and the inline script below.
+const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
 ---
 
 <Layout>
@@ -41,34 +38,56 @@ const arrivals = Object.fromEntries(
     type="image/avif"
   />
 
-  {/* Raised before first paint, so nothing of the page load shows through:
-      not the hero at scroll 0, and not the jump down to the window the door
-      is about to close into. Work.astro's arrive() hands the curtain off to
-      the portal — identically painted — and takes it down in the same frame.
+  {/* Opens the arriving edition's spread before first paint, so nothing of the
+      page load shows through: not the hero at scroll 0, and not the jump down
+      to the window the door is about to close into. A stylesheet rather than a
+      class, because the elements it names are still unparsed — and CSS is the
+      only thing that can reach them ahead of their own markup.
+
+      Two declarations, both of which need the index and so cannot be written
+      ahead of time: `display`, which outranks the overlay's `hidden` (and is
+      !important because Tailwind's preflight hides [hidden] that way — it
+      wins on specificity, not on being louder), and the transition name that
+      pairs this spread with the one on the page just left (see global.css),
+      making the two one object across the navigation. The third thing an
+      arrival needs — settled body copy, since this spread is being resumed
+      rather than entered — is the same for every edition and lives with the
+      element instead, in ProjectSpread.astro.
+
       Scroll restoration goes manual for the same span: a reload of this URL
       would otherwise put the page back where it was mid-door, moving the
-      window out from under the animation. The timer is the failsafe — a
-      curtain that outlives a broken script would be a blank site. */}
+      window out from under the animation.
+
+      The timer is the failsafe. Unlike the curtain it replaces, what outlives
+      a broken script here is a readable spread with a working way back rather
+      than a blank site — but it should still not outlive one, so it is torn
+      down on the same schedule. arrive() cancels it once JS has the spread. */}
   <script slot="head" is:inline define:vars={{ arrivals }}>
     ;(function () {
       var m = /^#from-(.+)$/.exec(window.location.hash || "")
       if (!m) return
-      var a = arrivals[decodeURIComponent(m[1])]
-      if (!a) return
+      var i = arrivals[decodeURIComponent(m[1])]
+      if (i == null) return
       var el = document.documentElement
-      el.setAttribute("data-we1-arrive", "")
-      el.style.setProperty("--arrive-paper", a.paper)
-      el.style.setProperty("--arrive-wash", a.wash)
-      el.style.setProperty("--arrive-wx", a.wx)
+      el.setAttribute("data-we1-arrive", i)
       history.scrollRestoration = "manual"
-      setTimeout(function () {
+      var sel = '[data-spread="' + i + '"]'
+      var style = document.createElement("style")
+      style.id = "we1-arrival"
+      style.textContent =
+        sel +
+        "[hidden]{display:block!important}" +
+        sel +
+        "{view-transition-name:we1-spread}"
+      document.head.appendChild(style)
+      window.__we1ArrivalTimer = setTimeout(function () {
         el.removeAttribute("data-we1-arrive")
+        style.remove()
         history.scrollRestoration = "auto"
       }, 2000)
     })()
   </script>
 
-  <div class="we1-curtain" aria-hidden="true"></div>
   <Header />
   <main>
     <PinnedCanvas>
@@ -95,24 +114,18 @@ const arrivals = Object.fromEntries(
 </Layout>
 
 <style>
-  /* Same two layers, in the same order, as the spread's own background and the
-     portal's — the hand-off from one to the next is a swap of identical paint. */
-  .we1-curtain {
-    display: none;
-  }
+  /* The arriving spread sits at z-index 40; the header is 70 and the hero's
+     GPU notice 50, so on a cold landing either could print over the spread
+     the visitor is still reading. Both belong to the top of the page, which
+     is not where this visitor is — and cannot be until the door has closed
+     and the attribute is gone. (The notice is display:none until the hero
+     scope scrolls into view, so this only matters for the frames before
+     arrive() scrolls the page down to the window.)
 
-  :global(html[data-we1-arrive]) .we1-curtain {
-    display: block;
-    position: fixed;
-    inset: 0;
-    /* Over everything, the portal (45) and the header (70) included */
-    z-index: 100;
-    background:
-      radial-gradient(
-        44% 36% at var(--arrive-wx, 78%) 6%,
-        var(--arrive-wash, transparent),
-        transparent 70%
-      ),
-      var(--arrive-paper, var(--color-bone));
+     Fully global — both elements are rendered by child components, which this
+     file's scope hash does not reach. */
+  :global(html[data-we1-arrive] header),
+  :global(html[data-we1-arrive] #hero-gpu-warning) {
+    display: none;
   }
 </style>

@@ -310,3 +310,36 @@ h6 {
     }
   }
 }
+
+/* ── Cross-document hold ──
+   Leaving /projects/<slug> for the front page is the one real navigation on
+   this site (every other move between the two is a history push the page
+   performs on itself). Without this the browser has nothing to paint between
+   discarding the spread and the front page's first frame, and that gap is the
+   blank flash a cold visitor sees on the way back.
+
+   Nothing here animates. `navigation: auto` is claimed purely for the hold it
+   implies: the browser keeps the outgoing frame on screen until the incoming
+   document is ready to render, and the swap itself is instant. The front page
+   comes up already showing the same spread, at the same scroll offset, on the
+   same stock — so an instant swap is a swap of identical pixels, and the door
+   that closes afterwards is the only motion there is. A slow connection reads
+   as a held pause instead of a flash.
+
+   The blend mode is not incidental: the UA cross-fade paints old and new with
+   `plus-lighter`, which only resolves to the right image while their opacities
+   are being animated against each other. Cancel the animation and leave the
+   blend, and two full-opacity snapshots ADD — a blown-out double-exposure for
+   one frame. Normal blend puts the new snapshot over the old, which is the
+   whole intent. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-old(we1-spread),
+::view-transition-new(we1-spread) {
+  animation: none;
+  mix-blend-mode: normal;
+}

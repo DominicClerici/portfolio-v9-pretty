@@ -36,9 +36,12 @@ const Heading = overlay ? "h3" : "h1";
 // Cold landings leave through the front door: /#from-<slug> tells the index
 // which window to run the door back into (see Work.astro's arrive()).
 const backHref = `/#from-${project.slug}`;
+// The one link on the site that leaves its document. Prefetched on load so
+// the front page is already in cache when it is followed — see the hold in
+// global.css, which covers whatever latency is left.
 const backProps = overlay
   ? { type: "button" as const, "data-close": true }
-  : { href: backHref };
+  : { href: backHref, "data-astro-prefetch": "load" };
 const BackTag = overlay ? "button" : "a";
 ---
 
@@ -47,6 +50,7 @@ const BackTag = overlay ? "button" : "a";
     "we1-spread focus:outline-none",
     i % 2 === 1 && "we1-spread-flip",
     !overlay && "is-in",
+    !overlay && "we1-spread-vt",
   ]}
   data-spread={i}
   data-lenis-prevent
@@ -145,6 +149,7 @@ const BackTag = overlay ? "button" : "a";
       ) : (
         <a
           href={backHref}
+          data-astro-prefetch="load"
           class="we1-endline we1-focus font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/35 cursor-pointer"
         >
           that&rsquo;s the whole story &mdash; back to the front page
@@ -169,6 +174,14 @@ const BackTag = overlay ? "button" : "a";
     background:
       radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
       var(--paper);
+  }
+
+  /* Page mode only. The front page names its arrival spread the same thing
+     (index.astro, before first paint), so the two are one continuous object
+     across the navigation back — the browser holds this one on screen until
+     that one has painted and then swaps two identical images. */
+  .we1-spread-vt {
+    view-transition-name: we1-spread;
   }
 
   .we1-spread-flip {
@@ -226,6 +239,17 @@ const BackTag = overlay ? "button" : "a";
   .we1-spread.is-in [data-rise] {
     opacity: 1;
     transform: none;
+  }
+
+  /* A cold arrival resumes a spread rather than entering one: the visitor was
+     already reading this copy a moment ago on its own page, so it has to be
+     settled at the front page's first paint — before any script has run and
+     could add .is-in. index.astro's head decides which spread is showing;
+     this decides what it looks like, which is the same for all three. */
+  :global(html[data-we1-arrive]) .we1-spread [data-rise] {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 
   /* ── Closing: content dissolves over the shrinking portal ── */

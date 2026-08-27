@@ -195,6 +195,56 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   </div>
 </section>
 
+{/* Where in the spread the arriving visitor was standing. index.astro's head
+    opened it; this seats it, and it has to happen here — inline, immediately
+    after the markup it reaches for — so that the offsets are in place for the
+    document's first render. That render is also the frame the browser hands
+    the outgoing page's transition, so anything later than this would show up
+    as a jump on the swap. The offset is consumed on read: a second visit to
+    the same URL is not a return from anywhere. */}
+<script is:inline>
+  ;(function () {
+    var i = document.documentElement.getAttribute("data-we1-arrive")
+    if (i == null) return
+    var spread = document.querySelector('[data-spread="' + i + '"]')
+    if (!spread) return
+
+    // This spread is on screen from the first frame, so its plates are not
+    // deferrable content — they are the content. Lazy + async would let that
+    // frame paint without them, over the same images the outgoing page was
+    // showing a moment ago: empty grey frames in place of the artwork, which
+    // is the one thing the swap must not do. The bitmaps are in cache from
+    // the page just left, so sync decoding costs nothing here. (Same reason
+    // and same treatment as fillPortal's clones, further down.)
+    var imgs = spread.querySelectorAll("img")
+    for (var k = 0; k < imgs.length; k++) {
+      imgs[k].loading = "eager"
+      imgs[k].decoding = "sync"
+    }
+
+    var mark
+    try {
+      mark = JSON.parse(sessionStorage.getItem("we1-return") || "null")
+      sessionStorage.removeItem("we1-return")
+    } catch (e) {
+      return
+    }
+    if (!mark || String(mark.i) !== i) return
+    window.__we1Return = mark
+    seat()
+    // The lead plate is shown whole, so its frame has no aspect ratio to hold
+    // the column's height before the bitmap arrives — an offset set against a
+    // half-built column clamps short. The images are the ones the page just
+    // left, so they are almost always already in cache and this first pass is
+    // the real one; arrive() re-seats once more before it measures anything.
+    function seat() {
+      spread.scrollTop = mark.y || 0
+      var story = spread.querySelector(".we1-story")
+      if (story) story.scrollTop = mark.sy || 0
+    }
+  })()
+</script>
+
 <style>
   .we1 {
     overflow-x: clip;
@@ -1483,14 +1533,31 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // it, so the visitor lands on the front page already looking at the
       // window they just came out of.
       //
-      // The seam a page load would otherwise show is covered by the curtain
-      // (index.astro raises it in <head>, before first paint, painted this
-      // edition's own paper and wash). The portal takes over from it in the
-      // same frame with the same paint, so the hand-off has nothing to see.
+      // None of which is a second choreography. The page is already carrying
+      // this edition's spread as a hidden overlay, and index.astro's head
+      // opened it — at the visitor's own scroll offset — before the first
+      // paint. So the arriving spread is indistinguishable from one the door
+      // opened, and the way back out of it is the ordinary close(): adopt the
+      // spread, seat the page under it, and close.
+      //
+      // What that buys, beyond a shorter path: everything this has to wait for
+      // — faces landing, the portal's bitmaps decoding — now waits behind the
+      // pages the visitor was reading rather than behind a blank stand-in.
       const htmlEl = document.documentElement;
-      const dropCurtain = () => htmlEl.removeAttribute("data-we1-arrive");
-      // The curtain also took scroll restoration off the browser so a reload
-      // couldn't yank the page out from under the door.
+      // The head opened the spread with a stylesheet, having no elements to
+      // put a class on yet. It outranks finish()'s `hidden`, so it has to come
+      // down the moment JS takes the spread over — along with the failsafe
+      // that would otherwise tear the arrival apart mid-door.
+      const dropArrival = () => {
+        clearTimeout((window as any).__we1ArrivalTimer);
+        htmlEl.removeAttribute("data-we1-arrive");
+        document.getElementById("we1-arrival")?.remove();
+      };
+      // The head also took scroll restoration off the browser so a reload
+      // couldn't yank the page out from under the door. Handing it back before
+      // the lock, rather than after the close, is what lets close() own the
+      // whole unwind: lock(true) captures whatever it finds here and lock(false)
+      // puts that back, so "auto" set now is "auto" restored at the end.
       const releaseRestoration = () => {
         history.scrollRestoration = "auto";
       };
@@ -1527,84 +1594,50 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         const spread = spreadFor(i);
         const arch = archFor(i);
         if (!spread || !arch) {
-          dropCurtain();
+          dropArrival();
           releaseRestoration();
           return;
         }
 
+        // Adopt the spread the arrival stylesheets opened. Restating both of
+        // their effects on the element itself is what lets those rules come
+        // down without the spread blinking out from under the visitor, and
+        // leaves close() holding an ordinary open spread.
+        spread.hidden = false;
+        spread.classList.add("is-in");
+        // Second and last pass at the visitor's offset (see the inline seat
+        // above). A font has landed and a frame has passed since the first,
+        // so a column that was short then is its full height now — and this
+        // runs before close() reads spread.scrollTop to decide whether the
+        // portal's copy of the gallery can be trusted to hold still.
+        const mark = (window as any).__we1Return;
+        if (mark) {
+          spread.scrollTop = mark.y || 0;
+          const story = spread.querySelector<HTMLElement>(".we1-story");
+          if (story) story.scrollTop = mark.sy || 0;
+          delete (window as any).__we1Return;
+        }
+        openIndex = i;
+        // Where focus goes once the door has shut — the same place a close
+        // returns it to, this edition's own door.
+        lastTrigger = section.querySelector<HTMLElement>(
+          `[data-plate="${i}"] .we1-door`,
+        );
+
+        // Seat the page under the spread before anything measures it: every
+        // rect the door animates between is a viewport rect, and they are only
+        // true of a page sitting where it will still be sitting when the door
+        // lands. Invisible — the spread covers the viewport throughout.
         if (!reducedMotion) measureAll();
         centerOn(arch);
 
-        const mobile = !desktop.matches;
-        const archFrame = mobile
-          ? replicaFrameFor(i)?.getBoundingClientRect()
-          : undefined;
-        const heroFrame = mobile ? heroFrameOf(spread) : undefined;
-        const hero = mobile ? heroFor(spread) : null;
-
-        if (
-          reducedMotion ||
-          !portal ||
-          !portalCol ||
-          (mobile && !(archFrame && heroFrame && hero))
-        ) {
-          dropCurtain();
-          releaseRestoration();
-          return;
-        }
-
-        busy = true;
+        releaseRestoration();
         lock(true);
-
-        if (mobile) {
-          fillPortal(hero!);
-          dressPortal(spread);
-          setColRect(heroFrame!);
-        } else {
-          fillPortal(galleryFor(spread));
-          dressPortal(spread);
-          setColRect(galRectOf(spread) ?? { left: 0, top: 0, width: 100 });
-        }
-
-        // The gallery resolves in over the last third of the door rather than
-        // being there from the first frame. A visitor can leave the story from
-        // anywhere in it, so there is no scroll position those images could
-        // honestly continue from — paper alone carries the hand-off, and the
-        // column fades up only as the door converges on the window that is
-        // already showing it. (Same treatment the close gives a spread that
-        // was scrolled; see we1-portal-col-hide.)
-        portal.classList.add("we1-portal-col-hide");
-
-        const closed = figureAt(i, arch.getBoundingClientRect());
-        whenPortalReady(() => {
-          repinPage();
-          portal.classList.add("we1-portal-on");
-          animateDoor(
-            expandTargets(
-              shapeOf(i),
-              closed,
-              window.innerWidth,
-              window.innerHeight,
-            ),
-            closed,
-            mobile
-              ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) }
-              : null,
-          );
-          // animateDoor painted the full-screen end of the clip synchronously
-          // above, so the portal is already showing exactly what the curtain
-          // is showing — this frame is where one becomes the other.
-          dropCurtain();
-
-          later(() => portal.classList.add("we1-portal-col-in"), COL_IN_AT_MS);
-          later(() => {
-            resetPortal();
-            lock(false);
-            // After the unlock, which restores whatever the curtain left set
-            releaseRestoration();
-            busy = false;
-          }, COL_IN_AT_MS + COL_IN_MS);
-        });
+        dropArrival();
+        // Reduced motion, a missing portal, an unmeasurable mobile flight:
+        // close() has a snap path for each, and it is the same one it would
+        // take closing a spread that had been opened normally.
+        close();
       };
 
       const arriveSlug = /^#from-(.+)$/.exec(location.hash);
@@ -1616,7 +1649,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // Let the faces land before measuring. An arch's position is the sum
         // of every block above it, and a late-swapping font moves all of them
         // — measure too early and the door closes onto where the window used
-        // to be. Capped, so a face that never arrives can't strand the curtain.
+        // to be. The wait costs nothing to look at: the spread is already up,
+        // covering the viewport. Capped anyway, so a face that never arrives
+        // can't leave the arrival stylesheet standing (2s, index.astro).
         const fonts = (document as any).fonts?.ready ?? Promise.resolve();
         Promise.race([fonts, new Promise((r) => setTimeout(r, 250))]).then(() =>
           requestAnimationFrame(() => arrive(arriveAt)),

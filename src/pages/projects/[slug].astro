@@ -61,4 +61,35 @@ const jsonLd = {
   // landed on the URL.
   const spread = document.querySelector<HTMLElement>(".we1-spread");
   if (spread) (window as any).__attachSmoothScroll?.(spread);
+
+  // ── Leaving through the front door ──
+  // The href carries which window to close into; this carries where in the
+  // spread the visitor was standing when they asked to leave. The front page
+  // reproduces both before its first paint, so the document swap lands on the
+  // same lines they were reading and the door closes from there.
+  //
+  // Two offsets, because there are two scrollers: the spread itself (the
+  // gallery column, and everything on mobile) and the sticky story column,
+  // which scrolls on its own on desktop. sessionStorage rather than the URL
+  // — it is a detail of this visit, not part of the address, and the plain
+  // /#from-<slug> link still works on its own if this never runs.
+  if (spread) {
+    document.addEventListener("click", (e) => {
+      const link = (e.target as HTMLElement | null)?.closest?.("a");
+      if (!link?.getAttribute("href")?.startsWith("/#from-")) return;
+      try {
+        sessionStorage.setItem(
+          "we1-return",
+          JSON.stringify({
+            i: spread.dataset.spread,
+            y: spread.scrollTop,
+            sy: spread.querySelector<HTMLElement>(".we1-story")?.scrollTop ?? 0,
+          }),
+        );
+      } catch {
+        // Private-mode quota, storage blocked: the arrival simply starts at
+        // the top of the spread instead
+      }
+    });
+  }
 </script>
