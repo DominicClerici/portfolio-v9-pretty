@@ -112,20 +112,3 @@ const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
     <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
   </a>
 </Layout>
-
-<style>
-  /* The arriving spread sits at z-index 40; the header is 70 and the hero's
-     GPU notice 50, so on a cold landing either could print over the spread
-     the visitor is still reading. Both belong to the top of the page, which
-     is not where this visitor is — and cannot be until the door has closed
-     and the attribute is gone. (The notice is display:none until the hero
-     scope scrolls into view, so this only matters for the frames before
-     arrive() scrolls the page down to the window.)
-
-     Fully global — both elements are rendered by child components, which this
-     file's scope hash does not reach. */
-  :global(html[data-we1-arrive] header),
-  :global(html[data-we1-arrive] #hero-gpu-warning) {
-    display: none;
-  }
-</style>

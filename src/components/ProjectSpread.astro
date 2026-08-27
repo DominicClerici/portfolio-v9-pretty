@@ -241,6 +241,23 @@ const BackTag = overlay ? "button" : "a";
     transform: none;
   }
 
+  /* The site header (70) and the hero's GPU notice (50) both outrank a
+     spread's 40, and on a cold landing the page is still at scroll 0 for the
+     frames before arrive() moves it down to the window — so either could
+     print over the spread the visitor is mid-sentence in. Lift the spread
+     over them for the length of the arrival.
+
+     Paint order, deliberately, and not `display: none` on the two offenders:
+     the Work section's own rule is a <header> in normal flow carrying up to
+     180px of padding, so hiding headers shortens the document. arrive()
+     measures that document — centres the window in it, pins the scene to it
+     — and then drops the attribute, which hands the padding back and moves
+     every plate down under a scene that has no reason to look again until
+     the next scroll. Nothing about an arrival may change layout. */
+  :global(html[data-we1-arrive]) .we1-spread {
+    z-index: 100;
+  }
+
   /* A cold arrival resumes a spread rather than entering one: the visitor was
      already reading this copy a moment ago on its own page, so it has to be
      settled at the front page's first paint — before any script has run and
