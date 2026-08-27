@@ -682,6 +682,51 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         replica: plate.querySelector<HTMLElement>("[data-view] .we1-gallery"),
       }));
 
+      // ── Waking the window's content ──
+      // The replica's images are not decoration inside the window, they *are*
+      // the window — the whole room the door looks onto. They still ship as
+      // loading="lazy", and that is the one thing a browser cannot decide here:
+      // the scene is a 100vw x 100dvh box that the driver re-translates every
+      // frame, seen through a masked, overflow-clipped 440px hole. Whether an
+      // image "intersects the viewport" in that arrangement depends on which
+      // rect the engine samples — the laid-out one, which sits nowhere near the
+      // window, or the transformed one. Blink samples one and fetches them;
+      // WebKit samples the other and never does, which is why the windows come
+      // up as empty paper in Safari and fill in only once a reload finds the
+      // bitmaps already in cache.
+      //
+      // So don't ask. Keep the deferral — nothing loads while the section is
+      // still pages away — but hang it off a rule we can state: the plate is
+      // within a viewport of the fold, therefore its window is about to be
+      // looked through, therefore its images are needed. Clearing the attribute
+      // resumes a deferred load in place, so this costs one property write per
+      // window and never runs again.
+      const asleep = new Map<HTMLElement, HTMLImageElement[]>();
+      for (const w of windows) {
+        const imgs = Array.from(
+          w.view?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]') ??
+            [],
+        );
+        if (imgs.length) asleep.set(w.plate, imgs);
+      }
+
+      const wakeNearWindows = () => {
+        if (!asleep.size) return;
+        const vh = window.innerHeight;
+        for (const [plate, imgs] of asleep) {
+          const rect = plate.getBoundingClientRect();
+          if (rect.bottom < -vh || rect.top > vh * 2) continue;
+          for (const img of imgs) img.removeAttribute("loading");
+          asleep.delete(plate);
+        }
+      };
+
+      // Subscribed unconditionally: reduced motion has no driver of its own,
+      // but the shared bus still fires on every native scroll, and the arch-
+      // sized fallback window has the same clipped-image problem.
+      (window as any).__onSmoothScrollTick(wakeNearWindows);
+      wakeNearWindows();
+
       // ── The address bar ──
       // Every edition is a real prerendered page at /projects/<slug> (see
       // src/pages/projects/[slug].astro), printing this same spread — that is
