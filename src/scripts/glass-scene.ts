@@ -56,12 +56,17 @@ const BG_DARK = [0.063, 0.063, 0.063] // …and dark side (--color-n-900)
    backdrop has turned (0 = bone, 1 = near-black):
 
    · the white fresnel seam at mix 1.1 turns the cylinder plane into a white
-     grid on black and lifts the flats out of true black — pulled down so the
-     ribs read as light catching an edge, not as the subject;
+     grid on black and lifts the flats out of true black — so on the dark side
+     the seam is *inverted* rather than dimmed: the white lift rolls off to
+     nothing and a matching sink toward black takes its place, which puts a
+     thin dark gap between the bars where the light side puts a bright one.
+     The two hand over across the back half of the turn (SINK_IN), by which
+     point a white rib would be the brightest thing on the screen;
    · the dark seam has nothing left to darken;
    · the grain term is scaled by (1 − luminance), which peaks on black — left
      alone the dark half would be visibly noisier than the light half. */
-const DARK_FRES_MIX = 0.13
+const DARK_SEAM_SINK = 0.9 // how far the gap sinks toward black, fully turned
+const SINK_IN = [0.45, 0.95] // darkness span the hand-over happens across
 const DARK_SEAM = 0.35
 const DARK_GRAIN = 0.2
 
@@ -497,10 +502,17 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
         c = mix(c, bg, smoothstep(0.0, 0.04, max(ouv.x, ouv.y)));
 
         // Seam, and the grain below it, scale with how far the backdrop has
-        // turned (see the DARK_* notes up top).
+        // turned (see the DARK_* notes up top). The two seam terms are the gap
+        // between one bar and the next: a white lift over bone, a sink to
+        // black over near-black, handing over mid-turn. The sink runs on the
+        // square of the lift's profile so it is the tighter line of the two —
+        // through the hand-over they shape a bright shoulder around a dark
+        // core rather than cancelling each other into a flat plane.
         float fr = clamp(${f1(G_FRES.bias)} + ${f1(G_FRES.scale)} * pow(1.0 - ny, ${f1(G_FRES.pow)}), 0.0, 1.0);
+        float seam = fr * fr;
         c *= 1.0 - fr * ${f1(SEAM_DARK)} * mix(1.0, ${f1(DARK_SEAM)}, uDark);
-        c = mix(c, vec3(1.0), fr * fr * mix(${f1(G_FRES.mix)}, ${f1(DARK_FRES_MIX)}, uDark));
+        c = mix(c, vec3(1.0), seam * ${f1(G_FRES.mix)} * (1.0 - uDark));
+        c = mix(c, vec3(0.0), seam * seam * ${f1(DARK_SEAM_SINK)} * smoothstep(${f1(SINK_IN[0])}, ${f1(SINK_IN[1])}, uDark));
 
         float lum = dot(c, vec3(0.299, 0.587, 0.114));
         float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
@@ -864,7 +876,8 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       const bgG = lerp(BG[1], BG_DARK[1], darkness) * 255
       const bgB = lerp(BG[2], BG_DARK[2], darkness) * 255
       const seamDark = SEAM_DARK * lerp(1, DARK_SEAM, darkness)
-      const fresMix = lerp(G_FRES.mix, DARK_FRES_MIX, darkness)
+      const seamLift = G_FRES.mix * (1 - darkness)
+      const seamSink = DARK_SEAM_SINK * sstep(SINK_IN[0], SINK_IN[1], darkness)
       const grainLum = GRAIN_LUM * lerp(1, DARK_GRAIN, darkness)
 
       // Per-frame object centers (y-down) — computed once, not per pixel —
@@ -936,14 +949,16 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
             }
           }
 
-          // fresnel seam + dark line, both scaled by this row's darkness
+          // fresnel seam + dark line, both scaled by the backdrop's darkness
           let fr = G_FRES.bias + G_FRES.scale * Math.pow(1 - ny, G_FRES.pow)
           fr = Math.min(1, Math.max(0, fr))
-          const wht = fr * fr * fresMix
+          const seam = fr * fr
+          const wht = seam * seamLift
           const drk = 1 - fr * seamDark
-          r = lerp(r * drk, 255, wht)
-          g = lerp(g * drk, 255, wht)
-          b = lerp(b * drk, 255, wht)
+          const snk = 1 - seam * seam * seamSink
+          r = lerp(r * drk, 255, wht) * snk
+          g = lerp(g * drk, 255, wht) * snk
+          b = lerp(b * drk, 255, wht) * snk
 
           // grain
           const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
