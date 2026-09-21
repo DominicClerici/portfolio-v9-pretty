@@ -12,19 +12,26 @@
  * ── Light half, dark half ──
  * The scope spans both halves of the page's mood: it opens on bone under the
  * hero and ends on near-black under the quote. The glass does not stop at the
- * seam between them — the backdrop *behind* it turns over instead, along a
- * horizontal front pinned to the top edge of the Career section. So the page
- * goes dark exactly where the dark section begins (the front reaches the top
- * of the screen at the same instant Career's scroll-pin engages), the glass
- * carries on unbroken, and because the front is drawn behind the cylinders it
- * arrives refracted: the boundary breaks up into the diagonal ribs on the way
- * through.
+ * seam between them — the backdrop *behind* it turns over instead, the whole
+ * plane at once, scrubbed by scroll across the hand-off from About to Career.
+ * It starts when About's last quarter clears the bottom of the screen and is
+ * complete on the frame Career's top edge reaches the top of it, which is the
+ * frame its scroll-pin engages. Because the turn happens behind the cylinders
+ * it arrives refracted — the ribs carry it, rather than a flat wash sliding
+ * over the frame.
  *
- * Two sets of objects share the canvas across that turn. The hero's three
- * dissolve as the front sweeps over them; a second, larger set of orbs fades
- * up out of the dark and drifts past for the length of the pinned career
- * section. The engine (src/scripts/glass-scene.ts) owns the cross-fade — here
- * we only say where the front is and how far each set has climbed.
+ * The two sections either side of it cross-fade across it, because neither can
+ * sit still while the ground moves under it: About is set in a dark ink for
+ * bone, Career in near-white for black, and halfway through the turn the
+ * backdrop is the value they both stand out against least. So About dissolves
+ * as it leaves, Career surfaces as it arrives, and the glass carries the
+ * middle alone (see paintTurn below). The quote, last, is only ever on black.
+ *
+ * Two sets of objects share the canvas across it. The hero's three dissolve
+ * into the dark; a second, larger set of orbs fades up out of it and drifts
+ * past for the length of the pinned career section. The engine
+ * (src/scripts/glass-scene.ts) owns the cross-fade — here we only say how far
+ * the turn has come and how far each set has climbed.
  */
 ---
 
@@ -33,11 +40,10 @@
      the glass would come to rest an overhang short of the scope's end and
      leave a gap before the next section.
 
-     The scope's own background (global.css) is what shows if the canvas never
-     paints at all — no WebGL *and* no 2D context. It mirrors the shader's
-     light→dark front as a plain CSS gradient, which works because the front is
-     pinned to a fixed document position (the top of Career) and so does not
-     move in document space. measure() below supplies --dark-y. -->
+     The scope's own background is what shows if the canvas never paints at
+     all — no WebGL *and* no 2D context. global.css leaves it bone; the script
+     below repaints it from the same numbers the shader uses as the turn runs,
+     so that last-resort page darkens with the rest. -->
 <div
   id="hero-scope"
   class="relative mb-[calc(var(--bg-overhang)*-1)]"
@@ -92,6 +98,7 @@
 
 <script>
   import {
+    backdropColor,
     createGlassScene,
     SPHERE_R_FRAC,
     type GlassObject,
@@ -102,9 +109,11 @@
     const bg = scope.querySelector<HTMLElement>("[data-canvas-bg]")!;
     const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!;
     const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
-    // The section whose top edge the light→dark front is pinned to. Optional:
-    // without it the scope stays bone end to end and only the hero objects
-    // move, which is exactly the pre-dark behaviour.
+    // The two sections the turn to dark is measured between — it runs from
+    // partway down About to the top edge of Career. Optional: without the
+    // anchor the scope stays bone end to end and only the hero objects move,
+    // which is exactly the pre-dark behaviour.
+    const about = scope.querySelector<HTMLElement>("#about");
     const darkAnchor = scope.querySelector<HTMLElement>("#career");
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -132,10 +141,24 @@
 
     // — Sensitivity (how far the objects move for a given input) —
     const SCROLL_SENSITIVITY = 0.45; // object climb per px scrolled
-    // Once the dark front starts rising the light-half objects are on their
-    // way out, so they climb faster than the page — they read as leaving,
-    // rather than as hanging there fading.
+    // Once the turn to dark begins the light-half objects are on their way
+    // out, so they leave faster than the page — they read as going, rather
+    // than as hanging there fading. They travel this many background heights
+    // over the turn, whatever length it works out to.
     const HERO_EXIT_SENSITIVITY = 0.85;
+
+    // — The turn to dark —
+    // Where in About it starts, as a fraction of that section's height measured
+    // from its bottom: 0.25 is "when its last quarter has crossed the bottom of
+    // the screen". It always ends at Career's top edge reaching the top of the
+    // screen, which is not a knob — that is the frame the pin engages.
+    const FADE_FROM_BOTTOM = 0.25;
+    // Where each section stands in the turn, as a span of the 0…1 darkness
+    // (see paintTurn). About holds at full strength until the ground has gone
+    // roughly a third of the way and is gone by the time it is nearly black;
+    // Career surfaces a little later and is whole well before its pin engages.
+    const ABOUT_OUT: [number, number] = [0.32, 0.84];
+    const CAREER_IN: [number, number] = [0.3, 0.88];
 
     // — Dark half —
     // How far the career orbs travel, in background heights, over the whole
@@ -160,48 +183,92 @@
        thing on the page:
 
        · channel 0, the hero/about objects. They climb at SCROLL_SENSITIVITY
-         until the front starts rising (which is the same scroll position the
-         pin used to end at, back when the scope stopped below About), then
-         accelerate away over one background height and stop.
+         until the turn to dark begins, then leave over it.
        · channel 1, the career orbs, on the normalised progress of the whole
          dark stretch.
-       · the front itself, straight off the anchor section's live top edge —
-         exact rather than eased, because it has to stay welded to that edge.
+       · the turn itself, read straight off the anchor section's live top edge
+         rather than off a cached scroll position, so it cannot desync from
+         the section it is handing over to no matter what reflows above.
 
-       Both lifts are eased inside the engine, so the parallax glides; the
-       front is not, for the reason above. */
+       Both lifts are eased inside the engine, so the parallax glides. The turn
+       is not: the page's smooth-scroll already carries it, and a second lag
+       would leave the backdrop trailing the section. */
     let pinEnd = 1; // scroll distance the background stays pinned (px)
     let scopeTop = 0; // the scope's document offset
     let bgH = 1; // pinned background height (CSS px)
-    let darkStart = 1; // scroll into the scope where the front starts rising
-    let darkSpan = 1; // …and how much scroll the whole dark stretch gets
+    let darkStart = 1; // scroll into the scope where the dark stretch begins
+    let darkSpan = 1; // …and how much scroll it gets
+    let fadeLead = 1; // how far Career's top edge climbs over the whole turn
+    let fadeStart = 1; // scroll into the scope where the turn begins
+
+    const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+    const smoothstep = (e0: number, e1: number, x: number) => {
+      const t = clamp01((x - e0) / (e1 - e0));
+      return t * t * (3 - 2 * t);
+    };
 
     function onScrollFrame() {
       const y = window.scrollY - scopeTop;
 
-      // Light half: climb, then leave.
-      const climb = Math.min(Math.max(y, 0), darkStart) * SCROLL_SENSITIVITY;
-      const exit =
-        Math.min(Math.max(y - darkStart, 0), bgH) * HERO_EXIT_SENSITIVITY;
-      scene.setScrollTarget(climb + exit, 0);
+      if (!darkAnchor) {
+        scene.setScrollTarget(Math.max(y, 0) * SCROLL_SENSITIVITY, 0);
+        return;
+      }
 
-      if (!darkAnchor) return;
+      /* Progress of the turn, straight off the anchor's live top edge: one
+         fadeLead above the top of the screen is 0 (all bone), level with it is
+         1 (all dark), and the pin engages on that same frame. Smoothstepped so
+         the backdrop eases into the turn and settles out of it instead of
+         starting and stopping on a corner. */
+      const d = clamp01(1 - darkAnchor.getBoundingClientRect().top / fadeLead);
+      const dark = d * d * (3 - 2 * d);
+      scene.setDarkness(dark);
+      paintTurn(dark);
+
+      // Light half: climb with the page, then leave over the turn.
+      const climb = Math.min(Math.max(y, 0), fadeStart) * SCROLL_SENSITIVITY;
+      scene.setScrollTarget(climb + d * bgH * HERO_EXIT_SENSITIVITY, 0);
 
       // Dark half.
-      const q = Math.min(Math.max((y - darkStart) / darkSpan, 0), 1);
+      const q = clamp01((y - darkStart) / darkSpan);
       scene.setScrollTarget(q * CAREER_TRAVEL * bgH, 1);
+    }
 
-      /* The front, in the canvas's own coordinates: 0 its bottom edge, 1 its
-         top, y-up. Taken from where the anchor's top edge currently sits
-         inside the canvas box, which makes the two impossible to desync —
-         one background height below the canvas top is 0 (all bone), level
-         with it is 1 (all dark), and the pin engages on that same frame.
-         Clamped only to keep the shader's smoothstep in a sane range as the
-         anchor runs far off either end. */
-      const bgRect = bg.getBoundingClientRect();
-      const anchorTop = darkAnchor.getBoundingClientRect().top;
-      const edge = 1 - (anchorTop - bgRect.top) / Math.max(bgRect.height, 1);
-      scene.setDarkEdge(Math.min(Math.max(edge, -0.6), 2.2));
+    /* Three things off the canvas move with the backdrop.
+
+       The scope's own background, which is all that shows if no canvas paints
+       at all, is repainted from the engine's own colours so that last-resort
+       page darkens too.
+
+       And the two sections either side of the turn, which cross-fade across it
+       exactly as the two sets of orbs do. Neither can simply sit there while
+       the ground moves under it: About's copy is set in a dark ink for bone
+       and Career's in near-white for black, so in the middle of the turn —
+       where the backdrop passes through mid-grey — whichever one stayed would
+       be near the value of the thing behind it. Walking About's ink across
+       with the backdrop does not help; it only puts the copy *at* that value
+       instead of beside it. So each is at full strength while it is the one
+       being read, and the handover happens in between: About dissolves into
+       the dark as it leaves, Career surfaces out of it as it arrives, and the
+       glass carries the middle on its own.
+
+       All three are written only when the value moves, so away from the turn
+       this is one compare a frame. */
+    const alpha = (x: number) => (x > 0.999 ? "" : x.toFixed(3));
+    let lastTurn = -1;
+    function paintTurn(dark: number) {
+      const v = Math.round(dark * 256) / 256;
+      if (v === lastTurn) return;
+      lastTurn = v;
+      scope.style.backgroundColor = backdropColor(v);
+      if (about)
+        about.style.opacity = alpha(
+          1 - smoothstep(ABOUT_OUT[0], ABOUT_OUT[1], v),
+        );
+      if (darkAnchor)
+        darkAnchor.style.opacity = alpha(
+          smoothstep(CAREER_IN[0], CAREER_IN[1], v),
+        );
     }
     // Shared scroll bus (Layout head shim) — fires once per frame; the scene's
     // own render loop eases toward the target, so frame-exact timing isn't
@@ -412,18 +479,26 @@
       pinEnd = Math.max(scope.offsetHeight - bgH, 1);
 
       if (!darkAnchor) return;
-      // The front starts rising the moment the anchor's top edge enters the
-      // bottom of the pinned background — which is precisely where the pin
-      // used to end, back when the scope stopped below About. So the light
-      // half behaves exactly as it did; the dark half is what's new.
       const anchorTop =
         darkAnchor.getBoundingClientRect().top + window.scrollY - scopeTop;
+
+      // The dark stretch the career orbs travel over: it opens as the anchor
+      // enters the bottom of the pinned background and runs to the end of the
+      // pin, i.e. the bottom of the quote.
       darkStart = Math.max(Math.min(anchorTop - bgH, pinEnd), 0);
-      // …and it runs to the end of the pin, i.e. the bottom of the quote.
       darkSpan = Math.max(pinEnd - darkStart, 1);
-      // Mirror of the shader's front for the no-canvas fallback (see the
-      // markup above). Document space, so it needs no per-frame update.
-      scope.style.setProperty("--dark-y", `${anchorTop}px`);
+
+      // The turn, kept as a *distance* rather than a pair of scroll positions:
+      // how much further Career's top edge has to climb between the frame the
+      // turn starts and the frame it finishes at the top of the screen. That
+      // way the per-frame path needs nothing but that edge's live position.
+      const aboutH = about ? about.offsetHeight : 0;
+      const aboutTop = about
+        ? about.getBoundingClientRect().top + window.scrollY - scopeTop
+        : anchorTop;
+      const turnAt = aboutTop + aboutH * (1 - FADE_FROM_BOTTOM);
+      fadeLead = Math.max(anchorTop - turnAt + window.innerHeight, 1);
+      fadeStart = Math.max(anchorTop - fadeLead, 0);
     }
 
     let resizeTimer: number | undefined;

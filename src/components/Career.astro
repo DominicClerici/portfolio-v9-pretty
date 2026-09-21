@@ -263,9 +263,12 @@ const initialIndex = stepMap[0];
                of expanding past the viewport on small screens. The fill is just
                shy of opaque: enough that an orb passing behind it tints the
                panel rather than shows through it, so the dossier still reads as
-               a solid surface but is not a hole cut in the scene. -->
+               a solid surface but is not a hole cut in the scene. n-850 is one
+               ramp step above the backdrop the glass settles on (n-900), which
+               is what keeps the panel reading as a raised surface — it moved up
+               with the backdrop when that did. -->
           <div
-            class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-900/90 lg:min-h-[460px] overflow-hidden"
+            class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-850/90 lg:min-h-[460px] overflow-hidden"
           >
           {
             entries.map((entry, i) => (

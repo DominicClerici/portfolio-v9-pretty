@@ -93,8 +93,8 @@ const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
     {/* One pinned glass background carries all four: the hero and About over
         bone, Career and Quote over near-black, and the turn between them is
         the background's own — see PinnedCanvas.astro. Career has to stay
-        directly after About (the front is pinned to its top edge) and Quote
-        last (the glass leaves with the flow at the end of the scope). */}
+        directly after About (the turn is measured from one to the other) and
+        Quote last (the glass leaves with the flow at the end of the scope). */}
     <PinnedCanvas>
       <Hero />
       <About />
