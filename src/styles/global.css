@@ -234,6 +234,22 @@ h6 {
   margin-top: calc(-1 * var(--bg-h));
 }
 
+/* Last-resort backdrop for the scope, visible only if the canvas never paints
+   at all (no WebGL *and* no 2D context — the CPU fallback covers the common
+   case). It is a plain CSS restatement of the shader's light→dark front: bone
+   above --dark-y, near-black below it, with a feather across. That works
+   because the front is welded to the top edge of the Career section, which
+   does not move in document space — so unlike the canvas, which repaints the
+   front every frame in viewport space, this can be painted once. PinnedCanvas
+   measures --dark-y; until it has, the 100% fallback leaves the scope bone. */
+#hero-scope {
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-bone) 0 calc(var(--dark-y, 100%) - 110px),
+    var(--color-n-950) var(--dark-y, 100%) 100%
+  );
+}
+
 /* Radius of the iris the canvas opens from (see the keyframes below). */
 .hero-canvas-wrap {
   --iris-r: 100px;

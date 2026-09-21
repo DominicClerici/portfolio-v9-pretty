@@ -119,9 +119,14 @@ const stepMap = orderedEntries.map(({ i }) => i);
 const initialIndex = stepMap[0];
 ---
 
+<!-- No background of its own: it scrolls over the pinned glass canvas in
+     PinnedCanvas.astro, whose backdrop has already turned to near-black by
+     exactly the line this section starts on. The dot grid, the rail and the
+     dossier stay — they are what makes this section itself, and they now sit
+     over drifting orbs instead of flat black. -->
 <section
   id="career"
-  class="relative bg-n-950"
+  class="relative"
   style={`height: ${(N + 1) * 50}svh`}
   data-step-pct={JSON.stringify(stepPct)}
   data-step-map={JSON.stringify(stepMap)}
@@ -255,9 +260,12 @@ const initialIndex = stepMap[0];
              it carries no height and is inert. -->
         <div class="min-w-0 lg:h-[615px]">
           <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
-               of expanding past the viewport on small screens. -->
+               of expanding past the viewport on small screens. The fill is just
+               shy of opaque: enough that an orb passing behind it tints the
+               panel rather than shows through it, so the dossier still reads as
+               a solid surface but is not a hole cut in the scene. -->
           <div
-            class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-900 lg:min-h-[460px] overflow-hidden"
+            class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-900/90 lg:min-h-[460px] overflow-hidden"
           >
           {
             entries.map((entry, i) => (

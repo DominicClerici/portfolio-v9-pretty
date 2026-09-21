@@ -7,23 +7,46 @@
  * the end of the scope the background leaves with the flow.
  *
  * Owns the canvas, the scene wiring, and the CPU-fallback notice. The
- * sections that scroll over it (Hero, About) are just children.
+ * sections that scroll over it (Hero, About, Career, Quote) are just children.
+ *
+ * ── Light half, dark half ──
+ * The scope spans both halves of the page's mood: it opens on bone under the
+ * hero and ends on near-black under the quote. The glass does not stop at the
+ * seam between them — the backdrop *behind* it turns over instead, along a
+ * horizontal front pinned to the top edge of the Career section. So the page
+ * goes dark exactly where the dark section begins (the front reaches the top
+ * of the screen at the same instant Career's scroll-pin engages), the glass
+ * carries on unbroken, and because the front is drawn behind the cylinders it
+ * arrives refracted: the boundary breaks up into the diagonal ribs on the way
+ * through.
+ *
+ * Two sets of objects share the canvas across that turn. The hero's three
+ * dissolve as the front sweeps over them; a second, larger set of orbs fades
+ * up out of the dark and drifts past for the length of the pinned career
+ * section. The engine (src/scripts/glass-scene.ts) owns the cross-fade — here
+ * we only say where the front is and how far each set has climbed.
  */
 ---
 
-<!-- The bottom padding is the pin's runway, not spacing: sticky stops at the
-     padding box, and the pin is lifted by one overhang, so without it the glass
-     would come to rest an overhang short of the scope's end and leave a gap
-     before the next section. -->
+<!-- The negative bottom margin is the pin's runway, not spacing: sticky stops
+     at the padding box, and the pin is lifted by one overhang, so without it
+     the glass would come to rest an overhang short of the scope's end and
+     leave a gap before the next section.
+
+     The scope's own background (global.css) is what shows if the canvas never
+     paints at all — no WebGL *and* no 2D context. It mirrors the shader's
+     light→dark front as a plain CSS gradient, which works because the front is
+     pinned to a fixed document position (the top of Career) and so does not
+     move in document space. measure() below supplies --dark-y. -->
 <div
   id="hero-scope"
-  class="relative bg-bone mb-[calc(var(--bg-overhang)*-1)]"
+  class="relative mb-[calc(var(--bg-overhang)*-1)]"
 >
   <div data-canvas-bg class="sticky top-0 h-[var(--bg-h)]" aria-hidden="true">
     <!-- Full-bleed clipping container; isolated so the inner clip-path
          animation composites onto its own layer. -->
     <div class="absolute inset-0 overflow-hidden isolate transform-gpu">
-      <div class="hero-canvas-wrap absolute inset-0 bg-bone">
+      <div class="hero-canvas-wrap absolute inset-0">
         <canvas id="hero-canvas" class="absolute inset-0 w-full h-full"
         ></canvas>
       </div>
@@ -79,6 +102,10 @@
     const bg = scope.querySelector<HTMLElement>("[data-canvas-bg]")!;
     const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!;
     const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
+    // The section whose top edge the light→dark front is pinned to. Optional:
+    // without it the scope stays bone end to end and only the hero objects
+    // move, which is exactly the pre-dark behaviour.
+    const darkAnchor = scope.querySelector<HTMLElement>("#career");
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -105,21 +132,76 @@
 
     // — Sensitivity (how far the objects move for a given input) —
     const SCROLL_SENSITIVITY = 0.45; // object climb per px scrolled
+    // Once the dark front starts rising the light-half objects are on their
+    // way out, so they climb faster than the page — they read as leaving,
+    // rather than as hanging there fading.
+    const HERO_EXIT_SENSITIVITY = 0.85;
+
+    // — Dark half —
+    // How far the career orbs travel, in background heights, over the whole
+    // dark stretch (front rising, pinned career section, quote). Tuned so the
+    // last of them is still arriving as the quote scrolls out: high enough
+    // that orbs keep passing, low enough that none crosses in a single flick.
+    const CAREER_TRAVEL = 3.35;
+    // Where each career orb starts, as a fraction of the background height
+    // below the bottom edge — spaced so roughly three are in frame at once.
+    const CAREER_START_Y = -0.35;
+    const CAREER_GAP_Y = 0.55;
 
     /* ══════════════════════════════════════════════════════════════════ */
 
     /* ── Scroll behavior ──
-       The background is pinned (sticky) for the whole scope. While pinned,
-       the glass cylinders hold still in screen space and the floating objects
-       climb at SCROLL_SENSITIVITY× scroll speed, eased toward the target so
-       the parallax glides. Once the pin ends the background leaves with the
-       flow. The lift clamps at the pin end, so from there objects and glass
-       scroll away together with the page. */
+       The background is pinned (sticky) for the whole scope — now hero
+       through quote — so the glass cylinders hold still in screen space the
+       entire way down and only leave with the flow at the very end.
+
+       Three things are scrubbed from scroll position, all measured against
+       the scope's own top so nothing here depends on this being the first
+       thing on the page:
+
+       · channel 0, the hero/about objects. They climb at SCROLL_SENSITIVITY
+         until the front starts rising (which is the same scroll position the
+         pin used to end at, back when the scope stopped below About), then
+         accelerate away over one background height and stop.
+       · channel 1, the career orbs, on the normalised progress of the whole
+         dark stretch.
+       · the front itself, straight off the anchor section's live top edge —
+         exact rather than eased, because it has to stay welded to that edge.
+
+       Both lifts are eased inside the engine, so the parallax glides; the
+       front is not, for the reason above. */
     let pinEnd = 1; // scroll distance the background stays pinned (px)
+    let scopeTop = 0; // the scope's document offset
+    let bgH = 1; // pinned background height (CSS px)
+    let darkStart = 1; // scroll into the scope where the front starts rising
+    let darkSpan = 1; // …and how much scroll the whole dark stretch gets
+
     function onScrollFrame() {
-      scene.setScrollTarget(
-        Math.min(window.scrollY, pinEnd) * SCROLL_SENSITIVITY,
-      );
+      const y = window.scrollY - scopeTop;
+
+      // Light half: climb, then leave.
+      const climb = Math.min(Math.max(y, 0), darkStart) * SCROLL_SENSITIVITY;
+      const exit =
+        Math.min(Math.max(y - darkStart, 0), bgH) * HERO_EXIT_SENSITIVITY;
+      scene.setScrollTarget(climb + exit, 0);
+
+      if (!darkAnchor) return;
+
+      // Dark half.
+      const q = Math.min(Math.max((y - darkStart) / darkSpan, 0), 1);
+      scene.setScrollTarget(q * CAREER_TRAVEL * bgH, 1);
+
+      /* The front, in the canvas's own coordinates: 0 its bottom edge, 1 its
+         top, y-up. Taken from where the anchor's top edge currently sits
+         inside the canvas box, which makes the two impossible to desync —
+         one background height below the canvas top is 0 (all bone), level
+         with it is 1 (all dark), and the pin engages on that same frame.
+         Clamped only to keep the shader's smoothstep in a sane range as the
+         anchor runs far off either end. */
+      const bgRect = bg.getBoundingClientRect();
+      const anchorTop = darkAnchor.getBoundingClientRect().top;
+      const edge = 1 - (anchorTop - bgRect.top) / Math.max(bgRect.height, 1);
+      scene.setDarkEdge(Math.min(Math.max(edge, -0.6), 2.2));
     }
     // Shared scroll bus (Layout head shim) — fires once per frame; the scene's
     // own render loop eases toward the target, so frame-exact timing isn't
@@ -147,6 +229,94 @@
     // shape: 0 sphere, 1 cube. edgeR shifts the center right by that many
     // radii (lets the teal sphere rest against the page's center line).
     // Gradients are linear, 0% at the top of the object → 100% at the bottom.
+    /* The dark half's orbs. Same material, same drift, but they read
+       differently against near-black: where the hero's three are dark shapes
+       pushing through bone, these are lit ones surfacing out of black, so the
+       gradients run brighter and the matcap (a dark glossy ball) is mostly
+       off. The palette walks the hero's purple/blue/teal across to the
+       career section's lime, which is the accent every element in it shares.
+
+       zone: 1 marks them as belonging below the front — they stay at zero
+       coverage until it has risen past them — and lift: 1 puts them on the
+       career scroll channel. Placement is generated rather than written out
+       per object: they are a stream, and what matters is the spacing.
+       cy/scale/x are the per-orb character. */
+    const CAREER_COLORS = [
+      // lime — the career accent, first up out of the dark
+      {
+        ga0: [0.404, 0.78, 0.271],
+        ga1: [0.808, 0.969, 0.62],
+        gb0: [0.176, 0.392, 0.11],
+      },
+      // violet, carried over from the hero's purple sphere
+      {
+        ga0: [0.451, 0.243, 0.878],
+        ga1: [0.69, 0.529, 1.0],
+        gb0: [0.267, 0.106, 0.588],
+      },
+      // cyan
+      {
+        ga0: [0.055, 0.647, 0.749],
+        ga1: [0.353, 0.878, 0.949],
+        gb0: [0.02, 0.325, 0.427],
+      },
+      // indigo
+      {
+        ga0: [0.176, 0.31, 0.902],
+        ga1: [0.439, 0.576, 1.0],
+        gb0: [0.078, 0.133, 0.573],
+      },
+      // lime again, small and bright
+      {
+        ga0: [0.404, 0.78, 0.271],
+        ga1: [0.808, 0.969, 0.62],
+        gb0: [0.176, 0.392, 0.11],
+      },
+      // teal — the hero's front sphere, returning last
+      {
+        ga0: [0.055, 0.788, 0.541],
+        ga1: [0.361, 0.941, 0.714],
+        gb0: [0.0, 0.443, 0.318],
+      },
+    ];
+    /* Placement carries one constraint the hero's does not: the career section
+       keeps live type over the whole left third of the frame (the year spine
+       and the employer list), where the dossier panel is not there to sit
+       between. So the big orbs stay right of ~0.4 — behind the panel and the
+       open space under it — and only small, dim ones cross the rail.
+                x     scale  shape (0 sphere, 1 cube)  matcap  brightness */
+    const CAREER_PLACE = [
+      { x: 0.78, s: 0.62, shape: 0 as const, mat: 0, dim: 0.5 },
+      { x: 0.44, s: 0.95, shape: 0 as const, mat: 0.45, dim: 0.44 },
+      { x: 0.11, s: 0.38, shape: 1 as const, mat: 0, dim: 0.38 },
+      { x: 0.9, s: 0.72, shape: 0 as const, mat: 0, dim: 0.5 },
+      { x: 0.31, s: 0.4, shape: 0 as const, mat: 0, dim: 0.34 },
+      { x: 0.64, s: 1.05, shape: 0 as const, mat: 0, dim: 0.46 },
+    ];
+
+    const CAREER_OBJECTS: GlassObject[] = CAREER_PLACE.map((p, i) => ({
+      shape: p.shape,
+      mat: p.mat,
+      rFrac: SPHERE_R_FRAC * p.s,
+      cx: p.x,
+      cy: CAREER_START_Y - i * CAREER_GAP_Y,
+      edgeR: 0,
+      ...CAREER_COLORS[i],
+      gaMix: 0.66,
+      gbMix: 0.34,
+      dim: p.dim,
+      // Staggered phases and mildly irregular speeds so the stream never
+      // settles into a visible rhythm.
+      driftAmp: 0.034 + (i % 3) * 0.008,
+      driftYScale: 0.7,
+      spdX: 0.15 + i * 0.017,
+      spdY: 0.1 + i * 0.011,
+      phX: i * 1.37,
+      phY: 2.4 + i * 0.93,
+      lift: 1,
+      zone: 1,
+    }));
+
     const OBJECTS: GlassObject[] = [
       {
         // purple sphere — back, smallest, lower-right
@@ -209,6 +379,7 @@
         phX: 0.0,
         phY: 1.7,
       },
+      ...CAREER_OBJECTS,
     ];
 
     /* ── GPU-acceleration notice ──
@@ -232,8 +403,27 @@
       },
     });
 
+    /* Everything scroll-invariant, cached here so the per-frame path reads no
+       layout it doesn't have to. Re-run on resize and whenever the scope's
+       box changes (fonts, images, the career section's own reflow). */
     function measure() {
-      pinEnd = Math.max(scope.offsetHeight - bg.offsetHeight, 1);
+      bgH = bg.offsetHeight;
+      scopeTop = scope.getBoundingClientRect().top + window.scrollY;
+      pinEnd = Math.max(scope.offsetHeight - bgH, 1);
+
+      if (!darkAnchor) return;
+      // The front starts rising the moment the anchor's top edge enters the
+      // bottom of the pinned background — which is precisely where the pin
+      // used to end, back when the scope stopped below About. So the light
+      // half behaves exactly as it did; the dark half is what's new.
+      const anchorTop =
+        darkAnchor.getBoundingClientRect().top + window.scrollY - scopeTop;
+      darkStart = Math.max(Math.min(anchorTop - bgH, pinEnd), 0);
+      // …and it runs to the end of the pin, i.e. the bottom of the quote.
+      darkSpan = Math.max(pinEnd - darkStart, 1);
+      // Mirror of the shader's front for the no-canvas fallback (see the
+      // markup above). Document space, so it needs no per-frame update.
+      scope.style.setProperty("--dark-y", `${anchorTop}px`);
     }
 
     let resizeTimer: number | undefined;

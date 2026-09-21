@@ -4,17 +4,23 @@
 // that never quite settles. Near the cursor they glow lime. Canvas2D only.
 ---
 
+<!-- Also backgroundless: the last section over the pinned glass canvas, which
+     leaves with the flow at its bottom edge. -->
 <section
-  class="qv4 relative bg-n-950 overflow-hidden min-h-[78vh] grid place-items-center py-[clamp(110px,15vh,190px)] px-3 sm:px-6 md:px-12"
+  class="qv4 relative overflow-hidden min-h-[78vh] grid place-items-center py-[clamp(110px,15vh,190px)] px-3 sm:px-6 md:px-12"
   aria-label="Quote"
 >
   <div class="dot-grid" aria-hidden="true"></div>
 
   <canvas class="absolute inset-0 w-full h-full" aria-hidden="true"></canvas>
 
-  <!-- Scrim so the quote stays readable over the field -->
+  <!-- Scrim so the quote stays readable over the field — and now over the
+       glass behind it too, where an orb drifting past would otherwise put a
+       bright patch under the type. Pulled in and eased off sooner than it
+       used to be, so it covers the band the words actually occupy and leaves
+       the rest of the section open to the scene. -->
   <div
-    class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_62%_58%_at_50%_50%,rgba(10,10,10,0.92)_0%,rgba(10,10,10,0.5)_55%,transparent_100%)]"
+    class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_58%_54%_at_50%_50%,rgba(10,10,10,0.9)_0%,rgba(10,10,10,0.42)_58%,transparent_100%)]"
     aria-hidden="true"
   ></div>
 

@@ -14,6 +14,20 @@
  * displaced point, then adds the fresnel seam and film grain. When WebGL is
  * unavailable the same math runs per-pixel on the CPU against an analytic
  * already-blurred scene, at reduced resolution.
+ *
+ * ── The light→dark front ──
+ * The backdrop is not one flat colour: it is bone above a horizontal front and
+ * near-black below it, with a soft feather between. Callers move that front up
+ * the canvas with setDarkEdge(), and on the front page it is pinned to the top
+ * edge of the Career section — so the page goes dark exactly where the dark
+ * section begins, and the glass carries on across the seam instead of ending at
+ * it. Because the front is drawn *behind* the cylinders it arrives refracted
+ * and blurred: the boundary shatters into the diagonal ribs rather than sliding
+ * up as a straight line.
+ *
+ * Objects declare which side of that front they belong to (`zone`), and the
+ * engine cross-fades each one as the front sweeps over its centre — the hero's
+ * orbs dissolve into the dark, a second set fades up out of it.
  */
 
 /* ── Scene & material config ──
@@ -34,7 +48,34 @@ const S_FRES = { bias: 0.9, scale: 3.5, pow: 5.5, gain: 1.0 }
 // Film grain, scaled by how much color the glass is carrying
 const GRAIN_SAT = 0.12
 const GRAIN_LUM = 0.22
-const BG = [0.957, 0.953, 0.945] // backdrop behind the glass
+const BG = [0.957, 0.953, 0.945] // backdrop behind the glass, light side
+const BG_DARK = [0.039, 0.039, 0.039] // …and dark side (--color-n-950)
+
+/* ── Dark-side material adaptation ──
+   The material above was tuned against bone. Carried onto near-black as-is it
+   comes apart in three specific ways, so three numbers scale with how dark the
+   backdrop is under a given pixel (0 = bone, 1 = black):
+
+   · the white fresnel seam at mix 1.1 turns the cylinder plane into a white
+     grid on black and lifts the flats out of true black — pulled down so the
+     ribs read as light catching an edge, not as the subject;
+   · the dark seam has nothing left to darken;
+   · the grain term is scaled by (1 − luminance), which peaks on black — left
+     alone the dark half would be visibly noisier than the light half. */
+const DARK_FRES_MIX = 0.13
+const DARK_SEAM = 0.35
+const DARK_GRAIN = 0.2
+// The front's feather is sized for the *scene* pass, where the mip blur softens
+// it further. The glass pass reads it raw (for the three numbers above), so it
+// widens it to land on the same visual gradient.
+const DARK_EDGE_SOFT = 1.9
+// The feather lies entirely *above* the line a caller names, so everything at
+// or below it is fully dark — a caller pinning the front to a section's top
+// edge gets a section that is never partly lit. The lead nudges the whole
+// thing up by roughly the blur radius, since the scene pass is sampled through
+// a deep mip and a centred transition would otherwise leave a grey wash a few
+// dozen pixels below the line.
+const DARK_EDGE_LEAD = 0.05
 
 // Base sphere radius (fraction of min(w, h)); per-object scale multiplies it
 export const SPHERE_R_FRAC = 0.28
@@ -57,6 +98,12 @@ export type GlassObject = {
   gb0: number[]
   gaMix: number
   gbMix: number
+  /** Overall brightness of the finished object, 1 = as composed above. The
+      material is lit for bone, where the fresnel rim and the white end of
+      gradient A read as sheen; on near-black the same object is the brightest
+      thing on screen and will fight anything set over it. Turning this down
+      keeps the hue and lets it sink back into the dark. */
+  dim?: number
   /** idle float */
   driftAmp: number
   driftYScale: number
@@ -64,6 +111,13 @@ export type GlassObject = {
   spdY: number
   phX: number
   phY: number
+  /** which scroll channel supplies this object's lift (see setScrollTarget) */
+  lift?: number
+  /** Side of the light→dark front this object lives on: 0 above it (the
+      default — it dissolves as the front sweeps up past its centre), 1 below
+      it (it fades up out of the dark instead). Inert until a caller moves the
+      front with setDarkEdge(). */
+  zone?: 0 | 1
 }
 
 export type GlassSceneOptions = {
@@ -84,6 +138,13 @@ export type GlassSceneOptions = {
   fpsCap?: number
   /** refresh rate for the (expensive) scene/blur pass; 0 = every frame */
   sceneFpsCap?: number
+  /** how far above the front the backdrop takes to reach bone, as a fraction
+      of canvas height */
+  darkFeather?: number
+  /** the same, for objects crossing it. Wider than the backdrop's, because an
+      orb is ~0.3 of the canvas tall and a front narrower than the orb would
+      snap it out rather than dissolve it. */
+  objectFeather?: number
   forceCPU?: boolean
   /** fires when the CPU backend takes over (no WebGL, or context lost) */
   onCPUFallback?: () => void
@@ -94,8 +155,17 @@ export type GlassScene = {
   stop(): void
   resize(): void
   render(tSec: number): void
-  /** scroll parallax target in CSS px; positive lifts the objects */
-  setScrollTarget(px: number): void
+  /** Scroll parallax target in CSS px; positive lifts the objects. `channel`
+      selects which lift the objects reading it move with — a scene can run
+      several (the hero's orbs climb with the page, the career orbs with the
+      pinned section's progress). */
+  setScrollTarget(px: number, channel?: number): void
+  /** Position of the light→dark front: 0 the bottom edge of the canvas, 1 the
+      top (y-up, and free to run outside that range). Everything at or below it
+      is fully dark; the turn back to bone happens above it. Stays at its
+      default, well below the canvas, until a caller moves it — so a scene that
+      never calls this is bone throughout, as before. */
+  setDarkEdge(edgeN: number): void
 }
 
 /* Sphere texture layer (Spline: Image 100%) — the reference photo of a dark
@@ -124,6 +194,8 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     driftAmount: DRIFT_AMOUNT = 2.0,
     fpsCap: FPS_CAP = 60,
     sceneFpsCap: SCENE_FPS_CAP = 30,
+    darkFeather: DARK_FEATHER = 0.075,
+    objectFeather: OBJ_FEATHER = 0.38,
     forceCPU = false,
     onCPUFallback,
   } = opts
@@ -134,14 +206,27 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
   ).matches
 
   /* ── Scroll parallax ──
-     The caller feeds a lift target (px) from its own scroll wiring; the eased
-     lift the objects actually use catches up once per rendered frame so the
-     parallax glides instead of snapping to the raw scroll position. */
-  let scrollTarget = 0
-  let scrollLift = 0 // eased lift the objects actually use, CSS px
+     The caller feeds one lift target (px) per channel from its own scroll
+     wiring; the eased lift the objects actually use catches up once per
+     rendered frame so the parallax glides instead of snapping to the raw
+     scroll position. Channels are independent so one scene can carry two
+     unrelated climbs at once — objects pick theirs with `lift`. */
+  const CHANNELS = 1 + OBJECTS.reduce((n, o) => Math.max(n, o.lift ?? 0), 0)
+  const scrollTargets = new Float64Array(CHANNELS)
+  const scrollLifts = new Float64Array(CHANNELS) // eased, CSS px
   function stepScroll() {
-    scrollLift += (scrollTarget - scrollLift) * SCROLL_EASE
+    for (let i = 0; i < CHANNELS; i++) {
+      scrollLifts[i] += (scrollTargets[i] - scrollLifts[i]) * SCROLL_EASE
+    }
   }
+
+  /* ── Light→dark front ──
+     Held well below the canvas by default so an untouched scene renders bone
+     end to end (the footer's does). Callers scrub it with setDarkEdge();
+     `edge()` is the line the three consumers below actually use — the
+     caller's, carrying the lead. */
+  let darkEdge = -2
+  const edge = () => darkEdge + DARK_EDGE_LEAD
 
   /* Pointer parallax + idle drift, shared by both backends */
   let px = 0
@@ -161,29 +246,54 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     px += (tpx - px) * POINTER_EASE
     py += (tpy - py) * POINTER_EASE
   }
-  // One object's center in y-up pixels for a given time + canvas size.
-  // `lift` is the scroll parallax in the caller's pixel scale — positive
-  // moves the object up (y-up), i.e. it climbs as the page scrolls down.
-  // All objects share the pointer response; only their drift phase differs.
-  function objCenter(
-    o: GlassObject,
+  const smoothstep = (e0: number, e1: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
+    return t * t * (3 - 2 * t)
+  }
+
+  /* Per-frame object layout, shared by both backends: centers in y-up pixels
+     (cxBuf/cyBuf) plus each object's visibility across the light→dark front
+     (alphaBuf). `liftScale` converts the caller's CSS-px scroll lift into the
+     target's own pixel scale — dpr for the GL canvas, H/cssH for the CPU
+     fallback's small buffer.
+
+     All objects share the pointer response; only their drift phase, their lift
+     channel and their side of the front differ. An object is cross-faded by
+     where its *centre* sits relative to the front, so an orb dissolves as the
+     dark passes over it rather than at a fixed scroll position. */
+  const cxBuf = new Float64Array(NOBJ)
+  const cyBuf = new Float64Array(NOBJ)
+  const alphaBuf = new Float32Array(NOBJ).fill(1)
+  function layoutObjects(
     tSec: number,
     w: number,
     h: number,
-    lift: number,
+    liftScale: number,
   ) {
     const m = Math.min(w, h)
-    const dx =
-      o.driftAmp * DRIFT_AMOUNT * Math.sin(tSec * o.spdX * DRIFT_SPEED + o.phX)
-    const dy =
-      o.driftAmp *
-      o.driftYScale *
-      DRIFT_AMOUNT *
-      Math.sin(tSec * o.spdY * DRIFT_SPEED + o.phY)
-    return [
-      w * o.cx + m * (o.rFrac * o.edgeR + dx + POINTER_SENSITIVITY * px),
-      h * o.cy + m * (dy + POINTER_SENSITIVITY * py) + lift,
-    ]
+    for (let i = 0; i < NOBJ; i++) {
+      const o = OBJECTS[i]
+      const dx =
+        o.driftAmp *
+        DRIFT_AMOUNT *
+        Math.sin(tSec * o.spdX * DRIFT_SPEED + o.phX)
+      const dy =
+        o.driftAmp *
+        o.driftYScale *
+        DRIFT_AMOUNT *
+        Math.sin(tSec * o.spdY * DRIFT_SPEED + o.phY)
+      const cy =
+        h * o.cy +
+        m * (dy + POINTER_SENSITIVITY * py) +
+        scrollLifts[o.lift ?? 0] * liftScale
+      cxBuf[i] =
+        w * o.cx + m * (o.rFrac * o.edgeR + dx + POINTER_SENSITIVITY * px)
+      cyBuf[i] = cy
+      // 1 where the front has already passed this centre, 0 where it hasn't.
+      const e = edge()
+      const dk = 1 - smoothstep(e, e + OBJ_FEATHER, cy / h)
+      alphaBuf[i] = o.zone === 1 ? dk : 1 - dk
+    }
   }
 
   type Impl = {
@@ -224,6 +334,21 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     running = false
     if (rafId !== null) cancelAnimationFrame(rafId)
     rafId = null
+  }
+
+  /* Under reduced motion there is no loop, so every scroll-driven setter has
+     to repaint the single static frame itself. A frame carries several of
+     them (two lifts and the front), and on the CPU backend a repaint is the
+     whole per-pixel pass — so they coalesce onto one rAF instead of each
+     paying for it. No-op when the loop is running. */
+  let staticPending = false
+  function repaintStatic() {
+    if (!reducedMotion || staticPending) return
+    staticPending = true
+    requestAnimationFrame(() => {
+      staticPending = false
+      impl.render(40)
+    })
   }
 
   // GL backend swaps this in so the matcap upload happens on arrival; the CPU
@@ -273,6 +398,10 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       uniform vec3 uGB0[NOBJ];    // gradient B: base
       uniform float uGAmix[NOBJ];
       uniform float uGBmix[NOBJ];
+      uniform float uDim[NOBJ];   // overall brightness
+      uniform float uAlpha[NOBJ]; // visibility across the light→dark front
+      uniform float uEdge;        // fully-dark line, FBO px, y-up
+      uniform float uFeather;     // how far above it the turn to bone takes
       uniform sampler2D uMatcap;
       uniform float uMatcapOn;
       out vec4 outColor;
@@ -286,9 +415,14 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       }
 
       void main() {
-        vec3 col = ${v3(BG)};
+        // Backdrop: bone above the front, near-black below it. The glass pass
+        // samples this through a deep mip blur, so the feather here is only
+        // the start of how soft the boundary ends up looking.
+        float dk = 1.0 - smoothstep(uEdge, uEdge + uFeather, gl_FragCoord.y);
+        vec3 col = mix(${v3(BG)}, ${v3(BG_DARK)}, dk);
         // Composite each object over the last, back-to-front (array order).
         for (int i = 0; i < NOBJ; i++) {
+          if (uAlpha[i] < 0.002) continue;
           vec3 o = uObj[i];
           vec2 p = (gl_FragCoord.xy - o.xy) / o.z;
           vec3 n;
@@ -318,7 +452,7 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
           float t = 0.5 - n.y * 0.5;                  // 0 top → 1 bottom
           c = mix(c, gradB(t, uGB0[i]), uGBmix[i]);
           c = mix(c, gradA(t, uGA0[i], uGA1[i]), uGAmix[i]);
-          col = mix(col, c, cov);
+          col = mix(col, c * uDim[i], cov * uAlpha[i]);
         }
         outColor = vec4(col, 1.0);
       }`
@@ -336,12 +470,19 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       uniform vec2 uAxis;      // unit axis direction
       uniform float uThick;    // displacement scale, px
       uniform float uTime;
+      uniform float uEdgeN;    // fully-dark line, 0..1 of the canvas, y-up
+      uniform float uFeatherN; // how far above it the turn to bone takes
       out vec4 outColor;
 
       float hash(vec2 p) {
         p = fract(p * vec2(123.34, 456.21));
         p += dot(p, p + 45.32);
         return fract(p.x * p.y);
+      }
+
+      // How dark the backdrop is at a height y (0 bottom → 1 top of canvas).
+      float darkAt(float y, float soft) {
+        return 1.0 - smoothstep(uEdgeN, uEdgeN + uFeatherN * soft, y);
       }
 
       void main() {
@@ -364,18 +505,24 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
         c *= 0.25;
 
         // displaced samples that land off-screen read as backdrop, not
-        // as a smeared clamp of the frame edge
+        // as a smeared clamp of the frame edge — and as the backdrop at the
+        // height they were *sampled* from, so the edges follow the front up.
         vec2 ouv = max(vec2(0.0), max(-uv, uv - 1.0));
-        c = mix(c, ${v3(BG)}, smoothstep(0.0, 0.04, max(ouv.x, ouv.y)));
+        vec3 bgAt = mix(${v3(BG)}, ${v3(BG_DARK)}, darkAt(uv.y, 1.0));
+        c = mix(c, bgAt, smoothstep(0.0, 0.04, max(ouv.x, ouv.y)));
 
+        // Seam, and the grain below it, scale with how dark this pixel's
+        // backdrop is (see the DARK_* notes up top).
+        float dkHere = darkAt(gl_FragCoord.y / uRes.y, ${f1(DARK_EDGE_SOFT)});
         float fr = clamp(${f1(G_FRES.bias)} + ${f1(G_FRES.scale)} * pow(1.0 - ny, ${f1(G_FRES.pow)}), 0.0, 1.0);
-        c *= 1.0 - fr * ${f1(SEAM_DARK)};
-        c = mix(c, vec3(1.0), fr * fr * ${f1(G_FRES.mix)});
+        c *= 1.0 - fr * ${f1(SEAM_DARK)} * mix(1.0, ${f1(DARK_SEAM)}, dkHere);
+        c = mix(c, vec3(1.0), fr * fr * mix(${f1(G_FRES.mix)}, ${f1(DARK_FRES_MIX)}, dkHere));
 
         float lum = dot(c, vec3(0.299, 0.587, 0.114));
         float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
         float g = hash(gl_FragCoord.xy + fract(uTime) * 61.7) - 0.5;
-        c += g * (sat * ${f1(GRAIN_SAT)} + (1.0 - lum) * ${f1(GRAIN_LUM)});
+        c += g * (sat * ${f1(GRAIN_SAT)}
+                + (1.0 - lum) * ${f1(GRAIN_LUM)} * mix(1.0, ${f1(DARK_GRAIN)}, dkHere));
 
         outColor = vec4(c, 1.0);
       }`
@@ -419,6 +566,9 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
     const uObj = gl.getUniformLocation(sceneProg, "uObj")
+    const uAlpha = gl.getUniformLocation(sceneProg, "uAlpha")
+    const uEdge = gl.getUniformLocation(sceneProg, "uEdge")
+    const uFeather = gl.getUniformLocation(sceneProg, "uFeather")
     const uMatcapOn = gl.getUniformLocation(sceneProg, "uMatcapOn")
     gl.useProgram(sceneProg)
     gl.uniform1i(gl.getUniformLocation(sceneProg, "uMatcap"), 0)
@@ -440,6 +590,10 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       sceneLoc("uGBmix"),
       new Float32Array(OBJECTS.map((o) => o.gbMix)),
     )
+    gl.uniform1fv(
+      sceneLoc("uDim"),
+      new Float32Array(OBJECTS.map((o) => o.dim ?? 1)),
+    )
     gl.uniform3fv(
       sceneLoc("uGA0"),
       new Float32Array(OBJECTS.flatMap((o) => o.ga0)),
@@ -458,7 +612,10 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     const uAxis = gl.getUniformLocation(glassProg, "uAxis")
     const uThick = gl.getUniformLocation(glassProg, "uThick")
     const uTime = gl.getUniformLocation(glassProg, "uTime")
+    const uEdgeN = gl.getUniformLocation(glassProg, "uEdgeN")
+    const uFeatherN = gl.getUniformLocation(glassProg, "uFeatherN")
     gl.useProgram(glassProg)
+    gl.uniform1f(uFeatherN, DARK_FEATHER)
     gl.uniform1i(gl.getUniformLocation(glassProg, "uScene"), 1)
 
     // Matcap texture (unit 0)
@@ -565,35 +722,35 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
         smoothPointer()
         stepScroll()
         const m = Math.min(canvas.width, canvas.height)
+        layoutObjects(tSec, canvas.width, canvas.height, dpr)
         for (let i = 0; i < NOBJ; i++) {
-          const [cx, cy] = objCenter(
-            OBJECTS[i],
-            tSec,
-            canvas.width,
-            canvas.height,
-            scrollLift * dpr,
-          )
-          objBuf[i * 3] = cx * FBO_SCALE
-          objBuf[i * 3 + 1] = cy * FBO_SCALE
+          objBuf[i * 3] = cxBuf[i] * FBO_SCALE
+          objBuf[i * 3 + 1] = cyBuf[i] * FBO_SCALE
           objBuf[i * 3 + 2] = m * OBJECTS[i].rFrac * FBO_SCALE
         }
         gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo)
         gl!.viewport(0, 0, fw, fh)
         gl!.useProgram(sceneProg)
         gl!.uniform3fv(uObj, objBuf)
+        gl!.uniform1fv(uAlpha, alphaBuf)
+        gl!.uniform1f(uEdge, edge() * fh)
+        gl!.uniform1f(uFeather, DARK_FEATHER * fh)
         gl!.drawArrays(gl!.TRIANGLES, 0, 3)
         gl!.activeTexture(gl!.TEXTURE1)
         gl!.bindTexture(gl!.TEXTURE_2D, sceneTex)
         gl!.generateMipmap(gl!.TEXTURE_2D)
       }
 
-      // Pass 2 — glass to the screen. Everything but uTime is resize-
-      // invariant and uploaded once in uploadGlassStatics(), so the per-
-      // frame path only pushes the clock and draws.
+      // Pass 2 — glass to the screen. Everything but the clock and the front
+      // is resize-invariant and uploaded once in uploadGlassStatics(). The
+      // front goes up every frame, not only the scene-refresh ones, so the
+      // seam and grain track the scroll at the full frame rate even while the
+      // backdrop behind them is a frame stale.
       gl!.bindFramebuffer(gl!.FRAMEBUFFER, null)
       gl!.viewport(0, 0, canvas.width, canvas.height)
       gl!.useProgram(glassProg)
       gl!.uniform1f(uTime, tSec)
+      gl!.uniform1f(uEdgeN, edge())
       gl!.drawArrays(gl!.TRIANGLES, 0, 3)
     }
 
@@ -654,38 +811,59 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     let cssH = 1 // wrap height in CSS px, for scroll-lift conversion
     let img: ImageData
     let buf: Uint8ClampedArray
+    // The light→dark front only varies with y, so it is resolved once per row
+    // rather than per pixel: the backdrop colour (bgRow, premultiplied to
+    // 0..255) and the wider darkness the seam and grain read (dkRow).
+    let bgRow = new Float32Array(3)
+    let dkRow = new Float32Array(1)
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-    const sstep = (e0: number, e1: number, x: number) => {
-      const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
-      return t * t * (3 - 2 * t)
-    }
+    const sstep = smoothstep
 
     // One object's ramp ≈ the GL gradient layers after the 45px blur:
     // a top→bottom ramp with a bright lower rim, in the object's colors.
     // Writes into objCol (runs per covered pixel — must not allocate).
     const objCol = [0, 0, 0]
-    function objColor(t: number, ga0: number[], ga1: number[], gbMix: number) {
+    function objColor(
+      t: number,
+      ga0: number[],
+      ga1: number[],
+      gbMix: number,
+      dim: number,
+    ) {
       const s = sstep(0, 0.8, t)
       const w = sstep(0.8, 1, t)
-      const dark = 1 - gbMix * (1 - w) * 0.5 // gradient B darkening
-      objCol[0] = 255 * Math.min(1, lerp(lerp(ga0[0], ga1[0], s) * dark, 1, w))
-      objCol[1] = 255 * Math.min(1, lerp(lerp(ga0[1], ga1[1], s) * dark, 1, w))
-      objCol[2] = 255 * Math.min(1, lerp(lerp(ga0[2], ga1[2], s) * dark, 1, w))
+      const dark = (1 - gbMix * (1 - w) * 0.5) * dim // gradient B darkening
+      objCol[0] =
+        255 * Math.min(1, lerp(lerp(ga0[0], ga1[0], s) * dark, dim, w))
+      objCol[1] =
+        255 * Math.min(1, lerp(lerp(ga0[1], ga1[1], s) * dark, dim, w))
+      objCol[2] =
+        255 * Math.min(1, lerp(lerp(ga0[2], ga1[2], s) * dark, dim, w))
     }
 
     // Reusable per-object scratch — the static fields (color, shape) are set
-    // once here; render() only rewrites cx/cyd/R each frame, so the hot path
-    // does no per-frame array/object allocation.
+    // once here; render() only rewrites cx/cyd/R/a each frame, so the hot path
+    // does no per-frame array/object allocation. `RB` is the bounding half-
+    // extent including the blur skirt: two compares against it reject the vast
+    // majority of (pixel, object) pairs before the sqrt.
     const objs = OBJECTS.map((o) => ({
       cx: 0,
       cyd: 0,
       R: 0,
+      RB: 0,
+      a: 1,
       cube: o.shape === 1,
       ga0: o.ga0,
       ga1: o.ga1,
       gbMix: o.gbMix,
+      dim: o.dim ?? 1,
     }))
+    // Objects worth testing this frame (on screen and not faded out), refilled
+    // per frame. Scenes can carry more objects than are ever visible at once —
+    // the hero's three plus a whole second set for the dark half — and the
+    // per-pixel loop should only pay for the ones actually in frame.
+    const active: (typeof objs)[number][] = []
 
     function render(tSec: number, sceneDirty = true) {
       // Unlike the GL backend there's no cheap glass-only pass here — the
@@ -694,7 +872,6 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       if (!sceneDirty) return
       smoothPointer()
       stepScroll()
-      const liftCPU = (scrollLift * H) / Math.max(cssH, 1)
       const m = Math.min(W, H)
       const blur = m * 0.06 // the baked-in "45px" softness
       const period = m * PERIOD_FRAC
@@ -706,15 +883,45 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       const eta = 1 / IOR
       let seed = (tSec * 61.7) % 1
 
-      // Per-frame object centers (y-down) — computed once, not per pixel.
+      // Per-row backdrop + darkness for the front, resolved once per frame.
+      const e = edge()
+      for (let y = 0; y < H; y++) {
+        const yUp = (H - 1 - y) / H
+        const dk = 1 - sstep(e, e + DARK_FEATHER, yUp)
+        bgRow[y * 3] = lerp(BG[0], BG_DARK[0], dk) * 255
+        bgRow[y * 3 + 1] = lerp(BG[1], BG_DARK[1], dk) * 255
+        bgRow[y * 3 + 2] = lerp(BG[2], BG_DARK[2], dk) * 255
+        dkRow[y] = 1 - sstep(e, e + DARK_FEATHER * DARK_EDGE_SOFT, yUp)
+      }
+
+      // Per-frame object centers (y-down) — computed once, not per pixel —
+      // then narrowed to the ones that can actually touch a pixel this frame.
+      layoutObjects(tSec, W, H, H / Math.max(cssH, 1))
+      active.length = 0
       for (let o = 0; o < OBJECTS.length; o++) {
-        const [ox, oy] = objCenter(OBJECTS[o], tSec, W, H, liftCPU)
-        objs[o].cx = ox
-        objs[o].cyd = H - oy // ImageData is y-down
-        objs[o].R = m * OBJECTS[o].rFrac
+        const ob = objs[o]
+        ob.a = alphaBuf[o]
+        if (ob.a < 0.002) continue
+        ob.cx = cxBuf[o]
+        ob.cyd = H - cyBuf[o] // ImageData is y-down
+        ob.R = m * OBJECTS[o].rFrac
+        ob.RB = ob.R + blur
+        // Off-screen by more than the displacement the glass can reach.
+        if (
+          ob.cx < -ob.RB - thick ||
+          ob.cx > W + ob.RB + thick ||
+          ob.cyd < -ob.RB - thick ||
+          ob.cyd > H + ob.RB + thick
+        )
+          continue
+        active.push(ob)
       }
 
       for (let y = 0; y < H; y++) {
+        const dkHere = dkRow[y]
+        const seamDark = SEAM_DARK * lerp(1, DARK_SEAM, dkHere)
+        const fresMix = lerp(G_FRES.mix, DARK_FRES_MIX, dkHere)
+        const grainLum = GRAIN_LUM * lerp(1, DARK_GRAIN, dkHere)
         for (let x = 0; x < W; x++) {
           const nx = fractCell(x * pxv + y * pyv, period)
           const ny = Math.sqrt(Math.max(1 - nx * nx, 1e-5))
@@ -727,14 +934,18 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
           const sx = x + pxv * shift
           const sy = y + pyv * shift
 
-          // analytic blurred scene — composite objects back-to-front
-          let r = BG[0] * 255
-          let g = BG[1] * 255
-          let b = BG[2] * 255
-          for (let o = 0; o < objs.length; o++) {
-            const ob = objs[o]
+          // analytic blurred scene — composite objects back-to-front, over the
+          // backdrop at the height the sample came from (so the displaced
+          // frame edges follow the front up rather than smearing one colour)
+          const bgY = sy < 0 ? 0 : sy > H - 1 ? H - 1 : sy | 0
+          let r = bgRow[bgY * 3]
+          let g = bgRow[bgY * 3 + 1]
+          let b = bgRow[bgY * 3 + 2]
+          for (let o = 0; o < active.length; o++) {
+            const ob = active[o]
             const dx = sx - ob.cx
             const dy = sy - ob.cyd
+            if (dx < -ob.RB || dx > ob.RB || dy < -ob.RB || dy > ob.RB) continue
             let cov: number
             if (ob.cube) {
               // rounded-box distance ≈ the GL cube silhouette
@@ -748,20 +959,21 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
               const d = Math.sqrt(dx * dx + dy * dy)
               cov = 1 - sstep(ob.R - blur, ob.R + blur, d)
             }
+            cov *= ob.a
             if (cov > 0) {
               const t = Math.min(1, Math.max(0, (dy + ob.R) / (2 * ob.R)))
-              objColor(t, ob.ga0, ob.ga1, ob.gbMix)
+              objColor(t, ob.ga0, ob.ga1, ob.gbMix, ob.dim)
               r = lerp(r, objCol[0], cov)
               g = lerp(g, objCol[1], cov)
               b = lerp(b, objCol[2], cov)
             }
           }
 
-          // fresnel seam + dark line
+          // fresnel seam + dark line, both scaled by this row's darkness
           let fr = G_FRES.bias + G_FRES.scale * Math.pow(1 - ny, G_FRES.pow)
           fr = Math.min(1, Math.max(0, fr))
-          const wht = fr * fr * G_FRES.mix
-          const drk = 1 - fr * SEAM_DARK
+          const wht = fr * fr * fresMix
+          const drk = 1 - fr * seamDark
           r = lerp(r * drk, 255, wht)
           g = lerp(g * drk, 255, wht)
           b = lerp(b * drk, 255, wht)
@@ -771,7 +983,7 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
           const sat = (Math.max(r, g, b) - Math.min(r, g, b)) / 255
           seed = (seed * 16807 + 0.123456789) % 1
           const gr =
-            (seed - 0.5) * 255 * (sat * GRAIN_SAT + (1 - lum) * GRAIN_LUM)
+            (seed - 0.5) * 255 * (sat * GRAIN_SAT + (1 - lum) * grainLum)
 
           const i = (y * W + x) * 4
           buf[i] = r + gr
@@ -796,6 +1008,8 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       canvas.height = H
       img = ctx.createImageData(W, H)
       buf = img.data
+      bgRow = new Float32Array(H * 3)
+      dkRow = new Float32Array(H)
       if (reducedMotion || !running) render(reducedMotion ? 40 : lastT)
     }
 
@@ -815,14 +1029,24 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     stop,
     resize: () => impl.resize(),
     render: (tSec: number) => impl.render(tSec),
-    setScrollTarget(pxLift: number) {
-      scrollTarget = pxLift
+    setScrollTarget(pxLift: number, channel = 0) {
+      if (channel < 0 || channel >= CHANNELS) return
+      if (scrollTargets[channel] === pxLift) return
+      scrollTargets[channel] = pxLift
       // No raf loop under reduced motion — snap and repaint the static frame
       // so any scroll-linked parallax still tracks the page.
       if (reducedMotion) {
-        scrollLift = pxLift
-        impl.render(40)
+        scrollLifts[channel] = pxLift
+        repaintStatic()
       }
+    },
+    setDarkEdge(edgeN: number) {
+      if (edgeN === darkEdge) return
+      darkEdge = edgeN
+      // The front is read straight off the scroll rather than eased — it is
+      // pinned to a real element's edge, and a lag would unstick it from the
+      // section it belongs to.
+      repaintStatic()
     },
   }
 }
