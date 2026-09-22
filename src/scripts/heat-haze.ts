@@ -61,10 +61,11 @@ const EDGE_FEATHER = [0.003, 0.12]
 // Scales the shape above without retuning it. WIDEN widens the mask about the
 // road's centre line (1.25 = 12.5% more on each side, feather included).
 // REACH stretches everything below the crest (the distance falloff and FADE
-// together) further down the road; the top cutoff stays where it is. The
-// shape spans RISE + FADE[1] = 0.081, so 1.432 makes that 40% taller.
-const WIDEN = 1.25
-const REACH = 1.432
+// together) further down the road; the top cutoff stays where it is. At
+// REACH 1 the shape spans RISE + FADE[1] = 0.081 of the image height; at
+// 2.3392 it spans 0.1814, i.e. 1.4 × 1.6 of that.
+const WIDEN = 3.125 // 1.25 × 2.5
+const REACH = 2.3392
 
 /* ── Distortion ──
    Amplitudes are fractions of the image height at full intensity, so the
@@ -72,6 +73,10 @@ const REACH = 1.432
    scales all four together: the warp and ripple amplitudes, the blur, and
    the mirage. The noise scale is separate, so it stays just as tight. */
 const INTENSITY = 1.3
+// Density of the noise pattern: higher means smaller, tighter ripples. The
+// finest ripple rows at the crest are ~1.6px of the source photo here, so
+// much past this they break up into per-pixel flicker.
+const TIGHTEN = 1.5
 const WARP_AMP = [0.0016, 0.0013] // slow boiling warp (x, y)
 const RIPPLE_AMP = [0.0005, 0.0012] // fine rising shimmer (x, y)
 const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
@@ -201,7 +206,8 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       // Ground-plane coordinates: depth runs as log(h), lateral as offset
       // over h, so a fixed noise cell covers less and less of the screen the
       // further down the road it lies — the shimmer tightens with the road.
-      vec2 g = vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5);
+      vec2 g = vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5)
+             * ${f1(TIGHTEN)};
 
       // Slow boil — the Hermeus warp, drifting away from the viewer
       vec3 wq = vec3(g + vec2(0.0, uTime * 0.6), uTime * 0.5);
