@@ -58,10 +58,20 @@ const FADE = [0.025, 0.075]
 const RISE = 0.006 // ≈8px of the source photo
 // Feather past the road's edges: a fixed margin plus a share of the width
 const EDGE_FEATHER = [0.003, 0.12]
+// Scales the shape above without retuning it. WIDEN widens the mask about the
+// road's centre line (1.25 = 12.5% more on each side, feather included).
+// REACH stretches everything below the crest (the distance falloff and FADE
+// together) further down the road; the top cutoff stays where it is. The
+// shape spans RISE + FADE[1] = 0.081, so 1.432 makes that 40% taller.
+const WIDEN = 1.25
+const REACH = 1.432
 
 /* ── Distortion ──
    Amplitudes are fractions of the image height at full intensity, so the
-   effect scales with the photo rather than with device pixels. */
+   effect scales with the photo rather than with device pixels. INTENSITY
+   scales all four together: the warp and ripple amplitudes, the blur, and
+   the mirage. The noise scale is separate, so it stays just as tight. */
+const INTENSITY = 1.3
 const WARP_AMP = [0.0016, 0.0013] // slow boiling warp (x, y)
 const RIPPLE_AMP = [0.0005, 0.0012] // fine rising shimmer (x, y)
 const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
@@ -100,7 +110,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   }
   if (!gl) return null
 
-  const f1 = (x: number) => x.toFixed(4)
+  const f1 = (x: number) => x.toFixed(5)
 
   const VS = `#version 300 es
     layout(location = 0) in vec2 aPos;
@@ -166,15 +176,22 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       float center = 0.5 * (edge.x + edge.y);
       float halfW = 0.5 * (edge.y - edge.x);
       float feather = ${f1(EDGE_FEATHER[0])} + halfW * ${f1(EDGE_FEATHER[1])};
-      float onRoad = 1.0 - smoothstep(halfW, halfW + feather, abs(uv.x - center));
+      float off = abs(uv.x - center);
+      // The asphalt itself (the mirage keeps to this)…
+      float onRoad = 1.0 - smoothstep(halfW, halfW + feather, off);
+      // …and the haze, which reaches WIDEN times as far out
+      float inBand = 1.0 - smoothstep(halfW, halfW + feather, off / ${f1(WIDEN)});
 
-      // Distance down the road (1 at the crest), and the extent envelope
+      // Distance down the road (1 at the crest), and the extent envelope. The
+      // envelope reads dy squeezed by REACH, which draws it further down the
+      // road; the noise below still uses the true distance, so it stays tight.
       float h = max(uv.y - HORIZON_Y, 0.003);
-      float dist = pow(${f1(CREST_Y - HORIZON_Y)} / max(h, ${f1(CREST_Y - HORIZON_Y)}), ${f1(FALLOFF)});
+      float dyE = below / ${f1(REACH)};
+      float dist = pow(${f1(CREST_Y - HORIZON_Y)} / (${f1(CREST_Y - HORIZON_Y)} + dyE), ${f1(FALLOFF)});
       float env = dy < 0.0
         ? 1.0 - smoothstep(0.0, ${f1(RISE)}, -dy)
-        : dist * (1.0 - smoothstep(${f1(FADE[0])}, ${f1(FADE[1])}, dy));
-      float m = onRoad * env;
+        : dist * (1.0 - smoothstep(${f1(FADE[0])}, ${f1(FADE[1])}, dyE));
+      float m = inBand * env;
 
       if (m < 0.004) {
         outColor = textureLod(uImg, uv, uLod);
@@ -194,12 +211,13 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       float rip = noise(vec3(g.x * 3.0, g.y * 2.5 + uTime * 6.0, uTime * 1.5)) - 0.5;
 
       vec2 d = (warp * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
-             + rip * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])})) * 2.0 * m;
+             + rip * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])}))
+             * ${f1(2 * INTENSITY)} * m;
       vec2 suv = uv + vec2(d.x / uAspect, d.y);
 
       // Drifting blur patches: pockets of hotter air, as a mip bias
       float bn = fbm(vec3(g * vec2(0.5, 0.6) + vec2(uTime * 0.1, uTime * 0.3), uTime * 0.3));
-      float blur = smoothstep(-0.05, 0.25, bn) * m * ${f1(BLUR_BIAS)};
+      float blur = smoothstep(-0.05, 0.25, bn) * m * ${f1(BLUR_BIAS * INTENSITY)};
 
       // Explicit LOD: these reads sit behind the early-out, where implicit
       // derivatives are undefined
@@ -208,7 +226,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       // Inferior mirage: just past the crest the asphalt mirrors what sits
       // above it, flickering with the warp
       float strip = smoothstep(0.0, 0.002, dy) * (1.0 - smoothstep(0.006, 0.016, dy));
-      float mir = onRoad * strip * smoothstep(-0.15, 0.15, warp.x) * ${f1(MIRAGE)};
+      float mir = onRoad * strip * smoothstep(-0.15, 0.15, warp.x) * ${f1(MIRAGE * INTENSITY)};
       if (mir > 0.001) {
         vec2 ruv = vec2(suv.x, CREST_Y - dy * 1.3 + d.y * 3.0);
         col = mix(col, textureLod(uImg, clamp(ruv, 0.0, 1.0), uLod + blur + 0.5), mir);
