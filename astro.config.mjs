@@ -5,13 +5,14 @@ import sitemap from "@astrojs/sitemap";
 import vercel from "@astrojs/vercel";
 import { visualizer } from "rollup-plugin-visualizer";
 
-/* The three shaders in glass-scene.ts are template literals, so their comments
-   and indentation are string *content* — the JS minifier cannot reach them, and
-   ~750 bytes of GLSL commentary ships to every visitor. Stripping them at build
+/* The shaders in glass-scene.ts and heat-haze.ts are template literals, so
+   their comments and indentation are string *content* — the JS minifier cannot
+   reach them, and the GLSL commentary would ship to every visitor. Stripping them at build
    time keeps the annotated source intact while paying nothing for it. Build-only
    so dev still compiles the readable shader (line numbers in a GLSL compile
    error then match the source you are looking at). */
 function stripGlslComments() {
+  const FILES = ["glass-scene.ts", "heat-haze.ts"];
   const SHADER = /`#version 300 es[\s\S]*?`/g;
   const INTERP = /\$\{[^{}]*\}/g;
 
@@ -20,7 +21,7 @@ function stripGlslComments() {
     enforce: "pre",
     apply: "build",
     transform(code, id) {
-      if (!id.endsWith("glass-scene.ts")) return null;
+      if (!FILES.some((f) => id.endsWith(f))) return null;
 
       let found = 0;
       const out = code.replace(SHADER, (lit) => {
