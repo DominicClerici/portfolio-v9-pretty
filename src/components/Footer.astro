@@ -38,20 +38,43 @@ const connect = [
   id="site-footer"
   class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
 >
-  <!-- The glass scene is viewport-fixed and sits *behind* the whole page
+  <!-- The road backdrop is viewport-fixed and sits *behind* the whole page
        (-z-10), so the opaque sections above the footer hide it and the footer
        — which has no background of its own — is the only window onto it. That
        window opening as the footer rises is the reveal, and because the pin is
        real CSS fixed positioning rather than a scroll-driven transform, the
-       glass cannot drift on compositor-driven (touch) scrolling. It doubles as
-       the footer's background: fixed to the *visual* viewport, it also covers
-       the strip below an svh-tall footer when mobile chrome retracts.
-       Lazily initialized as the footer approaches the viewport (see script). -->
+       photo cannot drift on compositor-driven (touch) scrolling. Fixed to the
+       *visual* viewport, it also covers the strip below an svh-tall footer
+       when mobile chrome retracts.
+
+       Three layers: the photo itself (the real background, and all there is
+       without WebGL2 or under reduced motion), the heat-haze canvas drawn
+       pixel-for-pixel over it once its texture is up, and a scrim that keeps
+       the bone type legible against the sky and the asphalt while leaving the
+       horizon — where the shimmer is — clear. The wrap's own background is a
+       24px blur-up of the photo, so the text has something to sit on before
+       the real one arrives.
+
+       The photo's srcset is held back in data-srcset: as a fixed element it
+       is always "in the viewport" to the browser's lazy loader and would load
+       with the hero. It is set as the footer approaches instead (see script).
+       Its alt is empty — the scene is decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-0 -z-10 bg-bone"
+    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900 bg-cover bg-center"
+    style="background-image:url(data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoR4OsC//s/+A8r1dXfbR+T1KAD9UHdKkFssr1uAGAtq9AzTe97a56fnZN1o/RSh0O/HUusSXRqqGG9iaHjeCyQ4jG5bY0mhWjPEq14ZONnmyxP6AAA=)"
     aria-hidden="true"
   >
+    <img
+      class="footer-photo absolute inset-0 w-full h-full object-cover"
+      data-srcset="/photos/footer-road.webp 1280w, /photos/footer-road-2x.webp 2000w"
+      sizes="100vw"
+      width="2000"
+      height="1333"
+      alt=""
+      decoding="async"
+    />
     <canvas id="footer-canvas" class="absolute inset-0 w-full h-full"></canvas>
+    <div class="footer-scrim absolute inset-0"></div>
   </div>
 
   <div class="relative z-10 h-full flex flex-col">
@@ -115,7 +138,7 @@ const connect = [
     >
       <div class="max-w-[560px]">
         <p
-          class="font-display text-ink leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
+          class="font-display text-bone leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
         >
           I design and build software that&rsquo;s fast, useful, and worth
           looking at.
@@ -129,9 +152,9 @@ const connect = [
         class="flex items-start justify-between lg:justify-end gap-8 lg:gap-14"
       >
         <nav class="flex gap-8 lg:gap-14" aria-label="Footer navigation">
-          <div class="border-l border-ink/15 pl-5 lg:pl-6 lg:min-w-[150px]">
+          <div class="border-l border-bone/25 pl-5 lg:pl-6 lg:min-w-[150px]">
             <p
-              class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/50"
+              class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-bone/65"
             >
               Navigate
             </p>
@@ -141,7 +164,7 @@ const connect = [
                   <li>
                     <a
                       href={link.href}
-                      class="font-display text-[17px] leading-snug tracking-[-0.01em] text-ink/80 hover:text-ink transition-colors duration-150"
+                      class="font-display text-[17px] leading-snug tracking-[-0.01em] text-bone/85 hover:text-bone transition-colors duration-150"
                     >
                       {link.label}
                     </a>
@@ -150,9 +173,9 @@ const connect = [
               }
             </ul>
           </div>
-          <div class="border-l border-ink/15 pl-5 lg:pl-6 lg:min-w-[150px]">
+          <div class="border-l border-bone/25 pl-5 lg:pl-6 lg:min-w-[150px]">
             <p
-              class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-ink/50"
+              class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-bone/65"
             >
               Connect
             </p>
@@ -162,7 +185,7 @@ const connect = [
                   <li>
                     <a
                       href={link.href}
-                      class="font-display text-[17px] leading-snug tracking-[-0.01em] text-ink/80 hover:text-ink transition-colors duration-150"
+                      class="font-display text-[17px] leading-snug tracking-[-0.01em] text-bone/85 hover:text-bone transition-colors duration-150"
                       {...(link.external
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
@@ -178,7 +201,7 @@ const connect = [
         <a
           href="#hero"
           aria-label="Back to top"
-          class="hidden md:inline-flex w-10 h-10 rounded-lg border border-ink/35 text-ink items-center justify-center hover:border-ink hover:bg-white/25 transition-colors duration-200"
+          class="hidden md:inline-flex w-10 h-10 rounded-lg border border-bone/40 text-bone items-center justify-center hover:border-bone hover:bg-white/15 transition-colors duration-200"
         >
           <svg
             width="14"
@@ -200,12 +223,12 @@ const connect = [
 
     <div class="shrink-0 px-3 sm:px-6 lg:px-12 pb-5 md:pb-6">
       <p
-        class="footer-name inline-block font-display text-ink leading-[0.95] tracking-[-0.03em] whitespace-nowrap"
+        class="footer-name inline-block font-display text-bone leading-[0.95] tracking-[-0.03em] whitespace-nowrap"
       >
         Dominic Clerici
       </p>
       <p
-        class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-ink/55 mt-4"
+        class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60 mt-4"
       >
         &copy; {year} Dominic Clerici. All rights reserved.
       </p>
@@ -214,6 +237,49 @@ const connect = [
 </footer>
 
 <style>
+  /* Holds the haze canvas back until it has drawn a frame over the photo. It
+     is opaque (alpha: false), so shown any earlier it would be a black sheet;
+     once drawn it matches the <img> beneath pixel-for-pixel, so the fade only
+     brings the shimmer up rather than swapping one picture for another. */
+  #footer-canvas {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  #footer-canvas.is-ready {
+    opacity: 1;
+  }
+
+  /* Darkens the sky behind the statement and nav and the asphalt behind the
+     giant name; the middle stays clear so the horizon and its shimmer read at
+     full strength. */
+  .footer-scrim {
+    background: linear-gradient(
+      to bottom,
+      rgb(10 10 10 / 0.5) 0%,
+      rgb(10 10 10 / 0.25) 28%,
+      rgb(10 10 10 / 0) 42%,
+      rgb(10 10 10 / 0) 58%,
+      rgb(10 10 10 / 0.3) 76%,
+      rgb(10 10 10 / 0.6) 100%
+    );
+  }
+  /* Below lg the nav columns stack under the statement and land on the pale
+     horizon itself, so the scrim carries on down past them. */
+  @media (max-width: 1023px) {
+    .footer-scrim {
+      background: linear-gradient(
+        to bottom,
+        rgb(10 10 10 / 0.5) 0%,
+        rgb(10 10 10 / 0.35) 30%,
+        rgb(10 10 10 / 0.3) 46%,
+        rgb(10 10 10 / 0) 58%,
+        rgb(10 10 10 / 0) 64%,
+        rgb(10 10 10 / 0.3) 80%,
+        rgb(10 10 10 / 0.6) 100%
+      );
+    }
+  }
+
   /* Header echo in the cap bar: hidden until the page is scrolled to its very
      bottom, then it rises 6px and fades in; leaving the bottom reverses it. */
   .footer-header {
@@ -236,11 +302,7 @@ const connect = [
 </style>
 
 <script>
-  import {
-    createGlassScene,
-    SPHERE_R_FRAC,
-    type GlassObject,
-  } from "../scripts/glass-scene";
+  import { createHeatHaze, type HeatHaze } from "../scripts/heat-haze";
   import {
     makeState,
     typeText,
@@ -250,7 +312,7 @@ const connect = [
 
   {
     const footer = document.getElementById("site-footer")!;
-    const wrap = footer.querySelector<HTMLElement>(".footer-canvas-wrap")!;
+    const photo = footer.querySelector<HTMLImageElement>(".footer-photo")!;
     const canvas = document.getElementById(
       "footer-canvas",
     ) as HTMLCanvasElement;
@@ -258,7 +320,6 @@ const connect = [
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    const forceCPU = new URLSearchParams(location.search).has("cpu");
 
     /* ── Giant name ──
        Sized to span the content width exactly, reference-style: measure at a
@@ -274,133 +335,61 @@ const connect = [
       name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`;
     }
 
-    /* ── Scene config ──
-       The same objects and material as the hero, rearranged for the footer:
-       the teal sphere sits low behind the giant name, the cube mid-left by
-       the statement, the purple sphere up by the nav columns. Positions are
-       fractions of the footer (x from left, y-up from bottom). */
-    const OBJECTS: GlassObject[] = [
-      {
-        // purple sphere — back, smallest, upper-right
-        shape: 0,
-        mat: 0,
-        rFrac: SPHERE_R_FRAC * 0.5,
-        cx: 0.9,
-        cy: 0.78,
-        edgeR: 0,
-        ga0: [0.541, 0.329, 0.941],
-        ga1: [0.725, 0.549, 1.0],
-        gb0: [0.369, 0.173, 0.753],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.04,
-        driftYScale: 0.7,
-        spdX: 0.17,
-        spdY: 0.11,
-        phX: 3.4,
-        phY: 0.9,
-      },
-      {
-        // blue cube — middle, mid-left
-        shape: 1,
-        mat: 0,
-        rFrac: SPHERE_R_FRAC * 0.65,
-        cx: 0.06,
-        cy: 0.52,
-        edgeR: 0,
-        ga0: [0.133, 0.651, 0.949],
-        ga1: [0.525, 0.847, 1.0],
-        gb0: [0.055, 0.388, 0.784],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.038,
-        driftYScale: 0.7,
-        spdX: 0.19,
-        spdY: 0.13,
-        phX: 1.6,
-        phY: 5.1,
-      },
-      {
-        // teal sphere — front, largest, low behind the name
-        shape: 0,
-        mat: 1,
-        rFrac: SPHERE_R_FRAC * 1.1,
-        cx: 0.62,
-        cy: 0.14,
-        edgeR: 0,
-        ga0: [0.126, 0.997, 0.2],
-        ga1: [0.233, 0.979, 0.778],
-        gb0: [0.0, 0.824, 0.533],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.05,
-        driftYScale: 0.6,
-        spdX: 0.21,
-        spdY: 0.13,
-        phX: 0.8,
-        phY: 2.6,
-      },
-    ];
+    /* ── Road backdrop + heat haze ──
+       As the footer comes within 600px the photo starts loading; once it has
+       decoded, the haze takes it as a texture. The shimmer only runs while
+       the footer is actually on screen. Under reduced motion, or without
+       WebGL2, the photo is left as it is. */
+    let haze: HeatHaze | null = null;
+    let footerVisible = false;
 
-    /* ── Glass scroll parallax ──
-       The pin itself is CSS (the wrap is `position: fixed`) — nothing here
-       counters the scroll. This only feeds the *objects'* climb, which is
-       eased in the render loop, so it stays smooth even when scroll events
-       trail the compositor as they do during native touch scrolling. */
-    const SCROLL_SENSITIVITY = 0.3;
-
-    let scene: ReturnType<typeof createGlassScene> | null = null;
-    function onScrollFrame() {
-      // fT: the footer's top edge in viewport space — positive while it's still
-      // rising in from the bottom, 0 once its top reaches the viewport top.
-      // Objects climb with how far the footer has entered the viewport.
-      const fT = footer.getBoundingClientRect().top;
-      scene?.setScrollTarget(
-        Math.max(0, window.innerHeight - fT) * SCROLL_SENSITIVITY,
-      );
-    }
-    // Shared scroll bus (Layout head shim) — one listener per frame; the
-    // render loop eases toward the target so frame-exact timing isn't needed.
-    (window as any).__onSmoothScrollTick(onScrollFrame);
-
-    function ensureScene() {
-      if (scene) return;
-      scene = createGlassScene({ canvas, wrap, objects: OBJECTS, forceCPU });
-      scene.resize();
-      onScrollFrame();
+    function loadPhoto() {
+      if (photo.srcset) return;
+      photo.srcset = photo.dataset.srcset!;
+      if (reducedMotion) return;
+      photo
+        .decode()
+        .then(() => {
+          haze = createHeatHaze({
+            canvas,
+            img: photo,
+            onReady: () => canvas.classList.add("is-ready"),
+            onLost: () => {
+              canvas.classList.remove("is-ready");
+              haze = null;
+            },
+          });
+          if (footerVisible && !document.hidden) haze?.start();
+        })
+        .catch(() => {});
     }
 
-    // Create the scene ahead of arrival so the first frame is already painted
-    // when the footer scrolls in; the render loop only runs while it's
-    // actually on screen (start() is a no-op under reduced motion — resize()
-    // painted the static frame).
     new IntersectionObserver(
       (entries, io) => {
         if (entries.some((e) => e.isIntersecting)) {
-          ensureScene();
+          loadPhoto();
           io.disconnect();
         }
       },
       { rootMargin: "600px 0px" },
     ).observe(footer);
 
-    let footerVisible = false;
     new IntersectionObserver(
       (entries) => {
         footerVisible = entries[0].isIntersecting;
         if (footerVisible) {
-          ensureScene();
-          scene!.start();
+          loadPhoto();
+          haze?.start();
         } else {
-          scene?.stop();
+          haze?.stop();
         }
       },
       { threshold: 0 },
     ).observe(footer);
 
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) scene?.stop();
-      else if (footerVisible) scene?.start();
+      if (document.hidden) haze?.stop();
+      else if (footerVisible) haze?.start();
     });
 
     /* ── Header echo ──
@@ -456,11 +445,9 @@ const connect = [
         // fitName writes a font size, then reads metrics back, then writes
         // again — two forced layouts on the largest text node on the page.
         // The footer is h-svh, so mobile URL-bar show/hide retriggers this
-        // observer mid-scroll; it belongs behind the same debounce as the
-        // canvas resize rather than running on every one of those ticks.
+        // observer mid-scroll; it belongs behind a debounce rather than
+        // running on every one of those ticks.
         fitName();
-        scene?.resize();
-        onScrollFrame();
         onEchoScroll();
       }, 120);
     }).observe(footer);
