@@ -26,7 +26,10 @@
  *     where the road goes over the crest;
  *   · its texture is laid out on the ground plane rather than the screen, so
  *     the ripples crowd together and tighten toward the horizon exactly as
- *     the road does.
+ *     the road does;
+ *   · the far edge of the flat ground boils too, so a thin strip of the same
+ *     shimmer runs along the horizon either side of the road, level with the
+ *     road haze's top edge.
  *
  * All of it is measured in *image* space, so it stays glued to the road
  * however `object-fit: cover` crops the photo. The <img> underneath is the
@@ -81,6 +84,20 @@ const WARP_AMP = [0.0016, 0.0013] // slow boiling warp (x, y)
 const RIPPLE_AMP = [0.0005, 0.0012] // fine rising shimmer (x, y)
 const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
 const MIRAGE = 0.35 // peak mix of the reflection just past the crest
+
+/* ── Horizon line ──
+   A thin strip of the same shimmer laid along the horizon, where the
+   foreground grass meets the flat distant plain. Seen from standing height,
+   the far ground's edge boils like the far road does. It sits level with the
+   road haze's top edge (the crest less RISE), which is also where the horizon
+   falls in the photo. It spans the flat stretch between the rocky ridge on
+   the left and the rising ground on the right (image UV x), and fades out
+   over LINE_FEATHER at each end. */
+const LINE_Y = CREST_Y - RISE
+const LINE_X = [0.4, 0.65]
+const LINE_FEATHER = 0.025
+const LINE_HALF_H = 0.0035 // gaussian half-height, UV y (≈5px of the photo)
+const LINE_STRENGTH = 0.8 // peak, relative to the road haze at the crest
 
 export type HeatHaze = {
   start(): void
@@ -166,6 +183,19 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       return s - 0.4375;
     }
 
+    // The shimmer's noise at noise-space point g: the slow warp (xy), the
+    // fine ripple (z) and the blur-patch field (w)
+    vec4 haze(vec2 g) {
+      // Slow boil — the Hermeus warp, drifting away from the viewer
+      vec3 wq = vec3(g + vec2(0.0, uTime * 0.6), uTime * 0.5);
+      vec2 warp = vec2(fbm(wq), fbm(wq + vec3(5.2, 1.3, 7.7)));
+      // Fine shimmer — tight horizontal striations climbing quickly
+      float rip = noise(vec3(g.x * 3.0, g.y * 2.5 + uTime * 6.0, uTime * 1.5)) - 0.5;
+      // Drifting blur patches: pockets of hotter air
+      float bn = fbm(vec3(g * vec2(0.5, 0.6) + vec2(uTime * 0.1, uTime * 0.3), uTime * 0.3));
+      return vec4(warp, rip, bn);
+    }
+
     void main() {
       // gl_FragCoord is y-up; the image is y-down
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
@@ -196,34 +226,48 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       float env = dy < 0.0
         ? 1.0 - smoothstep(0.0, ${f1(RISE)}, -dy)
         : dist * (1.0 - smoothstep(${f1(FADE[0])}, ${f1(FADE[1])}, dyE));
-      float m = inBand * env;
+      float mRoad = inBand * env;
 
-      if (m < 0.004) {
+      // The horizon strip, handing over to the road haze where they meet so
+      // the two never stack
+      float ly = (uv.y - ${f1(LINE_Y)}) / ${f1(LINE_HALF_H)};
+      float lx = smoothstep(${f1(LINE_X[0] - LINE_FEATHER)}, ${f1(LINE_X[0])}, uv.x)
+               * (1.0 - smoothstep(${f1(LINE_X[1])}, ${f1(LINE_X[1] + LINE_FEATHER)}, uv.x));
+      float mLine = exp(-ly * ly) * lx * ${f1(LINE_STRENGTH)} * (1.0 - mRoad);
+
+      if (mRoad + mLine < 0.004) {
         outColor = textureLod(uImg, uv, uLod);
         return;
       }
 
-      // Ground-plane coordinates: depth runs as log(h), lateral as offset
-      // over h, so a fixed noise cell covers less and less of the screen the
-      // further down the road it lies — the shimmer tightens with the road.
-      vec2 g = vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5)
-             * ${f1(TIGHTEN)};
+      // Road: ground-plane coordinates. Depth runs as log(h), lateral as
+      // offset over h, so a fixed noise cell covers less and less of the
+      // screen the further down the road it lies — the shimmer tightens with
+      // the road.
+      vec4 hr = vec4(0.0);
+      if (mRoad >= 0.004) {
+        hr = haze(vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5)
+                  * ${f1(TIGHTEN)});
+      }
+      // Horizon: everything on it is equally far off, so it gets flat
+      // coordinates at the density the road's noise has at the crest
+      vec4 hl = vec4(0.0);
+      if (mLine >= 0.004) {
+        hl = haze(vec2(uv.x * uAspect * ${f1((0.5 / (CREST_Y - HORIZON_Y)) * TIGHTEN)},
+                       uv.y * ${f1((2.5 / (CREST_Y - HORIZON_Y)) * TIGHTEN)}));
+      }
 
-      // Slow boil — the Hermeus warp, drifting away from the viewer
-      vec3 wq = vec3(g + vec2(0.0, uTime * 0.6), uTime * 0.5);
-      vec2 warp = vec2(fbm(wq), fbm(wq + vec3(5.2, 1.3, 7.7)));
-
-      // Fine shimmer — tight horizontal striations climbing quickly
-      float rip = noise(vec3(g.x * 3.0, g.y * 2.5 + uTime * 6.0, uTime * 1.5)) - 0.5;
-
-      vec2 d = (warp * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
-             + rip * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])}))
-             * ${f1(2 * INTENSITY)} * m;
+      vec2 dr = hr.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
+              + hr.z * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])});
+      vec2 dl = hl.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
+              + hl.z * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])});
+      vec2 d = (dr * mRoad + dl * mLine) * ${f1(2 * INTENSITY)};
       vec2 suv = uv + vec2(d.x / uAspect, d.y);
 
-      // Drifting blur patches: pockets of hotter air, as a mip bias
-      float bn = fbm(vec3(g * vec2(0.5, 0.6) + vec2(uTime * 0.1, uTime * 0.3), uTime * 0.3));
-      float blur = smoothstep(-0.05, 0.25, bn) * m * ${f1(BLUR_BIAS * INTENSITY)};
+      // Blur patches, as a mip bias
+      float blur = (smoothstep(-0.05, 0.25, hr.w) * mRoad
+                  + smoothstep(-0.05, 0.25, hl.w) * mLine)
+                  * ${f1(BLUR_BIAS * INTENSITY)};
 
       // Explicit LOD: these reads sit behind the early-out, where implicit
       // derivatives are undefined
@@ -232,7 +276,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       // Inferior mirage: just past the crest the asphalt mirrors what sits
       // above it, flickering with the warp
       float strip = smoothstep(0.0, 0.002, dy) * (1.0 - smoothstep(0.006, 0.016, dy));
-      float mir = onRoad * strip * smoothstep(-0.15, 0.15, warp.x) * ${f1(MIRAGE * INTENSITY)};
+      float mir = onRoad * strip * smoothstep(-0.15, 0.15, hr.x) * ${f1(MIRAGE * INTENSITY)};
       if (mir > 0.001) {
         vec2 ruv = vec2(suv.x, CREST_Y - dy * 1.3 + d.y * 3.0);
         col = mix(col, textureLod(uImg, clamp(ruv, 0.0, 1.0), uLod + blur + 0.5), mir);
