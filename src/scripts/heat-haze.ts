@@ -12,43 +12,60 @@
  *
  * A baked loop only works for a fixed-size strip of copy. The footer photo is
  * full-bleed and cropped differently at every viewport, so here the same two
- * layers are generated per pixel in a fragment shader instead, confined to a
- * band along the horizon where the road runs out. On top of those sits a
- * fine, fast ripple climbing the band (the part of real road shimmer a slow
- * warp misses) and a faint inferior mirage: just below the horizon, the far
- * stretch of asphalt picks up a wobbling reflection of what is above it.
+ * layers are generated per pixel in a fragment shader instead, along with a
+ * fine ripple climbing through them and a faint inferior mirage (the far
+ * asphalt picking up a wobbling reflection of what is above it).
  *
- * All of it is measured in *image* space, so the band stays glued to the
- * road however `object-fit: cover` crops the photo. The <img> underneath is
- * the real background — this canvas only draws over it once the texture is
- * up, and simply never appears without WebGL2 or under reduced motion.
+ * Unlike Hermeus's, this one has to pass for the real thing, so it behaves
+ * the way road shimmer does:
+ *
+ *   · it lives over the asphalt only, inside the road's own wedge, and spills
+ *     just a few pixels into the air above the road's far edge;
+ *   · it grows with distance. Looking down the road, the sightline skims ever
+ *     more hot air, so the near road is barely touched and the effect peaks
+ *     where the road goes over the crest;
+ *   · its texture is laid out on the ground plane rather than the screen, so
+ *     the ripples crowd together and tighten toward the horizon exactly as
+ *     the road does.
+ *
+ * All of it is measured in *image* space, so it stays glued to the road
+ * however `object-fit: cover` crops the photo. The <img> underneath is the
+ * real background — this canvas only draws over it once the texture is up,
+ * and simply never appears without WebGL2 or under reduced motion.
  */
 
 /* ── Where the road is ──
-   The vanishing point, in image UV (x from left, y down from top), read off
-   the source photo: the far end of the centre line, where the road meets the
-   horizon. Everything else is placed relative to it. */
-const VP = [0.515, 0.443]
-// Road half-width grows by this much (UV x) per unit of UV y below the horizon
-const ROAD_SLOPE = 1.9
+   Measured off the source photo (2000×1333), in image UV: x from the left,
+   y down from the top. */
+// The road's top visible edge, where it drops over the crest…
+const CREST_Y = 0.4411
+// …and its left/right ends there. It is ~70px wide, a little right of centre.
+const CREST_X = [0.494, 0.529]
+// How fast each edge spreads outward (UV x per UV y) below the crest. The
+// camera sits a touch left of the road's centre, so the two differ.
+const EDGE_SLOPE = [1.533, 1.366]
+// Where the two edges would meet if the road ran on flat: the vanishing
+// point's height. Distance down the road goes as 1 / (y − HORIZON_Y).
+const HORIZON_Y = 0.43
 
-/* ── Band ──
-   Gaussian falloffs either side of the horizon, in UV y. Hot air hugs the
-   ground, so the band reaches further down the road than up into the air. */
-const BAND_UP = 0.045
-const BAND_DOWN = 0.06
-// Band strength far from the road, relative to directly over it — the desert
-// floor shimmers too, just less than the black asphalt
-const BAND_OFF_ROAD = 0.35
-const BAND_ROAD_W = 0.3 // gaussian width of the road-centred boost, UV x
+/* ── Extent ──
+   Intensity follows distance, normalised to 1 at the crest and shaped by
+   FALLOFF — higher leaves more of the near road alone. It is then faded out
+   entirely across FADE (UV y below the crest), and above the crest it only
+   rises RISE into the air before stopping. */
+const FALLOFF = 1.3
+const FADE = [0.025, 0.075]
+const RISE = 0.006 // ≈8px of the source photo
+// Feather past the road's edges: a fixed margin plus a share of the width
+const EDGE_FEATHER = [0.003, 0.12]
 
 /* ── Distortion ──
-   Amplitudes are fractions of the image height, so the effect scales with the
-   photo rather than with device pixels. */
-const WARP_AMP = [0.007, 0.0045] // Hermeus-style slow warp (x, y)
-const RIPPLE_AMP = [0.0015, 0.003] // fine rising shimmer (x, y)
-const BLUR_BIAS = 2.4 // peak mip bias of the drifting blur patches
-const MIRAGE = 0.4 // peak mix of the reflected strip on the far road
+   Amplitudes are fractions of the image height at full intensity, so the
+   effect scales with the photo rather than with device pixels. */
+const WARP_AMP = [0.0016, 0.0013] // slow boiling warp (x, y)
+const RIPPLE_AMP = [0.0005, 0.0012] // fine rising shimmer (x, y)
+const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
+const MIRAGE = 0.35 // peak mix of the reflection just past the crest
 
 export type HeatHaze = {
   start(): void
@@ -99,7 +116,10 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     uniform float uLod;    // mip level matching the cover fit's minification
     out vec4 outColor;
 
-    const vec2 VP = vec2(${f1(VP[0])}, ${f1(VP[1])});
+    const float CREST_Y = ${f1(CREST_Y)};
+    const vec2 CREST_X = vec2(${f1(CREST_X[0])}, ${f1(CREST_X[1])});
+    const vec2 EDGE_SLOPE = vec2(${f1(EDGE_SLOPE[0])}, ${f1(EDGE_SLOPE[1])});
+    const float HORIZON_Y = ${f1(HORIZON_Y)};
 
     // Cheap 3D value noise — the third axis is time, so the pattern boils in
     // place instead of just scrolling past.
@@ -136,51 +156,62 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
       vec2 uv = (px - 0.5 * uRes) * uScale + 0.5;
 
-      // Band: asymmetric gaussian about the horizon, boosted over the road
-      float dy = uv.y - VP.y;
-      float bw = dy < 0.0 ? ${f1(BAND_UP)} : ${f1(BAND_DOWN)};
-      float band = exp(-(dy * dy) / (bw * bw));
-      float dx = uv.x - VP.x;
-      float road = exp(-(dx * dx) / ${f1(BAND_ROAD_W * BAND_ROAD_W)});
-      float m = band * mix(${f1(BAND_OFF_ROAD)}, 1.0, road);
+      // dy: how far below the crest (negative above it)
+      float dy = uv.y - CREST_Y;
+      float below = max(dy, 0.0);
+
+      // The road's wedge at this height — above the crest it is the crest's
+      // own width, so the spill into the air sits squarely over the road
+      vec2 edge = CREST_X + vec2(-EDGE_SLOPE.x, EDGE_SLOPE.y) * below;
+      float center = 0.5 * (edge.x + edge.y);
+      float halfW = 0.5 * (edge.y - edge.x);
+      float feather = ${f1(EDGE_FEATHER[0])} + halfW * ${f1(EDGE_FEATHER[1])};
+      float onRoad = 1.0 - smoothstep(halfW, halfW + feather, abs(uv.x - center));
+
+      // Distance down the road (1 at the crest), and the extent envelope
+      float h = max(uv.y - HORIZON_Y, 0.003);
+      float dist = pow(${f1(CREST_Y - HORIZON_Y)} / max(h, ${f1(CREST_Y - HORIZON_Y)}), ${f1(FALLOFF)});
+      float env = dy < 0.0
+        ? 1.0 - smoothstep(0.0, ${f1(RISE)}, -dy)
+        : dist * (1.0 - smoothstep(${f1(FADE[0])}, ${f1(FADE[1])}, dy));
+      float m = onRoad * env;
 
       if (m < 0.004) {
         outColor = textureLod(uImg, uv, uLod);
         return;
       }
 
-      // Noise lives in square units (image height = 1) so its cells are round
-      vec3 q = vec3(uv.x * uAspect, uv.y, uTime);
+      // Ground-plane coordinates: depth runs as log(h), lateral as offset
+      // over h, so a fixed noise cell covers less and less of the screen the
+      // further down the road it lies — the shimmer tightens with the road.
+      vec2 g = vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5);
 
-      // Slow warp — broad blobs that bend whatever is behind them, drifting
-      // upward like the air they stand in for
-      vec3 wq = vec3(q.xy * vec2(9.0, 16.0) + vec2(0.0, uTime * 0.3), uTime * 0.35);
+      // Slow boil — the Hermeus warp, drifting away from the viewer
+      vec3 wq = vec3(g + vec2(0.0, uTime * 0.6), uTime * 0.5);
       vec2 warp = vec2(fbm(wq), fbm(wq + vec3(5.2, 1.3, 7.7)));
 
       // Fine shimmer — tight horizontal striations climbing quickly
-      float rip = noise(vec3(q.x * 16.0, q.y * 150.0 + uTime * 5.0, uTime * 1.3)) - 0.5;
+      float rip = noise(vec3(g.x * 3.0, g.y * 2.5 + uTime * 6.0, uTime * 1.5)) - 0.5;
 
       vec2 d = (warp * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
              + rip * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])})) * 2.0 * m;
       vec2 suv = uv + vec2(d.x / uAspect, d.y);
 
       // Drifting blur patches: pockets of hotter air, as a mip bias
-      float bn = fbm(vec3(q.xy * vec2(4.0, 7.0) + vec2(uTime * 0.07, uTime * 0.2), uTime * 0.25));
+      float bn = fbm(vec3(g * vec2(0.5, 0.6) + vec2(uTime * 0.1, uTime * 0.3), uTime * 0.3));
       float blur = smoothstep(-0.05, 0.25, bn) * m * ${f1(BLUR_BIAS)};
 
-      // Explicit LOD: these reads sit behind the band's early-out, where
-      // implicit derivatives are undefined
+      // Explicit LOD: these reads sit behind the early-out, where implicit
+      // derivatives are undefined
       vec4 col = textureLod(uImg, clamp(suv, 0.0, 1.0), uLod + blur);
 
-      // Inferior mirage: on the far road just past the horizon, mirror what
-      // sits above it. Masked to the road's wedge and flickered by the warp.
-      float rw = max(dy, 0.0) * ${f1(ROAD_SLOPE)};
-      float onRoad = 1.0 - smoothstep(rw * 0.7, rw + 0.004, abs(dx));
-      float depth = smoothstep(0.0, 0.004, dy) * (1.0 - smoothstep(0.012, 0.04, dy));
-      float mir = onRoad * depth * smoothstep(-0.2, 0.2, warp.x) * ${f1(MIRAGE)};
+      // Inferior mirage: just past the crest the asphalt mirrors what sits
+      // above it, flickering with the warp
+      float strip = smoothstep(0.0, 0.002, dy) * (1.0 - smoothstep(0.006, 0.016, dy));
+      float mir = onRoad * strip * smoothstep(-0.15, 0.15, warp.x) * ${f1(MIRAGE)};
       if (mir > 0.001) {
-        vec2 ruv = vec2(suv.x, VP.y - dy * 1.4 + d.y * 3.0);
-        col = mix(col, textureLod(uImg, clamp(ruv, 0.0, 1.0), uLod + blur + 1.0), mir);
+        vec2 ruv = vec2(suv.x, CREST_Y - dy * 1.3 + d.y * 3.0);
+        col = mix(col, textureLod(uImg, clamp(ruv, 0.0, 1.0), uLod + blur + 0.5), mir);
       }
 
       outColor = col;
