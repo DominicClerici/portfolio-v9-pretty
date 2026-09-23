@@ -57,18 +57,16 @@ const connect = [
 ];
 ---
 
-<!-- Mobile browsers grow and shrink the viewport as their toolbars
-     collapse and return, and nothing here may move or rescale when they do.
-     So every height is set against a *fixed* extreme of it rather than the
-     live one (see the styles):
+<!-- Mobile browsers grow and shrink the visible screen as their toolbars
+     collapse and return, and the footer must not jump when they do (see the
+     styles for the heights):
 
-       · the footer is as tall as the viewport ever gets (lvh), so at the
+       · the footer is as tall as the screen ever gets (lvh), so at the
          bottom of the page it fills the screen even with the toolbars away,
          and the section above never peeks in;
-       · its content sits at its foot in a box as tall as the viewport ever
-         shrinks to (svh), so none of it is cut off with the toolbars out.
-
-     The difference, which the toolbars cover and uncover, is sky. -->
+       · its content fills just the part of the screen that is showing
+         (dvh), from the top of the screen down to the top of the toolbar,
+         so none of it is ever behind the toolbar or pushed down by it. -->
 <footer
   id="site-footer"
   class="relative overflow-hidden flex flex-col justify-end"
@@ -81,21 +79,20 @@ const connect = [
        transform, the photo cannot drift on compositor-driven (touch)
        scrolling.
 
-       It is pinned to the screen's bottom edge, which is where the footer's
-       own bottom sits at the end of the page, and laid out exactly as the
-       footer is: the photo's frame is the content box's size at the bottom,
-       so every line of type lands on the same spot of the photo whatever the
-       toolbars do, and the strip above it is painted with the photo's sky,
-       continued from its top edge. A toolbar coming or going only slides it
-       all along with the page; nothing it is cover-fitted to changes size,
-       so the photo never rescales.
+       It is pinned to the top of the screen and as tall as the screen ever
+       gets, so it never changes size or moves as the toolbars come and go:
+       they just float over its foot. It stays a hair short of opaque, as
+       Safari (from iOS 26) otherwise cuts fixed layers off at the top of its
+       floating toolbar and leaves the page's own background showing below.
+       It has no background colour of its own either, since Safari tints its
+       toolbars from fixed elements' background colours; without one the page
+       shows through them, edge to edge.
 
-       In its frame, three layers: the photo itself (the real background,
-       and all there is without WebGL2 or under reduced motion), the
-       heat-haze canvas drawn pixel-for-pixel over the lake once its texture
-       is up, and above md a scrim that keeps the bone type legible against
-       the peak and the near water. The frame's own background is a tiny
-       blur-up of whichever cut the <picture> picks, so the text has
+       Three layers: the photo itself (the real background, and all there
+       is without WebGL2 or under reduced motion), the heat-haze canvas drawn
+       pixel-for-pixel over the lake once its texture is up, and above md a scrim that keeps the bone type legible against
+       the peak and the near water. The backdrop's own background image is
+       a tiny blur-up of whichever cut the <picture> picks, so the text has
        something to sit on before the real one arrives.
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
@@ -112,59 +109,50 @@ const connect = [
        loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-x-0 bottom-0 -z-10"
-    style={[
-      `--blur-landscape:url(${photo.landscape.placeholder})`,
-      `--blur-portrait:url(${photo.portrait.placeholder})`,
-      `--sky-landscape:${photo.landscape.sky}`,
-      `--sky-portrait:${photo.portrait.sky}`,
-      `--aspect-landscape:${(photo.landscape.width / photo.landscape.height).toFixed(4)}`,
-      `--aspect-portrait:${(photo.portrait.width / photo.portrait.height).toFixed(4)}`,
-    ].join(";")}
+    class="footer-canvas-wrap fixed inset-x-0 top-0 -z-10"
+    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
     aria-hidden="true"
   >
-    <div class="footer-photo-frame absolute inset-x-0 bottom-0">
-      <picture>
-        <source
-          media={PORTRAIT}
-          type="image/avif"
-          data-srcset={photo.portrait.avif}
-          sizes={PORTRAIT_SIZES}
-        />
-        <source
-          media={PORTRAIT}
-          type="image/webp"
-          data-srcset={photo.portrait.webp}
-          sizes={PORTRAIT_SIZES}
-        />
-        <source
-          type="image/avif"
-          data-srcset={photo.landscape.avif}
-          sizes={LANDSCAPE_SIZES}
-        />
-        <img
-          class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-          data-srcset={photo.landscape.webp}
-          data-cuts={JSON.stringify({
-            landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
-            portrait: [
-              photo.portrait.width,
-              photo.portrait.height,
-              photo.portrait.rect,
-            ],
-          })}
-          sizes={LANDSCAPE_SIZES}
-          width={photo.landscape.width}
-          height={photo.landscape.height}
-          alt=""
-          decoding="async"
-          fetchpriority="low"
-        />
-      </picture>
-      <!-- Placed and sized by the haze over the lake's band of the photo -->
-      <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-      <div class="footer-scrim absolute inset-0"></div>
-    </div>
+    <picture>
+      <source
+        media={PORTRAIT}
+        type="image/avif"
+        data-srcset={photo.portrait.avif}
+        sizes={PORTRAIT_SIZES}
+      />
+      <source
+        media={PORTRAIT}
+        type="image/webp"
+        data-srcset={photo.portrait.webp}
+        sizes={PORTRAIT_SIZES}
+      />
+      <source
+        type="image/avif"
+        data-srcset={photo.landscape.avif}
+        sizes={LANDSCAPE_SIZES}
+      />
+      <img
+        class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
+        data-srcset={photo.landscape.webp}
+        data-cuts={JSON.stringify({
+          landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
+          portrait: [
+            photo.portrait.width,
+            photo.portrait.height,
+            photo.portrait.rect,
+          ],
+        })}
+        sizes={LANDSCAPE_SIZES}
+        width={photo.landscape.width}
+        height={photo.landscape.height}
+        alt=""
+        decoding="async"
+        fetchpriority="low"
+      />
+    </picture>
+    <!-- Placed and sized by the haze over the lake's band of the photo -->
+    <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+    <div class="footer-scrim absolute inset-0"></div>
   </div>
 
   <div class="footer-content relative z-10 shrink-0 flex flex-col">
@@ -372,11 +360,10 @@ const connect = [
 </footer>
 
 <style>
-  /* The footer's heights (see the markup). The footer and the backdrop are
-     as tall as the viewport ever gets, --footer-h; the content and the
-     photo's frame as tall as it ever shrinks to, --box-h; neither below a
-     floor. 100vh first, for browsers without the large and small viewport
-     units — in mobile Safari it is the large viewport anyway. */
+  /* The footer's heights (see the markup): the footer and the backdrop as
+     tall as the screen ever gets, --footer-h, and the content as tall as
+     the part of it showing, --box-h; neither below a floor. 100vh first,
+     for browsers without the newer viewport units. */
   #site-footer {
     --footer-min: 680px;
     --footer-h: max(var(--footer-min), 100vh);
@@ -388,41 +375,27 @@ const connect = [
       --footer-min: 780px;
     }
   }
-  @supports (height: 100lvh) {
+  @supports (height: 100dvh) {
     #site-footer {
       --footer-h: max(var(--footer-min), 100lvh);
-      --box-h: max(var(--footer-min), 100svh);
+      --box-h: max(var(--footer-min), 100dvh);
     }
   }
-  .footer-canvas-wrap {
-    height: var(--footer-h);
-  }
-  .footer-content,
-  .footer-photo-frame {
+  .footer-content {
     height: var(--box-h);
   }
 
-  /* The sky above the photo's frame: its top edge's colour, stretched up.
-     Sized to the photo's width as the frame's cover fit draws it (its
-     height × aspect, or the full width if that is wider) and centred, as
-     the photo is, so each colour stays over the column it was sampled
-     from. */
+  /* The backdrop (see the markup): never resized, a hair short of opaque,
+     and no background colour, only the blur-up, cut and pinned to match
+     whichever photo the <picture> picks. */
   .footer-canvas-wrap {
-    background: var(--sky-landscape) center top / max(100%, calc(var(--box-h) * var(--aspect-landscape))) 100% no-repeat;
-  }
-
-  /* The blur-up, cut and pinned to match whichever photo the <picture>
-     picks. */
-  .footer-photo-frame {
+    height: var(--footer-h);
+    opacity: 0.99;
     background: var(--blur-landscape) center top / cover;
   }
   /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
     .footer-canvas-wrap {
-      background-image: var(--sky-portrait);
-      background-size: max(100%, calc(var(--box-h) * var(--aspect-portrait))) 100%;
-    }
-    .footer-photo-frame {
       background-image: var(--blur-portrait);
     }
   }
@@ -596,7 +569,7 @@ const connect = [
       if (haze || !decoded) return;
       haze = createHeatHaze({
         canvas,
-        frame: footer.querySelector<HTMLElement>(".footer-photo-frame")!,
+        frame: footer.querySelector<HTMLElement>(".footer-canvas-wrap")!,
         img: photo,
         source,
         onReady: () => canvas.classList.add("is-ready"),
