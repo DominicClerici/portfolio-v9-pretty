@@ -26,26 +26,33 @@ const sizes = ({ width, height }: { width: number; height: number }) =>
 const PORTRAIT_SIZES = sizes(photo.portrait);
 const LANDSCAPE_SIZES = sizes(photo.landscape);
 
+// Each with the icon it wears on phones, where the links sit beside the
+// button rather than in a column: GitHub's and LinkedIn's marks (filled, from
+// Simple Icons) and outline glyphs for the other two, all on a 24px grid.
 const connect = [
   {
     label: "GitHub",
     href: "https://github.com/DominicClerici",
     external: true,
+    fill: "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12",
   },
   {
     label: "LinkedIn",
     href: "https://www.linkedin.com/in/dominic-clerici/",
     external: true,
+    fill: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.125 2.062 2.062 0 0 1 0 4.125zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z",
   },
   {
     label: "Email",
     href: "mailto:contact@dominicclerici.com",
     external: false,
+    stroke: "M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 17V7A1.5 1.5 0 0 1 4 5.5zM3 7l9 6.5L21 7",
   },
   {
     label: "Resume",
     href: "/DominicClerici_CV.pdf",
     external: true,
+    stroke: "M14 2.5H6.5A1.5 1.5 0 0 0 5 4v16a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20V7.5zM14 2.5v5h5M8.5 12.5h7M8.5 16.5h7",
   },
 ];
 ---
@@ -65,8 +72,9 @@ const connect = [
 
        Three layers: the photo itself (the real background, and all there is
        without WebGL2 or under reduced motion), the heat-haze canvas drawn
-       pixel-for-pixel over the lake once its texture is up, and a scrim that
-       keeps the bone type legible against the sky and the near water. The
+       pixel-for-pixel over the lake once its texture is up, and above md a
+       scrim that keeps the bone type legible against the peak and the near
+       water. The
        wrap's own background is a tiny blur-up of whichever cut the <picture>
        picks, so the text has something to sit on before the real one arrives.
 
@@ -74,7 +82,7 @@ const connect = [
        rendered by footer-photos.mjs: the whole of it for landscape screens,
        pinned to its top centre so the peak always shows, 1280w up to its full
        4340w; and a 3:4 crop for phones and portrait tablets, cut just short
-       enough at the bottom for the lake to fill the lower 35% of a tall
+       enough at the bottom for the lake to fill the lower 25% of a tall
        screen. Each is AVIF with a WebP fallback.
 
        The srcsets are held back in data-srcset: as a fixed element the photo
@@ -135,9 +143,11 @@ const connect = [
          bar height tracks the header exactly. The header echo inside fades in
          only once the page is scrolled to its very bottom (see script). It's
          decorative (aria-hidden + tabindex=-1) — the real header and the footer
-         nav below already expose these links to assistive tech. -->
+         nav below already expose these links to assistive tech. Phones have
+         no header to echo, so there the bar is left out, and the contact
+         section above rounds off its own bottom corners instead. -->
     <div
-      class="shrink-0 flex items-center bg-n-950 rounded-b-full lg:py-4 py-3 px-10 lg:px-14"
+      class="shrink-0 hidden md:flex items-center bg-n-950 rounded-b-full lg:py-4 py-3 px-10 lg:px-14"
       aria-hidden="true"
     >
       <div
@@ -217,13 +227,54 @@ const connect = [
             ></span></span
           >
         </p>
-        <ActionButton href="#contact" icon="right" variant="solid" caps class="mt-8">
-          Get in touch
-        </ActionButton>
+        <!-- On phones the connect links ride beside the button as icons, in
+             place of the nav columns, drawn in a little tighter on the
+             narrowest (360px) screens so the row still fits -->
+        <div class="mt-8 flex items-center gap-2.5 min-[380px]:gap-4">
+          <ActionButton href="#contact" icon="right" variant="solid" caps>
+            Get in touch
+          </ActionButton>
+          <ul class="md:hidden flex items-center gap-1" aria-label="Connect">
+            {
+              connect.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    aria-label={link.label}
+                    class="size-8 min-[380px]:size-9 inline-flex items-center justify-center rounded-lg text-bone/85 hover:text-bone hover:bg-bone/10 transition-colors duration-150"
+                    {...(link.external
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      {link.fill ? (
+                        <path d={link.fill} fill="currentColor" />
+                      ) : (
+                        <path
+                          d={link.stroke}
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.75"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      )}
+                    </svg>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
       </div>
 
       <div
-        class="flex items-start justify-between lg:justify-end gap-8 lg:gap-14"
+        class="hidden md:flex items-start justify-between lg:justify-end gap-8 lg:gap-14"
       >
         <nav class="flex gap-8 lg:gap-14" aria-label="Footer navigation">
           <div class="border-l border-bone/25 pl-5 lg:pl-6 lg:min-w-[150px]">
@@ -344,6 +395,13 @@ const connect = [
         rgb(10 10 10 / 0.3) 82%,
         rgb(10 10 10 / 0.6) 100%
       );
+    }
+  }
+  /* Phones need none: the statement, the button and the connect icons all
+     sit on the clear sky above the peak, and the name on the lake. */
+  @media (max-width: 767px) {
+    .footer-scrim {
+      display: none;
     }
   }
 

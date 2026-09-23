@@ -45,7 +45,7 @@ const NAME = "footer-mountain"
 // of the photo's height from the top; the crop's bottom edge is set so the
 // water below it fills WATER_SHARE of the frame, and its top is the photo's.
 const SHORE_Y = 0.593
-const WATER_SHARE = 0.35
+const WATER_SHARE = 0.25
 // Width over height of the portrait cut: wide enough to cover a portrait
 // tablet (3:4) as well as any phone, which shows the middle of it.
 const PORTRAIT_ASPECT = 3 / 4
