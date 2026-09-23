@@ -18,11 +18,22 @@ const navigate = [
 // Screens that get the portrait cut. Keep in step with the same query in the
 // styles, which picks its blur-up.
 const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
-// Each cut is cover-fitted to a screen-tall frame, so its displayed width is
-// the screen's height × its aspect — unless the screen is wider than that,
-// when the width fills it.
-const sizes = ({ width, height }: { width: number; height: number }) =>
-  `(min-aspect-ratio: ${width}/${height}) 100vw, ${+((100 * width) / height).toFixed(2)}vh`;
+// Each cut is cover-fitted to a frame as tall as the screen plus the cut's
+// overhang below it (see the styles), so its displayed width is that height
+// × its aspect — unless the screen is wider than that, when the width fills
+// it.
+const sizes = ({
+  width,
+  height,
+  overhang,
+}: {
+  width: number;
+  height: number;
+  overhang: number;
+}) => {
+  const tall = 1 + overhang;
+  return `(min-aspect-ratio: ${width}/${Math.round(height * tall)}) 100vw, ${+((100 * tall * width) / height).toFixed(2)}vh`;
+};
 const PORTRAIT_SIZES = sizes(photo.portrait);
 const LANDSCAPE_SIZES = sizes(photo.landscape);
 
@@ -81,7 +92,11 @@ const connect = [
 
        It is pinned to the top of the screen and as tall as the screen ever
        gets, so it never changes size or moves as the toolbars come and go:
-       they just float over its foot. Safari (from iOS 26) is particular
+       they just float over its foot. On phones and portrait tablets it is
+       instead pinned 10vh below the screen's bottom edge and 10vh taller,
+       the photo's overhang, so it runs on under Safari's toolbar there (the
+       portrait cut carries the extra 10% at its foot, so what shows on
+       screen is unchanged). Safari (from iOS 26) is particular
        about fixed layers at the screen's edges, in two ways:
 
          · it tints its status bar and toolbar from their background colour.
@@ -114,7 +129,11 @@ const connect = [
        the hero and compete with it. The script sets them once the page has
        loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
-  <div class="footer-canvas-wrap fixed inset-x-0 top-0 -z-10" aria-hidden="true">
+  <div
+    class="footer-canvas-wrap fixed inset-x-0 top-0 -z-10"
+    style={`--overhang:${photo.portrait.overhang * 100}vh`}
+    aria-hidden="true"
+  >
     <div
       class="footer-backdrop absolute inset-0"
       style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
@@ -402,8 +421,14 @@ const connect = [
     opacity: 0.99;
     background: var(--blur-landscape) center top / cover;
   }
-  /* Same query as PORTRAIT in the frontmatter. */
+  /* Same query as PORTRAIT in the frontmatter. The portrait cut hangs its
+     overhang below the screen (see the markup). */
   @media (max-width: 1023px) and (orientation: portrait) {
+    .footer-canvas-wrap {
+      top: auto;
+      bottom: calc(-1 * var(--overhang));
+      height: calc(var(--footer-h) + var(--overhang));
+    }
     .footer-backdrop {
       background-image: var(--blur-portrait);
     }

@@ -10,19 +10,21 @@
     "height": 3255,
     "avif": "/photos/footer-mountain-landscape-1280.avif 1280w, /photos/footer-mountain-landscape-1920.avif 1920w, /photos/footer-mountain-landscape-2560.avif 2560w, /photos/footer-mountain-landscape-3840.avif 3840w, /photos/footer-mountain-landscape-4340.avif 4340w",
     "webp": "/photos/footer-mountain-landscape-1280.webp 1280w, /photos/footer-mountain-landscape-1920.webp 1920w, /photos/footer-mountain-landscape-2560.webp 2560w, /photos/footer-mountain-landscape-3840.webp 3840w, /photos/footer-mountain-landscape-4340.webp 4340w",
-    "placeholder": "data:image/webp;base64,UklGRhABAABXRUJQVlA4IAQBAADwBQCdASoYABIAPrVSo00nJKMiKAgA4BaJbACdMtCAHvArgQndi89AcV/HZSEMu9F0/XKo/NddsAD+ojgo2gIrLnvNEknBadmHlWD9OS+9GQLKOETGdAJHy3vK5pY/QMphaf61XkAW6E1FdxXSUNBf6LSvsJz1O+CFJZ+cHHV35PUSut4S5Lv4k7T/nI0vCXEFpvNCCoZR4dwiGqRrZ0YZ8IaSiN/X/8kybx3/pDO0qCTn/rkq0eg+WhtIa5o/1faD13j+qT5N+vZixcjkRzxetaK82XEqZ9Lg8xIosXq+EE3lxkItizWB6pg6pg8J1V1vdgfKg9nDZP1uexQa7vQsgAAAAA=="
+    "placeholder": "data:image/webp;base64,UklGRhABAABXRUJQVlA4IAQBAADwBQCdASoYABIAPrVSo00nJKMiKAgA4BaJbACdMtCAHvArgQndi89AcV/HZSEMu9F0/XKo/NddsAD+ojgo2gIrLnvNEknBadmHlWD9OS+9GQLKOETGdAJHy3vK5pY/QMphaf61XkAW6E1FdxXSUNBf6LSvsJz1O+CFJZ+cHHV35PUSut4S5Lv4k7T/nI0vCXEFpvNCCoZR4dwiGqRrZ0YZ8IaSiN/X/8kybx3/pDO0qCTn/rkq0eg+WhtIa5o/1faD13j+qT5N+vZixcjkRzxetaK82XEqZ9Lg8xIosXq+EE3lxkItizWB6pg6pg8J1V1vdgfKg9nDZP1uexQa7vQsgAAAAA==",
+    "overhang": 0
   },
   "portrait": {
     "rect": [
-      0.27764976958525345,
+      0.2555299539170507,
       0,
-      0.4449308755760369,
-      0.7907834101382488
+      0.4891705069124424,
+      0.8697388632872504
     ],
-    "width": 1931,
-    "height": 2574,
-    "avif": "/photos/footer-mountain-portrait-900.avif 900w, /photos/footer-mountain-portrait-1320.avif 1320w, /photos/footer-mountain-portrait-1900.avif 1900w, /photos/footer-mountain-portrait-1931.avif 1931w",
-    "webp": "/photos/footer-mountain-portrait-900.webp 900w, /photos/footer-mountain-portrait-1320.webp 1320w, /photos/footer-mountain-portrait-1900.webp 1900w, /photos/footer-mountain-portrait-1931.webp 1931w",
-    "placeholder": "data:image/webp;base64,UklGRvgAAABXRUJQVlA4IOwAAABwBQCdASoSABgAPrVMn0qnJCKhqA1Q4BaJagC7IQuJ/i2CThRfPh0z2ZQr9GEWqC/GuKwAAP52YpRd9U3ER/bmfYpDbcgH56+H8QolPI1dHLjJ6+3GLn6qtWsaKNHBEcN6y2ILEx/TZrUZvevJBu/Qr7L8+/4zbNfQx8l2+lfcyP5I8eyeX/MVXztoX5jvI1bUZ+m8k8fCVBQA8OWXlL7BgWGPTY+k7JV1YVfAIfqWfVTv/VdVRvq5sp1+GqsKl1f3LnNY1myIKcPfhM6HwXnu0cw5DlmcIcdrnnNczENTROig6tR0GadADwAAAA=="
+    "width": 2123,
+    "height": 2831,
+    "avif": "/photos/footer-mountain-portrait-900.avif 900w, /photos/footer-mountain-portrait-1320.avif 1320w, /photos/footer-mountain-portrait-1900.avif 1900w, /photos/footer-mountain-portrait-2123.avif 2123w",
+    "webp": "/photos/footer-mountain-portrait-900.webp 900w, /photos/footer-mountain-portrait-1320.webp 1320w, /photos/footer-mountain-portrait-1900.webp 1900w, /photos/footer-mountain-portrait-2123.webp 2123w",
+    "placeholder": "data:image/webp;base64,UklGRugAAABXRUJQVlA4INwAAABQBgCdASoSABgAPrVMn0qnJCKhqA1Q4BaJbAB4NjQ0f8u56QJn8L/GaoScLF0upUKMPDuo6CzW1IGgVAD+def/yb+eXIvO2dwKSbVUVJ1UD4TaGcz/qGaXTlS6sbPVdKbyF20XWKr+eCXtZ/lCA9XUJTdxdv2H/5AHFyha5VJ74QP/5I8ezCf8uTuH0yV1JxPrY18uAZgjmfJ1Dn8bw3qNb8Hr2OWPbVk1tSCkVPLKuxpbx4VpXbD1KBVfFrnZjMl4lkO1cPi+NkskEettuA2MDfl7vUYsQ/5GWAAA",
+    "overhang": 0.1
   }
 }
