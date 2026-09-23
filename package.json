@@ -9,7 +9,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "photos:footer": "node footer-photos.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "prettier": "^3.9.5",
     "prettier-plugin-astro": "^0.14.1",
-    "rollup-plugin-visualizer": "^7.0.1"
+    "rollup-plugin-visualizer": "^7.0.1",
+    "sharp": "0.34.5"
   }
 }
