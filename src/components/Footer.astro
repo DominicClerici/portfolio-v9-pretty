@@ -350,6 +350,22 @@ const connect = [
 </footer>
 
 <style>
+  /* Phones only. An svh-tall footer is shorter than the screen once the
+     browser's toolbar retracts, so scrolled to the bottom the contact
+     section's rounded foot showed above it (wider screens have the cap bar
+     there, in the contact section's own colour). So here the footer grows
+     upward by the toolbar's difference (lvh − svh), all of it top padding:
+     the content keeps its svh-tall box and its place against the bottom,
+     exactly as before, and the band above it is just more of the photo. */
+  @supports (height: 100lvh) {
+    @media (max-width: 767px) {
+      #site-footer {
+        padding-top: calc(100lvh - 100svh);
+        height: calc(max(680px, 100svh) + 100lvh - 100svh);
+      }
+    }
+  }
+
   /* The blur-up, cut and pinned to match whichever photo the <picture>
      picks. */
   .footer-photo-frame {
