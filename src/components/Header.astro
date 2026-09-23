@@ -16,7 +16,7 @@ const navLinks = [
 <!-- Desktop only: on mobile the hero stands alone with no header. -->
 <header class="hidden md:block absolute top-0 left-0 w-full z-[70]">
   <div
-    class="header-enter px-6 lg:px-12 py-7 flex justify-between items-center"
+    class="header-enter px-safe-6 lg:px-safe-12 py-7 flex justify-between items-center"
   >
     <a
       href="https://dev.dominicclerici.com"
@@ -129,42 +129,63 @@ const navLinks = [
   }
 
   // === Desktop Scroll Button ===
+  // Shown between the hero and the footer: it fades in once the hero has
+  // scrolled away, and out again (over 250ms) as soon as any of the footer
+  // comes into view, returning when the footer leaves.
   const scrollEl = document.querySelector<HTMLElement>(
     '[data-terminal="scroll"]',
   );
   const heroSection = document.getElementById("hero");
+  const footerSection = document.getElementById("site-footer");
 
   if (scrollEl && heroSection) {
     const ss = makeState(scrollEl);
+    let heroInView = true;
+    let footerInView = false;
 
-    new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) {
-          scrollEl.style.opacity = "0.5";
-          scrollEl.classList.remove("pointer-events-none");
-          scrollEl.classList.add("pointer-events-auto");
-          ss.isInView = true;
-          if (!ss.isHovering) {
-            if (ss.visTimer !== null) {
-              clearTimeout(ss.visTimer);
-            }
-            ss.visTimer = window.setTimeout(() => startBlink(ss), 5000);
-          }
-        } else {
-          scrollEl.style.opacity = "0";
-          scrollEl.classList.add("pointer-events-none");
-          scrollEl.classList.remove("pointer-events-auto");
-          ss.isInView = false;
-          cancelAnim(ss);
-          stopBlink(ss);
-          ss.textEl.textContent = ">";
+    // `duration` overrides the element's own transition for this change;
+    // empty keeps it.
+    function update(duration = "") {
+      const show = !heroInView && !footerInView;
+      if (show === ss.isInView) return;
+      scrollEl!.style.transitionDuration = duration;
+      if (show) {
+        scrollEl!.style.opacity = "0.5";
+        scrollEl!.classList.remove("pointer-events-none");
+        scrollEl!.classList.add("pointer-events-auto");
+        ss.isInView = true;
+        if (!ss.isHovering) {
           if (ss.visTimer !== null) {
             clearTimeout(ss.visTimer);
-            ss.visTimer = null;
           }
+          ss.visTimer = window.setTimeout(() => startBlink(ss), 5000);
+        }
+      } else {
+        scrollEl!.style.opacity = "0";
+        scrollEl!.classList.add("pointer-events-none");
+        scrollEl!.classList.remove("pointer-events-auto");
+        ss.isInView = false;
+        cancelAnim(ss);
+        stopBlink(ss);
+        ss.textEl.textContent = ">";
+        if (ss.visTimer !== null) {
+          clearTimeout(ss.visTimer);
+          ss.visTimer = null;
         }
       }
+    }
+
+    new IntersectionObserver((entries) => {
+      heroInView = entries[entries.length - 1].isIntersecting;
+      update();
     }).observe(heroSection);
+
+    if (footerSection) {
+      new IntersectionObserver((entries) => {
+        footerInView = entries[entries.length - 1].isIntersecting;
+        update("250ms");
+      }).observe(footerSection);
+    }
 
     scrollEl.addEventListener("mouseenter", () => {
       ss.isHovering = true;

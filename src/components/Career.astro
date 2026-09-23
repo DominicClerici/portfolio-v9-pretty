@@ -138,7 +138,7 @@ const initialIndex = stepMap[0];
        scrolls past, which reads as a scroll-lock without trapping the wheel. -->
   <div class="pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
     <div
-      class="frame relative w-full max-w-[1524px] mx-auto px-3 sm:px-6 lg:px-12 py-8 lg:pt-[12svh] lg:pb-0"
+      class="frame relative w-full max-w-[1524px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 py-8 lg:pt-[12svh] lg:pb-0"
     >
       <!-- Mobile: horizontal timeline above the card strip (oldest left). -->
       <div class="rail-h lg:hidden relative h-8 mb-5" aria-hidden="true">
@@ -224,7 +224,7 @@ const initialIndex = stepMap[0];
                buttons that scroll to an entry, with aria-current marking the one
                the playhead is currently on. -->
           <div
-            class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-3 px-3 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+            class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-safe-3 px-safe-3 sm:-mx-safe-6 sm:px-safe-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
             role="group"
             aria-label="Employers"
           >

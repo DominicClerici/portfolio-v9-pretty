@@ -1,5 +1,5 @@
 /*
- * Heat haze over the footer's desert road.
+ * Heat haze over the footer's mountain lake.
  *
  * Modelled on the hero at hermeus.com, where "Building Fast Planes. Fast."
  * shimmers as if seen through a jet's exhaust. Theirs is not live: it is 90
@@ -13,102 +13,101 @@
  * A baked loop only works for a fixed-size strip of copy. The footer photo is
  * full-bleed and cropped differently at every viewport, so here the same two
  * layers are generated per pixel in a fragment shader instead, along with a
- * fine ripple climbing through them and a faint inferior mirage (the far
- * asphalt picking up a wobbling reflection of what is above it).
+ * fine ripple climbing through them.
  *
  * Unlike Hermeus's, this one has to pass for the real thing, so it behaves
- * the way road shimmer does:
+ * the way shimmer over a long flat surface does:
  *
- *   · it lives over the asphalt only, inside the road's own wedge, and spills
- *     just a few pixels into the air above the road's far edge;
- *   · it grows with distance. Looking down the road, the sightline skims ever
- *     more hot air, so the near road is barely touched and the effect peaks
- *     where the road goes over the crest;
- *   · its texture is laid out on the ground plane rather than the screen, so
- *     the ripples crowd together and tighten toward the horizon exactly as
- *     the road does;
- *   · the far edge of the flat ground boils too, so a thin strip of the same
- *     shimmer runs along the horizon either side of the road, level with the
- *     road haze's top edge.
+ *   · it covers the lake, edge to edge across the frame and down to the
+ *     bottom of it, and rises just a little into the grass on the far shore;
+ *   · it grows with distance. Looking across the water, the sightline skims
+ *     ever more warm air, so the foreground water barely stirs and the
+ *     effect eases in harder toward the far shore, where it peaks;
+ *   · its texture is laid out on the water's plane rather than the screen,
+ *     so the ripples crowd together and tighten into the distance exactly as
+ *     the lake does.
  *
- * All of it is measured in *image* space, so it stays glued to the road
- * however `object-fit: cover` crops the photo. The <img> underneath is the
- * real background — this canvas only draws over it once the texture is up,
- * and simply never appears without WebGL2 or under reduced motion.
+ * All of it is measured in the *full photo's* UV space, so it stays glued to
+ * the lake however `object-fit: cover` crops and places the photo, and
+ * whichever cut of it (landscape or portrait) the page has loaded. The <img>
+ * underneath is the real background: this canvas covers only the band of it
+ * the shimmer lives in, is transparent wherever the shimmer is not, and never
+ * appears at all without WebGL2 or under reduced motion. Kept to that band it
+ * can render at the screen's full pixel density cheaply, so the photo stays
+ * as crisp under the canvas as around it.
  */
 
-/* ── Where the road is ──
-   Measured off the source photo (2000×1333), in image UV: x from the left,
+/* ── Where the lake is ──
+   Measured off the source photo (4340×3255), in image UV: x from the left,
    y down from the top. */
-// The road's top visible edge, where it drops over the crest…
-const CREST_Y = 0.4411
-// …and its left/right ends there. It is ~70px wide, a little right of centre.
-const CREST_X = [0.494, 0.529]
-// How fast each edge spreads outward (UV x per UV y) below the crest. The
-// camera sits a touch left of the road's centre, so the two differ.
-const EDGE_SLOPE = [1.533, 1.366]
-// Where the two edges would meet if the road ran on flat: the vanishing
-// point's height. Distance down the road goes as 1 / (y − HORIZON_Y).
-const HORIZON_Y = 0.43
+// The far shore, where the grass meets the water, level across the frame
+const FAR_Y = 0.591
+// The horizon: the height the lake's surface would vanish at if it ran on
+// forever, a little above the far shore as seen from just above the water.
+// Distance across the water goes as 1 / (y − HORIZON_Y), and its lateral
+// spread is measured out from AXIS_X, straight ahead.
+const HORIZON_Y = 0.57
+const AXIS_X = 0.5
+// Past this height below the horizon the noise stops spreading with the
+// water plane. Left to grow, the foreground's ripples would be swells a
+// third of the frame wide rather than a shimmer.
+const NEAR_H = 0.15
 
 /* ── Extent ──
-   Intensity follows distance, normalised to 1 at the crest and shaped by
-   FALLOFF — higher leaves more of the near road alone. It is then faded out
-   entirely across FADE (UV y below the crest), and above the crest it only
-   rises RISE into the air before stopping. */
-const FALLOFF = 1.3
-const FADE = [0.025, 0.075]
-const RISE = 0.006 // ≈8px of the source photo
-// Feather past the road's edges: a fixed margin plus a share of the width
-const EDGE_FEATHER = [0.003, 0.12]
-// Scales the shape above without retuning it. WIDEN widens the mask about the
-// road's centre line (1.25 = 12.5% more on each side, feather included).
-// REACH stretches everything below the crest (the distance falloff and FADE
-// together) further down the road; the top cutoff stays where it is. At
-// REACH 1 the shape spans RISE + FADE[1] = 0.081 of the image height; at
-// 2.3392 it spans 0.1814, i.e. 1.4 × 1.6 of that.
-const WIDEN = 3.125 // 1.25 × 2.5
-const REACH = 2.3392
+   Intensity is 1 at the far shore and falls to FOREGROUND at the bottom of
+   the photo along a curve of power EASE: from the foreground it barely
+   builds at first, then eases in harder and harder the further out the
+   water lies. Above the far shore it only rises RISE into the grass before
+   stopping. */
+const FOREGROUND = 0.15
+const EASE = 2.2
+const RISE = 0.005 // ≈16px of the source photo
 
 /* ── Distortion ──
-   Amplitudes are fractions of the image height at full intensity, so the
-   effect scales with the photo rather than with device pixels. INTENSITY
-   scales all four together: the warp and ripple amplitudes, the blur, and
-   the mirage. The noise scale is separate, so it stays just as tight. */
+   Amplitudes are fractions of the height of the cut on screen at full
+   intensity, so the effect scales with the photo as shown rather than with
+   device pixels. (Measured against the full photo instead, a cut of part of
+   its height would shimmer all the harder for it.) INTENSITY scales all
+   three together: the warp and ripple amplitudes and the blur. The noise
+   scale is separate, so it stays just as tight. */
 const INTENSITY = 1.3
-// Density of the noise pattern: higher means smaller, tighter ripples. The
-// finest ripple rows at the crest are ~1.6px of the source photo here, so
-// much past this they break up into per-pixel flicker.
+// Density of the noise pattern: higher means smaller, tighter ripples.
 const TIGHTEN = 1.5
 const WARP_AMP = [0.0016, 0.0013] // slow boiling warp (x, y)
 const RIPPLE_AMP = [0.0005, 0.0012] // fine rising shimmer (x, y)
 const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
-const MIRAGE = 0.35 // peak mix of the reflection just past the crest
 
-/* ── Horizon line ──
-   A thin strip of the same shimmer laid along the horizon, where the
-   foreground grass meets the flat distant plain. Seen from standing height,
-   the far ground's edge boils like the far road does. It sits level with the
-   road haze's top edge (the crest less RISE), which is also where the horizon
-   falls in the photo. It spans the flat stretch between the rocky ridge on
-   the left and the rising ground on the right (image UV x), and fades out
-   over LINE_FEATHER at each end. */
-const LINE_Y = CREST_Y - RISE
-const LINE_X = [0.4, 0.65]
-const LINE_FEATHER = 0.025
-const LINE_HALF_H = 0.0035 // gaussian half-height, UV y (≈5px of the photo)
-const LINE_STRENGTH = 0.8 // peak, relative to the road haze at the crest
+/* ── Canvas band ──
+   Everything above reaches no higher than the rise over the far shore
+   (FAR_Y − RISE = 0.586) and runs on to the bottom of the photo, so the
+   canvas spans CANVAS_Y of the photo's height, full width. The texture
+   starts a little higher, TEX_Y, for the distortion to sample from. */
+const CANVAS_Y = [0.582, 1]
+const TEX_Y = [0.574, 1]
+// Device pixel ratio ceiling. The band is small enough to afford full density
+// on any current screen.
+const MAX_DPR = 3
 
 export type HeatHaze = {
   start(): void
   stop(): void
   resize(): void
+  /** re-read the photo after it has loaded a different source */
+  reload(): void
 }
 
 export type HeatHazeOptions = {
   canvas: HTMLCanvasElement
-  /** the decoded background photo; its natural size drives the cover fit */
+  /** the box the photo is cover-fitted to; the canvas is placed inside it */
+  frame: HTMLElement
+  /** the decoded background photo, cover-fitted to the frame at any
+   *  object-position given in percentages or keywords */
   img: HTMLImageElement
+  /** its current source: the file's size in pixels (naturalWidth/Height
+   *  won't do, as for a srcset pick they are divided by the pick's density
+   *  and rounded) and where it sits in the full photo, as UV (x, y, width,
+   *  height) — [0, 0, 1, 1] unless it is a cut of it */
+  source: () => { width: number; height: number; rect: readonly number[] }
   /** fires once the first distorted frame is on the canvas */
   onReady?: () => void
   /** fires if the GL context is lost; the caller should hide the canvas */
@@ -117,13 +116,14 @@ export type HeatHazeOptions = {
 
 /** Returns null when WebGL2 is unavailable — the photo alone is the fallback. */
 export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
-  const { canvas, img, onReady, onLost } = opts
+  const { canvas, frame, img, source, onReady, onLost } = opts
 
   let gl: WebGL2RenderingContext | null = null
   try {
     gl = canvas.getContext("webgl2", {
       antialias: false,
-      alpha: false,
+      alpha: true,
+      premultipliedAlpha: true,
       depth: false,
       powerPreference: "low-power",
     })
@@ -142,15 +142,15 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     precision highp float;
     uniform sampler2D uImg;
     uniform vec2 uRes;     // canvas size, device px
-    uniform vec2 uScale;   // device px -> image UV (the cover fit)
-    uniform float uAspect; // image width / height
+    uniform vec4 uToUv;    // canvas device px (y-down) -> photo UV: xy * px + zw
+    uniform vec4 uTexRect; // the texture's rect in photo UV (x, y, w, h)
+    uniform float uAspect; // full photo width / height
+    uniform float uCutH;   // the cut's height as a share of the full photo's
     uniform float uTime;
     uniform float uLod;    // mip level matching the cover fit's minification
     out vec4 outColor;
 
-    const float CREST_Y = ${f1(CREST_Y)};
-    const vec2 CREST_X = vec2(${f1(CREST_X[0])}, ${f1(CREST_X[1])});
-    const vec2 EDGE_SLOPE = vec2(${f1(EDGE_SLOPE[0])}, ${f1(EDGE_SLOPE[1])});
+    const float FAR_Y = ${f1(FAR_Y)};
     const float HORIZON_Y = ${f1(HORIZON_Y)};
 
     // Cheap 3D value noise — the third axis is time, so the pattern boils in
@@ -191,98 +191,63 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       vec2 warp = vec2(fbm(wq), fbm(wq + vec3(5.2, 1.3, 7.7)));
       // Fine shimmer — tight horizontal striations climbing quickly
       float rip = noise(vec3(g.x * 3.0, g.y * 2.5 + uTime * 6.0, uTime * 1.5)) - 0.5;
-      // Drifting blur patches: pockets of hotter air
+      // Drifting blur patches: pockets of warmer air
       float bn = fbm(vec3(g * vec2(0.5, 0.6) + vec2(uTime * 0.1, uTime * 0.3), uTime * 0.3));
       return vec4(warp, rip, bn);
+    }
+
+    // The photo at UV p, from the texture's band of it
+    vec4 photo(vec2 p, float lod) {
+      return textureLod(uImg, clamp((p - uTexRect.xy) / uTexRect.zw, 0.0, 1.0), lod);
     }
 
     void main() {
       // gl_FragCoord is y-up; the image is y-down
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
-      vec2 uv = (px - 0.5 * uRes) * uScale + 0.5;
+      vec2 uv = px * uToUv.xy + uToUv.zw;
 
-      // dy: how far below the crest (negative above it)
-      float dy = uv.y - CREST_Y;
-      float below = max(dy, 0.0);
+      // dy: how far below the far shore (negative above it)
+      float dy = uv.y - FAR_Y;
+      float near = clamp(dy / ${f1(1 - FAR_Y)}, 0.0, 1.0);
 
-      // The road's wedge at this height — above the crest it is the crest's
-      // own width, so the spill into the air sits squarely over the road
-      vec2 edge = CREST_X + vec2(-EDGE_SLOPE.x, EDGE_SLOPE.y) * below;
-      float center = 0.5 * (edge.x + edge.y);
-      float halfW = 0.5 * (edge.y - edge.x);
-      float feather = ${f1(EDGE_FEATHER[0])} + halfW * ${f1(EDGE_FEATHER[1])};
-      float off = abs(uv.x - center);
-      // The asphalt itself (the mirage keeps to this)…
-      float onRoad = 1.0 - smoothstep(halfW, halfW + feather, off);
-      // …and the haze, which reaches WIDEN times as far out
-      float inBand = 1.0 - smoothstep(halfW, halfW + feather, off / ${f1(WIDEN)});
-
-      // Distance down the road (1 at the crest), and the extent envelope. The
-      // envelope reads dy squeezed by REACH, which draws it further down the
-      // road; the noise below still uses the true distance, so it stays tight.
-      float h = max(uv.y - HORIZON_Y, 0.003);
-      float dyE = below / ${f1(REACH)};
-      float dist = pow(${f1(CREST_Y - HORIZON_Y)} / (${f1(CREST_Y - HORIZON_Y)} + dyE), ${f1(FALLOFF)});
-      float env = dy < 0.0
+      // The extent envelope: full strength at the far shore, down to
+      // FOREGROUND at the bottom of the photo, steepest out by the shore
+      float m = dy < 0.0
         ? 1.0 - smoothstep(0.0, ${f1(RISE)}, -dy)
-        : dist * (1.0 - smoothstep(${f1(FADE[0])}, ${f1(FADE[1])}, dyE));
-      float mRoad = inBand * env;
+        : mix(${f1(FOREGROUND)}, 1.0, pow(1.0 - near, ${f1(EASE)}));
 
-      // The horizon strip, handing over to the road haze where they meet so
-      // the two never stack
-      float ly = (uv.y - ${f1(LINE_Y)}) / ${f1(LINE_HALF_H)};
-      float lx = smoothstep(${f1(LINE_X[0] - LINE_FEATHER)}, ${f1(LINE_X[0])}, uv.x)
-               * (1.0 - smoothstep(${f1(LINE_X[1])}, ${f1(LINE_X[1] + LINE_FEATHER)}, uv.x));
-      float mLine = exp(-ly * ly) * lx * ${f1(LINE_STRENGTH)} * (1.0 - mRoad);
-
-      if (mRoad + mLine < 0.004) {
-        outColor = textureLod(uImg, uv, uLod);
+      // Transparent where there is nothing to distort, so the <img> beneath
+      // shows through; faded in over the mask's faint fringe, where what the
+      // canvas draws is all but identical to it anyway
+      float alpha = smoothstep(0.004, 0.04, m);
+      if (alpha == 0.0) {
+        outColor = vec4(0.0);
         return;
       }
 
-      // Road: ground-plane coordinates. Depth runs as log(h), lateral as
-      // offset over h, so a fixed noise cell covers less and less of the
-      // screen the further down the road it lies — the shimmer tightens with
-      // the road.
-      vec4 hr = vec4(0.0);
-      if (mRoad >= 0.004) {
-        hr = haze(vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5)
-                  * ${f1(TIGHTEN)});
-      }
-      // Horizon: everything on it is equally far off, so it gets flat
-      // coordinates at the density the road's noise has at the crest
-      vec4 hl = vec4(0.0);
-      if (mLine >= 0.004) {
-        hl = haze(vec2(uv.x * uAspect * ${f1((0.5 / (CREST_Y - HORIZON_Y)) * TIGHTEN)},
-                       uv.y * ${f1((2.5 / (CREST_Y - HORIZON_Y)) * TIGHTEN)}));
-      }
+      // Water-plane coordinates, about the view's axis. Depth runs as
+      // log(h), lateral as offset over h, so a fixed noise cell covers less
+      // and less of the screen the further out across the water it lies —
+      // the shimmer tightens with the lake. h levels off toward NEAR_H in the
+      // foreground, where the cells would otherwise grow into swells.
+      float h = max(uv.y - HORIZON_Y, 0.003);
+      h = h / (1.0 + h / ${f1(NEAR_H)});
+      vec4 hz = haze(vec2((uv.x - ${f1(AXIS_X)}) * uAspect / h * 0.5, log(h) * 2.5)
+                     * ${f1(TIGHTEN)});
 
-      vec2 dr = hr.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
-              + hr.z * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])});
-      vec2 dl = hl.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
-              + hl.z * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])});
-      vec2 d = (dr * mRoad + dl * mLine) * ${f1(2 * INTENSITY)};
+      vec2 d = (hz.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
+              + hz.z * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])}))
+              * m * uCutH * ${f1(2 * INTENSITY)};
       vec2 suv = uv + vec2(d.x / uAspect, d.y);
 
       // Blur patches, as a mip bias
-      float blur = (smoothstep(-0.05, 0.25, hr.w) * mRoad
-                  + smoothstep(-0.05, 0.25, hl.w) * mLine)
-                  * ${f1(BLUR_BIAS * INTENSITY)};
+      float blur = smoothstep(-0.05, 0.25, hz.w) * m * ${f1(BLUR_BIAS * INTENSITY)};
 
-      // Explicit LOD: these reads sit behind the early-out, where implicit
+      // Explicit LOD: this read sits behind the early-out, where implicit
       // derivatives are undefined
-      vec4 col = textureLod(uImg, clamp(suv, 0.0, 1.0), uLod + blur);
+      vec4 col = photo(suv, uLod + blur);
 
-      // Inferior mirage: just past the crest the asphalt mirrors what sits
-      // above it, flickering with the warp
-      float strip = smoothstep(0.0, 0.002, dy) * (1.0 - smoothstep(0.006, 0.016, dy));
-      float mir = onRoad * strip * smoothstep(-0.15, 0.15, hr.x) * ${f1(MIRAGE * INTENSITY)};
-      if (mir > 0.001) {
-        vec2 ruv = vec2(suv.x, CREST_Y - dy * 1.3 + d.y * 3.0);
-        col = mix(col, textureLod(uImg, clamp(ruv, 0.0, 1.0), uLod + blur + 0.5), mir);
-      }
-
-      outColor = col;
+      outColor = vec4(col.rgb * alpha, alpha);
     }`
 
   function compile(type: number, src: string) {
@@ -319,27 +284,24 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   gl.enableVertexAttribArray(0)
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
-  // The photo, mipmapped so the blur patches are a free LOD bias
+  // The photo's band (TEX_Y), mipmapped so the blur patches are a free LOD
+  // bias. Filled in by reload().
   const tex = gl.createTexture()
   gl.activeTexture(gl.TEXTURE0)
   gl.bindTexture(gl.TEXTURE_2D, tex)
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-  gl.generateMipmap(gl.TEXTURE_2D)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
   const uRes = gl.getUniformLocation(prog, "uRes")
-  const uScale = gl.getUniformLocation(prog, "uScale")
+  const uToUv = gl.getUniformLocation(prog, "uToUv")
+  const uTexRect = gl.getUniformLocation(prog, "uTexRect")
   const uAspect = gl.getUniformLocation(prog, "uAspect")
+  const uCutH = gl.getUniformLocation(prog, "uCutH")
   const uTime = gl.getUniformLocation(prog, "uTime")
   const uLod = gl.getUniformLocation(prog, "uLod")
   gl.uniform1i(gl.getUniformLocation(prog, "uImg"), 0)
-
-  const iw = img.naturalWidth
-  const ih = img.naturalHeight
-  gl.uniform1f(uAspect, iw / ih)
 
   let lost = false
   canvas.addEventListener(
@@ -353,9 +315,48 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     { once: true },
   )
 
+  // The source the texture was cut from: its pixel size and where it sits
+  // in the full photo. Kept apart from the <img>, which may already be
+  // loading its next source, so the mapping always matches the texture.
+  let src: { nw: number; nh: number; rect: readonly number[] } | null = null
+  let loadId = 0
+
+  function reload() {
+    const id = ++loadId
+    if (!img.naturalWidth || !img.naturalHeight) return
+    const { width: nw, height: nh, rect } = source()
+    // This source's rows that cover TEX_Y
+    const toRow = (v: number) => ((v - rect[1]) / rect[3]) * nh
+    const r0 = Math.max(0, Math.floor(toRow(TEX_Y[0])))
+    const r1 = Math.min(nh, Math.ceil(toRow(TEX_Y[1])))
+    if (r1 <= r0) return
+    createImageBitmap(img, 0, r0, nw, r1 - r0)
+      .then((bmp) => {
+        if (id !== loadId || lost) {
+          bmp.close()
+          return
+        }
+        gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, gl!.RGBA, gl!.UNSIGNED_BYTE, bmp)
+        gl!.generateMipmap(gl!.TEXTURE_2D)
+        bmp.close()
+        src = { nw, nh, rect }
+        gl!.uniform4f(
+          uTexRect,
+          rect[0],
+          rect[1] + (r0 / nh) * rect[3],
+          rect[2],
+          ((r1 - r0) / nh) * rect[3],
+        )
+        gl!.uniform1f(uAspect, nw / rect[2] / (nh / rect[3]))
+        gl!.uniform1f(uCutH, rect[3])
+        resize()
+      })
+      .catch(() => {})
+  }
+
   let ready = false
   function draw(tSec: number) {
-    if (lost) return
+    if (lost || !src) return
     gl!.uniform1f(uTime, tSec)
     gl!.drawArrays(gl!.TRIANGLES, 0, 3)
     if (!ready) {
@@ -364,26 +365,70 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     }
   }
 
-  /* Matches CSS `object-fit: cover; object-position: center` exactly, so the
-     canvas lands pixel-for-pixel on the <img> it is drawn over. */
+  // The <img>'s object-position, as the share of its overflow that lies
+  // left of and above the frame
+  function position() {
+    const at = (v: string | undefined) =>
+      v === "left" || v === "top"
+        ? 0
+        : v === "right" || v === "bottom"
+          ? 1
+          : v?.endsWith("%")
+            ? parseFloat(v) / 100
+            : 0.5
+    const [x, y] = getComputedStyle(img).objectPosition.split(" ")
+    return [at(x), at(y)]
+  }
+
+  /* Sizes and places the canvas over CANVAS_Y of the photo as CSS
+     `object-fit: cover` and the <img>'s object-position lay it out in the
+     frame, snapped to whole CSS pixels, and maps the canvas's pixels back to
+     photo UV so it lands pixel-for-pixel on the <img> it is drawn over. */
   function resize() {
-    if (lost) return
-    const rect = canvas.getBoundingClientRect()
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-    canvas.width = Math.max(1, Math.round(rect.width * dpr))
-    canvas.height = Math.max(1, Math.round(rect.height * dpr))
+    if (lost || !src) return
+    const { nw, nh, rect } = src
+    const { width: fw, height: fh } = frame.getBoundingClientRect()
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
+    // The cover fit: CSS px per source px, and the source's top-left corner
+    const s = Math.max(fw / nw, fh / nh)
+    const [px, py] = position()
+    const ox = (fw - nw * s) * px
+    const oy = (fh - nh * s) * py
+    // Photo UV y -> frame CSS px
+    const yAt = (v: number) => oy + ((v - rect[1]) / rect[3]) * nh * s
+    // The band, in whole CSS px: at a fractional CSS offset (1691 device px
+    // is 563.67 CSS px at 3x) the browser snaps the canvas to its layout
+    // grid and it lands a device pixel off the photo
+    const maxY = Math.floor(fh)
+    const top = Math.min(maxY, Math.max(0, Math.floor(yAt(CANVAS_Y[0]))))
+    const bottom = Math.min(maxY, Math.max(top, Math.ceil(yAt(CANVAS_Y[1]))))
+
+    canvas.style.top = `${top}px`
+    canvas.style.height = `${bottom - top}px`
+    canvas.width = Math.max(1, Math.round(fw * dpr))
+    canvas.height = Math.max(1, Math.round((bottom - top) * dpr))
     gl!.viewport(0, 0, canvas.width, canvas.height)
-    const s = Math.max(canvas.width / iw, canvas.height / ih)
     gl!.uniform2f(uRes, canvas.width, canvas.height)
-    gl!.uniform2f(uScale, 1 / (iw * s), 1 / (ih * s))
-    gl!.uniform1f(uLod, Math.max(0, -Math.log2(s)))
+
+    // Canvas px -> frame CSS px -> photo UV
+    const kx = fw / canvas.width
+    const ky = Math.max(1, bottom - top) / canvas.height
+    gl!.uniform4f(
+      uToUv,
+      (kx / (nw * s)) * rect[2],
+      (ky / (nh * s)) * rect[3],
+      rect[0] - (ox / (nw * s)) * rect[2],
+      rect[1] + ((top - oy) / (nh * s)) * rect[3],
+    )
+    // Device px per texel sets the base mip level
+    gl!.uniform1f(uLod, Math.max(0, -Math.log2((s * canvas.width) / fw)))
     draw(lastT)
   }
 
-  // The canvas is viewport-fixed, so it tracks the viewport — including the
+  // The frame is viewport-sized, so it tracks the viewport — including the
   // mobile URL bar showing and hiding, which the footer's own box can miss
-  // behind its min-height. Coalesced onto a frame; the first call is the
-  // observer's initial notification.
+  // behind its min-height (except in iOS Safari, where the frame is held at
+  // the large viewport). Coalesced onto a frame.
   let resizePending = false
   new ResizeObserver(() => {
     if (resizePending) return
@@ -392,7 +437,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       resizePending = false
       resize()
     })
-  }).observe(canvas)
+  }).observe(frame)
 
   let rafId: number | null = null
   let lastT = 0
@@ -410,5 +455,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     rafId = null
   }
 
-  return { start, stop, resize }
+  reload()
+
+  return { start, stop, resize, reload }
 }

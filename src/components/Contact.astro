@@ -33,13 +33,16 @@ const LINK_CLASS = `font-mono text-[12px] tracking-[-0.02em] uppercase text-n-40
 const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transparent border border-n-700 cursor-pointer hover:text-bio-lime hover:border-bio-lime/40 ${FOCUS_RING}`;
 ---
 
+<!-- Below md the footer drops its cap bar, so this section wears the bar's
+     rounded bottom corners itself (a 24px bar rounded full is a 24px radius)
+     and opens straight onto the footer's photo. -->
 <section
   id="contact"
-  class="relative bg-n-950 overflow-hidden"
+  class="relative bg-n-950 overflow-hidden max-md:rounded-b-3xl"
   aria-labelledby="contact-heading"
 >
   <div
-    class="relative max-w-[860px] mx-auto px-3 sm:px-6 md:px-10 py-[clamp(110px,15vh,190px)]"
+    class="relative max-w-[860px] mx-auto px-safe-3 sm:px-safe-6 md:px-safe-10 py-[clamp(110px,15vh,190px)]"
   >
     <h2 id="contact-heading" class="sr-only">Contact</h2>
 

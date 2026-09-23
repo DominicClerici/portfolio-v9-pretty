@@ -1,0 +1,28 @@
+{
+  "landscape": {
+    "rect": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "width": 4340,
+    "height": 3255,
+    "avif": "/photos/footer-mountain-landscape-1280.avif 1280w, /photos/footer-mountain-landscape-1920.avif 1920w, /photos/footer-mountain-landscape-2560.avif 2560w, /photos/footer-mountain-landscape-3840.avif 3840w, /photos/footer-mountain-landscape-4340.avif 4340w",
+    "webp": "/photos/footer-mountain-landscape-1280.webp 1280w, /photos/footer-mountain-landscape-1920.webp 1920w, /photos/footer-mountain-landscape-2560.webp 2560w, /photos/footer-mountain-landscape-3840.webp 3840w, /photos/footer-mountain-landscape-4340.webp 4340w",
+    "placeholder": "data:image/webp;base64,UklGRhABAABXRUJQVlA4IAQBAADwBQCdASoYABIAPrVSo00nJKMiKAgA4BaJbACdMtCAHvArgQndi89AcV/HZSEMu9F0/XKo/NddsAD+ojgo2gIrLnvNEknBadmHlWD9OS+9GQLKOETGdAJHy3vK5pY/QMphaf61XkAW6E1FdxXSUNBf6LSvsJz1O+CFJZ+cHHV35PUSut4S5Lv4k7T/nI0vCXEFpvNCCoZR4dwiGqRrZ0YZ8IaSiN/X/8kybx3/pDO0qCTn/rkq0eg+WhtIa5o/1faD13j+qT5N+vZixcjkRzxetaK82XEqZ9Lg8xIosXq+EE3lxkItizWB6pg6pg8J1V1vdgfKg9nDZP1uexQa7vQsgAAAAA=="
+  },
+  "portrait": {
+    "rect": [
+      0.27764976958525345,
+      0,
+      0.4449308755760369,
+      0.7907834101382488
+    ],
+    "width": 1931,
+    "height": 2574,
+    "avif": "/photos/footer-mountain-portrait-900.avif 900w, /photos/footer-mountain-portrait-1320.avif 1320w, /photos/footer-mountain-portrait-1900.avif 1900w, /photos/footer-mountain-portrait-1931.avif 1931w",
+    "webp": "/photos/footer-mountain-portrait-900.webp 900w, /photos/footer-mountain-portrait-1320.webp 1320w, /photos/footer-mountain-portrait-1900.webp 1900w, /photos/footer-mountain-portrait-1931.webp 1931w",
+    "placeholder": "data:image/webp;base64,UklGRvYAAABXRUJQVlA4IOoAAABQBQCdASoSABgAPrVMn0snJCKhqA1Q4BaJagC7IMmJ/i11zhRfPh0z2ZQse42cp57M7QAA/nZilF31TbgdmrYj8xqerTU4bfBGh5rq+lmdKShqPP/VK5cUDpKVzEKDhvWWwmjiAx04AHoVR1TPufYDCj+e/GbZr6GPku30mKPP+83a6bEf2UB93Ch2bzzfaUGKBdld0qOkD4nyCtQ0pKFnbDPdvu7Tijp7PBEfIe11Eq45YXF7xGri4VxuGU1BywHOlJtWdSpcc9HWpXfQ+Nqn1euQjaeD6+1gLD2UwV5NQL9yvTBGHR3tgAA="
+  }
+}

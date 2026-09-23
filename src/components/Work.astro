@@ -52,7 +52,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
 
 <section id="work" class="we1 relative" aria-label="Selected work">
   <header
-    class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 pt-[clamp(96px,14vh,180px)]"
+    class="max-w-[1200px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 pt-[clamp(96px,14vh,180px)]"
   >
     <div class="border-t border-ink/20" aria-hidden="true"></div>
   </header>
@@ -64,7 +64,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         <>
           {i > 0 && (
             <div
-              class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12"
+              class="max-w-[1200px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12"
               aria-hidden="true"
             >
               <div class="border-t border-ink/20" />
@@ -79,7 +79,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             data-doc-desc={project.description}
             style={`--acc: ${project.accent}; --wash: ${project.wash}; --paper: ${project.paper};`}
           >
-            <div class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
+            <div class="max-w-[1200px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 grid grid-cols-1 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] gap-12 lg:gap-20 items-center relative">
               <div class="we1-copy">
                 <h3 class="font-display text-ink leading-[0.98] tracking-[-0.03em] text-[clamp(2.75rem,7vw,5rem)]">
                   {project.title}
@@ -178,7 +178,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   }
 
   <div
-    class="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-12 pb-[clamp(96px,14vh,180px)]"
+    class="max-w-[1200px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 pb-[clamp(96px,14vh,180px)]"
     aria-hidden="true"
   >
     <div class="border-t border-ink/20"></div>

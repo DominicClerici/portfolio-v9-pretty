@@ -145,16 +145,45 @@
   }
 }
 
+/* Page gutters that also clear the notch and rounded corners. The page is
+   laid out under Safari's bars (viewport-fit=cover), which in landscape
+   also puts it under the notch at the sides, so each gutter is the same
+   step as px-* but never narrower than the safe-area inset on its side.
+   The insets are 0 everywhere but a notched iPhone on its side, where the
+   gutter grows to clear the notch; nowhere else does anything change. The
+   negative margin undoes it, for a strip that scrolls out to the edges. */
+@utility px-safe-* {
+  padding-left: max(
+    --spacing(--value(integer)),
+    env(safe-area-inset-left, 0px)
+  );
+  padding-right: max(
+    --spacing(--value(integer)),
+    env(safe-area-inset-right, 0px)
+  );
+}
+@utility -mx-safe-* {
+  margin-left: calc(
+    -1 * max(--spacing(--value(integer)), env(safe-area-inset-left, 0px))
+  );
+  margin-right: calc(
+    -1 * max(--spacing(--value(integer)), env(safe-area-inset-right, 0px))
+  );
+}
+
 /* Shared page gutter + max width. */
 @utility container-page {
   max-width: 1524px;
   margin-inline: auto;
-  padding-inline: 0.75rem;
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
   @media (width >= 40rem) {
-    padding-inline: 1.5rem;
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
   }
   @media (width >= 64rem) {
-    padding-inline: 3rem;
+    padding-left: max(3rem, env(safe-area-inset-left, 0px));
+    padding-right: max(3rem, env(safe-area-inset-right, 0px));
   }
 }
 
