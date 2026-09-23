@@ -583,12 +583,21 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
      unclipped-rectangle flashes. Keep clip-path out of the transition list.
      Its box is the spread's exactly, bleed included (see .we1-spread), so
      the door opens onto the whole screen and the script works in this box's
-     own coordinates, measured, rather than assuming it starts at 0,0. */
+     own coordinates, measured, rather than assuming it starts at 0,0.
+
+     Opacity just under 1 is what lets that bleed show. iOS Safari (from 26)
+     won't paint a fully opaque fixed layer under its bars, only between
+     them, so the door stopped at the bars and the bands filled in when the
+     spread took over at the end. Below 1 the layer is composited on its
+     own and runs under the bars with the rest of the door. 0.99 rather
+     than closer to 1, which an 8-bit alpha would round back up to opaque;
+     the page behind shows through at 1%, too little to see. */
   .we1-portal {
     display: none;
     position: fixed;
     inset: calc(-1 * var(--overlay-bleed)) 0;
     z-index: 45;
+    opacity: 0.99;
     background:
       radial-gradient(
           44% 36% at var(--wx, 78%) 6%,
