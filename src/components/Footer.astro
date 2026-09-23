@@ -3,8 +3,9 @@ import ActionButton from "./ActionButton.astro";
 
 const year = new Date().getFullYear();
 
+// Always exactly two lines, split here (the type is capped to fit, below).
 const statement =
-  "I design and build software that\u2019s fast, useful, and worth looking at.";
+  "I design and build software that\u2019s\nfast, useful, and worth looking at.";
 
 const navigate = [
   { label: "About", href: "#about" },
@@ -139,23 +140,28 @@ const connect = [
     <div
       class="flex-1 min-h-0 flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-16 px-3 sm:px-6 lg:px-12 pt-10 md:pt-16"
     >
-      <div class="max-w-[560px]">
+      <div class="@container lg:flex-1 max-w-[600px]">
         <!-- Statement: typed out as a short sequence once the footer is well
              in view (see script). Three layers share one grid cell: an sr-only
              copy for assistive tech, an invisible ghost of the statement that
              holds the box at its final height so the button below never
              shifts, and the live layer the typewriter writes into. The live
              layer server-renders the full statement so it still reads without
-             JS; the script empties it before the footer is reached. -->
+             JS; the script empties it before the footer is reached.
+
+             The lines never wrap: the type is capped so the longer of the two
+             (~14em) always fits the column — 100cqi is the wrapper's width,
+             which is why the wrapper is a size container that flexes into the
+             space the nav leaves on lg rather than sizing to its text. -->
         <p
-          class="grid font-display text-bone leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
+          class="grid whitespace-pre font-display text-bone leading-[1.2] tracking-[-0.02em] text-[min(clamp(1.5rem,calc(1rem+2vw),2.5rem),calc(100cqi/14.6))]"
         >
           <span class="sr-only">{statement}</span>
           <span class="invisible [grid-area:1/1]" aria-hidden="true"
             >{statement}</span
           >
           <span
-            class="footer-statement [grid-area:1/1] whitespace-pre-line"
+            class="footer-statement [grid-area:1/1]"
             aria-hidden="true"
             ><span data-typed>{statement}</span><span
               class="footer-caret"
@@ -431,12 +437,17 @@ const connect = [
       "Thanks for reading my portfolio!",
       "If you haven\u2019t already,\nFeel free to reach out!",
     ];
+    // Rates are set as speed-ups on the original 45–90ms/char and 24ms/char.
+    const TYPE_SPEEDUP = 1.15;
+    const ERASE_SPEEDUP = 1.05;
     const HOLD_MS = 1500;
     const GAP_MS = 400;
-    const ERASE_MS = 24;
+    const ERASE_MS = 24 / ERASE_SPEEDUP;
+    // Beat between the trigger and the first keystroke.
+    const START_DELAY_MS = 400;
     // Human-ish typing: a jittered base rate with a beat after punctuation.
     const typeDelay = (ch: string) =>
-      45 + Math.random() * 45 + (/[,.!]/.test(ch) ? 140 : 0);
+      (45 + Math.random() * 45 + (/[,.!]/.test(ch) ? 140 : 0)) / TYPE_SPEEDUP;
 
     const typedEl = footer.querySelector<HTMLElement>("[data-typed]")!;
     const restEl = footer.querySelector<HTMLElement>("[data-rest]")!;
@@ -487,6 +498,8 @@ const connect = [
     async function playStatement() {
       const id = ++runId;
       const live = () => id === runId;
+      await sleep(START_DELAY_MS);
+      if (!live()) return;
       for (const line of SEQUENCE) {
         await typeLine(line, id);
         if (!live()) return;

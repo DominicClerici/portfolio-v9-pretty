@@ -24,11 +24,13 @@ import ActionButton from "./ActionButton.astro";
         >
           Engineer &amp; Designer&ensp;·&ensp;New York
         </span>
+        <!-- Always exactly two lines, split at the <br>; the size is capped so
+             the longer line (~14em) fits inside the px-3 gutters on any phone. -->
         <p
-          class="hero-enter font-display text-ink/90 leading-[1.2] tracking-[-0.02em] text-lead"
+          class="hero-enter whitespace-nowrap font-display text-ink/90 leading-[1.2] tracking-[-0.02em] text-[min(var(--text-lead),calc((100vw-24px)/14.6))]"
         >
-          I design and build software that&rsquo;s fast, useful, and worth
-          looking at.
+          I design and build software that&rsquo;s<br />fast, useful, and
+          worth looking at.
         </p>
       </div>
 
