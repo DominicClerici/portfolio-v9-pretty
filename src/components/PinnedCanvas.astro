@@ -159,6 +159,12 @@
     // Career surfaces a little later and is whole well before its pin engages.
     const ABOUT_OUT: [number, number] = [0.32, 0.84];
     const CAREER_IN: [number, number] = [0.3, 0.88];
+    // The fastest the turn may run, end to end, in ms. Scroll still sets where
+    // it is headed, but a flick that crosses the whole handover in a frame or
+    // two would otherwise slam the ground from bone to black; this is the
+    // floor on how quickly it can get there. At ordinary scroll speeds the
+    // turn moves slower than this and tracks scroll exactly.
+    const TURN_MIN_MS = 300;
 
     // — Dark half —
     // How far the career orbs travel, in background heights, over the whole
@@ -221,9 +227,8 @@
          the backdrop eases into the turn and settles out of it instead of
          starting and stopping on a corner. */
       const d = clamp01(1 - darkAnchor.getBoundingClientRect().top / fadeLead);
-      const dark = d * d * (3 - 2 * d);
-      scene.setDarkness(dark);
-      paintTurn(dark);
+      turnTarget = d;
+      stepTurn(performance.now());
 
       // Light half: climb with the page, then leave over the turn.
       const climb = Math.min(Math.max(y, 0), fadeStart) * SCROLL_SENSITIVITY;
@@ -232,6 +237,60 @@
       // Dark half.
       const q = clamp01((y - darkStart) / darkSpan);
       scene.setScrollTarget(q * CAREER_TRAVEL * bgH, 1);
+    }
+
+    /* ── Speed limit on the turn ──
+       Scroll says where the turn should be (turnTarget); what is painted
+       (turnShown) follows it, but never faster than one full turn per
+       TURN_MIN_MS. Below that speed the two are the same number on the same
+       frame, so a normal scroll is untouched and the ground stays locked to
+       the section. Only a flick that outruns the cap leaves turnShown behind,
+       and then a small rAF loop of its own carries it the rest of the way —
+       the scroll bus has usually gone quiet by then, so it cannot wait on it.
+
+       The limit is on the linear progress, before the smoothstep, so a capped
+       turn still eases in and out rather than ramping at a constant rate. The
+       objects' exit (setScrollTarget above) stays on the raw progress: that
+       is the parallax, not the backdrop, and the engine already eases it.
+
+       The budget for a step is the real time since the last one, so a slow
+       frame rate does not stretch the turn. The exception is the first step
+       after the turn has been sitting still: the time since then is idle, not
+       a frame, and spending it would let the flick land in a single jump — so
+       that step gets one frame's worth. (A hidden tab coming back mid-chase is
+       capped the same way.) Reduced motion has no loops anywhere else on the
+       page, so it snaps here too. */
+    let turnTarget = 0;
+    let turnShown = -1; // -1: nothing painted yet — the first frame snaps
+    let turnLastT = 0;
+    let turnMoving = false; // did the last step move, or leave a chase open?
+    let turnRaf = 0;
+    function stepTurn(now: number) {
+      // A scroll tick can land while the loop is pending; either way this
+      // call is the step for the frame, so there is only ever one loop.
+      if (turnRaf) cancelAnimationFrame(turnRaf);
+      turnRaf = 0;
+      const elapsed = Math.max(now - turnLastT, 0);
+      const dt = Math.min(elapsed, turnMoving ? 250 : 1000 / 60);
+      turnLastT = now;
+      const from = turnShown;
+
+      if (turnShown < 0 || reducedMotion) {
+        turnShown = turnTarget;
+      } else {
+        const max = dt / TURN_MIN_MS;
+        const gap = turnTarget - turnShown;
+        turnShown =
+          Math.abs(gap) <= max ? turnTarget : turnShown + Math.sign(gap) * max;
+      }
+
+      const t = turnShown;
+      const dark = t * t * (3 - 2 * t);
+      scene.setDarkness(dark);
+      paintTurn(dark);
+
+      turnMoving = turnShown !== from || turnShown !== turnTarget;
+      if (turnShown !== turnTarget) turnRaf = requestAnimationFrame(stepTurn);
     }
 
     /* Three things off the canvas move with the backdrop.
