@@ -3,6 +3,10 @@ import ActionButton from "./ActionButton.astro";
 
 const year = new Date().getFullYear();
 
+// Always exactly two lines, split here (the type is capped to fit, below).
+const statement =
+  "I design and build software that\u2019s\nfast, useful, and worth looking at.";
+
 const navigate = [
   { label: "About", href: "#about" },
   { label: "Career", href: "#career" },
@@ -136,12 +140,34 @@ const connect = [
     <div
       class="flex-1 min-h-0 flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-16 px-3 sm:px-6 lg:px-12 pt-10 md:pt-16"
     >
-      <div class="max-w-[560px]">
+      <div class="@container lg:flex-1 max-w-[600px]">
+        <!-- Statement: typed out as a short sequence once the footer is well
+             in view (see script). Three layers share one grid cell: an sr-only
+             copy for assistive tech, an invisible ghost of the statement that
+             holds the box at its final height so the button below never
+             shifts, and the live layer the typewriter writes into. The live
+             layer server-renders the full statement so it still reads without
+             JS; the script empties it before the footer is reached.
+
+             The lines never wrap: the type is capped so the longer of the two
+             (~14em) always fits the column — 100cqi is the wrapper's width,
+             which is why the wrapper is a size container that flexes into the
+             space the nav leaves on lg rather than sizing to its text. -->
         <p
-          class="font-display text-bone leading-[1.2] tracking-[-0.02em] text-[clamp(1.5rem,calc(1rem+2vw),2.5rem)]"
+          class="grid whitespace-pre font-display text-bone leading-[1.2] tracking-[-0.02em] text-[min(clamp(1.5rem,calc(1rem+2vw),2.5rem),calc(100cqi/14.6))]"
         >
-          I design and build software that&rsquo;s fast, useful, and worth
-          looking at.
+          <span class="sr-only">{statement}</span>
+          <span class="invisible [grid-area:1/1]" aria-hidden="true"
+            >{statement}</span
+          >
+          <span
+            class="footer-statement [grid-area:1/1]"
+            aria-hidden="true"
+            ><span data-typed>{statement}</span><span
+              class="footer-caret"
+              data-state="off"></span><span class="invisible" data-rest
+            ></span></span
+          >
         </p>
         <ActionButton href="#contact" icon="right" variant="solid" caps class="mt-8">
           Get in touch
@@ -198,26 +224,6 @@ const connect = [
             </ul>
           </div>
         </nav>
-        <a
-          href="#hero"
-          aria-label="Back to top"
-          class="hidden md:inline-flex w-10 h-10 rounded-lg border border-bone/40 text-bone items-center justify-center hover:border-bone hover:bg-white/15 transition-colors duration-200"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M7 13V2M2 6.5 7 1.5l5 5"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"></path>
-          </svg>
-        </a>
       </div>
     </div>
 
@@ -277,6 +283,29 @@ const connect = [
         rgb(10 10 10 / 0.3) 80%,
         rgb(10 10 10 / 0.6) 100%
       );
+    }
+  }
+
+  /* Typewriter caret for the statement. Zero net advance (2px border, -2px
+     margin) so showing or hiding it never reflows the line. Solid while
+     characters are landing, blinking during the pauses, gone otherwise. */
+  .footer-caret {
+    display: inline-block;
+    width: 0;
+    height: 1em;
+    margin-right: -2px;
+    border-left: 2px solid currentColor;
+    vertical-align: -0.12em;
+  }
+  .footer-caret[data-state="off"] {
+    visibility: hidden;
+  }
+  .footer-caret[data-state="blink"] {
+    animation: footer-caret-blink 1.06s steps(1) infinite;
+  }
+  @keyframes footer-caret-blink {
+    50% {
+      visibility: hidden;
     }
   }
 
@@ -391,6 +420,138 @@ const connect = [
       if (document.hidden) haze?.stop();
       else if (footerVisible) haze?.start();
     });
+
+    /* ── Statement typewriter ──
+       Once the viewport's bottom edge has reached the footer's bottom 40%,
+       the statement plays a short sequence: a thank-you, a nudge to reach
+       out, then the statement itself, each typed out, held, and backspaced
+       away before the next. It plays once per visit — only after the footer
+       has left the viewport entirely does it re-arm and blank the text for
+       the next arrival.
+
+       The untyped remainder of the current line is kept in the layout as
+       invisible text, so words never jump between lines as they are typed.
+       Under reduced motion none of this runs and the statement simply stays
+       as rendered. */
+    const SEQUENCE = [
+      "Thanks for reading my portfolio!",
+      "If you haven\u2019t already,\nFeel free to reach out!",
+    ];
+    // Rates are set as speed-ups on the original 45–90ms/char and 24ms/char.
+    const TYPE_SPEEDUP = 1.15;
+    const ERASE_SPEEDUP = 1.05;
+    const HOLD_MS = 1500;
+    const GAP_MS = 400;
+    const ERASE_MS = 24 / ERASE_SPEEDUP;
+    // Beat between the trigger and the first keystroke.
+    const START_DELAY_MS = 400;
+    // Human-ish typing: a jittered base rate with a beat after punctuation.
+    const typeDelay = (ch: string) =>
+      (45 + Math.random() * 45 + (/[,.!]/.test(ch) ? 140 : 0)) / TYPE_SPEEDUP;
+
+    const typedEl = footer.querySelector<HTMLElement>("[data-typed]")!;
+    const restEl = footer.querySelector<HTMLElement>("[data-rest]")!;
+    const caretEl = footer.querySelector<HTMLElement>(".footer-caret")!;
+    // The statement itself comes from the server-rendered markup.
+    const STATEMENT = typedEl.textContent!;
+    // Where the bottom 40% begins; the sentinel covers from there down.
+    const TRIGGER_FRAC = 0.6;
+
+    function renderLine(
+      text: string,
+      n: number,
+      caret: "off" | "blink" | "solid",
+    ) {
+      typedEl.textContent = text.slice(0, n);
+      restEl.textContent = text.slice(n);
+      caretEl.dataset.state = caret;
+    }
+
+    // One pending timer at a time. Cancelling clears it and bumps the run id;
+    // the abandoned run is left awaiting a promise that never settles.
+    let typeTimer: number | undefined;
+    let runId = 0;
+    const sleep = (ms: number) =>
+      new Promise<void>((r) => (typeTimer = window.setTimeout(r, ms)));
+
+    async function typeLine(text: string, id: number) {
+      for (let i = 1; i <= text.length; i++) {
+        renderLine(text, i, "solid");
+        await sleep(typeDelay(text[i - 1]));
+        if (id !== runId) return;
+      }
+    }
+
+    async function eraseLine(text: string, id: number) {
+      for (let i = text.length - 1; i >= 0; i--) {
+        renderLine(text, i, "solid");
+        await sleep(ERASE_MS);
+        if (id !== runId) return;
+      }
+    }
+
+    async function hold(text: string, ms: number) {
+      renderLine(text, text.length, "blink");
+      await sleep(ms);
+    }
+
+    async function playStatement() {
+      const id = ++runId;
+      const live = () => id === runId;
+      await sleep(START_DELAY_MS);
+      if (!live()) return;
+      for (const line of SEQUENCE) {
+        await typeLine(line, id);
+        if (!live()) return;
+        await hold(line, HOLD_MS);
+        if (!live()) return;
+        await eraseLine(line, id);
+        if (!live()) return;
+        await hold("", GAP_MS);
+        if (!live()) return;
+      }
+      await typeLine(STATEMENT, id);
+      if (!live()) return;
+      await hold(STATEMENT, HOLD_MS);
+      if (!live()) return;
+      renderLine(STATEMENT, STATEMENT.length, "off");
+    }
+
+    function resetStatement() {
+      runId++;
+      clearTimeout(typeTimer);
+      renderLine("", 0, "off");
+    }
+
+    if (!reducedMotion) {
+      resetStatement();
+
+      const sentinel = document.createElement("div");
+      sentinel.setAttribute("aria-hidden", "true");
+      sentinel.style.cssText = `position:absolute;left:0;right:0;bottom:0;top:${TRIGGER_FRAC * 100}%;pointer-events:none;`;
+      footer.appendChild(sentinel);
+
+      let armed = true;
+      new IntersectionObserver(
+        (entries) => {
+          if (armed && entries[0].isIntersecting) {
+            armed = false;
+            playStatement();
+          }
+        },
+        { threshold: 0 },
+      ).observe(sentinel);
+
+      new IntersectionObserver(
+        (entries) => {
+          if (!entries[0].isIntersecting) {
+            armed = true;
+            resetStatement();
+          }
+        },
+        { threshold: 0 },
+      ).observe(footer);
+    }
 
     /* ── Header echo ──
        The cap-bar header echo fades in only while the page is scrolled to its
