@@ -16,7 +16,11 @@
  *   · portrait — for phones and portrait tablets, cropped only as far as it
  *     has to be for the lake to fill the bottom WATER_SHARE of a tall screen:
  *     the bottom of the photo is cut off, the top kept, and the sides trimmed
- *     to a 3:4 frame about the centre.
+ *     to a 3:4 frame about the centre. Phones show it without a scrim, so a
+ *     faint dark fade (PORTRAIT_FADE) is baked into its bottom to keep the
+ *     name and the copyright line legible over the lake's bright reflection.
+ *     Baked in rather than laid over in CSS, the heat haze, which redraws
+ *     the lake from these pixels, carries it too.
  *
  * Both are baked into the files rather than applied in CSS, so no pixels are
  * sent only to be cropped off screen.
@@ -46,6 +50,10 @@ const NAME = "footer-mountain"
 // water below it fills WATER_SHARE of the frame, and its top is the photo's.
 const SHORE_Y = 0.593
 const WATER_SHARE = 0.25
+// The fade at the portrait cut's foot: clear down to `from` (a share of the
+// cut's height, here just above the water), easing to `alpha` of the site's
+// ink (rgb 10 10 10) at the bottom edge, gently at first.
+const PORTRAIT_FADE = { from: 0.7, alpha: 0.5, ease: 1.6 }
 // Width over height of the portrait cut: wide enough to cover a portrait
 // tablet (3:4) as well as any phone, which shows the middle of it.
 const PORTRAIT_ASPECT = 3 / 4
@@ -87,13 +95,30 @@ for (const f of await readdir(OUT_DIR)) {
   }
 }
 
-async function renderSet(label, region, widths) {
+// A full-size cut of the source with a fade darkening its foot, as raw
+// pixels to resize from. (Sharp composites after it resizes, so the fade is
+// laid on at full size first.)
+async function faded(region, { from, alpha, ease }) {
+  const stops = Array.from({ length: 11 }, (_, i) => {
+    const k = i / 10
+    return `<stop offset="${from + (1 - from) * k}" stop-color="rgb(10,10,10)" stop-opacity="${(alpha * k ** ease).toFixed(4)}"/>`
+  }).join("")
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${region.width}" height="${region.height}"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgb(10,10,10)" stop-opacity="0"/>${stops}</linearGradient></defs><rect width="100%" height="100%" fill="url(#f)"/></svg>`
+  const { data, info } = await sharp(SOURCE)
+    .extract(region)
+    .composite([{ input: Buffer.from(svg) }])
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  return () => sharp(data, { raw: info })
+}
+
+async function renderSet(label, region, widths, fade) {
+  const cut = fade ? await faded(region, fade) : () => sharp(SOURCE).extract(region)
   const sizes = [...new Set(widths.map((w) => Math.min(w, region.width)))]
   const set = { avif: [], webp: [] }
   for (const w of sizes) {
-    const base = sharp(SOURCE)
-      .extract(region)
-      .resize({ width: w, kernel: "lanczos3" })
+    const base = cut().resize({ width: w, kernel: "lanczos3" })
     for (const [fmt, opts] of [
       ["avif", AVIF],
       ["webp", WEBP],
@@ -105,8 +130,7 @@ async function renderSet(label, region, widths) {
     }
   }
   // 24px blur-up, shown until the real photo arrives
-  const tiny = await sharp(SOURCE)
-    .extract(region)
+  const tiny = await cut()
     .resize({ width: region.width >= region.height ? 24 : 18 })
     .webp({ quality: 60 })
     .toBuffer()
@@ -123,7 +147,7 @@ async function renderSet(label, region, widths) {
 
 const manifest = {
   landscape: await renderSet("landscape", whole, LANDSCAPE_WIDTHS),
-  portrait: await renderSet("portrait", crop, PORTRAIT_WIDTHS),
+  portrait: await renderSet("portrait", crop, PORTRAIT_WIDTHS, PORTRAIT_FADE),
 }
 
 await mkdir("src/data", { recursive: true })
