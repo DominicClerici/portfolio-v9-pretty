@@ -135,8 +135,14 @@ const initialIndex = stepMap[0];
   <div class="dot-grid" aria-hidden="true"></div>
 
   <!-- The pinned frame: everything inside stays in view while the tall section
-       scrolls past, which reads as a scroll-lock without trapping the wheel. -->
-  <div class="pin sticky top-0 h-[100svh] overflow-hidden flex items-start">
+       scrolls past, which reads as a scroll-lock without trapping the wheel.
+       It is screen-sized, so iOS Safari would take it for a bar to extend
+       under its own and leave near-black bars on the rest of the page;
+       bleed-under-bars (global.css) keeps it out, which is why .frame, its
+       only child, must stay positioned. -->
+  <div
+    class="pin sticky top-0 h-[100svh] overflow-hidden flex items-start bleed-under-bars"
+  >
     <div
       class="frame relative w-full max-w-[1524px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 py-8 lg:pt-[12svh] lg:pb-0"
     >

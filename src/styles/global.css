@@ -131,6 +131,24 @@
      which would re-layout and re-allocate the WebGL canvas on every frame of
      that animation. Content stays on --hero-h so nothing lands under the bar. */
   --bg-h: max(calc(100lvh + 2 * var(--bg-overhang)), 560px);
+
+  /* How far the full-screen overlays (a project's spread and the door that
+     opens into it) reach past the top and bottom of their fixed box, and
+     pad their content back in by. iOS Safari lays fixed boxes out between
+     its bars, which the page runs under, so an overlay that stopped at its
+     box left the bars showing the page behind it, and a touch there
+     scrolled that page. Past each edge by more than any bar is tall, the
+     overlay fills the whole screen whatever Safari counts as its viewport.
+     The overlays measure their own boxes, so nothing else depends on it. */
+  --overlay-bleed: 0px;
+}
+
+/* iOS Safari only (-webkit-touch-callout exists nowhere else). Elsewhere a
+   scroller hanging off the screen would hide the ends of its scrollbar. */
+@supports (-webkit-touch-callout: none) {
+  :root {
+    --overlay-bleed: 160px;
+  }
 }
 
 /* The svh/lvh split and the overhang above only compensate for mobile
@@ -169,6 +187,28 @@
   margin-right: calc(
     -1 * max(--spacing(--value(integer)), env(safe-area-inset-right, 0px))
   );
+}
+
+/* For a screen-sized sticky or fixed box that must stay out of iOS Safari's
+   bars. Safari 26 ignores theme-color. For each bar it hit-tests a point
+   just inside that edge of the screen and walks up to the first fixed or
+   sticky box spanning at least 90% of the edge. If it finds one, it covers
+   the bar with a solid fill: that box's background colour, or, without one,
+   a colour it samples from the screen. Otherwise the page runs under the
+   bar. On iPhone the fill then outlives the box: it stays until the box is
+   gone or hidden, so a box that pins over a dark section leaves dark bars
+   on the rest of the page.
+
+   WebKit passes over a box that is visibility: hidden, so this hides the
+   box and shows its children again, and nothing it paints changes. Every
+   child must be positioned (a layer of its own): WebKit counts a hidden box
+   that paints an unpositioned child itself as visible. */
+@utility bleed-under-bars {
+  visibility: hidden;
+
+  & > * {
+    visibility: visible;
+  }
 }
 
 /* Shared page gutter + max width. */
@@ -251,10 +291,18 @@ h6 {
    whole page up with it. A transform is applied after sticky resolves and
    leaves layout untouched, so the resting and stuck positions coincide and
    both pinEnd and the content offset below stay measured off the real box.
-   The lift is paid back by a matching pad-bottom on #hero-scope, which gives
-   the pin the extra runway it needs to still reach the end of the scope. */
+
+   The lift is paid back at the bottom by the negative margin. Sticky keeps
+   the pin's margin box inside the scope, so without it the pin stopped at the
+   scope's end and the lift left it an overhang short: the quote's last 60px
+   hung off the bottom of the scene, over the next section, which had been
+   pulled up by the same amount to meet the scene. With it the pin runs one
+   overhang further and comes to rest flush with the quote's bottom edge, and
+   the next section starts right there. It costs no layout: it collapses into
+   the content stack's larger negative margin-top below. */
 [data-canvas-bg] {
   transform: translateY(calc(-1 * var(--bg-overhang)));
+  margin-bottom: calc(-1 * var(--bg-overhang));
 }
 
 /* Content stack rides above the sticky background, pulled up by exactly
