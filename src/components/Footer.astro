@@ -18,22 +18,11 @@ const navigate = [
 // Screens that get the portrait cut. Keep in step with the same query in the
 // styles, which picks its blur-up.
 const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
-// Each cut is cover-fitted to a frame as tall as the screen plus the cut's
-// overhang below it (see the styles), so its displayed width is that height
-// × its aspect — unless the screen is wider than that, when the width fills
-// it.
-const sizes = ({
-  width,
-  height,
-  overhang,
-}: {
-  width: number;
-  height: number;
-  overhang: number;
-}) => {
-  const tall = 1 + overhang;
-  return `(min-aspect-ratio: ${width}/${Math.round(height * tall)}) 100vw, ${+((100 * tall * width) / height).toFixed(2)}vh`;
-};
+// Each cut is cover-fitted to a screen-tall frame, so its displayed width is
+// the screen's height × its aspect — unless the screen is wider than that,
+// when the width fills it.
+const sizes = ({ width, height }: { width: number; height: number }) =>
+  `(min-aspect-ratio: ${width}/${height}) 100vw, ${+((100 * width) / height).toFixed(2)}vh`;
 const PORTRAIT_SIZES = sizes(photo.portrait);
 const LANDSCAPE_SIZES = sizes(photo.landscape);
 
@@ -68,19 +57,9 @@ const connect = [
 ];
 ---
 
-<!-- Mobile browsers grow and shrink the visible screen as their toolbars
-     collapse and return, and the footer must not jump when they do (see the
-     styles for the heights):
-
-       · the footer is as tall as the screen ever gets (lvh), so at the
-         bottom of the page it fills the screen even with the toolbars away,
-         and the section above never peeks in;
-       · its content fills just the part of the screen that is showing
-         (dvh), from the top of the screen down to the top of the toolbar,
-         so none of it is ever behind the toolbar or pushed down by it. -->
 <footer
   id="site-footer"
-  class="relative overflow-hidden flex flex-col justify-end"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
 >
   <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
        page (-z-10), so the opaque sections above the footer hide it and the
@@ -88,41 +67,23 @@ const connect = [
        it. That window opening as the footer rises is the reveal, and because
        the pin is real CSS fixed positioning rather than a scroll-driven
        transform, the photo cannot drift on compositor-driven (touch)
-       scrolling.
+       scrolling. Fixed to the *visual* viewport, it also covers the strip
+       below an svh-tall footer when mobile chrome retracts.
 
-       It is pinned to the top of the screen and as tall as the screen ever
-       gets, so it never changes size or moves as the toolbars come and go:
-       they just float over its foot. On phones and portrait tablets it is
-       instead pinned 10vh below the screen's bottom edge and 10vh taller,
-       the photo's overhang, so it runs on under Safari's toolbar there (the
-       portrait cut carries the extra 10% at its foot, so what shows on
-       screen is unchanged). Safari (from iOS 26) is particular
-       about fixed layers at the screen's edges, in two ways:
-
-         · it tints its status bar and toolbar from their background colour.
-           This outer box has none and stays fully opaque, so Safari takes it
-           as the edge element and lets the page show through its bars, edge
-           to edge. (Made even slightly transparent, it is passed over for
-           <body>, and both bars go the page's near-black.)
-         · it cuts opaque fixed layers off at the top of its floating
-           toolbar, leaving the page's own background below. So what the box
-           holds sits in a layer a hair short of opaque, which it draws all
-           the way down.
-
-       Three layers: the photo itself (the real background, and all there
-       is without WebGL2 or under reduced motion), the heat-haze canvas drawn
-       pixel-for-pixel over the lake once its texture is up, and above md a scrim that keeps the bone type legible against
-       the peak and the near water. The backdrop's own background image is
-       a tiny blur-up of whichever cut the <picture> picks, so the text has
-       something to sit on before the real one arrives.
+       Three layers: the photo itself (the real background, and all there is
+       without WebGL2 or under reduced motion), the heat-haze canvas drawn
+       pixel-for-pixel over the lake once its texture is up, and above md a
+       scrim that keeps the bone type legible against the peak and the near
+       water. The
+       wrap's own background is a tiny blur-up of whichever cut the <picture>
+       picks, so the text has something to sit on before the real one arrives.
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
        pinned to its top centre so the peak always shows, 1280w up to its full
        4340w; and a 3:4 crop for phones and portrait tablets, cut just short
        enough at the bottom for the lake to fill the lower 25% of a tall
-       screen, with a faint dark fade baked into its foot. Each is AVIF with
-       a WebP fallback.
+       screen. Each is AVIF with a WebP fallback.
 
        The srcsets are held back in data-srcset: as a fixed element the photo
        is always "in the viewport" to the browser, so it would load alongside
@@ -130,58 +91,53 @@ const connect = [
        loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-x-0 top-0 -z-10"
-    style={`--overhang:${photo.portrait.overhang * 100}vh`}
+    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900"
+    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
     aria-hidden="true"
   >
-    <div
-      class="footer-backdrop absolute inset-0"
-      style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
-    >
-      <picture>
-        <source
-          media={PORTRAIT}
-          type="image/avif"
-          data-srcset={photo.portrait.avif}
-          sizes={PORTRAIT_SIZES}
-        />
-        <source
-          media={PORTRAIT}
-          type="image/webp"
-          data-srcset={photo.portrait.webp}
-          sizes={PORTRAIT_SIZES}
-        />
-        <source
-          type="image/avif"
-          data-srcset={photo.landscape.avif}
-          sizes={LANDSCAPE_SIZES}
-        />
-        <img
-          class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-          data-srcset={photo.landscape.webp}
-          data-cuts={JSON.stringify({
-            landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
-            portrait: [
-              photo.portrait.width,
-              photo.portrait.height,
-              photo.portrait.rect,
-            ],
-          })}
-          sizes={LANDSCAPE_SIZES}
-          width={photo.landscape.width}
-          height={photo.landscape.height}
-          alt=""
-          decoding="async"
-          fetchpriority="low"
-        />
-      </picture>
-      <!-- Placed and sized by the haze over the lake's band of the photo -->
-      <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-      <div class="footer-scrim absolute inset-0"></div>
-    </div>
+    <picture>
+      <source
+        media={PORTRAIT}
+        type="image/avif"
+        data-srcset={photo.portrait.avif}
+        sizes={PORTRAIT_SIZES}
+      />
+      <source
+        media={PORTRAIT}
+        type="image/webp"
+        data-srcset={photo.portrait.webp}
+        sizes={PORTRAIT_SIZES}
+      />
+      <source
+        type="image/avif"
+        data-srcset={photo.landscape.avif}
+        sizes={LANDSCAPE_SIZES}
+      />
+      <img
+        class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
+        data-srcset={photo.landscape.webp}
+        data-cuts={JSON.stringify({
+          landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
+          portrait: [
+            photo.portrait.width,
+            photo.portrait.height,
+            photo.portrait.rect,
+          ],
+        })}
+        sizes={LANDSCAPE_SIZES}
+        width={photo.landscape.width}
+        height={photo.landscape.height}
+        alt=""
+        decoding="async"
+        fetchpriority="low"
+      />
+    </picture>
+    <!-- Placed and sized by the haze over the lake's band of the photo -->
+    <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+    <div class="footer-scrim absolute inset-0"></div>
   </div>
 
-  <div class="footer-content relative z-10 shrink-0 flex flex-col">
+  <div class="relative z-10 h-full flex flex-col">
     <!-- Cap bar: the previous (contact) section's color, fully-rounded bottom
          corners. Mirrors the page header's layout (same h-20/md:py-7/px) so the
          bar height tracks the header exactly. The header echo inside fades in
@@ -386,50 +342,14 @@ const connect = [
 </footer>
 
 <style>
-  /* The footer's heights (see the markup): the footer and the backdrop as
-     tall as the screen ever gets, --footer-h, and the content as tall as
-     the part of it showing, --box-h; neither below a floor. 100vh first,
-     for browsers without the newer viewport units. */
-  #site-footer {
-    --footer-min: 680px;
-    --footer-h: max(var(--footer-min), 100vh);
-    --box-h: max(var(--footer-min), 100vh);
-    height: var(--footer-h);
-  }
-  @media (min-width: 768px) {
-    #site-footer {
-      --footer-min: 780px;
-    }
-  }
-  @supports (height: 100dvh) {
-    #site-footer {
-      --footer-h: max(var(--footer-min), 100lvh);
-      --box-h: max(var(--footer-min), 100dvh);
-    }
-  }
-  .footer-content {
-    height: var(--box-h);
-  }
-
-  /* The backdrop (see the markup): never resized, and itself opaque with
-     no background colour; its contents a hair short of opaque, over the
-     blur-up, cut and pinned to match whichever photo the <picture> picks. */
+  /* The blur-up, cut and pinned to match whichever photo the <picture>
+     picks. */
   .footer-canvas-wrap {
-    height: var(--footer-h);
-  }
-  .footer-backdrop {
-    opacity: 0.99;
     background: var(--blur-landscape) center top / cover;
   }
-  /* Same query as PORTRAIT in the frontmatter. The portrait cut hangs its
-     overhang below the screen (see the markup). */
+  /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
     .footer-canvas-wrap {
-      top: auto;
-      bottom: calc(-1 * var(--overhang));
-      height: calc(var(--footer-h) + var(--overhang));
-    }
-    .footer-backdrop {
       background-image: var(--blur-portrait);
     }
   }
@@ -856,9 +776,9 @@ const connect = [
       resizeTimer = window.setTimeout(() => {
         // fitName writes a font size, then reads metrics back, then writes
         // again — two forced layouts on the largest text node on the page.
-        // Rotation and window resizes can fire this in bursts; it belongs
-        // behind a debounce rather than running on every one of those
-        // ticks.
+        // The footer is h-svh, so mobile URL-bar show/hide retriggers this
+        // observer mid-scroll; it belongs behind a debounce rather than
+        // running on every one of those ticks.
         fitName();
         onEchoScroll();
       }, 120);

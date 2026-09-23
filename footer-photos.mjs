@@ -16,10 +16,7 @@
  *   · portrait — for phones and portrait tablets, cropped only as far as it
  *     has to be for the lake to fill the bottom WATER_SHARE of a tall screen:
  *     the bottom of the photo is cut off, the top kept, and the sides trimmed
- *     to a 3:4 frame about the centre. On phones the footer hangs the photo
- *     PORTRAIT_OVERHANG of the screen's height below the screen's bottom
- *     edge (under Safari's toolbar), so the cut runs on that much further
- *     down to keep what shows on screen the same. Phones show it without a scrim, so a
+ *     to a 3:4 frame about the centre. Phones show it without a scrim, so a
  *     faint dark fade (PORTRAIT_FADE) is baked into its bottom to keep the
  *     name and the copyright line legible over the lake's bright reflection.
  *     Baked in rather than laid over in CSS, the heat haze, which redraws
@@ -53,16 +50,10 @@ const NAME = "footer-mountain"
 // water below it fills WATER_SHARE of the frame, and its top is the photo's.
 const SHORE_Y = 0.593
 const WATER_SHARE = 0.25
-// How far below the screen's bottom edge the portrait photo hangs, as a share
-// of the screen's height. Footer.astro positions it by the same figure (from
-// the manifest), so keep it there rather than in the CSS.
-const PORTRAIT_OVERHANG = 0.1
-// The fade at the portrait cut's foot, measured on the part that shows on
-// screen: clear down to `from` (a share of that height, here just above the
-// water), easing to `alpha` of the site's ink (rgb 10 10 10) at the screen's
-// bottom edge, gently at first, and holding there on down through the
-// overhang.
-const PORTRAIT_FADE = { from: 0.7, alpha: 0.6, ease: 2 }
+// The fade at the portrait cut's foot: clear down to `from` (a share of the
+// cut's height, here just above the water), easing to `alpha` of the site's
+// ink (rgb 10 10 10) at the bottom edge, gently at first.
+const PORTRAIT_FADE = { from: 0.7, alpha: 0.5, ease: 1.6 }
 // Width over height of the portrait cut: wide enough to cover a portrait
 // tablet (3:4) as well as any phone, which shows the middle of it.
 const PORTRAIT_ASPECT = 3 / 4
@@ -83,12 +74,11 @@ const { width: W, height: H } = await src.metadata()
 
 const whole = { left: 0, top: 0, width: W, height: H }
 
-// Portrait crop, in source pixels: the part that shows on screen, then the
-// overhang below it
-const cropH = Math.round((SHORE_Y / (1 - WATER_SHARE)) * (1 + PORTRAIT_OVERHANG) * H)
+// Portrait crop, in source pixels
+const cropH = Math.round((SHORE_Y / (1 - WATER_SHARE)) * H)
 const cropW = Math.round(cropH * PORTRAIT_ASPECT)
 if (cropH > H || cropW > W) {
-  throw new Error("SHORE_Y/WATER_SHARE/PORTRAIT_OVERHANG need more of the photo than there is")
+  throw new Error("SHORE_Y/WATER_SHARE need more of the photo than there is")
 }
 const crop = {
   left: Math.round((W - cropW) / 2),
@@ -108,15 +98,12 @@ for (const f of await readdir(OUT_DIR)) {
 // A full-size cut of the source with a fade darkening its foot, as raw
 // pixels to resize from. (Sharp composites after it resizes, so the fade is
 // laid on at full size first.)
-// (from and to are shares of the cut's height; the fade holds at alpha from
-// to down to the bottom edge.)
-async function faded(region, { from, to = 1, alpha, ease }) {
+async function faded(region, { from, alpha, ease }) {
   const stops = Array.from({ length: 11 }, (_, i) => {
     const k = i / 10
-    return `<stop offset="${from + (to - from) * k}" stop-color="rgb(10,10,10)" stop-opacity="${(alpha * k ** ease).toFixed(4)}"/>`
+    return `<stop offset="${from + (1 - from) * k}" stop-color="rgb(10,10,10)" stop-opacity="${(alpha * k ** ease).toFixed(4)}"/>`
   }).join("")
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${region.width}" height="${region.height}"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgb(10,10,10)" stop-opacity="0"/>${stops}</linearGradient></defs><rect width="100%" height="100%" fill="url(#f)"/></svg>`
-    .replace("</linearGradient>", `<stop offset="1" stop-color="rgb(10,10,10)" stop-opacity="${alpha}"/></linearGradient>`)
   const { data, info } = await sharp(SOURCE)
     .extract(region)
     .composite([{ input: Buffer.from(svg) }])
@@ -126,7 +113,7 @@ async function faded(region, { from, to = 1, alpha, ease }) {
   return () => sharp(data, { raw: info })
 }
 
-async function renderSet(label, region, widths, { fade, overhang = 0 } = {}) {
+async function renderSet(label, region, widths, fade) {
   const cut = fade ? await faded(region, fade) : () => sharp(SOURCE).extract(region)
   const sizes = [...new Set(widths.map((w) => Math.min(w, region.width)))]
   const set = { avif: [], webp: [] }
@@ -155,24 +142,12 @@ async function renderSet(label, region, widths, { fade, overhang = 0 } = {}) {
     avif: set.avif.join(", "),
     webp: set.webp.join(", "),
     placeholder: `data:image/webp;base64,${tiny.toString("base64")}`,
-    // How far below the screen the footer hangs this cut, as a share of the
-    // screen's height
-    overhang,
   }
 }
 
 const manifest = {
   landscape: await renderSet("landscape", whole, LANDSCAPE_WIDTHS),
-  portrait: await renderSet("portrait", crop, PORTRAIT_WIDTHS, {
-    // The fade's figures are for the part on screen, the top 1 / (1 + the
-    // overhang) of the cut
-    fade: {
-      ...PORTRAIT_FADE,
-      from: PORTRAIT_FADE.from / (1 + PORTRAIT_OVERHANG),
-      to: 1 / (1 + PORTRAIT_OVERHANG),
-    },
-    overhang: PORTRAIT_OVERHANG,
-  }),
+  portrait: await renderSet("portrait", crop, PORTRAIT_WIDTHS, PORTRAIT_FADE),
 }
 
 await mkdir("src/data", { recursive: true })
