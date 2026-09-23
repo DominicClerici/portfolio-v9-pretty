@@ -193,6 +193,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   <div class="we1-portal" data-portal aria-hidden="true">
     <div class="we1-portal-col" data-portal-col></div>
   </div>
+  <div class="we1-portal-lift" data-portal-lift aria-hidden="true"></div>
 </section>
 
 {/* Where in the spread the arriving visitor was standing. index.astro's head
@@ -606,6 +607,22 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     will-change: transform;
   }
 
+  /* The mobile close's flight deck. The closing spread has to sit above the
+     portal so its text and paper can dissolve onto the portal's — which
+     buries the portal's flying plate under the spread's opaque paper for the
+     length of that fade. With the spread's own hero already hidden
+     (.we1-hero-off), the plate would blink out on the first frame and fade
+     back in as the spread cleared. So for that flight the column is lifted
+     out of the portal into this layer, above the spread, and clipped by the
+     same door path every frame. */
+  .we1-portal-lift {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    pointer-events: none;
+  }
+
   .we1-portal-on {
     display: block;
   }
@@ -670,7 +687,8 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       --par: 0.5 !important;
     }
 
-    .we1-portal {
+    .we1-portal,
+    .we1-portal-lift {
       display: none !important;
     }
 
@@ -1001,6 +1019,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // ── Walk-through-the-door open/close ──
       const portal = section.querySelector<HTMLElement>("[data-portal]");
       const portalCol = portal?.querySelector<HTMLElement>("[data-portal-col]");
+      const portalLift = section.querySelector<HTMLElement>(
+        "[data-portal-lift]",
+      );
 
       const OPEN_MS = 700;
       const SWAP_MS = 205;
@@ -1123,8 +1144,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         doorRaf = 0;
       };
 
+      // The lift layer wears the same clip, so a lifted column is cut by
+      // exactly the door the portal is
       const setClip = (subs: Sub[]) => {
-        if (portal) portal.style.clipPath = `path("${pathOf(subs)}")`;
+        const clip = `path("${pathOf(subs)}")`;
+        if (portal) portal.style.clipPath = clip;
+        if (portalLift) portalLift.style.clipPath = clip;
       };
 
       // Mobile flight state: the transform that lays the column's plate over
@@ -1171,11 +1196,13 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         doorRaf = requestAnimationFrame(frame);
       };
 
+      // On the column itself rather than the portal, so the rect travels
+      // with it when a mobile close lifts it into the other layer
       const setColRect = (g: GalRect) => {
-        if (!portal) return;
-        portal.style.setProperty("--fx", `${g.left}px`);
-        portal.style.setProperty("--fy", `${g.top}px`);
-        portal.style.setProperty("--fw", `${g.width}px`);
+        if (!portalCol) return;
+        portalCol.style.setProperty("--fx", `${g.left}px`);
+        portalCol.style.setProperty("--fy", `${g.top}px`);
+        portalCol.style.setProperty("--fw", `${g.width}px`);
       };
 
       // The portal's cast: desktop clones the whole gallery column (the
@@ -1248,7 +1275,14 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           "we1-portal-col-in",
         );
         portal?.style.removeProperty("clip-path");
-        if (portalCol) portalCol.style.transform = "";
+        portalLift?.classList.remove("we1-portal-on");
+        portalLift?.style.removeProperty("clip-path");
+        if (portalCol) {
+          portalCol.style.transform = "";
+          // Home from a lifted mobile close — open always flies inside the portal
+          if (portal && portalCol.parentElement !== portal)
+            portal.append(portalCol);
+        }
       };
 
       const open = (i: number, trigger: HTMLElement, push = true) => {
@@ -1408,10 +1442,16 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // flight; if not, the identical copy keeps the images steady under
         // the fade.
         const scrolled = spread.scrollTop > 1;
+        // Unscrolled mobile close: the flying clone replaces the spread's hero
+        // on the first frame, so it has to paint above the spread, not under
+        // it in the portal (see .we1-portal-lift). Moved before the decode
+        // wait so nothing is reparented after its bitmaps are ready.
+        const lift = mobile && !scrolled && !!portalLift;
         if (mobile) {
           fillPortal(hero!);
           dressPortal(spread);
           setColRect(heroFrame!);
+          if (lift) portalLift!.append(portalCol);
         } else {
           const g = galRectOf(spread) ?? { left: 0, top: 0, width: 100 };
           fillPortal(galleryFor(spread));
@@ -1430,6 +1470,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           // re-pin so the page matches the geometry captured above
           repinPage();
           portal.classList.add("we1-portal-on");
+          if (lift) portalLift!.classList.add("we1-portal-on");
           portal.classList.toggle("we1-portal-col-hide", scrolled);
           spread.classList.add("we1-spread-close");
           // Unscrolled mobile close: the flying clone takes over for the
