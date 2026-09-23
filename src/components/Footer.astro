@@ -55,29 +55,34 @@ const connect = [
        without WebGL2 or under reduced motion), the heat-haze canvas drawn
        pixel-for-pixel over it once its texture is up, and a scrim that keeps
        the bone type legible against the sky and the asphalt while leaving the
-       horizon — where the shimmer is — clear. The wrap's own background is a
-       24px blur-up of the photo, so the text has something to sit on before
-       the real one arrives.
+       horizon — where the shimmer is — clear. The photo's frame carries a
+       24px blur-up of it as its background, so the text has something to sit
+       on before the real one arrives.
+
+       The backdrop is sized off the large viewport, not the live one, and
+       bleeds past both screen edges (see the styles below) — the fix for a
+       flicker under the giant name on mobile Safari's momentum overscroll.
 
        The photo's srcset is held back in data-srcset: as a fixed element it
        is always "in the viewport" to the browser's lazy loader and would load
        with the hero. It is set as the footer approaches instead (see script).
        Its alt is empty — the scene is decorative. -->
-  <div
-    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900 bg-cover bg-center"
-    style="background-image:url(data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoR4OsC//s/+A8r1dXfbR+T1KAD9UHdKkFssr1uAGAtq9AzTe97a56fnZN1o/RSh0O/HUusSXRqqGG9iaHjeCyQ4jG5bY0mhWjPEq14ZONnmyxP6AAA=)"
-    aria-hidden="true"
-  >
-    <img
-      class="footer-photo absolute inset-0 w-full h-full object-cover"
-      data-srcset="/photos/footer-road.webp 1280w, /photos/footer-road-2x.webp 2000w"
-      sizes="100vw"
-      width="2000"
-      height="1333"
-      alt=""
-      decoding="async"
-    />
-    <canvas id="footer-canvas" class="absolute inset-0 w-full h-full"></canvas>
+  <div class="footer-canvas-wrap fixed inset-x-0 -z-10 bg-n-900" aria-hidden="true">
+    <div
+      class="footer-photo-frame footer-frame bg-cover bg-center"
+      style="background-image:url(data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoR4OsC//s/+A8r1dXfbR+T1KAD9UHdKkFssr1uAGAtq9AzTe97a56fnZN1o/RSh0O/HUusSXRqqGG9iaHjeCyQ4jG5bY0mhWjPEq14ZONnmyxP6AAA=)"
+    >
+      <img
+        class="footer-photo absolute inset-0 w-full h-full object-cover"
+        data-srcset="/photos/footer-road.webp 1280w, /photos/footer-road-2x.webp 2000w"
+        sizes="100vw"
+        width="2000"
+        height="1333"
+        alt=""
+        decoding="async"
+      />
+    </div>
+    <canvas id="footer-canvas" class="footer-frame"></canvas>
     <div class="footer-scrim absolute inset-0"></div>
   </div>
 
@@ -243,6 +248,51 @@ const connect = [
 </footer>
 
 <style>
+  /* The backdrop's box. Pinned with inset-0 it tracked the *live* viewport,
+     so on mobile Safari every collapse or expand of the toolbar resized it —
+     re-laying out the scrim's gradient and re-allocating (and so clearing)
+     the WebGL canvas mid-scroll. Momentum scrolling into the end of the page
+     is exactly when Safari brings its toolbar back, and the fixed layer, being
+     positioned by the UI process while it is resized by the page, briefly
+     falls out of step with the screen: the flicker under the name on a flung
+     overscroll that a dragged one, with the toolbar at rest, never shows.
+
+     So, as with the hero's pinned background (see --bg-h in global.css), it
+     is sized off the large viewport, which never changes mid-scroll, and
+     bleeds --bg-overhang past the top and bottom of the screen, so a frame
+     where the layer lags still lands on more backdrop rather than on the page
+     behind it. The overhang is 0 on desktop, where this is exactly inset-0. */
+  .footer-canvas-wrap {
+    top: calc(-1 * var(--bg-overhang));
+    height: calc(100lvh + 2 * var(--bg-overhang));
+    overflow: hidden;
+
+    /* Crop of the photo: zoomed in on its centre by --photo-zoom, then moved
+       down by --photo-shift of the screen's height. The haze reads both back
+       (see script), so its shader lands on the same crop. */
+    --photo-zoom: 1.4;
+    --photo-shift: 0.2;
+  }
+
+  /* The screen proper, inside the overhang: what the photo is cropped to and
+     what the haze canvas covers. The zoomed photo spills past it into the
+     overhang on its own; the canvas has no need to, since the shimmer keeps
+     to the horizon, far from either edge. */
+  .footer-frame {
+    position: absolute;
+    left: 0;
+    top: var(--bg-overhang);
+    width: 100%;
+    height: 100lvh;
+  }
+
+  /* The blur-up and the photo crop together. Transforms apply right to left:
+     the zoom about the centre, then the shift, as a share of the frame. */
+  .footer-photo-frame {
+    transform: translateY(calc(var(--photo-shift) * 100%))
+      scale(var(--photo-zoom));
+  }
+
   /* Holds the haze canvas back until it has drawn a frame over the photo. It
      is opaque (alpha: false), so shown any earlier it would be a black sheet;
      once drawn it matches the <img> beneath pixel-for-pixel, so the fade only
@@ -257,9 +307,13 @@ const connect = [
 
   /* Darkens the sky behind the statement and nav and the asphalt behind the
      giant name; the middle stays clear so the horizon and its shimmer read at
-     full strength. */
+     full strength. The gradient spans the frame (the padding box, inside the
+     borders); the borders carry its end shades on through the overhang. */
   .footer-scrim {
-    background: linear-gradient(
+    border-top: var(--bg-overhang) solid rgb(10 10 10 / 0.5);
+    border-bottom: var(--bg-overhang) solid rgb(10 10 10 / 0.6);
+    background-clip: padding-box;
+    background-image: linear-gradient(
       to bottom,
       rgb(10 10 10 / 0.5) 0%,
       rgb(10 10 10 / 0.25) 28%,
@@ -273,7 +327,7 @@ const connect = [
      horizon itself, so the scrim carries on down past them. */
   @media (max-width: 1023px) {
     .footer-scrim {
-      background: linear-gradient(
+      background-image: linear-gradient(
         to bottom,
         rgb(10 10 10 / 0.5) 0%,
         rgb(10 10 10 / 0.35) 30%,
@@ -379,9 +433,12 @@ const connect = [
       photo
         .decode()
         .then(() => {
+          const crop = getComputedStyle(photo);
           haze = createHeatHaze({
             canvas,
             img: photo,
+            zoom: parseFloat(crop.getPropertyValue("--photo-zoom")) || 1,
+            shift: parseFloat(crop.getPropertyValue("--photo-shift")) || 0,
             onReady: () => canvas.classList.add("is-ready"),
             onLost: () => {
               canvas.classList.remove("is-ready");

@@ -32,7 +32,8 @@
  *     road haze's top edge.
  *
  * All of it is measured in *image* space, so it stays glued to the road
- * however `object-fit: cover` crops the photo. The <img> underneath is the
+ * however `object-fit: cover` crops the photo, and through the zoom and shift
+ * the footer crops it further with. The <img> underneath is the
  * real background — this canvas only draws over it once the texture is up,
  * and simply never appears without WebGL2 or under reduced motion.
  */
@@ -109,6 +110,10 @@ export type HeatHazeOptions = {
   canvas: HTMLCanvasElement
   /** the decoded background photo; its natural size drives the cover fit */
   img: HTMLImageElement
+  /** the photo's zoom about its centre, on top of the cover fit (default 1) */
+  zoom?: number
+  /** then its move down, as a share of the canvas height (default 0) */
+  shift?: number
   /** fires once the first distorted frame is on the canvas */
   onReady?: () => void
   /** fires if the GL context is lost; the caller should hide the canvas */
@@ -117,7 +122,7 @@ export type HeatHazeOptions = {
 
 /** Returns null when WebGL2 is unavailable — the photo alone is the fallback. */
 export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
-  const { canvas, img, onReady, onLost } = opts
+  const { canvas, img, zoom = 1, shift = 0, onReady, onLost } = opts
 
   let gl: WebGL2RenderingContext | null = null
   try {
@@ -142,7 +147,8 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     precision highp float;
     uniform sampler2D uImg;
     uniform vec2 uRes;     // canvas size, device px
-    uniform vec2 uScale;   // device px -> image UV (the cover fit)
+    uniform vec2 uCenter;  // where the image centre lands, device px (y-down)
+    uniform vec2 uScale;   // device px -> image UV (the cover fit and zoom)
     uniform float uAspect; // image width / height
     uniform float uTime;
     uniform float uLod;    // mip level matching the cover fit's minification
@@ -199,7 +205,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     void main() {
       // gl_FragCoord is y-up; the image is y-down
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
-      vec2 uv = (px - 0.5 * uRes) * uScale + 0.5;
+      vec2 uv = (px - uCenter) * uScale + 0.5;
 
       // dy: how far below the crest (negative above it)
       float dy = uv.y - CREST_Y;
@@ -331,6 +337,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
   const uRes = gl.getUniformLocation(prog, "uRes")
+  const uCenter = gl.getUniformLocation(prog, "uCenter")
   const uScale = gl.getUniformLocation(prog, "uScale")
   const uAspect = gl.getUniformLocation(prog, "uAspect")
   const uTime = gl.getUniformLocation(prog, "uTime")
@@ -364,8 +371,9 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     }
   }
 
-  /* Matches CSS `object-fit: cover; object-position: center` exactly, so the
-     canvas lands pixel-for-pixel on the <img> it is drawn over. */
+  /* Matches CSS `object-fit: cover; object-position: center` under a
+     `translateY(shift) scale(zoom)` exactly, so the canvas lands
+     pixel-for-pixel on the <img> it is drawn over. */
   function resize() {
     if (lost) return
     const rect = canvas.getBoundingClientRect()
@@ -373,17 +381,18 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     canvas.width = Math.max(1, Math.round(rect.width * dpr))
     canvas.height = Math.max(1, Math.round(rect.height * dpr))
     gl!.viewport(0, 0, canvas.width, canvas.height)
-    const s = Math.max(canvas.width / iw, canvas.height / ih)
+    const s = Math.max(canvas.width / iw, canvas.height / ih) * zoom
     gl!.uniform2f(uRes, canvas.width, canvas.height)
+    gl!.uniform2f(uCenter, 0.5 * canvas.width, (0.5 + shift) * canvas.height)
     gl!.uniform2f(uScale, 1 / (iw * s), 1 / (ih * s))
     gl!.uniform1f(uLod, Math.max(0, -Math.log2(s)))
     draw(lastT)
   }
 
-  // The canvas is viewport-fixed, so it tracks the viewport — including the
-  // mobile URL bar showing and hiding, which the footer's own box can miss
-  // behind its min-height. Coalesced onto a frame; the first call is the
-  // observer's initial notification.
+  // The canvas is viewport-fixed, so it tracks the viewport. (The footer sizes
+  // it off the large viewport, so mobile toolbar show/hide doesn't reach it —
+  // only real viewport changes do.) Coalesced onto a frame; the first call is
+  // the observer's initial notification.
   let resizePending = false
   new ResizeObserver(() => {
     if (resizePending) return
