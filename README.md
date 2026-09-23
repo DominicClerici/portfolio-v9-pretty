@@ -57,18 +57,18 @@ The script scans the built HTML in `dist/` (where all template expressions have 
 
 ## Footer Photo
 
-The footer's river backdrop is cut from a full-resolution original in `photos-src/` (a 6000×8000 upscale of a photo by Sander Dechering), kept out of `public/` so it is never deployed. A Node script renders every size the page serves into `public/photos/` and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
+The footer's backdrop (Mount Shuksan over Picture Lake) is cut from a full-resolution original in `photos-src/` (4340×3255), kept out of `public/` so it is never deployed. A Node script renders every size the page serves into `public/photos/` and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
 
-- **landscape cut** for landscape screens: a 3:2 band of the (portrait) photo running from the sunlit clouds down through the river, 1280w up to 5120w, so 4K and 5K (ultrawide included) monitors get a pixel per pixel
-- **portrait cut** for phones and portrait tablets: zoomed 1.2× into the centre of the frame
+- **landscape cut** for landscape screens: the whole photo, pinned to its top centre so the peak always shows, from 1280w up to its full 4340w
+- **portrait cut** for phones and portrait tablets: cropped at the bottom only as far as it takes for the lake to fill the lower 35% of a tall screen, and trimmed to 3:4 about the centre
 
-Both are cut in the files themselves, so no pixels are sent only to be cropped off screen. Each size is written as AVIF with a WebP fallback. To change the crops, sizes or quality, edit the constants at the top of `footer-photos.mjs` and rerun it:
+Both are cut in the files themselves, so no pixels are sent only to be cropped off screen. Each size is written as AVIF with a WebP fallback. The page starts loading the photo once it has itself finished loading and gone idle, at low priority, so the footer is ready before anyone scrolls to it without holding anything else up. To change the crops, sizes or quality, edit the constants at the top of `footer-photos.mjs` and rerun it:
 
 ```bash
 pnpm photos:footer
 ```
 
-The heat haze over the river (`src/scripts/heat-haze.ts`) is positioned in the full photo's coordinates, so it follows either crop automatically. Only a new source photo means re-measuring it.
+The heat haze over the lake (`src/scripts/heat-haze.ts`) is positioned in the full photo's coordinates, so it follows either crop automatically. Only a new source photo means re-measuring it.
 
 ## License
 

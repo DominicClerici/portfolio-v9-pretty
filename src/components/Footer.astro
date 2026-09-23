@@ -19,10 +19,12 @@ const navigate = [
 // styles, which picks its blur-up.
 const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
 // Each cut is cover-fitted to a screen-tall frame, so its displayed width is
-// the screen's height × its aspect (3:4 portrait, 3:2 landscape) — unless the
-// screen is wider than that, when the width fills it.
-const PORTRAIT_SIZES = "(min-aspect-ratio: 3/4) 100vw, 75vh";
-const LANDSCAPE_SIZES = "(min-aspect-ratio: 3/2) 100vw, 150vh";
+// the screen's height × its aspect — unless the screen is wider than that,
+// when the width fills it.
+const sizes = ({ width, height }: { width: number; height: number }) =>
+  `(min-aspect-ratio: ${width}/${height}) 100vw, ${+((100 * width) / height).toFixed(2)}vh`;
+const PORTRAIT_SIZES = sizes(photo.portrait);
+const LANDSCAPE_SIZES = sizes(photo.landscape);
 
 const connect = [
   {
@@ -52,7 +54,7 @@ const connect = [
   id="site-footer"
   class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
 >
-  <!-- The river backdrop is viewport-fixed and sits *behind* the whole
+  <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
        page (-z-10), so the opaque sections above the footer hide it and the
        footer — which has no background of its own — is the only window onto
        it. That window opening as the footer rises is the reveal, and because
@@ -63,21 +65,23 @@ const connect = [
 
        Three layers: the photo itself (the real background, and all there is
        without WebGL2 or under reduced motion), the heat-haze canvas drawn
-       pixel-for-pixel over the river once its texture is up, and a scrim that
+       pixel-for-pixel over the lake once its texture is up, and a scrim that
        keeps the bone type legible against the sky and the near water. The
        wrap's own background is a tiny blur-up of whichever cut the <picture>
        picks, so the text has something to sit on before the real one arrives.
 
-       The photo (a portrait one) comes in two cuts, rendered by
-       footer-photos.mjs: a 3:2 band of its lower half, from the sunlit clouds
-       down through the river, for landscape screens, 1280w up to 5120w; and
-       a crop zoomed into its centre for phones and portrait tablets. Each is
-       AVIF with a WebP fallback.
+       The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
+       rendered by footer-photos.mjs: the whole of it for landscape screens,
+       pinned to its top centre so the peak always shows, 1280w up to its full
+       4340w; and a 3:4 crop for phones and portrait tablets, cut just short
+       enough at the bottom for the lake to fill the lower 35% of a tall
+       screen. Each is AVIF with a WebP fallback.
 
        The srcsets are held back in data-srcset: as a fixed element the photo
-       is always "in the viewport" to the browser's lazy loader and would load
-       with the hero. They are set as the footer approaches instead (see
-       script). Its alt is empty — the scene is decorative. -->
+       is always "in the viewport" to the browser, so it would load alongside
+       the hero and compete with it. The script sets them once the page has
+       loaded and gone idle instead. Its alt is empty — the scene is
+       decorative. -->
   <div
     class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900"
     style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
@@ -102,7 +106,7 @@ const connect = [
         sizes={LANDSCAPE_SIZES}
       />
       <img
-        class="footer-photo absolute inset-0 w-full h-full object-cover"
+        class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
         data-srcset={photo.landscape.webp}
         data-cuts={JSON.stringify({
           landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
@@ -117,9 +121,10 @@ const connect = [
         height={photo.landscape.height}
         alt=""
         decoding="async"
+        fetchpriority="low"
       />
     </picture>
-    <!-- Placed and sized by the haze over the river's band of the photo -->
+    <!-- Placed and sized by the haze over the lake's band of the photo -->
     <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
     <div class="footer-scrim absolute inset-0"></div>
   </div>
@@ -286,9 +291,10 @@ const connect = [
 </footer>
 
 <style>
-  /* The blur-up, cut to match whichever photo the <picture> picks. */
+  /* The blur-up, cut and pinned to match whichever photo the <picture>
+     picks. */
   .footer-canvas-wrap {
-    background: var(--blur-landscape) center / cover;
+    background: var(--blur-landscape) center top / cover;
   }
   /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
@@ -310,7 +316,7 @@ const connect = [
   }
 
   /* Darkens the sky behind the statement and nav and the near water behind
-     the giant name; the middle stays clear so the valley and the far river,
+     the giant name; the middle stays clear so the peak and the far shore,
      where the shimmer peaks, read at full strength. */
   .footer-scrim {
     background: linear-gradient(
@@ -323,18 +329,19 @@ const connect = [
       rgb(10 10 10 / 0.6) 100%
     );
   }
-  /* Below lg the nav columns stack under the statement and land on the pale
-     granite itself, so the scrim carries on down past them. */
+  /* Below lg the nav columns stack under the statement and land on the
+     snowfields and pale granite themselves, so the scrim holds its strength
+     down past them, then clears over the trees and the far shore. */
   @media (max-width: 1023px) {
     .footer-scrim {
       background: linear-gradient(
         to bottom,
         rgb(10 10 10 / 0.5) 0%,
-        rgb(10 10 10 / 0.35) 30%,
-        rgb(10 10 10 / 0.3) 46%,
-        rgb(10 10 10 / 0) 58%,
-        rgb(10 10 10 / 0) 64%,
-        rgb(10 10 10 / 0.3) 80%,
+        rgb(10 10 10 / 0.5) 22%,
+        rgb(10 10 10 / 0.5) 48%,
+        rgb(10 10 10 / 0) 60%,
+        rgb(10 10 10 / 0) 68%,
+        rgb(10 10 10 / 0.3) 82%,
         rgb(10 10 10 / 0.6) 100%
       );
     }
@@ -418,16 +425,26 @@ const connect = [
       name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`;
     }
 
-    /* ── River backdrop + heat haze ──
-       As the footer comes within 600px the photo starts loading; once it has
-       decoded, the haze takes it as a texture. The shimmer only runs while
-       the footer is actually on screen. Under reduced motion, or without
-       WebGL2, the photo is left as it is. */
+    /* ── Mountain backdrop + heat haze ──
+       The photo starts loading as soon as the page is done with the network
+       and the main thread: after the load event, at the first idle moment,
+       at low fetch priority. Nothing the page needs waits on it, and it is
+       usually in long before the footer is reached. Once it has decoded, the
+       haze takes it as a texture, again in idle time. Arriving at the footer
+       sooner (a jump straight to it) brings each step forward instead. The
+       shimmer only runs while the footer is actually on screen. Under reduced
+       motion, or without WebGL2, the photo is left as it is. */
     let haze: HeatHaze | null = null;
     let footerVisible = false;
+    let decoded = false;
+
+    const idle = (fn: () => void) =>
+      "requestIdleCallback" in window
+        ? requestIdleCallback(fn, { timeout: 2000 })
+        : setTimeout(fn, 200);
 
     // The photo's current source, for the haze: its files are named for their
-    // cut and width (footer-river-<cut>-<width>.<ext>), and each cut's
+    // cut and width (footer-mountain-<cut>-<width>.<ext>), and each cut's
     // pixel size and place in the full photo ride on the <img>. The height
     // follows from the cut's aspect, rounded as the generator's resize rounds
     // it — naturalHeight won't do, as for a srcset pick it is divided by the
@@ -444,6 +461,24 @@ const connect = [
       return { width, height: Math.round((width * ch) / cw), rect };
     };
 
+    function startHaze() {
+      if (haze || !decoded) return;
+      haze = createHeatHaze({
+        canvas,
+        frame: footer.querySelector<HTMLElement>(".footer-canvas-wrap")!,
+        img: photo,
+        source,
+        onReady: () => canvas.classList.add("is-ready"),
+        onLost: () => {
+          canvas.classList.remove("is-ready");
+          haze = null;
+          // Not restarted: a lost context stays with the photo alone
+          decoded = false;
+        },
+      });
+      if (footerVisible && !document.hidden) haze?.start();
+    }
+
     function loadPhoto() {
       if (photo.srcset) return;
       // The <source>s first, so the <img> chooses among all of them
@@ -457,24 +492,18 @@ const connect = [
       photo
         .decode()
         .then(() => {
-          haze = createHeatHaze({
-            canvas,
-            frame: footer.querySelector<HTMLElement>(".footer-canvas-wrap")!,
-            img: photo,
-            source,
-            onReady: () => canvas.classList.add("is-ready"),
-            onLost: () => {
-              canvas.classList.remove("is-ready");
-              haze = null;
-            },
-          });
-          if (footerVisible && !document.hidden) haze?.start();
+          decoded = true;
+          if (footerVisible) startHaze();
+          else idle(startHaze);
         })
         .catch(() => {});
       // Turning a tablet or phone switches between the cuts; the haze re-reads
       // the photo once the new one is in.
       photo.addEventListener("load", () => haze?.reload());
     }
+
+    if (document.readyState === "complete") idle(loadPhoto);
+    else addEventListener("load", () => idle(loadPhoto), { once: true });
 
     new IntersectionObserver(
       (entries, io) => {
@@ -491,6 +520,7 @@ const connect = [
         footerVisible = entries[0].isIntersecting;
         if (footerVisible) {
           loadPhoto();
+          startHaze();
           haze?.start();
         } else {
           haze?.stop();

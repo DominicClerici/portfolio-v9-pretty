@@ -1,5 +1,5 @@
 /*
- * Heat haze over the footer's river.
+ * Heat haze over the footer's mountain lake.
  *
  * Modelled on the hero at hermeus.com, where "Building Fast Planes. Fast."
  * shimmers as if seen through a jet's exhaust. Theirs is not live: it is 90
@@ -18,82 +18,58 @@
  * Unlike Hermeus's, this one has to pass for the real thing, so it behaves
  * the way shimmer over a long flat surface does:
  *
- *   · it covers the whole river, bank to bank and down to the bottom of the
- *     frame, and rises just a little into the trees above its far end;
- *   · it grows with distance. Looking up the river, the sightline skims ever
- *     more warm air, so the effect peaks where the river bends out of sight
- *     and eases off toward the foreground;
+ *   · it covers the lake, edge to edge across the frame and down to the
+ *     bottom of it, and rises just a little into the grass on the far shore;
+ *   · it grows with distance. Looking across the water, the sightline skims
+ *     ever more warm air, so the foreground water barely stirs and the
+ *     effect eases in harder toward the far shore, where it peaks;
  *   · its texture is laid out on the water's plane rather than the screen,
  *     so the ripples crowd together and tighten into the distance exactly as
- *     the river does.
+ *     the lake does.
  *
  * All of it is measured in the *full photo's* UV space, so it stays glued to
- * the river however `object-fit: cover` crops the photo, and whichever cut of
- * it (landscape or portrait) the page has loaded. The <img> underneath is the real
- * background: this canvas covers only the band of it the shimmer lives in,
- * is transparent wherever the shimmer is not, and never appears at all
- * without WebGL2 or under reduced motion. Kept to that band it can render at
- * the screen's full pixel density cheaply, so the photo stays as crisp under
- * the canvas as around it.
+ * the lake however `object-fit: cover` crops and places the photo, and
+ * whichever cut of it (landscape or portrait) the page has loaded. The <img>
+ * underneath is the real background: this canvas covers only the band of it
+ * the shimmer lives in, is transparent wherever the shimmer is not, and never
+ * appears at all without WebGL2 or under reduced motion. Kept to that band it
+ * can render at the screen's full pixel density cheaply, so the photo stays
+ * as crisp under the canvas as around it.
  */
 
-/* ── Where the river is ──
-   Measured off the source photo (6000×8000), in image UV: x from the left,
+/* ── Where the lake is ──
+   Measured off the source photo (4340×3255), in image UV: x from the left,
    y down from the top. */
-// The water's far visible edge, the rapids where the river comes round from
-// behind the hills
-const FAR_Y = 0.658
-// The banks, as [y, left x, right x] from the far edge to the bottom of the
-// photo, straight between, traced along the waterline. The river opens out
-// fast below the rapids, then the left bank runs out of frame past its rocks
-// at ≈0.82 and the right one past its scree at ≈0.9. Out of frame the banks
-// are pushed well clear of it, so the feather below never dims the water at
-// the frame's edges.
-const BANKS = [
-  [FAR_Y, 0.593, 0.675],
-  [0.67, 0.55, 0.65],
-  [0.68, 0.445, 0.67],
-  [0.7, 0.425, 0.715],
-  [0.72, 0.385, 0.745],
-  [0.74, 0.325, 0.77],
-  [0.76, 0.21, 0.79],
-  [0.78, 0.14, 0.81],
-  [0.8, 0.07, 0.83],
-  [0.816, 0, 0.85],
-  [0.83, -0.12, 0.865],
-  [0.86, -0.12, 0.925],
-  [0.9, -0.12, 0.995],
-  [0.905, -0.12, 1],
-  [0.92, -0.12, 1.12],
-  [1, -0.12, 1.12],
-]
-// Where the banks of the first stretch below the rapids would meet if it
-// ran on flat: the vanishing point's height, and its line across the frame.
-// Distance up the river goes as 1 / (y − HORIZON_Y).
-const HORIZON_Y = 0.642
-const AXIS_X = 0.634
+// The far shore, where the grass meets the water, level across the frame
+const FAR_Y = 0.591
+// The horizon: the height the lake's surface would vanish at if it ran on
+// forever, a little above the far shore as seen from just above the water.
+// Distance across the water goes as 1 / (y − HORIZON_Y), and its lateral
+// spread is measured out from AXIS_X, straight ahead.
+const HORIZON_Y = 0.57
+const AXIS_X = 0.5
 // Past this height below the horizon the noise stops spreading with the
 // water plane. Left to grow, the foreground's ripples would be swells a
 // third of the frame wide rather than a shimmer.
 const NEAR_H = 0.15
 
 /* ── Extent ──
-   Intensity is 1 at the far edge and eases down to FOREGROUND at the bottom
-   of the photo. Above the far edge it only rises RISE into the trees before
+   Intensity is 1 at the far shore and falls to FOREGROUND at the bottom of
+   the photo along a curve of power EASE: from the foreground it barely
+   builds at first, then eases in harder and harder the further out the
+   water lies. Above the far shore it only rises RISE into the grass before
    stopping. */
-const FOREGROUND = 0.6
-const RISE = 0.006 // ≈48px of the source photo
-// Feather inside the banks, so the shimmer eases off at the waterline rather
-// than spilling onto the rocks: a fixed margin plus a share of the half-width
-const BANK_FEATHER = [0.008, 0.1]
+const FOREGROUND = 0.15
+const EASE = 2.2
+const RISE = 0.005 // ≈16px of the source photo
 
 /* ── Distortion ──
    Amplitudes are fractions of the height of the cut on screen at full
    intensity, so the effect scales with the photo as shown rather than with
-   device pixels. (Measured against the full photo instead, the landscape
-   cut, a band half its height, would shimmer twice as hard.) INTENSITY
-   scales all three together: the warp and ripple amplitudes and the blur.
-   The noise scale is separate, so it stays just as tight. */
+   device pixels. (Measured against the full photo instead, a cut of part of
+   its height would shimmer all the harder for it.) INTENSITY scales all
+   three together: the warp and ripple amplitudes and the blur. The noise
+   scale is separate, so it stays just as tight. */
 const INTENSITY = 1.3
 // Density of the noise pattern: higher means smaller, tighter ripples.
 const TIGHTEN = 1.5
@@ -102,12 +78,12 @@ const RIPPLE_AMP = [0.0005, 0.0012] // fine rising shimmer (x, y)
 const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
 
 /* ── Canvas band ──
-   Everything above reaches no higher than the rise over the far edge
-   (FAR_Y − RISE = 0.652) and runs on to the bottom of the photo, so the
+   Everything above reaches no higher than the rise over the far shore
+   (FAR_Y − RISE = 0.586) and runs on to the bottom of the photo, so the
    canvas spans CANVAS_Y of the photo's height, full width. The texture
    starts a little higher, TEX_Y, for the distortion to sample from. */
-const CANVAS_Y = [0.648, 1]
-const TEX_Y = [0.64, 1]
+const CANVAS_Y = [0.582, 1]
+const TEX_Y = [0.574, 1]
 // Device pixel ratio ceiling. The band is small enough to afford full density
 // on any current screen.
 const MAX_DPR = 3
@@ -124,7 +100,8 @@ export type HeatHazeOptions = {
   canvas: HTMLCanvasElement
   /** the box the photo is cover-fitted to; the canvas is placed inside it */
   frame: HTMLElement
-  /** the decoded background photo */
+  /** the decoded background photo, cover-fitted to the frame at any
+   *  object-position given in percentages or keywords */
   img: HTMLImageElement
   /** its current source: the file's size in pixels (naturalWidth/Height
    *  won't do, as for a srcset pick they are divided by the pick's density
@@ -156,8 +133,6 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   if (!gl) return null
 
   const f1 = (x: number) => x.toFixed(5)
-  const bankY = BANKS.map((b) => f1(b[0])).join(", ")
-  const bankX = BANKS.map((b) => `vec2(${f1(b[1])}, ${f1(b[2])})`).join(", ")
 
   const VS = `#version 300 es
     layout(location = 0) in vec2 aPos;
@@ -176,22 +151,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     out vec4 outColor;
 
     const float FAR_Y = ${f1(FAR_Y)};
-    const int NB = ${BANKS.length};
-    const float BANK_Y[NB] = float[NB](${bankY});
-    const vec2 BANK_X[NB] = vec2[NB](${bankX});
     const float HORIZON_Y = ${f1(HORIZON_Y)};
-
-    // The banks (left, right) at height y. Above the far edge they are the
-    // far edge's own, so the rise into the trees sits squarely over the water.
-    vec2 banks(float y) {
-      for (int i = 1; i < NB; i++) {
-        if (y <= BANK_Y[i]) {
-          float t = clamp((y - BANK_Y[i - 1]) / (BANK_Y[i] - BANK_Y[i - 1]), 0.0, 1.0);
-          return mix(BANK_X[i - 1], BANK_X[i], t);
-        }
-      }
-      return BANK_X[NB - 1];
-    }
 
     // Cheap 3D value noise — the third axis is time, so the pattern boils in
     // place instead of just scrolling past.
@@ -246,21 +206,15 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
       vec2 uv = px * uToUv.xy + uToUv.zw;
 
-      // dy: how far below the far edge (negative above it)
+      // dy: how far below the far shore (negative above it)
       float dy = uv.y - FAR_Y;
-      float below = max(dy, 0.0);
+      float near = clamp(dy / ${f1(1 - FAR_Y)}, 0.0, 1.0);
 
-      vec2 bank = banks(uv.y);
-      float halfW = 0.5 * (bank.y - bank.x);
-      float feather = ${f1(BANK_FEATHER[0])} + halfW * ${f1(BANK_FEATHER[1])};
-      float inRiver = 1.0 - smoothstep(halfW - feather, halfW, abs(uv.x - 0.5 * (bank.x + bank.y)));
-
-      // The extent envelope: full strength at the far edge, easing to
-      // FOREGROUND at the bottom of the photo
-      float env = dy < 0.0
+      // The extent envelope: full strength at the far shore, down to
+      // FOREGROUND at the bottom of the photo, steepest out by the shore
+      float m = dy < 0.0
         ? 1.0 - smoothstep(0.0, ${f1(RISE)}, -dy)
-        : mix(1.0, ${f1(FOREGROUND)}, below / ${f1(1 - FAR_Y)});
-      float m = inRiver * env;
+        : mix(${f1(FOREGROUND)}, 1.0, pow(1.0 - near, ${f1(EASE)}));
 
       // Transparent where there is nothing to distort, so the <img> beneath
       // shows through; faded in over the mask's faint fringe, where what the
@@ -271,10 +225,10 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
         return;
       }
 
-      // Water-plane coordinates, about the river's axis. Depth runs as
+      // Water-plane coordinates, about the view's axis. Depth runs as
       // log(h), lateral as offset over h, so a fixed noise cell covers less
-      // and less of the screen the further up the river it lies — the
-      // shimmer tightens with the river. h levels off toward NEAR_H in the
+      // and less of the screen the further out across the water it lies —
+      // the shimmer tightens with the lake. h levels off toward NEAR_H in the
       // foreground, where the cells would otherwise grow into swells.
       float h = max(uv.y - HORIZON_Y, 0.003);
       h = h / (1.0 + h / ${f1(NEAR_H)});
@@ -411,9 +365,24 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     }
   }
 
+  // The <img>'s object-position, as the share of its overflow that lies
+  // left of and above the frame
+  function position() {
+    const at = (v: string | undefined) =>
+      v === "left" || v === "top"
+        ? 0
+        : v === "right" || v === "bottom"
+          ? 1
+          : v?.endsWith("%")
+            ? parseFloat(v) / 100
+            : 0.5
+    const [x, y] = getComputedStyle(img).objectPosition.split(" ")
+    return [at(x), at(y)]
+  }
+
   /* Sizes and places the canvas over CANVAS_Y of the photo as CSS
-     `object-fit: cover; object-position: center` lays it out in the frame,
-     snapped to whole CSS pixels, and maps the canvas's pixels back to
+     `object-fit: cover` and the <img>'s object-position lay it out in the
+     frame, snapped to whole CSS pixels, and maps the canvas's pixels back to
      photo UV so it lands pixel-for-pixel on the <img> it is drawn over. */
   function resize() {
     if (lost || !src) return
@@ -422,8 +391,9 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
     // The cover fit: CSS px per source px, and the source's top-left corner
     const s = Math.max(fw / nw, fh / nh)
-    const ox = (fw - nw * s) / 2
-    const oy = (fh - nh * s) / 2
+    const [px, py] = position()
+    const ox = (fw - nw * s) * px
+    const oy = (fh - nh * s) * py
     // Photo UV y -> frame CSS px
     const yAt = (v: number) => oy + ((v - rect[1]) / rect[3]) * nh * s
     // The band, in whole CSS px: at a fractional CSS offset (1691 device px
