@@ -57,96 +57,94 @@ const connect = [
 ];
 ---
 
-<!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
-     page (-z-10), so the opaque sections above the footer hide it and the
-     footer — which has no background of its own — is the only window onto
-     it. That window opening as the footer rises is the reveal, and because
-     the pin is real CSS fixed positioning rather than a scroll-driven
-     transform, the photo cannot drift on compositor-driven (touch)
-     scrolling. Fixed to the *visual* viewport, it also covers the strip
-     below an svh-tall footer when mobile chrome retracts.
-
-     The wrap itself carries no background colour: Safari (from iOS 26)
-     tints its toolbars from fixed elements' background colours, and
-     without one the page shows through them, edge to edge.
-
-     It sits just outside the footer rather than in it, so that in iOS
-     Safari, where it is sticky rather than fixed (see the styles), it can
-     hold still over more than the footer's own height.
-
-     Inside it, the photo's frame: three layers, the photo itself (the real
-     background, and all there is without WebGL2 or under reduced motion),
-     the heat-haze canvas drawn pixel-for-pixel over the lake once its
-     texture is up, and above md a scrim that keeps the bone type legible
-     against the peak and the near water. The frame's own background is a
-     tiny blur-up of whichever cut the <picture> picks, so the text has
-     something to sit on before the real one arrives. The frame fills the
-     wrap.
-
-     The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
-     rendered by footer-photos.mjs: the whole of it for landscape screens,
-     pinned to its top centre so the peak always shows, 1280w up to its full
-     4340w; and a 3:4 crop for phones and portrait tablets, cut just short
-     enough at the bottom for the lake to fill the lower 25% of a tall
-     screen. Each is AVIF with a WebP fallback.
-
-     The srcsets are held back in data-srcset: as a fixed element the photo
-     is always "in the viewport" to the browser, so it would load alongside
-     the hero and compete with it. The script sets them once the page has
-     loaded and gone idle instead. Its alt is empty — the scene is
-     decorative. -->
-<div
-  class="footer-canvas-wrap fixed inset-0 -z-10"
-  style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
-  aria-hidden="true"
->
-  <div class="footer-photo-frame absolute inset-x-0 top-0 h-full">
-    <picture>
-      <source
-        media={PORTRAIT}
-        type="image/avif"
-        data-srcset={photo.portrait.avif}
-        sizes={PORTRAIT_SIZES}
-      />
-      <source
-        media={PORTRAIT}
-        type="image/webp"
-        data-srcset={photo.portrait.webp}
-        sizes={PORTRAIT_SIZES}
-      />
-      <source
-        type="image/avif"
-        data-srcset={photo.landscape.avif}
-        sizes={LANDSCAPE_SIZES}
-      />
-      <img
-        class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-        data-srcset={photo.landscape.webp}
-        data-cuts={JSON.stringify({
-          landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
-          portrait: [
-            photo.portrait.width,
-            photo.portrait.height,
-            photo.portrait.rect,
-          ],
-        })}
-        sizes={LANDSCAPE_SIZES}
-        width={photo.landscape.width}
-        height={photo.landscape.height}
-        alt=""
-        decoding="async"
-        fetchpriority="low"
-      />
-    </picture>
-    <!-- Placed and sized by the haze over the lake's band of the photo -->
-    <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-    <div class="footer-scrim absolute inset-0"></div>
-  </div>
-</div>
 <footer
   id="site-footer"
   class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
 >
+  <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
+       page (-z-10), so the opaque sections above the footer hide it and the
+       footer — which has no background of its own — is the only window onto
+       it. That window opening as the footer rises is the reveal, and because
+       the pin is real CSS fixed positioning rather than a scroll-driven
+       transform, the photo cannot drift on compositor-driven (touch)
+       scrolling. Fixed to the *visual* viewport, it also covers the strip
+       below an svh-tall footer when mobile chrome retracts.
+
+       The wrap itself carries no background colour: Safari (from iOS 26)
+       tints its toolbars from fixed elements' background colours, and
+       without one the page shows through them, edge to edge.
+
+       Inside it, the photo's frame: three layers, the photo itself (the real
+       background, and all there is without WebGL2 or under reduced motion),
+       the heat-haze canvas drawn pixel-for-pixel over the lake once its
+       texture is up, and above md a scrim that keeps the bone type legible
+       against the peak and the near water. The frame's own background is a
+       tiny blur-up of whichever cut the <picture> picks, so the text has
+       something to sit on before the real one arrives. The frame fills the
+       wrap, except in iOS Safari, where it is held at a size the toolbar
+       can't change (see the styles).
+
+       The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
+       rendered by footer-photos.mjs: the whole of it for landscape screens,
+       pinned to its top centre so the peak always shows, 1280w up to its full
+       4340w; and a 3:4 crop for phones and portrait tablets, cut just short
+       enough at the bottom for the lake to fill the lower 25% of a tall
+       screen. Each is AVIF with a WebP fallback.
+
+       The srcsets are held back in data-srcset: as a fixed element the photo
+       is always "in the viewport" to the browser, so it would load alongside
+       the hero and compete with it. The script sets them once the page has
+       loaded and gone idle instead. Its alt is empty — the scene is
+       decorative. -->
+  <div
+    class="footer-canvas-wrap fixed inset-0 -z-10"
+    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
+    aria-hidden="true"
+  >
+    <div class="footer-photo-frame absolute inset-x-0 top-0 h-full">
+      <picture>
+        <source
+          media={PORTRAIT}
+          type="image/avif"
+          data-srcset={photo.portrait.avif}
+          sizes={PORTRAIT_SIZES}
+        />
+        <source
+          media={PORTRAIT}
+          type="image/webp"
+          data-srcset={photo.portrait.webp}
+          sizes={PORTRAIT_SIZES}
+        />
+        <source
+          type="image/avif"
+          data-srcset={photo.landscape.avif}
+          sizes={LANDSCAPE_SIZES}
+        />
+        <img
+          class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
+          data-srcset={photo.landscape.webp}
+          data-cuts={JSON.stringify({
+            landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
+            portrait: [
+              photo.portrait.width,
+              photo.portrait.height,
+              photo.portrait.rect,
+            ],
+          })}
+          sizes={LANDSCAPE_SIZES}
+          width={photo.landscape.width}
+          height={photo.landscape.height}
+          alt=""
+          decoding="async"
+          fetchpriority="low"
+        />
+      </picture>
+      <!-- Placed and sized by the haze over the lake's band of the photo -->
+      <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+      <div class="footer-scrim absolute inset-0"></div>
+    </div>
+  </div>
+
   <div class="relative z-10 h-full flex flex-col">
     <!-- Cap bar: the previous (contact) section's color, fully-rounded bottom
          corners. Mirrors the page header's layout (same h-20/md:py-7/px) so the
@@ -380,31 +378,20 @@ const connect = [
     }
   }
 
-  /* iOS Safari only (-webkit-touch-callout exists nowhere else), where the
-     wrap is part of the page rather than fixed over it. Safari (from 26)
-     clips fixed layers to the viewport between its bars, however far they
-     reach past it, so a fixed photo left the status bar and the toolbar
-     showing the black page behind it. Page content is what Safari draws
-     under its bars, so here the wrap is sticky instead: the same pin the
-     hero's scene uses, and the same size, reaching one overhang past the
-     top and bottom of that viewport, so the photo runs under both bars.
-
-     It holds still exactly as the fixed wrap did. It sits a whole wrap's
-     height above the footer, pulled up there by its negative margin, so it
-     has latched onto the top of the screen well before the footer comes up
-     to reveal it, and it rides there until its foot meets the end of the
-     page. The wrap takes up no room, so nothing around it moves.
-
-     Its height doesn't follow the toolbar either (lvh is the viewport with
-     the toolbar away), so the photo is never re-fitted as the toolbar comes
-     and goes; the toolbar only covers and uncovers its foot, as before. */
-  @supports (-webkit-touch-callout: none) and (height: 100lvh) {
-    .footer-canvas-wrap {
-      position: sticky;
-      inset: auto;
-      top: calc(-1 * var(--bg-overhang));
-      height: var(--bg-h);
-      margin-top: calc(-1 * var(--bg-h));
+  /* iOS Safari only (-webkit-touch-callout exists nowhere else). Its bottom
+     toolbar grows and shrinks the viewport, and with it the fixed wrap, as
+     it comes and goes. A frame that followed the wrap would re-fit the photo
+     each time, rescaling it about its top edge so the lake slid up and down
+     with the toolbar. So here the frame keeps the height of the viewport
+     with the toolbar away (lvh), pinned to the top of the screen, and the
+     toolbar only covers and uncovers its foot. The wrap is left as it is,
+     so what Safari samples for its toolbars and draws beneath them does not
+     change. Never shorter than the wrap, so the photo always covers it.
+     100vh first for iOS before 15.4, where it is the large viewport too. */
+  @supports (-webkit-touch-callout: none) {
+    .footer-photo-frame {
+      height: max(100%, 100vh);
+      height: max(100%, 100lvh);
     }
   }
 
@@ -514,8 +501,7 @@ const connect = [
 
   {
     const footer = document.getElementById("site-footer")!;
-    const wrap = document.querySelector<HTMLElement>(".footer-canvas-wrap")!;
-    const photo = wrap.querySelector<HTMLImageElement>(".footer-photo")!;
+    const photo = footer.querySelector<HTMLImageElement>(".footer-photo")!;
     const canvas = document.getElementById(
       "footer-canvas",
     ) as HTMLCanvasElement;
@@ -578,7 +564,7 @@ const connect = [
       if (haze || !decoded) return;
       haze = createHeatHaze({
         canvas,
-        frame: wrap.querySelector<HTMLElement>(".footer-photo-frame")!,
+        frame: footer.querySelector<HTMLElement>(".footer-photo-frame")!,
         img: photo,
         source,
         onReady: () => canvas.classList.add("is-ready"),
@@ -595,7 +581,7 @@ const connect = [
     function loadPhoto() {
       if (photo.srcset) return;
       // The <source>s first, so the <img> chooses among all of them
-      for (const el of wrap.querySelectorAll<HTMLSourceElement>(
+      for (const el of footer.querySelectorAll<HTMLSourceElement>(
         "picture source",
       )) {
         el.srcset = el.dataset.srcset!;
