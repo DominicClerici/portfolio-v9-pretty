@@ -291,10 +291,18 @@ h6 {
    whole page up with it. A transform is applied after sticky resolves and
    leaves layout untouched, so the resting and stuck positions coincide and
    both pinEnd and the content offset below stay measured off the real box.
-   The lift is paid back by a matching pad-bottom on #hero-scope, which gives
-   the pin the extra runway it needs to still reach the end of the scope. */
+
+   The lift is paid back at the bottom by the negative margin. Sticky keeps
+   the pin's margin box inside the scope, so without it the pin stopped at the
+   scope's end and the lift left it an overhang short: the quote's last 60px
+   hung off the bottom of the scene, over the next section, which had been
+   pulled up by the same amount to meet the scene. With it the pin runs one
+   overhang further and comes to rest flush with the quote's bottom edge, and
+   the next section starts right there. It costs no layout: it collapses into
+   the content stack's larger negative margin-top below. */
 [data-canvas-bg] {
   transform: translateY(calc(-1 * var(--bg-overhang)));
+  margin-bottom: calc(-1 * var(--bg-overhang));
 }
 
 /* Content stack rides above the sticky background, pulled up by exactly

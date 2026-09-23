@@ -36,10 +36,10 @@
  */
 ---
 
-<!-- The negative bottom margin is the pin's runway, not spacing: sticky stops
-     at the padding box, and the pin is lifted by one overhang, so without it
-     the glass would come to rest an overhang short of the scope's end and
-     leave a gap before the next section.
+<!-- The pin is lifted by one overhang and given the runway to still reach
+     the scope's end by a negative margin of its own (both in global.css), so
+     the glass comes to rest flush with the quote's bottom edge and the next
+     section starts there.
 
      The scope's own background is what shows if the canvas never paints at
      all — no WebGL *and* no 2D context. global.css leaves it bone; the script
@@ -47,7 +47,7 @@
      so that last-resort page darkens with the rest. -->
 <div
   id="hero-scope"
-  class="relative mb-[calc(var(--bg-overhang)*-1)]"
+  class="relative"
 >
   <div data-canvas-bg class="sticky top-0 h-[var(--bg-h)]" aria-hidden="true">
     <!-- Full-bleed clipping container; isolated so the inner clip-path

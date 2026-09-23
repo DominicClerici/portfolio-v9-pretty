@@ -583,21 +583,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
      unclipped-rectangle flashes. Keep clip-path out of the transition list.
      Its box is the spread's exactly, bleed included (see .we1-spread), so
      the door opens onto the whole screen and the script works in this box's
-     own coordinates, measured, rather than assuming it starts at 0,0.
-
-     Opacity just under 1 is what lets that bleed show. iOS Safari (from 26)
-     won't paint a fully opaque fixed layer under its bars, only between
-     them, so the door stopped at the bars and the bands filled in when the
-     spread took over at the end. Below 1 the layer is composited on its
-     own and runs under the bars with the rest of the door. 0.99 rather
-     than closer to 1, which an 8-bit alpha would round back up to opaque;
-     the page behind shows through at 1%, too little to see. */
+     own coordinates, measured, rather than assuming it starts at 0,0. */
   .we1-portal {
     display: none;
     position: fixed;
     inset: calc(-1 * var(--overlay-bleed)) 0;
     z-index: 45;
-    opacity: 0.99;
     background:
       radial-gradient(
           44% 36% at var(--wx, 78%) 6%,
@@ -636,6 +627,27 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     inset: calc(-1 * var(--overlay-bleed)) 0;
     z-index: 55;
     pointer-events: none;
+  }
+
+  /* iOS Safari: the door is part of the page rather than a layer over it.
+     Safari treats fixed layers apart from the page under its bars (it lays
+     them out between the bars, and they don't reliably paint under them),
+     so a fixed door either stopped at the bars or ran there out of step
+     with the rest of the screen. Page content is what Safari draws under
+     its bars as a matter of course, and the page is locked for as long as
+     the door is up, so the door is seated in the page, in place: on the
+     spread's own box, which the script measures and hands over as
+     --door-top/--door-h. It is then the same box as before, only drawn
+     with the page, bands and all, and in step with the window it grows
+     out of, which is page content too. */
+  @supports (-webkit-touch-callout: none) {
+    .we1-portal,
+    .we1-portal-lift {
+      position: absolute;
+      inset: auto 0;
+      top: var(--door-top, 0px);
+      height: var(--door-h, 100lvh);
+    }
   }
 
   .we1-portal-on {
@@ -1141,11 +1153,17 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // coordinates. It is not the viewport: in iOS Safari it bleeds past
       // the top and bottom of the screen (--overlay-bleed), and its origin is
       // wherever Safari puts a fixed box. So it is measured, off the spread,
-      // and everything the door draws is written relative to it.
+      // and everything the door draws is written relative to it. Where the
+      // portal and the lift are in the page rather than fixed (iOS Safari,
+      // see .we1-portal), this is also what seats them on it; measured with
+      // the page locked, so the seat holds for as long as the door is up.
       let box = { left: 0, top: 0, width: 0, height: 0 };
       const measureBox = (spread: HTMLElement) => {
         const r = measured(spread, () => spread.getBoundingClientRect());
         box = { left: r.left, top: r.top, width: r.width, height: r.height };
+        const s = section.getBoundingClientRect();
+        section.style.setProperty("--door-top", `${r.top - s.top}px`);
+        section.style.setProperty("--door-h", `${r.height}px`);
       };
 
       // The window's figure seated at its live on-screen rect, in the box's
