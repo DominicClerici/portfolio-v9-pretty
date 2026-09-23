@@ -70,13 +70,19 @@ const connect = [
        scrolling. Fixed to the *visual* viewport, it also covers the strip
        below an svh-tall footer when mobile chrome retracts.
 
-       Three layers: the photo itself (the real background, and all there is
-       without WebGL2 or under reduced motion), the heat-haze canvas drawn
-       pixel-for-pixel over the lake once its texture is up, and above md a
-       scrim that keeps the bone type legible against the peak and the near
-       water. The
-       wrap's own background is a tiny blur-up of whichever cut the <picture>
-       picks, so the text has something to sit on before the real one arrives.
+       The wrap itself carries no background colour: Safari (from iOS 26)
+       tints its toolbars from fixed elements' background colours, and
+       without one the page shows through them, edge to edge.
+
+       Inside it, the photo's frame: three layers, the photo itself (the real
+       background, and all there is without WebGL2 or under reduced motion),
+       the heat-haze canvas drawn pixel-for-pixel over the lake once its
+       texture is up, and above md a scrim that keeps the bone type legible
+       against the peak and the near water. The frame's own background is a
+       tiny blur-up of whichever cut the <picture> picks, so the text has
+       something to sit on before the real one arrives. The frame fills the
+       wrap, except in iOS Safari, where it is held at a size the toolbar
+       can't change (see the styles).
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
@@ -91,50 +97,52 @@ const connect = [
        loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900"
+    class="footer-canvas-wrap fixed inset-0 -z-10"
     style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
     aria-hidden="true"
   >
-    <picture>
-      <source
-        media={PORTRAIT}
-        type="image/avif"
-        data-srcset={photo.portrait.avif}
-        sizes={PORTRAIT_SIZES}
-      />
-      <source
-        media={PORTRAIT}
-        type="image/webp"
-        data-srcset={photo.portrait.webp}
-        sizes={PORTRAIT_SIZES}
-      />
-      <source
-        type="image/avif"
-        data-srcset={photo.landscape.avif}
-        sizes={LANDSCAPE_SIZES}
-      />
-      <img
-        class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-        data-srcset={photo.landscape.webp}
-        data-cuts={JSON.stringify({
-          landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
-          portrait: [
-            photo.portrait.width,
-            photo.portrait.height,
-            photo.portrait.rect,
-          ],
-        })}
-        sizes={LANDSCAPE_SIZES}
-        width={photo.landscape.width}
-        height={photo.landscape.height}
-        alt=""
-        decoding="async"
-        fetchpriority="low"
-      />
-    </picture>
-    <!-- Placed and sized by the haze over the lake's band of the photo -->
-    <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-    <div class="footer-scrim absolute inset-0"></div>
+    <div class="footer-photo-frame absolute inset-x-0 top-0 h-full">
+      <picture>
+        <source
+          media={PORTRAIT}
+          type="image/avif"
+          data-srcset={photo.portrait.avif}
+          sizes={PORTRAIT_SIZES}
+        />
+        <source
+          media={PORTRAIT}
+          type="image/webp"
+          data-srcset={photo.portrait.webp}
+          sizes={PORTRAIT_SIZES}
+        />
+        <source
+          type="image/avif"
+          data-srcset={photo.landscape.avif}
+          sizes={LANDSCAPE_SIZES}
+        />
+        <img
+          class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
+          data-srcset={photo.landscape.webp}
+          data-cuts={JSON.stringify({
+            landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
+            portrait: [
+              photo.portrait.width,
+              photo.portrait.height,
+              photo.portrait.rect,
+            ],
+          })}
+          sizes={LANDSCAPE_SIZES}
+          width={photo.landscape.width}
+          height={photo.landscape.height}
+          alt=""
+          decoding="async"
+          fetchpriority="low"
+        />
+      </picture>
+      <!-- Placed and sized by the haze over the lake's band of the photo -->
+      <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+      <div class="footer-scrim absolute inset-0"></div>
+    </div>
   </div>
 
   <div class="relative z-10 h-full flex flex-col">
@@ -344,13 +352,30 @@ const connect = [
 <style>
   /* The blur-up, cut and pinned to match whichever photo the <picture>
      picks. */
-  .footer-canvas-wrap {
+  .footer-photo-frame {
     background: var(--blur-landscape) center top / cover;
   }
   /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
-    .footer-canvas-wrap {
+    .footer-photo-frame {
       background-image: var(--blur-portrait);
+    }
+  }
+
+  /* iOS Safari only (-webkit-touch-callout exists nowhere else). Its bottom
+     toolbar grows and shrinks the viewport, and with it the fixed wrap, as
+     it comes and goes. A frame that followed the wrap would re-fit the photo
+     each time, rescaling it about its top edge so the lake slid up and down
+     with the toolbar. So here the frame keeps the height of the viewport
+     with the toolbar away (lvh), pinned to the top of the screen, and the
+     toolbar only covers and uncovers its foot. The wrap is left as it is,
+     so what Safari samples for its toolbars and draws beneath them does not
+     change. Never shorter than the wrap, so the photo always covers it.
+     100vh first for iOS before 15.4, where it is the large viewport too. */
+  @supports (-webkit-touch-callout: none) {
+    .footer-photo-frame {
+      height: max(100%, 100vh);
+      height: max(100%, 100lvh);
     }
   }
 
@@ -523,7 +548,7 @@ const connect = [
       if (haze || !decoded) return;
       haze = createHeatHaze({
         canvas,
-        frame: footer.querySelector<HTMLElement>(".footer-canvas-wrap")!,
+        frame: footer.querySelector<HTMLElement>(".footer-photo-frame")!,
         img: photo,
         source,
         onReady: () => canvas.classList.add("is-ready"),

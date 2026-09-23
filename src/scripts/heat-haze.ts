@@ -425,9 +425,10 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     draw(lastT)
   }
 
-  // The frame is viewport-fixed, so it tracks the viewport — including the
+  // The frame is viewport-sized, so it tracks the viewport — including the
   // mobile URL bar showing and hiding, which the footer's own box can miss
-  // behind its min-height. Coalesced onto a frame.
+  // behind its min-height (except in iOS Safari, where the frame is held at
+  // the large viewport). Coalesced onto a frame.
   let resizePending = false
   new ResizeObserver(() => {
     if (resizePending) return
