@@ -163,13 +163,6 @@ const connect = [
   </div>
 
   <div class="footer-content relative z-10 shrink-0 flex flex-col">
-    <!-- Phones: at the very bottom of a page, Safari (from iOS 26) paints
-         the strip under its toolbar (and, with the toolbar away, over the
-         home indicator) with the page's background colour, and draws no
-         fixed content there — the backdrop included. This box ends exactly
-         where that strip begins, so the photo fades into the same colour
-         here and runs on into it rather than stopping at a hard edge. -->
-    <div class="footer-edge-fade md:hidden absolute inset-x-0 bottom-0 -z-10 pointer-events-none"></div>
     <!-- Cap bar: the previous (contact) section's color, fully-rounded bottom
          corners. Mirrors the page header's layout (same h-20/md:py-7/px) so the
          bar height tracks the header exactly. The header echo inside fades in
@@ -397,19 +390,6 @@ const connect = [
   }
   .footer-content {
     height: var(--box-h);
-  }
-  /* Into the page's background (body is bg-n-950), eased so it only
-     closes in over the last stretch, under the copyright line. */
-  .footer-edge-fade {
-    height: 88px;
-    background: linear-gradient(
-      to bottom,
-      rgb(10 10 10 / 0) 0%,
-      rgb(10 10 10 / 0.2) 35%,
-      rgb(10 10 10 / 0.55) 65%,
-      rgb(10 10 10 / 0.85) 88%,
-      var(--color-n-950) 100%
-    );
   }
 
   /* The backdrop (see the markup): never resized, and itself opaque with
