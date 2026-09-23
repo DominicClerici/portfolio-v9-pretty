@@ -1,5 +1,15 @@
 ---
 import ActionButton from "./ActionButton.astro";
+import photo from "../data/footer-photo.json";
+
+// Screens that get the portrait cut of the road photo. Keep in step with the
+// same query in the styles below, which picks its blur-up.
+const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
+// Each cut is cover-fitted to a screen-tall frame, so its displayed width is
+// the screen's height times its aspect ratio (3:4 portrait, 3:2 full) —
+// unless the screen is wider than that, when the width fills it.
+const PORTRAIT_SIZES = "(min-aspect-ratio: 3/4) 100vw, 75vh";
+const FULL_SIZES = "(min-aspect-ratio: 3/2) 100vw, 150vh";
 
 const year = new Date().getFullYear();
 
@@ -40,50 +50,77 @@ const connect = [
 
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-clip"
 >
-  <!-- The road backdrop is viewport-fixed and sits *behind* the whole page
-       (-z-10), so the opaque sections above the footer hide it and the footer
-       — which has no background of its own — is the only window onto it. That
-       window opening as the footer rises is the reveal, and because the pin is
-       real CSS fixed positioning rather than a scroll-driven transform, the
-       photo cannot drift on compositor-driven (touch) scrolling. Fixed to the
-       *visual* viewport, it also covers the strip below an svh-tall footer
-       when mobile chrome retracts.
+  <!-- The road backdrop sits *behind* the whole page (-z-10), so the opaque
+       sections above the footer hide it and the footer — which has no
+       background of its own — is the only window onto it. That window opening
+       as the footer rises is the reveal. The photo holds still meanwhile by
+       real CSS sticky positioning, not a scroll-driven transform, so it cannot
+       drift on compositor-driven (touch) scrolling: the stage is pinned to the
+       bottom of the screen inside a track that reaches a screen's height up
+       from the footer, and comes to rest at its natural place, the footer's
+       bottom, exactly as the page reaches its end.
+
+       It was once position: fixed, but a fixed layer is placed against the
+       viewport on every frame, and mobile Safari's momentum overscroll at the
+       foot of the page places it inconsistently from one frame to the next,
+       which flickered the scrim under the giant name. At rest, and all through
+       an overscroll past the end, the sticky stage is simply in its natural
+       place, moving with the page like any other content, so there is nothing
+       to place. The track's overflow above the footer is clipped (overflow:
+       clip, which unlike hidden leaves sticky tied to the viewport).
 
        Three layers: the photo itself (the real background, and all there is
        without WebGL2 or under reduced motion), the heat-haze canvas drawn
-       pixel-for-pixel over it once its texture is up, and a scrim that keeps
-       the bone type legible against the sky and the asphalt while leaving the
-       horizon — where the shimmer is — clear. The photo's frame carries a
-       24px blur-up of it as its background, so the text has something to sit
+       pixel-for-pixel over its horizon once its texture is up, and a scrim
+       that keeps the bone type legible against the sky and the asphalt while
+       leaving the horizon — where the shimmer is — clear. A 24px blur-up of
+       the photo is the stage's background, so the text has something to sit
        on before the real one arrives.
 
-       The backdrop is sized off the large viewport, not the live one, and
-       bleeds past both screen edges (see the styles below) — the fix for a
-       flicker under the giant name on mobile Safari's momentum overscroll.
-
-       The photo's srcset is held back in data-srcset: as a fixed element it
-       is always "in the viewport" to the browser's lazy loader and would load
-       with the hero. It is set as the footer approaches instead (see script).
-       Its alt is empty — the scene is decorative. -->
-  <div class="footer-canvas-wrap fixed inset-x-0 -z-10 bg-n-900" aria-hidden="true">
-    <div
-      class="footer-photo-frame footer-frame bg-cover bg-center"
-      style="background-image:url(data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoR4OsC//s/+A8r1dXfbR+T1KAD9UHdKkFssr1uAGAtq9AzTe97a56fnZN1o/RSh0O/HUusSXRqqGG9iaHjeCyQ4jG5bY0mhWjPEq14ZONnmyxP6AAA=)"
-    >
-      <img
-        class="footer-photo absolute inset-0 w-full h-full object-cover"
-        data-srcset="/photos/footer-road.webp 1280w, /photos/footer-road-2x.webp 2000w"
-        sizes="100vw"
-        width="2000"
-        height="1333"
-        alt=""
-        decoding="async"
-      />
+       The photo comes in two cuts (see footer-photos.mjs): the full frame for
+       landscape screens, and a tighter portrait crop for phones and portrait
+       tablets, each in AVIF with a WebP fallback. Their srcsets are held back
+       in data-srcset and set as the footer approaches (see script), so the
+       photo never competes with the hero for bandwidth. Its alt is empty —
+       the scene is decorative. -->
+  <div
+    class="footer-track absolute inset-x-0 -z-10 flex flex-col justify-end pointer-events-none"
+    style={`--blur-full:url(${photo.full.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
+    aria-hidden="true"
+  >
+    <div class="footer-stage sticky shrink-0 w-full bg-n-900">
+      <div class="footer-frame">
+        <picture>
+          <source
+            media={PORTRAIT}
+            type="image/avif"
+            data-srcset={photo.portrait.avif}
+            sizes={PORTRAIT_SIZES}
+          />
+          <source
+            media={PORTRAIT}
+            type="image/webp"
+            data-srcset={photo.portrait.webp}
+            sizes={PORTRAIT_SIZES}
+          />
+          <source type="image/avif" data-srcset={photo.full.avif} sizes={FULL_SIZES} />
+          <img
+            class="footer-photo absolute inset-0 w-full h-full object-cover"
+            data-srcset={photo.full.webp}
+            data-portrait-rect={JSON.stringify(photo.portrait.rect)}
+            sizes={FULL_SIZES}
+            width={photo.full.width}
+            height={photo.full.height}
+            alt=""
+            decoding="async"
+          />
+        </picture>
+        <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+      </div>
+      <div class="footer-scrim absolute inset-0"></div>
     </div>
-    <canvas id="footer-canvas" class="footer-frame"></canvas>
-    <div class="footer-scrim absolute inset-0"></div>
   </div>
 
   <div class="relative z-10 h-full flex flex-col">
@@ -248,54 +285,51 @@ const connect = [
 </footer>
 
 <style>
-  /* The backdrop's box. Pinned with inset-0 it tracked the *live* viewport,
-     so on mobile Safari every collapse or expand of the toolbar resized it —
-     re-laying out the scrim's gradient and re-allocating (and so clearing)
-     the WebGL canvas mid-scroll. Momentum scrolling into the end of the page
-     is exactly when Safari brings its toolbar back, and the fixed layer, being
-     positioned by the UI process while it is resized by the page, briefly
-     falls out of step with the screen: the flicker under the name on a flung
-     overscroll that a dragged one, with the toolbar at rest, never shows.
+  /* The stage's geometry. Like the hero's pinned background (see --bg-h in
+     global.css), it is sized off the large viewport, which never changes
+     mid-scroll — so mobile Safari's toolbar showing and hiding neither
+     re-lays out the scrim nor re-allocates the haze canvas — and it bleeds
+     --bg-overhang past the screen's top and bottom edges, to cover whatever
+     Safari's translucent toolbars show through. The overhang is 0 on
+     desktop.
 
-     So, as with the hero's pinned background (see --bg-h in global.css), it
-     is sized off the large viewport, which never changes mid-scroll, and
-     bleeds --bg-overhang past the top and bottom of the screen, so a frame
-     where the layer lags still lands on more backdrop rather than on the page
-     behind it. The overhang is 0 on desktop, where this is exactly inset-0. */
-  .footer-canvas-wrap {
-    top: calc(-1 * var(--bg-overhang));
+     The track reaches up from the footer far enough for the stage to stay
+     pinned to the screen's bottom (the sticky offset, less the overhang) for
+     as long as any of the footer shows, and down by the overhang, so the stage
+     comes to rest at its natural place with the page's end. */
+  .footer-track {
+    top: calc(-100lvh - 2 * var(--bg-overhang));
+    bottom: calc(-1 * var(--bg-overhang));
+  }
+  .footer-stage {
+    bottom: calc(-1 * var(--bg-overhang));
     height: calc(100lvh + 2 * var(--bg-overhang));
-    overflow: hidden;
-
-    /* Crop of the photo: zoomed in on its centre by --photo-zoom, then moved
-       down by --photo-shift of the screen's height. The haze reads both back
-       (see script), so its shader lands on the same crop. */
-    --photo-zoom: 1.4;
-    --photo-shift: 0.2;
+    background: var(--blur-full) center / cover;
   }
 
-  /* The screen proper, inside the overhang: what the photo is cropped to and
-     what the haze canvas covers. The zoomed photo spills past it into the
-     overhang on its own; the canvas has no need to, since the shimmer keeps
-     to the horizon, far from either edge. */
+  /* The screen proper, inside the overhang: what the photo is cover-fitted
+     to and the haze canvas is placed in (by script, over the horizon). The
+     blur-up is repeated on it so it lines up with the photo exactly. */
   .footer-frame {
     position: absolute;
     left: 0;
     top: var(--bg-overhang);
     width: 100%;
     height: 100lvh;
+    overflow: hidden;
+    background: var(--blur-full) center / cover;
   }
 
-  /* The blur-up and the photo crop together. Transforms apply right to left:
-     the zoom about the centre, then the shift, as a share of the frame. */
-  .footer-photo-frame {
-    transform: translateY(calc(var(--photo-shift) * 100%))
-      scale(var(--photo-zoom));
+  /* Same query as PORTRAIT in the frontmatter. */
+  @media (max-width: 1023px) and (orientation: portrait) {
+    .footer-stage,
+    .footer-frame {
+      background-image: var(--blur-portrait);
+    }
   }
 
-  /* Holds the haze canvas back until it has drawn a frame over the photo. It
-     is opaque (alpha: false), so shown any earlier it would be a black sheet;
-     once drawn it matches the <img> beneath pixel-for-pixel, so the fade only
+  /* Holds the haze canvas back until it has drawn a frame over the photo.
+     Once drawn it matches the <img> beneath pixel-for-pixel, so the fade only
      brings the shimmer up rather than swapping one picture for another. */
   #footer-canvas {
     opacity: 0;
@@ -426,19 +460,39 @@ const connect = [
     let haze: HeatHaze | null = null;
     let footerVisible = false;
 
+    // The photo's current source, for the haze: its files are named for
+    // their cut and width (footer-road-<cut>-<width>.<ext>), and the portrait
+    // cut's place in the full photo rides on the <img>.
+    const portraitRect: number[] = JSON.parse(photo.dataset.portraitRect!);
+    const source = () => {
+      const [, cut, width] = /-(full|portrait)-(\d+)\.\w+$/.exec(
+        photo.currentSrc,
+      )!;
+      return {
+        width: Number(width),
+        rect: cut === "portrait" ? portraitRect : [0, 0, 1, 1],
+      };
+    };
+
     function loadPhoto() {
       if (photo.srcset) return;
+      // Sources first, so the <img> chooses among all of them when its own
+      // srcset lands.
+      for (const el of footer.querySelectorAll<HTMLSourceElement>(
+        "picture source",
+      )) {
+        el.srcset = el.dataset.srcset!;
+      }
       photo.srcset = photo.dataset.srcset!;
       if (reducedMotion) return;
       photo
         .decode()
         .then(() => {
-          const crop = getComputedStyle(photo);
           haze = createHeatHaze({
             canvas,
+            frame: footer.querySelector<HTMLElement>(".footer-frame")!,
             img: photo,
-            zoom: parseFloat(crop.getPropertyValue("--photo-zoom")) || 1,
-            shift: parseFloat(crop.getPropertyValue("--photo-shift")) || 0,
+            source,
             onReady: () => canvas.classList.add("is-ready"),
             onLost: () => {
               canvas.classList.remove("is-ready");
@@ -448,6 +502,9 @@ const connect = [
           if (footerVisible && !document.hidden) haze?.start();
         })
         .catch(() => {});
+      // Turning a tablet or phone switches between the cuts; the haze
+      // re-reads the photo once the new one is in.
+      photo.addEventListener("load", () => haze?.reload());
     }
 
     new IntersectionObserver(

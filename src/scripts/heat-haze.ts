@@ -31,11 +31,14 @@
  *     shimmer runs along the horizon either side of the road, level with the
  *     road haze's top edge.
  *
- * All of it is measured in *image* space, so it stays glued to the road
- * however `object-fit: cover` crops the photo, and through the zoom and shift
- * the footer crops it further with. The <img> underneath is the
- * real background — this canvas only draws over it once the texture is up,
- * and simply never appears without WebGL2 or under reduced motion.
+ * All of it is measured in the *full photo's* UV space, so it stays glued to
+ * the road however `object-fit: cover` crops the photo, and whichever cut of
+ * it (full or portrait) the page has loaded. The <img> underneath is the real
+ * background: this canvas covers only the band of it the shimmer lives in,
+ * is transparent wherever the shimmer is not, and never appears at all
+ * without WebGL2 or under reduced motion. Kept to that band it can render at
+ * the screen's full pixel density cheaply, so the photo stays as crisp under
+ * the canvas as around it.
  */
 
 /* ── Where the road is ──
@@ -100,20 +103,37 @@ const LINE_FEATHER = 0.025
 const LINE_HALF_H = 0.0035 // gaussian half-height, UV y (≈5px of the photo)
 const LINE_STRENGTH = 0.8 // peak, relative to the road haze at the crest
 
+/* ── Canvas band ──
+   Everything above reaches no higher than the horizon strip's faint top edge
+   (≈0.427) and no lower than the road haze's fade (CREST_Y + FADE[1] × REACH
+   ≈ 0.617), so the canvas spans just CANVAS_Y of the photo's height, full
+   width. The texture spans a little more, TEX_Y, for the distortion and the
+   mirage (which reads up to ≈0.02 above the crest) to sample from. */
+const CANVAS_Y = [0.42, 0.62]
+const TEX_Y = [0.4, 0.64]
+// Device pixel ratio ceiling. The band is small enough to afford full density
+// on any current screen.
+const MAX_DPR = 3
+
 export type HeatHaze = {
   start(): void
   stop(): void
   resize(): void
+  /** re-read the photo after it has loaded a different source */
+  reload(): void
 }
 
 export type HeatHazeOptions = {
   canvas: HTMLCanvasElement
-  /** the decoded background photo; its natural size drives the cover fit */
+  /** the box the photo is cover-fitted to; the canvas is placed inside it */
+  frame: HTMLElement
+  /** the decoded background photo */
   img: HTMLImageElement
-  /** the photo's zoom about its centre, on top of the cover fit (default 1) */
-  zoom?: number
-  /** then its move down, as a share of the canvas height (default 0) */
-  shift?: number
+  /** its current source: the file's width in pixels (naturalWidth won't do,
+   *  as for a srcset pick it is scaled by the pick's density) and where it
+   *  sits in the full photo, as UV (x, y, width, height) — [0, 0, 1, 1]
+   *  unless it is a cut of it */
+  source: () => { width: number; rect: readonly number[] }
   /** fires once the first distorted frame is on the canvas */
   onReady?: () => void
   /** fires if the GL context is lost; the caller should hide the canvas */
@@ -122,13 +142,14 @@ export type HeatHazeOptions = {
 
 /** Returns null when WebGL2 is unavailable — the photo alone is the fallback. */
 export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
-  const { canvas, img, zoom = 1, shift = 0, onReady, onLost } = opts
+  const { canvas, frame, img, source, onReady, onLost } = opts
 
   let gl: WebGL2RenderingContext | null = null
   try {
     gl = canvas.getContext("webgl2", {
       antialias: false,
-      alpha: false,
+      alpha: true,
+      premultipliedAlpha: true,
       depth: false,
       powerPreference: "low-power",
     })
@@ -147,9 +168,9 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     precision highp float;
     uniform sampler2D uImg;
     uniform vec2 uRes;     // canvas size, device px
-    uniform vec2 uCenter;  // where the image centre lands, device px (y-down)
-    uniform vec2 uScale;   // device px -> image UV (the cover fit and zoom)
-    uniform float uAspect; // image width / height
+    uniform vec4 uToUv;    // canvas device px (y-down) -> photo UV: xy * px + zw
+    uniform vec4 uTexRect; // the texture's rect in photo UV (x, y, w, h)
+    uniform float uAspect; // full photo width / height
     uniform float uTime;
     uniform float uLod;    // mip level matching the cover fit's minification
     out vec4 outColor;
@@ -202,10 +223,15 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       return vec4(warp, rip, bn);
     }
 
+    // The photo at UV p, from the texture's band of it
+    vec4 photo(vec2 p, float lod) {
+      return textureLod(uImg, clamp((p - uTexRect.xy) / uTexRect.zw, 0.0, 1.0), lod);
+    }
+
     void main() {
       // gl_FragCoord is y-up; the image is y-down
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
-      vec2 uv = (px - uCenter) * uScale + 0.5;
+      vec2 uv = px * uToUv.xy + uToUv.zw;
 
       // dy: how far below the crest (negative above it)
       float dy = uv.y - CREST_Y;
@@ -241,8 +267,12 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
                * (1.0 - smoothstep(${f1(LINE_X[1])}, ${f1(LINE_X[1] + LINE_FEATHER)}, uv.x));
       float mLine = exp(-ly * ly) * lx * ${f1(LINE_STRENGTH)} * (1.0 - mRoad);
 
-      if (mRoad + mLine < 0.004) {
-        outColor = textureLod(uImg, uv, uLod);
+      // Transparent where there is nothing to distort, so the <img> beneath
+      // shows through; faded in over the mask's faint fringe, where what the
+      // canvas draws is all but identical to it anyway
+      float alpha = smoothstep(0.004, 0.04, mRoad + mLine);
+      if (alpha == 0.0) {
+        outColor = vec4(0.0);
         return;
       }
 
@@ -277,7 +307,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
 
       // Explicit LOD: these reads sit behind the early-out, where implicit
       // derivatives are undefined
-      vec4 col = textureLod(uImg, clamp(suv, 0.0, 1.0), uLod + blur);
+      vec4 col = photo(suv, uLod + blur);
 
       // Inferior mirage: just past the crest the asphalt mirrors what sits
       // above it, flickering with the warp
@@ -285,10 +315,10 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       float mir = onRoad * strip * smoothstep(-0.15, 0.15, hr.x) * ${f1(MIRAGE * INTENSITY)};
       if (mir > 0.001) {
         vec2 ruv = vec2(suv.x, CREST_Y - dy * 1.3 + d.y * 3.0);
-        col = mix(col, textureLod(uImg, clamp(ruv, 0.0, 1.0), uLod + blur + 0.5), mir);
+        col = mix(col, photo(ruv, uLod + blur + 0.5), mir);
       }
 
-      outColor = col;
+      outColor = vec4(col.rgb * alpha, alpha);
     }`
 
   function compile(type: number, src: string) {
@@ -325,28 +355,23 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   gl.enableVertexAttribArray(0)
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
-  // The photo, mipmapped so the blur patches are a free LOD bias
+  // The photo's band (TEX_Y), mipmapped so the blur patches are a free LOD
+  // bias. Filled in by reload().
   const tex = gl.createTexture()
   gl.activeTexture(gl.TEXTURE0)
   gl.bindTexture(gl.TEXTURE_2D, tex)
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-  gl.generateMipmap(gl.TEXTURE_2D)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
   const uRes = gl.getUniformLocation(prog, "uRes")
-  const uCenter = gl.getUniformLocation(prog, "uCenter")
-  const uScale = gl.getUniformLocation(prog, "uScale")
+  const uToUv = gl.getUniformLocation(prog, "uToUv")
+  const uTexRect = gl.getUniformLocation(prog, "uTexRect")
   const uAspect = gl.getUniformLocation(prog, "uAspect")
   const uTime = gl.getUniformLocation(prog, "uTime")
   const uLod = gl.getUniformLocation(prog, "uLod")
   gl.uniform1i(gl.getUniformLocation(prog, "uImg"), 0)
-
-  const iw = img.naturalWidth
-  const ih = img.naturalHeight
-  gl.uniform1f(uAspect, iw / ih)
 
   let lost = false
   canvas.addEventListener(
@@ -360,9 +385,48 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     { once: true },
   )
 
+  // The source the texture was cut from: its natural size and where it sits
+  // in the full photo. Kept apart from the <img>, which may already be
+  // loading its next source, so the mapping always matches the texture.
+  let src: { nw: number; nh: number; rect: readonly number[] } | null = null
+  let loadId = 0
+
+  function reload() {
+    const id = ++loadId
+    if (!img.naturalWidth || !img.naturalHeight) return
+    const { width: nw, rect } = source()
+    const nh = Math.round((nw * img.naturalHeight) / img.naturalWidth)
+    // This source's rows that cover TEX_Y
+    const toRow = (v: number) => ((v - rect[1]) / rect[3]) * nh
+    const r0 = Math.max(0, Math.floor(toRow(TEX_Y[0])))
+    const r1 = Math.min(nh, Math.ceil(toRow(TEX_Y[1])))
+    if (r1 <= r0) return
+    createImageBitmap(img, 0, r0, nw, r1 - r0)
+      .then((bmp) => {
+        if (id !== loadId || lost) {
+          bmp.close()
+          return
+        }
+        gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, gl!.RGBA, gl!.UNSIGNED_BYTE, bmp)
+        gl!.generateMipmap(gl!.TEXTURE_2D)
+        bmp.close()
+        src = { nw, nh, rect }
+        gl!.uniform4f(
+          uTexRect,
+          rect[0],
+          rect[1] + (r0 / nh) * rect[3],
+          rect[2],
+          ((r1 - r0) / nh) * rect[3],
+        )
+        gl!.uniform1f(uAspect, nw / rect[2] / (nh / rect[3]))
+        resize()
+      })
+      .catch(() => {})
+  }
+
   let ready = false
   function draw(tSec: number) {
-    if (lost) return
+    if (lost || !src) return
     gl!.uniform1f(uTime, tSec)
     gl!.drawArrays(gl!.TRIANGLES, 0, 3)
     if (!ready) {
@@ -371,28 +435,48 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     }
   }
 
-  /* Matches CSS `object-fit: cover; object-position: center` under a
-     `translateY(shift) scale(zoom)` exactly, so the canvas lands
-     pixel-for-pixel on the <img> it is drawn over. */
+  /* Sizes and places the canvas over CANVAS_Y of the photo as CSS
+     `object-fit: cover; object-position: center` lays it out in the frame,
+     snapped to whole device pixels, and maps the canvas's pixels back to
+     photo UV so it lands pixel-for-pixel on the <img> it is drawn over. */
   function resize() {
-    if (lost) return
-    const rect = canvas.getBoundingClientRect()
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-    canvas.width = Math.max(1, Math.round(rect.width * dpr))
-    canvas.height = Math.max(1, Math.round(rect.height * dpr))
+    if (lost || !src) return
+    const { nw, nh, rect } = src
+    const { width: fw, height: fh } = frame.getBoundingClientRect()
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
+    // The cover fit: CSS px per source px, and the source's top-left corner
+    const s = Math.max(fw / nw, fh / nh)
+    const ox = (fw - nw * s) / 2
+    const oy = (fh - nh * s) / 2
+    // Photo UV y -> frame device px
+    const yAt = (v: number) => (oy + ((v - rect[1]) / rect[3]) * nh * s) * dpr
+    const maxY = Math.round(fh * dpr)
+    const top = Math.min(maxY, Math.max(0, Math.floor(yAt(CANVAS_Y[0]))))
+    const bottom = Math.min(maxY, Math.max(top, Math.ceil(yAt(CANVAS_Y[1]))))
+
+    canvas.style.top = `${top / dpr}px`
+    canvas.style.height = `${(bottom - top) / dpr}px`
+    canvas.width = Math.max(1, Math.round(fw * dpr))
+    canvas.height = Math.max(1, bottom - top)
     gl!.viewport(0, 0, canvas.width, canvas.height)
-    const s = Math.max(canvas.width / iw, canvas.height / ih) * zoom
     gl!.uniform2f(uRes, canvas.width, canvas.height)
-    gl!.uniform2f(uCenter, 0.5 * canvas.width, (0.5 + shift) * canvas.height)
-    gl!.uniform2f(uScale, 1 / (iw * s), 1 / (ih * s))
-    gl!.uniform1f(uLod, Math.max(0, -Math.log2(s)))
+
+    // Canvas px -> frame CSS px -> photo UV
+    const kx = fw / canvas.width
+    gl!.uniform4f(
+      uToUv,
+      (kx / (nw * s)) * rect[2],
+      (1 / dpr / (nh * s)) * rect[3],
+      rect[0] - (ox / (nw * s)) * rect[2],
+      rect[1] + ((top / dpr - oy) / (nh * s)) * rect[3],
+    )
+    // Device px per texel sets the base mip level
+    gl!.uniform1f(uLod, Math.max(0, -Math.log2((s * canvas.width) / fw)))
     draw(lastT)
   }
 
-  // The canvas is viewport-fixed, so it tracks the viewport. (The footer sizes
-  // it off the large viewport, so mobile toolbar show/hide doesn't reach it —
-  // only real viewport changes do.) Coalesced onto a frame; the first call is
-  // the observer's initial notification.
+  // The frame is sized off the large viewport, so mobile toolbar show/hide
+  // doesn't reach it — only real viewport changes do. Coalesced onto a frame.
   let resizePending = false
   new ResizeObserver(() => {
     if (resizePending) return
@@ -401,7 +485,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       resizePending = false
       resize()
     })
-  }).observe(canvas)
+  }).observe(frame)
 
   let rafId: number | null = null
   let lastT = 0
@@ -419,5 +503,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     rafId = null
   }
 
-  return { start, stop, resize }
+  reload()
+
+  return { start, stop, resize, reload }
 }

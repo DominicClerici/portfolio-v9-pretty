@@ -55,6 +55,19 @@ pnpm build
 
 The script scans the built HTML in `dist/` (where all template expressions have been resolved to real text), figures out which characters each font needs, and trims the font files down to just those glyphs. It prints a summary showing the before/after sizes.
 
+## Footer Photo
+
+The footer's desert road is cut from a full-resolution original in `photos-src/` ([photo](https://unsplash.com/photos/A-NVHPka9Rk) by Diego Jimenez on Unsplash). A Node script renders every size the page serves into `public/photos/` and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
+
+- **full frame** for landscape screens, 1280w up to 5120w, so 4K and 5K (ultrawide included) monitors get a pixel per pixel
+- **portrait crop** for phones and portrait tablets: zoomed into the frame and cut in the file itself, so none of the source's resolution is spent on pixels that would be cropped off screen
+
+Each size is written as AVIF with a WebP fallback. To change the crop, sizes or quality, edit the constants at the top of `footer-photos.mjs` and rerun it:
+
+```bash
+pnpm photos:footer
+```
+
 ## License
 
 There isn't one. This project is completely free to use however you'd like. Clone it and swap in your own name, tear it apart and rebuild it into something new, or lift pieces of it for your own portfolio. Credit is always appreciated but never required. If it helps you land a job or make a new connection, that's more than enough for me.

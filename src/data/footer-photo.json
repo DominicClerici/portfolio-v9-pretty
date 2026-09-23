@@ -1,0 +1,28 @@
+{
+  "full": {
+    "rect": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "width": 5472,
+    "height": 3648,
+    "avif": "/photos/footer-road-full-1280.avif 1280w, /photos/footer-road-full-1920.avif 1920w, /photos/footer-road-full-2560.avif 2560w, /photos/footer-road-full-3840.avif 3840w, /photos/footer-road-full-5120.avif 5120w",
+    "webp": "/photos/footer-road-full-1280.webp 1280w, /photos/footer-road-full-1920.webp 1920w, /photos/footer-road-full-2560.webp 2560w, /photos/footer-road-full-3840.webp 3840w, /photos/footer-road-full-5120.webp 5120w",
+    "placeholder": "data:image/webp;base64,UklGRp4AAABXRUJQVlA4IJIAAAAwBQCdASoYABAAPrVKn0onJCKhsAgA4BaJbACdMoR3Hvrt/9Sga/2frzsy+Txh8c4EMAD9UwY+5EzY5DMgpbZTFybOxT6k7tJu/aaCbitb1iaxS4EwFb+0A/Wqt2nOsEP6F51SWG3/d/hPWh6idCljyJJ53CX4oaz1QiR/GqlWmm5Y12irVml+csXRPlbtCZAAAA=="
+  },
+  "portrait": {
+    "rect": [
+      0.33863304093567254,
+      0.0805921052631579,
+      0.322733918128655,
+      0.6452850877192983
+    ],
+    "width": 1766,
+    "height": 2354,
+    "avif": "/photos/footer-road-portrait-900.avif 900w, /photos/footer-road-portrait-1320.avif 1320w, /photos/footer-road-portrait-1766.avif 1766w",
+    "webp": "/photos/footer-road-portrait-900.webp 900w, /photos/footer-road-portrait-1320.webp 1320w, /photos/footer-road-portrait-1766.webp 1766w",
+    "placeholder": "data:image/webp;base64,UklGRrgAAABXRUJQVlA4IKwAAACQBQCdASoSABgAPrVOoUwnJCMiKAqo4BaJZACxHxqDBb/4BpbeA6KvzqYS73jGf+Atg5hGCAD+cWj7J6LeYz7JWWUPhe/QI3tiBuC/PVCBOO/f+POxX6khTdqfmMAOvif/hZZhXxRdtgeqljds0/fF3vqeqB6RdGCsFIqpkglLTjfFxFPNLdc9/iSuId6tg9+PAs3Xi8kQd8Zd6NyDPnq2gJPG4VB1mk/4AAAA"
+  }
+}
