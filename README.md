@@ -62,7 +62,7 @@ The footer's backdrop (Mount Shuksan over Picture Lake) is cut from a full-resol
 - **landscape cut** for landscape screens: the whole photo, pinned to its top centre so the peak always shows, from 1280w up to its full 4340w
 - **portrait cut** for phones and portrait tablets: cropped at the bottom only as far as it takes for the lake to fill the lower 25% of a tall screen, and trimmed to 3:4 about the centre, with a faint dark fade baked into its foot to keep the name legible over the lake
 
-Both are cut in the files themselves, so no pixels are sent only to be cropped off screen. Each size is written as AVIF with a WebP fallback. The page starts loading the photo once it has itself finished loading and gone idle, at low priority, so the footer is ready before anyone scrolls to it without holding anything else up. To change the crops, sizes or quality, edit the constants at the top of `footer-photos.mjs` and rerun it:
+Both are cut in the files themselves, so no pixels are sent only to be cropped off screen. The script also samples each cut's top edge into a sky gradient, which fills the strip above the photo when a phone's toolbars retract, so the footer never has to resize or rescale the photo. Each size is written as AVIF with a WebP fallback. The page starts loading the photo once it has itself finished loading and gone idle, at low priority, so the footer is ready before anyone scrolls to it without holding anything else up. To change the crops, sizes or quality, edit the constants at the top of `footer-photos.mjs` and rerun it:
 
 ```bash
 pnpm photos:footer

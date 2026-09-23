@@ -25,6 +25,11 @@
  * Both are baked into the files rather than applied in CSS, so no pixels are
  * sent only to be cropped off screen.
  *
+ * With each cut goes its sky: the colour along its top edge, as the stops of
+ * a left-to-right gradient. On phones the footer is taller than the photo by
+ * however much room the browser's toolbars can give back, and that strip
+ * above the photo is painted with it, so the sky runs on seamlessly.
+ *
  * Each size is written as AVIF and as WebP (the fallback). Both are
  * downscaled from the source with Lanczos and encoded at settings chosen to
  * stay visually lossless on the photo's smooth sky, where banding would show
@@ -53,7 +58,7 @@ const WATER_SHARE = 0.25
 // The fade at the portrait cut's foot: clear down to `from` (a share of the
 // cut's height, here just above the water), easing to `alpha` of the site's
 // ink (rgb 10 10 10) at the bottom edge, gently at first.
-const PORTRAIT_FADE = { from: 0.7, alpha: 0.5, ease: 1.6 }
+const PORTRAIT_FADE = { from: 0.7, alpha: 0.6, ease: 2 }
 // Width over height of the portrait cut: wide enough to cover a portrait
 // tablet (3:4) as well as any phone, which shows the middle of it.
 const PORTRAIT_ASPECT = 3 / 4
@@ -65,6 +70,9 @@ const PORTRAIT_ASPECT = 3 / 4
 // crop's native size.
 const LANDSCAPE_WIDTHS = [1280, 1920, 2560, 3840, 5120]
 const PORTRAIT_WIDTHS = [900, 1320, 1900, 2280]
+
+// Colour samples across the top edge for each cut's sky gradient
+const SKY_STOPS = 12
 
 const AVIF = { quality: 62, effort: 6 }
 const WEBP = { quality: 84, effort: 6, smartSubsample: true }
@@ -129,6 +137,25 @@ async function renderSet(label, region, widths, fade) {
       console.log(`${file.padEnd(38)} ${(size / 1024).toFixed(0).padStart(5)} KB`)
     }
   }
+  // The top edge's colour, averaged down its first rows in SKY_STOPS runs
+  // across its width
+  const { data: top, info: topInfo } = await sharp(SOURCE)
+    .extract({ ...region, height: 16 })
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const sky = Array.from({ length: SKY_STOPS }, (_, i) => {
+    const x0 = Math.floor((i / SKY_STOPS) * topInfo.width)
+    const x1 = Math.floor(((i + 1) / SKY_STOPS) * topInfo.width)
+    const sum = [0, 0, 0]
+    for (let y = 0; y < topInfo.height; y++) {
+      for (let x = x0; x < x1; x++) {
+        for (let c = 0; c < 3; c++) sum[c] += top[(y * topInfo.width + x) * topInfo.channels + c]
+      }
+    }
+    const n = (x1 - x0) * topInfo.height
+    const pct = +(((i + 0.5) / SKY_STOPS) * 100).toFixed(2)
+    return `rgb(${sum.map((v) => Math.round(v / n)).join(" ")}) ${pct}%`
+  })
   // 24px blur-up, shown until the real photo arrives
   const tiny = await cut()
     .resize({ width: region.width >= region.height ? 24 : 18 })
@@ -142,6 +169,7 @@ async function renderSet(label, region, widths, fade) {
     avif: set.avif.join(", "),
     webp: set.webp.join(", "),
     placeholder: `data:image/webp;base64,${tiny.toString("base64")}`,
+    sky: `linear-gradient(to right, ${sky.join(", ")})`,
   }
 }
 

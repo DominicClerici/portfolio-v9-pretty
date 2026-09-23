@@ -57,9 +57,21 @@ const connect = [
 ];
 ---
 
+<!-- Mobile browsers grow and shrink the viewport as their toolbars
+     collapse and return, and nothing here may move or rescale when they do.
+     So every height is set against a *fixed* extreme of it rather than the
+     live one (see the styles):
+
+       · the footer is as tall as the viewport ever gets (lvh), so at the
+         bottom of the page it fills the screen even with the toolbars away,
+         and the section above never peeks in;
+       · its content sits at its foot in a box as tall as the viewport ever
+         shrinks to (svh), so none of it is cut off with the toolbars out.
+
+     The difference, which the toolbars cover and uncover, is sky. -->
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
+  class="relative overflow-hidden flex flex-col justify-end"
 >
   <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
        page (-z-10), so the opaque sections above the footer hide it and the
@@ -67,23 +79,32 @@ const connect = [
        it. That window opening as the footer rises is the reveal, and because
        the pin is real CSS fixed positioning rather than a scroll-driven
        transform, the photo cannot drift on compositor-driven (touch)
-       scrolling. Fixed to the *visual* viewport, it also covers the strip
-       below an svh-tall footer when mobile chrome retracts.
+       scrolling.
 
-       Three layers: the photo itself (the real background, and all there is
-       without WebGL2 or under reduced motion), the heat-haze canvas drawn
-       pixel-for-pixel over the lake once its texture is up, and above md a
-       scrim that keeps the bone type legible against the peak and the near
-       water. The
-       wrap's own background is a tiny blur-up of whichever cut the <picture>
-       picks, so the text has something to sit on before the real one arrives.
+       It is pinned to the screen's bottom edge, which is where the footer's
+       own bottom sits at the end of the page, and laid out exactly as the
+       footer is: the photo's frame is the content box's size at the bottom,
+       so every line of type lands on the same spot of the photo whatever the
+       toolbars do, and the strip above it is painted with the photo's sky,
+       continued from its top edge. A toolbar coming or going only slides it
+       all along with the page; nothing it is cover-fitted to changes size,
+       so the photo never rescales.
+
+       In its frame, three layers: the photo itself (the real background,
+       and all there is without WebGL2 or under reduced motion), the
+       heat-haze canvas drawn pixel-for-pixel over the lake once its texture
+       is up, and above md a scrim that keeps the bone type legible against
+       the peak and the near water. The frame's own background is a tiny
+       blur-up of whichever cut the <picture> picks, so the text has
+       something to sit on before the real one arrives.
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
        pinned to its top centre so the peak always shows, 1280w up to its full
        4340w; and a 3:4 crop for phones and portrait tablets, cut just short
        enough at the bottom for the lake to fill the lower 25% of a tall
-       screen. Each is AVIF with a WebP fallback.
+       screen, with a faint dark fade baked into its foot. Each is AVIF with
+       a WebP fallback.
 
        The srcsets are held back in data-srcset: as a fixed element the photo
        is always "in the viewport" to the browser, so it would load alongside
@@ -91,53 +112,62 @@ const connect = [
        loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900"
-    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
+    class="footer-canvas-wrap fixed inset-x-0 bottom-0 -z-10"
+    style={[
+      `--blur-landscape:url(${photo.landscape.placeholder})`,
+      `--blur-portrait:url(${photo.portrait.placeholder})`,
+      `--sky-landscape:${photo.landscape.sky}`,
+      `--sky-portrait:${photo.portrait.sky}`,
+      `--aspect-landscape:${(photo.landscape.width / photo.landscape.height).toFixed(4)}`,
+      `--aspect-portrait:${(photo.portrait.width / photo.portrait.height).toFixed(4)}`,
+    ].join(";")}
     aria-hidden="true"
   >
-    <picture>
-      <source
-        media={PORTRAIT}
-        type="image/avif"
-        data-srcset={photo.portrait.avif}
-        sizes={PORTRAIT_SIZES}
-      />
-      <source
-        media={PORTRAIT}
-        type="image/webp"
-        data-srcset={photo.portrait.webp}
-        sizes={PORTRAIT_SIZES}
-      />
-      <source
-        type="image/avif"
-        data-srcset={photo.landscape.avif}
-        sizes={LANDSCAPE_SIZES}
-      />
-      <img
-        class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-        data-srcset={photo.landscape.webp}
-        data-cuts={JSON.stringify({
-          landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
-          portrait: [
-            photo.portrait.width,
-            photo.portrait.height,
-            photo.portrait.rect,
-          ],
-        })}
-        sizes={LANDSCAPE_SIZES}
-        width={photo.landscape.width}
-        height={photo.landscape.height}
-        alt=""
-        decoding="async"
-        fetchpriority="low"
-      />
-    </picture>
-    <!-- Placed and sized by the haze over the lake's band of the photo -->
-    <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-    <div class="footer-scrim absolute inset-0"></div>
+    <div class="footer-photo-frame absolute inset-x-0 bottom-0">
+      <picture>
+        <source
+          media={PORTRAIT}
+          type="image/avif"
+          data-srcset={photo.portrait.avif}
+          sizes={PORTRAIT_SIZES}
+        />
+        <source
+          media={PORTRAIT}
+          type="image/webp"
+          data-srcset={photo.portrait.webp}
+          sizes={PORTRAIT_SIZES}
+        />
+        <source
+          type="image/avif"
+          data-srcset={photo.landscape.avif}
+          sizes={LANDSCAPE_SIZES}
+        />
+        <img
+          class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
+          data-srcset={photo.landscape.webp}
+          data-cuts={JSON.stringify({
+            landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
+            portrait: [
+              photo.portrait.width,
+              photo.portrait.height,
+              photo.portrait.rect,
+            ],
+          })}
+          sizes={LANDSCAPE_SIZES}
+          width={photo.landscape.width}
+          height={photo.landscape.height}
+          alt=""
+          decoding="async"
+          fetchpriority="low"
+        />
+      </picture>
+      <!-- Placed and sized by the haze over the lake's band of the photo -->
+      <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+      <div class="footer-scrim absolute inset-0"></div>
+    </div>
   </div>
 
-  <div class="relative z-10 h-full flex flex-col">
+  <div class="footer-content relative z-10 shrink-0 flex flex-col">
     <!-- Cap bar: the previous (contact) section's color, fully-rounded bottom
          corners. Mirrors the page header's layout (same h-20/md:py-7/px) so the
          bar height tracks the header exactly. The header echo inside fades in
@@ -342,14 +372,57 @@ const connect = [
 </footer>
 
 <style>
+  /* The footer's heights (see the markup). The footer and the backdrop are
+     as tall as the viewport ever gets, --footer-h; the content and the
+     photo's frame as tall as it ever shrinks to, --box-h; neither below a
+     floor. 100vh first, for browsers without the large and small viewport
+     units — in mobile Safari it is the large viewport anyway. */
+  #site-footer {
+    --footer-min: 680px;
+    --footer-h: max(var(--footer-min), 100vh);
+    --box-h: max(var(--footer-min), 100vh);
+    height: var(--footer-h);
+  }
+  @media (min-width: 768px) {
+    #site-footer {
+      --footer-min: 780px;
+    }
+  }
+  @supports (height: 100lvh) {
+    #site-footer {
+      --footer-h: max(var(--footer-min), 100lvh);
+      --box-h: max(var(--footer-min), 100svh);
+    }
+  }
+  .footer-canvas-wrap {
+    height: var(--footer-h);
+  }
+  .footer-content,
+  .footer-photo-frame {
+    height: var(--box-h);
+  }
+
+  /* The sky above the photo's frame: its top edge's colour, stretched up.
+     Sized to the photo's width as the frame's cover fit draws it (its
+     height × aspect, or the full width if that is wider) and centred, as
+     the photo is, so each colour stays over the column it was sampled
+     from. */
+  .footer-canvas-wrap {
+    background: var(--sky-landscape) center top / max(100%, calc(var(--box-h) * var(--aspect-landscape))) 100% no-repeat;
+  }
+
   /* The blur-up, cut and pinned to match whichever photo the <picture>
      picks. */
-  .footer-canvas-wrap {
+  .footer-photo-frame {
     background: var(--blur-landscape) center top / cover;
   }
   /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
     .footer-canvas-wrap {
+      background-image: var(--sky-portrait);
+      background-size: max(100%, calc(var(--box-h) * var(--aspect-portrait))) 100%;
+    }
+    .footer-photo-frame {
       background-image: var(--blur-portrait);
     }
   }
@@ -523,7 +596,7 @@ const connect = [
       if (haze || !decoded) return;
       haze = createHeatHaze({
         canvas,
-        frame: footer.querySelector<HTMLElement>(".footer-canvas-wrap")!,
+        frame: footer.querySelector<HTMLElement>(".footer-photo-frame")!,
         img: photo,
         source,
         onReady: () => canvas.classList.add("is-ready"),
@@ -776,9 +849,9 @@ const connect = [
       resizeTimer = window.setTimeout(() => {
         // fitName writes a font size, then reads metrics back, then writes
         // again — two forced layouts on the largest text node on the page.
-        // The footer is h-svh, so mobile URL-bar show/hide retriggers this
-        // observer mid-scroll; it belongs behind a debounce rather than
-        // running on every one of those ticks.
+        // Rotation and window resizes can fire this in bursts; it belongs
+        // behind a debounce rather than running on every one of those
+        // ticks.
         fitName();
         onEchoScroll();
       }, 120);
