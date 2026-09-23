@@ -1,5 +1,5 @@
 /*
- * Heat haze over the footer's Yosemite river.
+ * Heat haze over the footer's river.
  *
  * Modelled on the hero at hermeus.com, where "Building Fast Planes. Fast."
  * shimmers as if seen through a jet's exhaust. Theirs is not live: it is 90
@@ -29,7 +29,7 @@
  *
  * All of it is measured in the *full photo's* UV space, so it stays glued to
  * the river however `object-fit: cover` crops the photo, and whichever cut of
- * it (full or portrait) the page has loaded. The <img> underneath is the real
+ * it (landscape or portrait) the page has loaded. The <img> underneath is the real
  * background: this canvas covers only the band of it the shimmer lives in,
  * is transparent wherever the shimmer is not, and never appears at all
  * without WebGL2 or under reduced motion. Kept to that band it can render at
@@ -38,28 +38,40 @@
  */
 
 /* ── Where the river is ──
-   Measured off the source photo (5472×3648), in image UV: x from the left,
+   Measured off the source photo (6000×8000), in image UV: x from the left,
    y down from the top. */
-// The water's far visible edge, where the river bends out of sight below El
-// Capitan
-const FAR_Y = 0.655
+// The water's far visible edge, the rapids where the river comes round from
+// behind the hills
+const FAR_Y = 0.658
 // The banks, as [y, left x, right x] from the far edge to the bottom of the
-// photo, straight between. The river spreads like a road running away from
-// the camera down to ≈0.78; below that the left bank runs out of frame and
-// the right one stops under the overhanging leaves.
+// photo, straight between, traced along the waterline. The river opens out
+// fast below the rapids, then the left bank runs out of frame past its rocks
+// at ≈0.82 and the right one past its scree at ≈0.9. Out of frame the banks
+// are pushed well clear of it, so the feather below never dims the water at
+// the frame's edges.
 const BANKS = [
-  [FAR_Y, 0.46, 0.545],
-  [0.7, 0.44, 0.6],
-  [0.74, 0.4, 0.64],
-  [0.78, 0.22, 0.71],
-  [0.82, -0.02, 0.74],
-  [1, -0.02, 0.74],
+  [FAR_Y, 0.593, 0.675],
+  [0.67, 0.55, 0.65],
+  [0.68, 0.445, 0.67],
+  [0.7, 0.425, 0.715],
+  [0.72, 0.385, 0.745],
+  [0.74, 0.325, 0.77],
+  [0.76, 0.21, 0.79],
+  [0.78, 0.14, 0.81],
+  [0.8, 0.07, 0.83],
+  [0.816, 0, 0.85],
+  [0.83, -0.12, 0.865],
+  [0.86, -0.12, 0.925],
+  [0.9, -0.12, 0.995],
+  [0.905, -0.12, 1],
+  [0.92, -0.12, 1.12],
+  [1, -0.12, 1.12],
 ]
-// Where the banks of that first straight stretch (both spreading ≈1.3 UV x
-// per UV y) would meet if it ran on flat: the vanishing point's height, and
-// its line across the frame. Distance up the river goes as 1 / (y − HORIZON_Y).
-const HORIZON_Y = 0.622
-const AXIS_X = 0.5025
+// Where the banks of the first stretch below the rapids would meet if it
+// ran on flat: the vanishing point's height, and its line across the frame.
+// Distance up the river goes as 1 / (y − HORIZON_Y).
+const HORIZON_Y = 0.642
+const AXIS_X = 0.634
 // Past this height below the horizon the noise stops spreading with the
 // water plane. Left to grow, the foreground's ripples would be swells a
 // third of the frame wide rather than a shimmer.
@@ -70,13 +82,16 @@ const NEAR_H = 0.15
    of the photo. Above the far edge it only rises RISE into the trees before
    stopping. */
 const FOREGROUND = 0.6
-const RISE = 0.012 // ≈44px of the source photo
-// Feather past the banks: a fixed margin plus a share of the half-width
+const RISE = 0.006 // ≈48px of the source photo
+// Feather inside the banks, so the shimmer eases off at the waterline rather
+// than spilling onto the rocks: a fixed margin plus a share of the half-width
 const BANK_FEATHER = [0.008, 0.1]
 
 /* ── Distortion ──
-   Amplitudes are fractions of the image height at full intensity, so the
-   effect scales with the photo rather than with device pixels. INTENSITY
+   Amplitudes are fractions of the height of the cut on screen at full
+   intensity, so the effect scales with the photo as shown rather than with
+   device pixels. (Measured against the full photo instead, the landscape
+   cut, a band half its height, would shimmer twice as hard.) INTENSITY
    scales all three together: the warp and ripple amplitudes and the blur.
    The noise scale is separate, so it stays just as tight. */
 const INTENSITY = 1.3
@@ -88,11 +103,11 @@ const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
 
 /* ── Canvas band ──
    Everything above reaches no higher than the rise over the far edge
-   (FAR_Y − RISE ≈ 0.643) and runs on to the bottom of the photo, so the
+   (FAR_Y − RISE = 0.652) and runs on to the bottom of the photo, so the
    canvas spans CANVAS_Y of the photo's height, full width. The texture
    starts a little higher, TEX_Y, for the distortion to sample from. */
-const CANVAS_Y = [0.64, 1]
-const TEX_Y = [0.63, 1]
+const CANVAS_Y = [0.648, 1]
+const TEX_Y = [0.64, 1]
 // Device pixel ratio ceiling. The band is small enough to afford full density
 // on any current screen.
 const MAX_DPR = 3
@@ -155,6 +170,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     uniform vec4 uToUv;    // canvas device px (y-down) -> photo UV: xy * px + zw
     uniform vec4 uTexRect; // the texture's rect in photo UV (x, y, w, h)
     uniform float uAspect; // full photo width / height
+    uniform float uCutH;   // the cut's height as a share of the full photo's
     uniform float uTime;
     uniform float uLod;    // mip level matching the cover fit's minification
     out vec4 outColor;
@@ -237,7 +253,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       vec2 bank = banks(uv.y);
       float halfW = 0.5 * (bank.y - bank.x);
       float feather = ${f1(BANK_FEATHER[0])} + halfW * ${f1(BANK_FEATHER[1])};
-      float inRiver = 1.0 - smoothstep(halfW, halfW + feather, abs(uv.x - 0.5 * (bank.x + bank.y)));
+      float inRiver = 1.0 - smoothstep(halfW - feather, halfW, abs(uv.x - 0.5 * (bank.x + bank.y)));
 
       // The extent envelope: full strength at the far edge, easing to
       // FOREGROUND at the bottom of the photo
@@ -267,7 +283,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
 
       vec2 d = (hz.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
               + hz.z * vec2(${f1(RIPPLE_AMP[0])}, ${f1(RIPPLE_AMP[1])}))
-              * m * ${f1(2 * INTENSITY)};
+              * m * uCutH * ${f1(2 * INTENSITY)};
       vec2 suv = uv + vec2(d.x / uAspect, d.y);
 
       // Blur patches, as a mip bias
@@ -328,6 +344,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   const uToUv = gl.getUniformLocation(prog, "uToUv")
   const uTexRect = gl.getUniformLocation(prog, "uTexRect")
   const uAspect = gl.getUniformLocation(prog, "uAspect")
+  const uCutH = gl.getUniformLocation(prog, "uCutH")
   const uTime = gl.getUniformLocation(prog, "uTime")
   const uLod = gl.getUniformLocation(prog, "uLod")
   gl.uniform1i(gl.getUniformLocation(prog, "uImg"), 0)
@@ -377,6 +394,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
           ((r1 - r0) / nh) * rect[3],
         )
         gl!.uniform1f(uAspect, nw / rect[2] / (nh / rect[3]))
+        gl!.uniform1f(uCutH, rect[3])
         resize()
       })
       .catch(() => {})

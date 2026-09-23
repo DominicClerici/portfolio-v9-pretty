@@ -19,10 +19,10 @@ const navigate = [
 // styles, which picks its blur-up.
 const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
 // Each cut is cover-fitted to a screen-tall frame, so its displayed width is
-// the screen's height × its aspect (3:4 portrait, 3:2 full) — unless the
+// the screen's height × its aspect (3:4 portrait, 3:2 landscape) — unless the
 // screen is wider than that, when the width fills it.
 const PORTRAIT_SIZES = "(min-aspect-ratio: 3/4) 100vw, 75vh";
-const FULL_SIZES = "(min-aspect-ratio: 3/2) 100vw, 150vh";
+const LANDSCAPE_SIZES = "(min-aspect-ratio: 3/2) 100vw, 150vh";
 
 const connect = [
   {
@@ -52,7 +52,7 @@ const connect = [
   id="site-footer"
   class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
 >
-  <!-- The Yosemite backdrop is viewport-fixed and sits *behind* the whole
+  <!-- The river backdrop is viewport-fixed and sits *behind* the whole
        page (-z-10), so the opaque sections above the footer hide it and the
        footer — which has no background of its own — is the only window onto
        it. That window opening as the footer rises is the reveal, and because
@@ -68,10 +68,11 @@ const connect = [
        wrap's own background is a tiny blur-up of whichever cut the <picture>
        picks, so the text has something to sit on before the real one arrives.
 
-       The photo comes in two cuts, rendered by footer-photos.mjs: the full
-       frame for landscape screens, 1280w up to 5120w, and a crop zoomed into
-       its centre for phones and portrait tablets. Each is AVIF with a WebP
-       fallback.
+       The photo (a portrait one) comes in two cuts, rendered by
+       footer-photos.mjs: a 3:2 band of its lower half, from the sunlit clouds
+       down through the river, for landscape screens, 1280w up to 5120w; and
+       a crop zoomed into its centre for phones and portrait tablets. Each is
+       AVIF with a WebP fallback.
 
        The srcsets are held back in data-srcset: as a fixed element the photo
        is always "in the viewport" to the browser's lazy loader and would load
@@ -79,7 +80,7 @@ const connect = [
        script). Its alt is empty — the scene is decorative. -->
   <div
     class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900"
-    style={`--blur-full:url(${photo.full.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
+    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
     aria-hidden="true"
   >
     <picture>
@@ -97,23 +98,23 @@ const connect = [
       />
       <source
         type="image/avif"
-        data-srcset={photo.full.avif}
-        sizes={FULL_SIZES}
+        data-srcset={photo.landscape.avif}
+        sizes={LANDSCAPE_SIZES}
       />
       <img
         class="footer-photo absolute inset-0 w-full h-full object-cover"
-        data-srcset={photo.full.webp}
+        data-srcset={photo.landscape.webp}
         data-cuts={JSON.stringify({
-          full: [photo.full.width, photo.full.height, photo.full.rect],
+          landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
           portrait: [
             photo.portrait.width,
             photo.portrait.height,
             photo.portrait.rect,
           ],
         })}
-        sizes={FULL_SIZES}
-        width={photo.full.width}
-        height={photo.full.height}
+        sizes={LANDSCAPE_SIZES}
+        width={photo.landscape.width}
+        height={photo.landscape.height}
         alt=""
         decoding="async"
       />
@@ -287,7 +288,7 @@ const connect = [
 <style>
   /* The blur-up, cut to match whichever photo the <picture> picks. */
   .footer-canvas-wrap {
-    background: var(--blur-full) center / cover;
+    background: var(--blur-landscape) center / cover;
   }
   /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
@@ -417,7 +418,7 @@ const connect = [
       name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`;
     }
 
-    /* ── Yosemite backdrop + heat haze ──
+    /* ── River backdrop + heat haze ──
        As the footer comes within 600px the photo starts loading; once it has
        decoded, the haze takes it as a texture. The shimmer only runs while
        the footer is actually on screen. Under reduced motion, or without
@@ -426,7 +427,7 @@ const connect = [
     let footerVisible = false;
 
     // The photo's current source, for the haze: its files are named for their
-    // cut and width (footer-yosemite-<cut>-<width>.<ext>), and each cut's
+    // cut and width (footer-river-<cut>-<width>.<ext>), and each cut's
     // pixel size and place in the full photo ride on the <img>. The height
     // follows from the cut's aspect, rounded as the generator's resize rounds
     // it — naturalHeight won't do, as for a srcset pick it is divided by the
@@ -435,7 +436,7 @@ const connect = [
       photo.dataset.cuts!,
     );
     const source = () => {
-      const [, cut, w] = /-(full|portrait)-(\d+)\.\w+$/.exec(
+      const [, cut, w] = /-(landscape|portrait)-(\d+)\.\w+$/.exec(
         photo.currentSrc,
       )!;
       const [cw, ch, rect] = cuts[cut];
