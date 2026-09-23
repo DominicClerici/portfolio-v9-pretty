@@ -163,16 +163,29 @@ const BackTag = overlay ? "button" : "a";
   /* ── The inside spread ── */
   /* A fixed full-viewport scroller in both modes. On the front page that is
      what makes it a dialog the door can expand into; on its own page it is
-     what makes the two identical. */
+     what makes the two identical.
+
+     In iOS Safari it reaches past its fixed box by --overlay-bleed (see
+     global.css) so it fills the screen under the bars too, and its padding
+     brings the content back in by the same amount plus the safe area, where
+     the page runs under the status bar and the home indicator. The wash is
+     laid over the fixed box alone, so it sits where it always has. All of
+     it is 0 everywhere else. */
   .we1-spread {
     position: fixed;
-    inset: 0;
+    inset: calc(-1 * var(--overlay-bleed)) 0;
     z-index: 40;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    padding-top: calc(var(--overlay-bleed) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(
+      var(--overlay-bleed) + env(safe-area-inset-bottom, 0px)
+    );
     background:
-      radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%),
+      radial-gradient(44% 36% at 78% 6%, var(--wash), transparent 70%) 0
+        var(--overlay-bleed) / 100% calc(100% - 2 * var(--overlay-bleed))
+        no-repeat,
       var(--paper);
   }
 
@@ -186,13 +199,16 @@ const BackTag = overlay ? "button" : "a";
 
   .we1-spread-flip {
     background:
-      radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%),
+      radial-gradient(44% 36% at 22% 6%, var(--wash), transparent 70%) 0
+        var(--overlay-bleed) / 100% calc(100% - 2 * var(--overlay-bleed))
+        no-repeat,
       var(--paper);
   }
 
+  /* Below the status bar, where the page now runs under it. */
   .we1-back {
     position: fixed;
-    top: 22px;
+    top: calc(22px + env(safe-area-inset-top, 0px));
     left: max(22px, env(safe-area-inset-left));
     z-index: 5;
     padding: 12px 16px;
@@ -325,11 +341,17 @@ const BackTag = overlay ? "button" : "a";
       padding-right: calc(max((100vw - 1280px) / 2, 0px) + 48px);
     }
 
+    /* A sticky box sticks inside its scroller's padding, so top: 0 is
+       already below the bleed and the status bar. It ends above the home
+       indicator. */
     .we1-story {
       position: sticky;
       top: 0;
       align-self: start;
-      max-height: 100dvh;
+      max-height: calc(
+        100dvh - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      );
       overflow-y: auto;
       scrollbar-width: none;
     }

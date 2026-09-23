@@ -580,18 +580,23 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
      per frame by the script's rAF driver — deliberately NOT a CSS transition:
      multi-shape paths aren't CSS-interpolable, and the old transition-based
      door was the source of the Chrome missed-transition snap and the
-     unclipped-rectangle flashes. Keep clip-path out of the transition list. */
+     unclipped-rectangle flashes. Keep clip-path out of the transition list.
+     Its box is the spread's exactly, bleed included (see .we1-spread), so
+     the door opens onto the whole screen and the script works in this box's
+     own coordinates, measured, rather than assuming it starts at 0,0. */
   .we1-portal {
     display: none;
     position: fixed;
-    inset: 0;
+    inset: calc(-1 * var(--overlay-bleed)) 0;
     z-index: 45;
     background:
       radial-gradient(
-        44% 36% at var(--wx, 78%) 6%,
-        var(--pwash, transparent),
-        transparent 70%
-      ),
+          44% 36% at var(--wx, 78%) 6%,
+          var(--pwash, transparent),
+          transparent 70%
+        )
+        0 var(--overlay-bleed) / 100% calc(100% - 2 * var(--overlay-bleed))
+        no-repeat,
       var(--ppaper, var(--color-bone));
     transition: opacity 0.205s ease;
   }
@@ -614,11 +619,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
      (.we1-hero-off), the plate would blink out on the first frame and fade
      back in as the spread cleared. So for that flight the column is lifted
      out of the portal into this layer, above the spread, and clipped by the
-     same door path every frame. */
+     same door path every frame. Same box as the portal, so the same path
+     and column rect land in the same place. */
   .we1-portal-lift {
     display: none;
     position: fixed;
-    inset: 0;
+    inset: calc(-1 * var(--overlay-bleed)) 0;
     z-index: 55;
     pointer-events: none;
   }
@@ -1122,12 +1128,29 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         (section.querySelector<HTMLElement>(`[data-plate="${i}"]`)?.dataset
           .shape ?? "diamond") as ShapeId;
 
-      // The window's figure seated at its live on-screen rect, in viewport
+      // The box the portal, the lift and the spread all share, in viewport
+      // coordinates. It is not the viewport: in iOS Safari it bleeds past
+      // the top and bottom of the screen (--overlay-bleed), and its origin is
+      // wherever Safari puts a fixed box. So it is measured, off the spread,
+      // and everything the door draws is written relative to it.
+      let box = { left: 0, top: 0, width: 0, height: 0 };
+      const measureBox = (spread: HTMLElement) => {
+        const r = measured(spread, () => spread.getBoundingClientRect());
+        box = { left: r.left, top: r.top, width: r.width, height: r.height };
+      };
+
+      // The window's figure seated at its live on-screen rect, in the box's
       // coordinates — the closed end of the door animation
       const figureAt = (i: number, rect: DOMRect): Sub[] => {
         const variant =
           SHAPES[shapeOf(i)][desktop.matches ? "desktop" : "mobile"];
-        return subsInBox(variant, rect.width, rect.height, rect.left, rect.top);
+        return subsInBox(
+          variant,
+          rect.width,
+          rect.height,
+          rect.left - box.left,
+          rect.top - box.top,
+        );
       };
 
       // ── The door driver ──
@@ -1197,11 +1220,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       };
 
       // On the column itself rather than the portal, so the rect travels
-      // with it when a mobile close lifts it into the other layer
+      // with it when a mobile close lifts it into the other layer. g is in
+      // viewport coordinates; the column sits in the box's.
       const setColRect = (g: GalRect) => {
         if (!portalCol) return;
-        portalCol.style.setProperty("--fx", `${g.left}px`);
-        portalCol.style.setProperty("--fy", `${g.top}px`);
+        portalCol.style.setProperty("--fx", `${g.left - box.left}px`);
+        portalCol.style.setProperty("--fy", `${g.top - box.top}px`);
         portalCol.style.setProperty("--fw", `${g.width}px`);
       };
 
@@ -1291,16 +1315,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         const arch = archFor(i);
         if (!spread || !arch) return;
 
-        // Mobile door: no pinned scene to walk into — the plate itself steps
-        // through instead. Measured up front so a failed measure can fall
-        // back to the snap path below.
-        const mobile = !desktop.matches;
-        const archFrame = mobile
-          ? replicaFrameFor(i)?.getBoundingClientRect()
-          : undefined;
-        const heroFrame = mobile ? heroFrameOf(spread) : undefined;
-        const hero = mobile ? heroFor(spread) : null;
-
         openIndex = i;
         lastTrigger = trigger;
         lock(true);
@@ -1309,6 +1323,17 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // presses of Back to leave the same window.
         if (push) history.pushState({ we1: i }, "", projectPath(i));
         setHead(i);
+
+        // Mobile door: no pinned scene to walk into — the plate itself steps
+        // through instead. Measured once the page is locked, so as it will
+        // stand under the door, and before the snap path below, so a failed
+        // measure can fall back to it.
+        const mobile = !desktop.matches;
+        const archFrame = mobile
+          ? replicaFrameFor(i)?.getBoundingClientRect()
+          : undefined;
+        const heroFrame = mobile ? heroFrameOf(spread) : undefined;
+        const hero = mobile ? heroFor(spread) : null;
 
         if (
           reducedMotion ||
@@ -1325,6 +1350,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         }
 
         busy = true;
+        measureBox(spread);
 
         if (mobile) {
           // The hero clone is seated at its landing frame; the door driver
@@ -1348,12 +1374,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           repinPage();
           animateDoor(
             closed,
-            expandTargets(
-              shapeOf(i),
-              closed,
-              window.innerWidth,
-              window.innerHeight,
-            ),
+            expandTargets(shapeOf(i), closed, box.width, box.height),
             mobile
               ? { from: flyState(archFrame!, heroFrame!), to: FLY_HOME }
               : null,
@@ -1447,6 +1468,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // it in the portal (see .we1-portal-lift). Moved before the decode
         // wait so nothing is reparented after its bitmaps are ready.
         const lift = mobile && !scrolled && !!portalLift;
+        measureBox(spread);
         if (mobile) {
           fillPortal(hero!);
           dressPortal(spread);
@@ -1478,12 +1500,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           if (mobile) spread.classList.toggle("we1-hero-off", !scrolled);
           // Same frame: the door starts shrinking and the content starts fading
           animateDoor(
-            expandTargets(
-              shapeOf(i),
-              closed,
-              window.innerWidth,
-              window.innerHeight,
-            ),
+            expandTargets(shapeOf(i), closed, box.width, box.height),
             closed,
             mobile
               ? { from: FLY_HOME, to: flyState(archFrame!, heroFrame!) }

@@ -131,6 +131,24 @@
      which would re-layout and re-allocate the WebGL canvas on every frame of
      that animation. Content stays on --hero-h so nothing lands under the bar. */
   --bg-h: max(calc(100lvh + 2 * var(--bg-overhang)), 560px);
+
+  /* How far the full-screen overlays (a project's spread and the door that
+     opens into it) reach past the top and bottom of their fixed box, and
+     pad their content back in by. iOS Safari lays fixed boxes out between
+     its bars, which the page runs under, so an overlay that stopped at its
+     box left the bars showing the page behind it, and a touch there
+     scrolled that page. Past each edge by more than any bar is tall, the
+     overlay fills the whole screen whatever Safari counts as its viewport.
+     The overlays measure their own boxes, so nothing else depends on it. */
+  --overlay-bleed: 0px;
+}
+
+/* iOS Safari only (-webkit-touch-callout exists nowhere else). Elsewhere a
+   scroller hanging off the screen would hide the ends of its scrollbar. */
+@supports (-webkit-touch-callout: none) {
+  :root {
+    --overlay-bleed: 160px;
+  }
 }
 
 /* The svh/lvh split and the overhang above only compensate for mobile

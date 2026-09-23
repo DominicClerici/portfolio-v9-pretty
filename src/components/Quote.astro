@@ -5,9 +5,16 @@
 ---
 
 <!-- Also backgroundless: the last section over the pinned glass canvas, which
-     leaves with the flow at its bottom edge. -->
+     leaves with the flow at its bottom edge.
+
+     The quote is centred by its own place-self, not the section's
+     place-items. Safari lets a grid's place-items reach its absolutely
+     positioned children too, which here are the grid, the field, the scrim
+     and the corner line: centred, the line left its corner for the middle of
+     the section. With nothing on the section, every engine places them by
+     their insets alone. -->
 <section
-  class="qv4 relative overflow-hidden min-h-[78vh] grid place-items-center py-[clamp(110px,15vh,190px)] px-safe-3 sm:px-safe-6 md:px-safe-12"
+  class="qv4 relative overflow-hidden min-h-[78vh] grid py-[clamp(110px,15vh,190px)] px-safe-3 sm:px-safe-6 md:px-safe-12"
   aria-label="Quote"
 >
   <div class="dot-grid" aria-hidden="true"></div>
@@ -24,7 +31,9 @@
     aria-hidden="true"
   ></div>
 
-  <div class="relative max-w-3xl mx-auto text-center pointer-events-none">
+  <div
+    class="relative place-self-center max-w-3xl mx-auto text-center pointer-events-none"
+  >
     <p
       class="font-mono text-[11px] md:text-xs uppercase tracking-[0.3em] text-white/40 mb-8 md:mb-12"
     >
@@ -47,12 +56,10 @@
     </cite>
   </div>
 
-  <!-- place-self-end: the section's place-items-center reaches this absolute
-       line too in Safari, which aligns it within the box its insets leave
-       it (the section inset by 24px at the bottom and right). Centred, that
-       pulled it off the corner; aligned to the end, it sits at the insets. -->
+  <!-- Off the corner by the same steps as before, and clear of the notch
+     in landscape, like the section's gutters. -->
   <p
-    class="absolute bottom-6 right-6 md:bottom-10 md:right-12 place-self-end font-mono text-[10px] md:text-xs text-white/30 tracking-wide"
+    class="absolute bottom-6 right-[max(1.5rem,env(safe-area-inset-right))] md:bottom-10 md:right-[max(3rem,env(safe-area-inset-right))] font-mono text-[10px] md:text-xs text-white/30 tracking-wide"
   >
     &ldquo;Eh, maybe...&rdquo; &mdash; Dominic Clerici
   </p>
