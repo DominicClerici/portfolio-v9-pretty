@@ -32,9 +32,9 @@
  *     road haze's top edge.
  *
  * All of it is measured in *image* space, so it stays glued to the road
- * however `object-fit: cover` crops the photo. The <img> underneath is the
- * real background — this canvas only draws over it once the texture is up,
- * and simply never appears without WebGL2 or under reduced motion.
+ * however the photo is cropped. The <img> underneath is the real background —
+ * this canvas only draws over it once the texture is up, and simply never
+ * appears without WebGL2 or under reduced motion.
  */
 
 /* ── Where the road is ──
@@ -107,7 +107,8 @@ export type HeatHaze = {
 
 export type HeatHazeOptions = {
   canvas: HTMLCanvasElement
-  /** the decoded background photo; its natural size drives the cover fit */
+  /** the decoded background photo. Wherever its box is laid out relative to
+   *  the canvas — zoomed, shifted, spilling past it — is where it is drawn */
   img: HTMLImageElement
   /** fires once the first distorted frame is on the canvas */
   onReady?: () => void
@@ -142,10 +143,11 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     precision highp float;
     uniform sampler2D uImg;
     uniform vec2 uRes;     // canvas size, device px
-    uniform vec2 uScale;   // device px -> image UV (the cover fit)
+    uniform vec2 uOrigin;  // the photo's top-left corner, device px
+    uniform vec2 uScale;   // device px -> image UV (1 / the photo's size)
     uniform float uAspect; // image width / height
     uniform float uTime;
-    uniform float uLod;    // mip level matching the cover fit's minification
+    uniform float uLod;    // mip level matching the photo's minification
     out vec4 outColor;
 
     const float CREST_Y = ${f1(CREST_Y)};
@@ -199,7 +201,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     void main() {
       // gl_FragCoord is y-up; the image is y-down
       vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
-      vec2 uv = (px - 0.5 * uRes) * uScale + 0.5;
+      vec2 uv = (px - uOrigin) * uScale;
 
       // dy: how far below the crest (negative above it)
       float dy = uv.y - CREST_Y;
@@ -331,6 +333,7 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
   const uRes = gl.getUniformLocation(prog, "uRes")
+  const uOrigin = gl.getUniformLocation(prog, "uOrigin")
   const uScale = gl.getUniformLocation(prog, "uScale")
   const uAspect = gl.getUniformLocation(prog, "uAspect")
   const uTime = gl.getUniformLocation(prog, "uTime")
@@ -364,35 +367,45 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     }
   }
 
-  /* Matches CSS `object-fit: cover; object-position: center` exactly, so the
-     canvas lands pixel-for-pixel on the <img> it is drawn over. */
+  /* Reads the photo's laid-out box (transforms included) against the
+     canvas's, so the canvas lands pixel-for-pixel on the <img> it is drawn
+     over however CSS crops it. Past the photo's edges the texture clamps. */
   function resize() {
     if (lost) return
     const rect = canvas.getBoundingClientRect()
+    const box = img.getBoundingClientRect()
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     canvas.width = Math.max(1, Math.round(rect.width * dpr))
     canvas.height = Math.max(1, Math.round(rect.height * dpr))
     gl!.viewport(0, 0, canvas.width, canvas.height)
-    const s = Math.max(canvas.width / iw, canvas.height / ih)
+    // CSS px -> device px, per axis (the rounding above can differ)
+    const kx = canvas.width / Math.max(rect.width, 1)
+    const ky = canvas.height / Math.max(rect.height, 1)
+    const bw = Math.max(box.width * kx, 1)
+    const bh = Math.max(box.height * ky, 1)
     gl!.uniform2f(uRes, canvas.width, canvas.height)
-    gl!.uniform2f(uScale, 1 / (iw * s), 1 / (ih * s))
-    gl!.uniform1f(uLod, Math.max(0, -Math.log2(s)))
+    gl!.uniform2f(uOrigin, (box.left - rect.left) * kx, (box.top - rect.top) * ky)
+    gl!.uniform2f(uScale, 1 / bw, 1 / bh)
+    gl!.uniform1f(uLod, Math.max(0, -Math.log2(bw / iw)))
     draw(lastT)
   }
 
   // The canvas is viewport-fixed, so it tracks the viewport — including the
   // mobile URL bar showing and hiding, which the footer's own box can miss
-  // behind its min-height. Coalesced onto a frame; the first call is the
-  // observer's initial notification.
+  // behind its min-height. The photo is watched too, since its crop can
+  // change on its own (a breakpoint). Coalesced onto a frame; the first call
+  // is the observer's initial notification.
   let resizePending = false
-  new ResizeObserver(() => {
+  const ro = new ResizeObserver(() => {
     if (resizePending) return
     resizePending = true
     requestAnimationFrame(() => {
       resizePending = false
       resize()
     })
-  }).observe(canvas)
+  })
+  ro.observe(canvas)
+  ro.observe(img)
 
   let rafId: number | null = null
   let lastT = 0

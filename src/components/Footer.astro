@@ -55,30 +55,46 @@ const connect = [
        without WebGL2 or under reduced motion), the heat-haze canvas drawn
        pixel-for-pixel over it once its texture is up, and a scrim that keeps
        the bone type legible against the sky and the asphalt while leaving the
-       horizon — where the shimmer is — clear. The wrap's own background is a
-       24px blur-up of the photo, so the text has something to sit on before
-       the real one arrives.
+       horizon — where the shimmer is — clear. The photo box's own background
+       is a 24px blur-up of the photo, so the text has something to sit on
+       before the real one arrives.
 
        The photo's srcset is held back in data-srcset: as a fixed element it
        is always "in the viewport" to the browser's lazy loader and would load
        with the hero. It is set as the footer approaches instead (see script).
-       Its alt is empty — the scene is decorative. -->
-  <div
-    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900 bg-cover bg-center"
-    style="background-image:url(data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoR4OsC//s/+A8r1dXfbR+T1KAD9UHdKkFssr1uAGAtq9AzTe97a56fnZN1o/RSh0O/HUusSXRqqGG9iaHjeCyQ4jG5bY0mhWjPEq14ZONnmyxP6AAA=)"
-    aria-hidden="true"
-  >
-    <img
-      class="footer-photo absolute inset-0 w-full h-full object-cover"
-      data-srcset="/photos/footer-road.webp 1280w, /photos/footer-road-2x.webp 2000w"
-      sizes="100vw"
-      width="2000"
-      height="1333"
-      alt=""
-      decoding="async"
-    />
+       Its alt is empty — the scene is decorative.
+
+       The wrap runs FOOTER_BLEED (see style) past the bottom of the viewport.
+       When mobile Safari rubber-bands past the end of the page, fixed layers
+       are dragged up with it, and without the extra length the scrim's dark
+       bottom edge would come up off the screen's edge and flash the page
+       background beneath. The frame is the on-screen part — the photo is
+       placed and the scrim graded against it — and the bleed below simply
+       carries on: the photo past its edge (it is cropped larger than the
+       frame), the haze canvas over all of it, and the scrim's last stop.
+
+       The photo box does object-fit: cover by hand so the crop can zoom and
+       shift (--photo-zoom, --photo-shift); the haze reads its laid-out box,
+       so the shimmer follows whatever the crop is. -->
+  <div class="footer-canvas-wrap fixed inset-x-0 top-0 -z-10 bg-n-900" aria-hidden="true">
+    <div class="footer-frame absolute inset-x-0 top-0">
+      <div
+        class="footer-photo-box absolute"
+        style="background-image:url(data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABAAPtFUo0uoJKMhsAgBABoJbACdMoR4OsC//s/+A8r1dXfbR+T1KAD9UHdKkFssr1uAGAtq9AzTe97a56fnZN1o/RSh0O/HUusSXRqqGG9iaHjeCyQ4jG5bY0mhWjPEq14ZONnmyxP6AAA=)"
+      >
+        <img
+          class="footer-photo block w-full h-full"
+          data-srcset="/photos/footer-road.webp 1280w, /photos/footer-road-2x.webp 2000w"
+          sizes="100vw"
+          width="2000"
+          height="1333"
+          alt=""
+          decoding="async"
+        />
+      </div>
+    </div>
     <canvas id="footer-canvas" class="absolute inset-0 w-full h-full"></canvas>
-    <div class="footer-scrim absolute inset-0"></div>
+    <div class="footer-scrim absolute inset-x-0 top-0"></div>
   </div>
 
   <div class="relative z-10 h-full flex flex-col">
@@ -255,6 +271,43 @@ const connect = [
     opacity: 1;
   }
 
+  /* Backdrop geometry. FOOTER_BLEED is how far the wrap runs past the bottom
+     of the viewport — enough to cover a hard rubber-band overscroll. The
+     frame (and the scrim's gradient) is the on-screen part above it. */
+  .footer-canvas-wrap {
+    --footer-bleed: 25lvh;
+    --photo-zoom: 1;
+    --photo-shift: 0;
+    bottom: calc(-1 * var(--footer-bleed));
+  }
+  .footer-frame,
+  .footer-scrim {
+    height: calc(100% - var(--footer-bleed));
+  }
+  .footer-frame {
+    container-type: size;
+  }
+  /* object-fit: cover, centred, by hand: the photo (3:2) is sized to just
+     cover the frame, scaled by --photo-zoom about the frame's centre, then
+     moved down by --photo-shift of the frame's height. It is free to spill
+     past the frame into the bleed. */
+  .footer-photo-box {
+    width: calc(max(100cqw, 100cqh * 2000 / 1333) * var(--photo-zoom));
+    aspect-ratio: 2000 / 1333;
+    left: 50%;
+    top: calc(50% + var(--photo-shift) * 100%);
+    transform: translate(-50%, -50%);
+    background-size: 100% 100%;
+  }
+  /* On narrow screens the crop is tall and thin, so the horizon is brought
+     down into the scrim's clear band below the stacked nav. */
+  @media (max-width: 1023px) {
+    .footer-canvas-wrap {
+      --photo-zoom: 1.25;
+      --photo-shift: 0.15;
+    }
+  }
+
   /* Darkens the sky behind the statement and nav and the asphalt behind the
      giant name; the middle stays clear so the horizon and its shimmer read at
      full strength. */
@@ -268,6 +321,16 @@ const connect = [
       rgb(10 10 10 / 0.3) 76%,
       rgb(10 10 10 / 0.6) 100%
     );
+  }
+  /* The scrim's last stop, carried on down through the bleed. */
+  .footer-scrim::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: var(--footer-bleed);
+    background: rgb(10 10 10 / 0.6);
   }
   /* Below lg the nav columns stack under the statement and land on the pale
      horizon itself, so the scrim carries on down past them. */
