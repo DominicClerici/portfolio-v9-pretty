@@ -475,8 +475,9 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     draw(lastT)
   }
 
-  // The frame is sized off the large viewport, so mobile toolbar show/hide
-  // doesn't reach it — only real viewport changes do. Coalesced onto a frame.
+  // The frame is viewport-fixed, so it tracks the viewport — including the
+  // mobile URL bar showing and hiding, which the footer's own box can miss
+  // behind its min-height. Coalesced onto a frame.
   let resizePending = false
   new ResizeObserver(() => {
     if (resizePending) return

@@ -50,77 +50,65 @@ const connect = [
 
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-clip"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
 >
-  <!-- The road backdrop sits *behind* the whole page (-z-10), so the opaque
-       sections above the footer hide it and the footer — which has no
-       background of its own — is the only window onto it. That window opening
-       as the footer rises is the reveal. The photo holds still meanwhile by
-       real CSS sticky positioning, not a scroll-driven transform, so it cannot
-       drift on compositor-driven (touch) scrolling: the stage is pinned to the
-       bottom of the screen inside a track that reaches a screen's height up
-       from the footer, and comes to rest at its natural place, the footer's
-       bottom, exactly as the page reaches its end.
-
-       It was once position: fixed, but a fixed layer is placed against the
-       viewport on every frame, and mobile Safari's momentum overscroll at the
-       foot of the page places it inconsistently from one frame to the next,
-       which flickered the scrim under the giant name. At rest, and all through
-       an overscroll past the end, the sticky stage is simply in its natural
-       place, moving with the page like any other content, so there is nothing
-       to place. The track's overflow above the footer is clipped (overflow:
-       clip, which unlike hidden leaves sticky tied to the viewport).
+  <!-- The road backdrop is viewport-fixed and sits *behind* the whole page
+       (-z-10), so the opaque sections above the footer hide it and the footer
+       — which has no background of its own — is the only window onto it. That
+       window opening as the footer rises is the reveal, and because the pin is
+       real CSS fixed positioning rather than a scroll-driven transform, the
+       photo cannot drift on compositor-driven (touch) scrolling. Fixed to the
+       *visual* viewport, it also covers the strip below an svh-tall footer
+       when mobile chrome retracts.
 
        Three layers: the photo itself (the real background, and all there is
        without WebGL2 or under reduced motion), the heat-haze canvas drawn
        pixel-for-pixel over its horizon once its texture is up, and a scrim
        that keeps the bone type legible against the sky and the asphalt while
-       leaving the horizon — where the shimmer is — clear. A 24px blur-up of
-       the photo is the stage's background, so the text has something to sit
-       on before the real one arrives.
+       leaving the horizon — where the shimmer is — clear. The wrap's own
+       background is a 24px blur-up of the photo, so the text has something to
+       sit on before the real one arrives.
 
        The photo comes in two cuts (see footer-photos.mjs): the full frame for
        landscape screens, and a tighter portrait crop for phones and portrait
        tablets, each in AVIF with a WebP fallback. Their srcsets are held back
-       in data-srcset and set as the footer approaches (see script), so the
-       photo never competes with the hero for bandwidth. Its alt is empty —
-       the scene is decorative. -->
+       in data-srcset: as a fixed element the photo is always "in the
+       viewport" to the browser's lazy loader and would load with the hero.
+       They are set as the footer approaches instead (see script). Its alt is
+       empty — the scene is decorative, and the whole backdrop is left out of
+       hit testing (pointer-events-none), as there is nothing in it to hit. -->
   <div
-    class="footer-track absolute inset-x-0 -z-10 flex flex-col justify-end pointer-events-none"
+    class="footer-canvas-wrap fixed inset-0 -z-10 bg-n-900 pointer-events-none"
     style={`--blur-full:url(${photo.full.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
     aria-hidden="true"
   >
-    <div class="footer-stage sticky shrink-0 w-full bg-n-900">
-      <div class="footer-frame">
-        <picture>
-          <source
-            media={PORTRAIT}
-            type="image/avif"
-            data-srcset={photo.portrait.avif}
-            sizes={PORTRAIT_SIZES}
-          />
-          <source
-            media={PORTRAIT}
-            type="image/webp"
-            data-srcset={photo.portrait.webp}
-            sizes={PORTRAIT_SIZES}
-          />
-          <source type="image/avif" data-srcset={photo.full.avif} sizes={FULL_SIZES} />
-          <img
-            class="footer-photo absolute inset-0 w-full h-full object-cover"
-            data-srcset={photo.full.webp}
-            data-portrait-rect={JSON.stringify(photo.portrait.rect)}
-            sizes={FULL_SIZES}
-            width={photo.full.width}
-            height={photo.full.height}
-            alt=""
-            decoding="async"
-          />
-        </picture>
-        <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-      </div>
-      <div class="footer-scrim absolute inset-0"></div>
-    </div>
+    <picture>
+      <source
+        media={PORTRAIT}
+        type="image/avif"
+        data-srcset={photo.portrait.avif}
+        sizes={PORTRAIT_SIZES}
+      />
+      <source
+        media={PORTRAIT}
+        type="image/webp"
+        data-srcset={photo.portrait.webp}
+        sizes={PORTRAIT_SIZES}
+      />
+      <source type="image/avif" data-srcset={photo.full.avif} sizes={FULL_SIZES} />
+      <img
+        class="footer-photo absolute inset-0 w-full h-full object-cover"
+        data-srcset={photo.full.webp}
+        data-portrait-rect={JSON.stringify(photo.portrait.rect)}
+        sizes={FULL_SIZES}
+        width={photo.full.width}
+        height={photo.full.height}
+        alt=""
+        decoding="async"
+      />
+    </picture>
+    <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
+    <div class="footer-scrim absolute inset-0"></div>
   </div>
 
   <div class="relative z-10 h-full flex flex-col">
@@ -285,45 +273,13 @@ const connect = [
 </footer>
 
 <style>
-  /* The stage's geometry. Like the hero's pinned background (see --bg-h in
-     global.css), it is sized off the large viewport, which never changes
-     mid-scroll — so mobile Safari's toolbar showing and hiding neither
-     re-lays out the scrim nor re-allocates the haze canvas — and it bleeds
-     --bg-overhang past the screen's top and bottom edges, to cover whatever
-     Safari's translucent toolbars show through. The overhang is 0 on
-     desktop.
-
-     The track reaches up from the footer far enough for the stage to stay
-     pinned to the screen's bottom (the sticky offset, less the overhang) for
-     as long as any of the footer shows, and down by the overhang, so the stage
-     comes to rest at its natural place with the page's end. */
-  .footer-track {
-    top: calc(-100lvh - 2 * var(--bg-overhang));
-    bottom: calc(-1 * var(--bg-overhang));
-  }
-  .footer-stage {
-    bottom: calc(-1 * var(--bg-overhang));
-    height: calc(100lvh + 2 * var(--bg-overhang));
+  /* The blur-up, cut to match whichever photo the <picture> picks. */
+  .footer-canvas-wrap {
     background: var(--blur-full) center / cover;
   }
-
-  /* The screen proper, inside the overhang: what the photo is cover-fitted
-     to and the haze canvas is placed in (by script, over the horizon). The
-     blur-up is repeated on it so it lines up with the photo exactly. */
-  .footer-frame {
-    position: absolute;
-    left: 0;
-    top: var(--bg-overhang);
-    width: 100%;
-    height: 100lvh;
-    overflow: hidden;
-    background: var(--blur-full) center / cover;
-  }
-
   /* Same query as PORTRAIT in the frontmatter. */
   @media (max-width: 1023px) and (orientation: portrait) {
-    .footer-stage,
-    .footer-frame {
+    .footer-canvas-wrap {
       background-image: var(--blur-portrait);
     }
   }
@@ -341,13 +297,9 @@ const connect = [
 
   /* Darkens the sky behind the statement and nav and the asphalt behind the
      giant name; the middle stays clear so the horizon and its shimmer read at
-     full strength. The gradient spans the frame (the padding box, inside the
-     borders); the borders carry its end shades on through the overhang. */
+     full strength. */
   .footer-scrim {
-    border-top: var(--bg-overhang) solid rgb(10 10 10 / 0.5);
-    border-bottom: var(--bg-overhang) solid rgb(10 10 10 / 0.6);
-    background-clip: padding-box;
-    background-image: linear-gradient(
+    background: linear-gradient(
       to bottom,
       rgb(10 10 10 / 0.5) 0%,
       rgb(10 10 10 / 0.25) 28%,
@@ -361,7 +313,7 @@ const connect = [
      horizon itself, so the scrim carries on down past them. */
   @media (max-width: 1023px) {
     .footer-scrim {
-      background-image: linear-gradient(
+      background: linear-gradient(
         to bottom,
         rgb(10 10 10 / 0.5) 0%,
         rgb(10 10 10 / 0.35) 30%,
@@ -455,10 +407,20 @@ const connect = [
     /* ── Road backdrop + heat haze ──
        As the footer comes within 600px the photo starts loading; once it has
        decoded, the haze takes it as a texture. The shimmer only runs while
-       the footer is actually on screen. Under reduced motion, or without
-       WebGL2, the photo is left as it is. */
+       the footer is actually on screen, and holds still while the page is
+       bounced past its end (see the header echo's scroll handler). Every
+       frame it draws has the browser recommit the page's layers, and on
+       mobile Safari's momentum overscroll that churn flickered the scrim
+       under the giant name. Under reduced motion, or without WebGL2, the
+       photo is left as it is. */
     let haze: HeatHaze | null = null;
     let footerVisible = false;
+    let overscrolled = false;
+
+    function runHaze() {
+      if (footerVisible && !overscrolled && !document.hidden) haze?.start();
+      else haze?.stop();
+    }
 
     // The photo's current source, for the haze: its files are named for
     // their cut and width (footer-road-<cut>-<width>.<ext>), and the portrait
@@ -490,7 +452,7 @@ const connect = [
         .then(() => {
           haze = createHeatHaze({
             canvas,
-            frame: footer.querySelector<HTMLElement>(".footer-frame")!,
+            frame: footer.querySelector<HTMLElement>(".footer-canvas-wrap")!,
             img: photo,
             source,
             onReady: () => canvas.classList.add("is-ready"),
@@ -499,7 +461,7 @@ const connect = [
               haze = null;
             },
           });
-          if (footerVisible && !document.hidden) haze?.start();
+          runHaze();
         })
         .catch(() => {});
       // Turning a tablet or phone switches between the cuts; the haze
@@ -520,20 +482,13 @@ const connect = [
     new IntersectionObserver(
       (entries) => {
         footerVisible = entries[0].isIntersecting;
-        if (footerVisible) {
-          loadPhoto();
-          haze?.start();
-        } else {
-          haze?.stop();
-        }
+        if (footerVisible) loadPhoto();
+        runHaze();
       },
       { threshold: 0 },
     ).observe(footer);
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) haze?.stop();
-      else if (footerVisible) haze?.start();
-    });
+    document.addEventListener("visibilitychange", runHaze);
 
     /* ── Statement typewriter ──
        Once the viewport's bottom edge has reached the footer's bottom 40%,
@@ -707,6 +662,13 @@ const connect = [
       const distanceFromBottom =
         docScrollH - (window.scrollY + window.innerHeight);
       setEchoVisible(distanceFromBottom <= 6);
+      // Past the end: mobile Safari's rubber-band reports the overshoot in
+      // scrollY. The haze holds still until the bounce settles back.
+      const past = distanceFromBottom < -1;
+      if (past !== overscrolled) {
+        overscrolled = past;
+        runHaze();
+      }
     }
     // Shared scroll bus — functional (not decorative), so it must run under
     // reduced motion too, which the bus's native scroll listener guarantees.
