@@ -28,10 +28,11 @@
  * middle alone (see paintTurn below). The quote, last, is only ever on black.
  *
  * Two sets of objects share the canvas across it. The hero's three dissolve
- * into the dark; a second, larger set of orbs fades up out of it and drifts
- * past for the length of the pinned career section. The engine
- * (src/scripts/glass-scene.ts) owns the cross-fade — here we only say how far
- * the turn has come and how far each set has climbed.
+ * into the dark; a second set fades up out of it — one orb per employer, in
+ * that company's colours, each drifting past while its entry is on show in the
+ * pinned career section. The engine (src/scripts/glass-scene.ts) owns the
+ * cross-fade — here we only say how far the turn has come and how far each
+ * orb has climbed.
  */
 ---
 
@@ -161,15 +162,17 @@
     const CAREER_IN: [number, number] = [0.3, 0.88];
 
     // — Dark half —
-    // How far the career orbs travel, in background heights, over the whole
-    // dark stretch (front rising, pinned career section, quote). Tuned so the
-    // last of them is still arriving as the quote scrolls out: high enough
-    // that orbs keep passing, low enough that none crosses in a single flick.
-    const CAREER_TRAVEL = 3.35;
-    // Where each career orb starts, as a fraction of the background height
-    // below the bottom edge — spaced so roughly three are in frame at once.
-    const CAREER_START_Y = -0.35;
-    const CAREER_GAP_Y = 0.55;
+    // One career orb per employer, oldest first, each crossing the middle of
+    // the frame while its own entry is the one on show in the pinned section.
+    // The gap is how far apart successive orbs ride, in background heights —
+    // it sets their speed too, since each has one entry's worth of scroll to
+    // cover it in. ~0.5 keeps the next one rising as the last one leaves.
+    const CAREER_GAP_Y = 0.5;
+    // Where an orb sits while its entry is at the middle of its slot, as a
+    // fraction of the background height from the bottom — the open band under
+    // the dossier panel, so the company on show has its orb in plain sight
+    // rather than frosted behind the panel.
+    const CAREER_MID_Y = 0.27;
 
     /* ══════════════════════════════════════════════════════════════════ */
 
@@ -184,8 +187,10 @@
 
        · channel 0, the hero/about objects. They climb at SCROLL_SENSITIVITY
          until the turn to dark begins, then leave over it.
-       · channel 1, the career orbs, on the normalised progress of the whole
-         dark stretch.
+       · channels 1…N, one per career orb, each zeroed on the scroll position
+         where its employer's entry sits mid-slot in the pinned career section
+         — so every orb crosses the middle of the frame while its company is
+         the one being read.
        · the turn itself, read straight off the anchor section's live top edge
          rather than off a cached scroll position, so it cannot desync from
          the section it is handing over to no matter what reflows above.
@@ -193,11 +198,10 @@
        Both lifts are eased inside the engine, so the parallax glides. The turn
        is not: the page's smooth-scroll already carries it, and a second lag
        would leave the backdrop trailing the section. */
-    let pinEnd = 1; // scroll distance the background stays pinned (px)
     let scopeTop = 0; // the scope's document offset
     let bgH = 1; // pinned background height (CSS px)
-    let darkStart = 1; // scroll into the scope where the dark stretch begins
-    let darkSpan = 1; // …and how much scroll it gets
+    let careerAt = 1; // scroll into the scope where Career's pin engages
+    let careerStep = 1; // scroll the pin gives each entry
     let fadeLead = 1; // how far Career's top edge climbs over the whole turn
     let fadeStart = 1; // scroll into the scope where the turn begins
 
@@ -229,9 +233,13 @@
       const climb = Math.min(Math.max(y, 0), fadeStart) * SCROLL_SENSITIVITY;
       scene.setScrollTarget(climb + d * bgH * HERO_EXIT_SENSITIVITY, 0);
 
-      // Dark half.
-      const q = clamp01((y - darkStart) / darkSpan);
-      scene.setScrollTarget(q * CAREER_TRAVEL * bgH, 1);
+      // Dark half: orb i is at rest (lift 0, i.e. CAREER_MID_Y) when entry i
+      // is mid-slot, and rides CAREER_GAP_Y background heights per entry.
+      const rate = (CAREER_GAP_Y * bgH) / careerStep;
+      for (let i = 0; i < CAREER_OBJECTS.length; i++) {
+        const mid = careerAt + (i + 0.5) * careerStep;
+        scene.setScrollTarget((y - mid) * rate, 1 + i);
+      }
     }
 
     /* Three things off the canvas move with the backdrop.
@@ -296,93 +304,103 @@
     // shape: 0 sphere, 1 cube. edgeR shifts the center right by that many
     // radii (lets the teal sphere rest against the page's center line).
     // Gradients are linear, 0% at the top of the object → 100% at the bottom.
-    /* The dark half's orbs. Same material, same drift, but they read
+    /* The dark half's orbs — one per employer, oldest first, each in its
+       company's colours. Same material and drift as the hero's, but they read
        differently against near-black: where the hero's three are dark shapes
        pushing through bone, these are lit ones surfacing out of black, so the
-       gradients run brighter and the matcap (a dark glossy ball) is mostly
-       off. The palette walks the hero's purple/blue/teal across to the
-       career section's lime, which is the accent every element in it shares.
+       matcap (a dark glossy ball) is mostly off and `dim` holds them back from
+       being the brightest thing over the copy.
+
+       The two gradients map onto a brand pair: ga0 is the top of the orb, ga1
+       the lower half, and the material itself rolls the bottom rim to white —
+       which is where the "and white" of the blue and purple pairs comes from,
+       with ga1 pushed pale to meet it. gb0 is the shadowed base under both.
 
        zone: 1 marks them as belonging below the front — they stay at zero
-       coverage until it has risen past them — and lift: 1 puts them on the
-       career scroll channel. Placement is generated rather than written out
-       per object: they are a stream, and what matters is the spacing.
-       cy/scale/x are the per-orb character. */
-    const CAREER_COLORS = [
-      // lime — the career accent, first up out of the dark
+       coverage until it has risen past them — and each rides its own lift
+       channel (1 + index) so it can be timed to its own entry. */
+    const CAREER_ORBS = [
       {
-        ga0: [0.404, 0.78, 0.271],
-        ga1: [0.808, 0.969, 0.62],
-        gb0: [0.176, 0.392, 0.11],
+        // McDonald's — Golden Arches over a ketchup red
+        ga0: [0.86, 0.16, 0.11],
+        ga1: [1.0, 0.78, 0.17],
+        gb0: [0.47, 0.05, 0.03],
       },
-      // violet, carried over from the hero's purple sphere
       {
-        ga0: [0.451, 0.243, 0.878],
-        ga1: [0.69, 0.529, 1.0],
-        gb0: [0.267, 0.106, 0.588],
+        // Artesian Builds — cobalt, washing out to white
+        ga0: [0.13, 0.4, 0.96],
+        ga1: [0.66, 0.82, 1.0],
+        gb0: [0.04, 0.16, 0.56],
       },
-      // cyan
       {
-        ga0: [0.055, 0.647, 0.749],
-        ga1: [0.353, 0.878, 0.949],
-        gb0: [0.02, 0.325, 0.427],
+        // Squib — violet, washing out to a lavender white
+        ga0: [0.5, 0.25, 0.94],
+        ga1: [0.87, 0.8, 1.0],
+        gb0: [0.23, 0.08, 0.52],
       },
-      // indigo
       {
-        ga0: [0.176, 0.31, 0.902],
-        ga1: [0.439, 0.576, 1.0],
-        gb0: [0.078, 0.133, 0.573],
+        // Rumor — black glass, white highlights, a gold accent. Black on
+        // near-black has no edge of its own, so the dark glossy matcap is
+        // left mostly uncovered (low gradient mixes): its white speculars and
+        // the fresnel rim draw the ball, and the gold stays a band low on it
+        // rather than turning it into a gold ball.
+        ga0: [0.1, 0.1, 0.11],
+        ga1: [0.8, 0.6, 0.22],
+        gb0: [0.03, 0.03, 0.03],
+        mat: 1,
+        gaMix: 0.4,
+        gbMix: 0.2,
       },
-      // lime again, small and bright
       {
-        ga0: [0.404, 0.78, 0.271],
-        ga1: [0.808, 0.969, 0.62],
-        gb0: [0.176, 0.392, 0.11],
-      },
-      // teal — the hero's front sphere, returning last
-      {
-        ga0: [0.055, 0.788, 0.541],
-        ga1: [0.361, 0.941, 0.714],
-        gb0: [0.0, 0.443, 0.318],
+        // Junior — deep blue into teal
+        ga0: [0.07, 0.32, 0.9],
+        ga1: [0.13, 0.86, 0.78],
+        gb0: [0.02, 0.2, 0.42],
       },
     ];
     /* Placement carries one constraint the hero's does not: the career section
        keeps live type over the whole left third of the frame (the year spine
        and the employer list), where the dossier panel is not there to sit
-       between. So the big orbs stay right of ~0.4 — behind the panel and the
-       open space under it — and only small, dim ones cross the rail.
-                x     scale  shape (0 sphere, 1 cube)  matcap  brightness */
+       between. So the larger orbs stay right of ~0.4 — behind the panel and
+       the open space under it — and the ones that cross the rail stay a touch
+       smaller. Sizes and brightness are kept close so the five read as one
+       set rather than as big ones and stragglers.
+                x     scale  shape (0 sphere, 1 cube)  brightness */
     const CAREER_PLACE = [
-      { x: 0.78, s: 0.62, shape: 0 as const, mat: 0, dim: 0.5 },
-      { x: 0.44, s: 0.95, shape: 0 as const, mat: 0.45, dim: 0.44 },
-      { x: 0.11, s: 0.38, shape: 1 as const, mat: 0, dim: 0.38 },
-      { x: 0.9, s: 0.72, shape: 0 as const, mat: 0, dim: 0.5 },
-      { x: 0.31, s: 0.4, shape: 0 as const, mat: 0, dim: 0.34 },
-      { x: 0.64, s: 1.05, shape: 0 as const, mat: 0, dim: 0.46 },
+      { x: 0.76, s: 0.8, shape: 0 as const, dim: 0.56 },
+      { x: 0.42, s: 0.9, shape: 0 as const, dim: 0.52 },
+      { x: 0.16, s: 0.7, shape: 1 as const, dim: 0.48 },
+      { x: 0.86, s: 0.85, shape: 0 as const, dim: 0.72 },
+      { x: 0.56, s: 0.92, shape: 0 as const, dim: 0.52 },
     ];
 
-    const CAREER_OBJECTS: GlassObject[] = CAREER_PLACE.map((p, i) => ({
-      shape: p.shape,
-      mat: p.mat,
-      rFrac: SPHERE_R_FRAC * p.s,
-      cx: p.x,
-      cy: CAREER_START_Y - i * CAREER_GAP_Y,
-      edgeR: 0,
-      ...CAREER_COLORS[i],
-      gaMix: 0.66,
-      gbMix: 0.34,
-      dim: p.dim,
-      // Staggered phases and mildly irregular speeds so the stream never
-      // settles into a visible rhythm.
-      driftAmp: 0.034 + (i % 3) * 0.008,
-      driftYScale: 0.7,
-      spdX: 0.15 + i * 0.017,
-      spdY: 0.1 + i * 0.011,
-      phX: i * 1.37,
-      phY: 2.4 + i * 0.93,
-      lift: 1,
-      zone: 1,
-    }));
+    const CAREER_OBJECTS: GlassObject[] = CAREER_PLACE.map((p, i) => {
+      const c = CAREER_ORBS[i];
+      return {
+        shape: p.shape,
+        mat: c.mat ?? 0,
+        rFrac: SPHERE_R_FRAC * p.s,
+        cx: p.x,
+        cy: CAREER_MID_Y,
+        edgeR: 0,
+        ga0: c.ga0,
+        ga1: c.ga1,
+        gb0: c.gb0,
+        gaMix: c.gaMix ?? 0.66,
+        gbMix: c.gbMix ?? 0.34,
+        dim: p.dim,
+        // Staggered phases and mildly irregular speeds so the stream never
+        // settles into a visible rhythm.
+        driftAmp: 0.034 + (i % 3) * 0.008,
+        driftYScale: 0.7,
+        spdX: 0.15 + i * 0.017,
+        spdY: 0.1 + i * 0.011,
+        phX: i * 1.37,
+        phY: 2.4 + i * 0.93,
+        lift: 1 + i,
+        zone: 1,
+      };
+    });
 
     const OBJECTS: GlassObject[] = [
       {
@@ -476,17 +494,25 @@
     function measure() {
       bgH = bg.offsetHeight;
       scopeTop = scope.getBoundingClientRect().top + window.scrollY;
-      pinEnd = Math.max(scope.offsetHeight - bgH, 1);
 
       if (!darkAnchor) return;
       const anchorTop =
         darkAnchor.getBoundingClientRect().top + window.scrollY - scopeTop;
 
-      // The dark stretch the career orbs travel over: it opens as the anchor
-      // enters the bottom of the pinned background and runs to the end of the
-      // pin, i.e. the bottom of the quote.
-      darkStart = Math.max(Math.min(anchorTop - bgH, pinEnd), 0);
-      darkSpan = Math.max(pinEnd - darkStart, 1);
+      // Career's pin, mirrored from its own script: progress 0 is its top
+      // edge at the top of the screen, 1 is its full travel later, and that
+      // travel is split evenly into one slot per entry (the newest entry's
+      // slot doubles as the run-out). Oldest entry first, which is the order
+      // the orbs are in.
+      const pin = darkAnchor.querySelector<HTMLElement>(".pin");
+      const travel =
+        darkAnchor.offsetHeight - (pin?.offsetHeight ?? window.innerHeight);
+      let entries = CAREER_OBJECTS.length;
+      try {
+        entries = JSON.parse(darkAnchor.dataset.stepMap || "[]").length || entries;
+      } catch {}
+      careerAt = anchorTop;
+      careerStep = Math.max(travel / entries, 1);
 
       // The turn, kept as a *distance* rather than a pair of scroll positions:
       // how much further Career's top edge has to climb between the frame the
