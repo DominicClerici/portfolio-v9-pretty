@@ -18,11 +18,11 @@
  * Unlike Hermeus's, this one has to pass for the real thing, so it behaves
  * the way shimmer over a long flat surface does:
  *
- *   · it lives over the water only, inside the river's own wedge, and rises
- *     just a little into the trees above the river's far end;
+ *   · it covers the whole river, bank to bank and down to the bottom of the
+ *     frame, and rises just a little into the trees above its far end;
  *   · it grows with distance. Looking up the river, the sightline skims ever
- *     more warm air, so the near water is left alone and the effect peaks
- *     where the river bends out of sight;
+ *     more warm air, so the effect peaks where the river bends out of sight
+ *     and eases off toward the foreground;
  *   · its texture is laid out on the water's plane rather than the screen,
  *     so the ripples crowd together and tighten into the distance exactly as
  *     the river does.
@@ -41,30 +41,38 @@
    Measured off the source photo (5472×3648), in image UV: x from the left,
    y down from the top. */
 // The water's far visible edge, where the river bends out of sight below El
-// Capitan…
+// Capitan
 const FAR_Y = 0.655
-// …and its left/right banks there, a touch left of centre.
-const FAR_X = [0.46, 0.545]
-// How fast each bank spreads outward (UV x per UV y) toward the camera.
-// Both run near 1.3 down to ≈0.82, past which the haze has faded out; the
-// feather below absorbs where the real banks wander off the straight line.
-const BANK_SLOPE = [1.3, 1.3]
-// Where the two banks would meet if the river ran on straight and flat: the
-// vanishing point's height. Distance up the river goes as 1 / (y − HORIZON_Y).
+// The banks, as [y, left x, right x] from the far edge to the bottom of the
+// photo, straight between. The river spreads like a road running away from
+// the camera down to ≈0.78; below that the left bank runs out of frame and
+// the right one stops under the overhanging leaves.
+const BANKS = [
+  [FAR_Y, 0.46, 0.545],
+  [0.7, 0.44, 0.6],
+  [0.74, 0.4, 0.64],
+  [0.78, 0.22, 0.71],
+  [0.82, -0.02, 0.74],
+  [1, -0.02, 0.74],
+]
+// Where the banks of that first straight stretch (both spreading ≈1.3 UV x
+// per UV y) would meet if it ran on flat: the vanishing point's height, and
+// its line across the frame. Distance up the river goes as 1 / (y − HORIZON_Y).
 const HORIZON_Y = 0.622
+const AXIS_X = 0.5025
+// Past this height below the horizon the noise stops spreading with the
+// water plane. Left to grow, the foreground's ripples would be swells a
+// third of the frame wide rather than a shimmer.
+const NEAR_H = 0.15
 
 /* ── Extent ──
-   Intensity follows distance, normalised to 1 at the far edge. DEPTH sets
-   how quickly it falls off toward the camera: at DEPTH below the far edge it
-   is 2^−FALLOFF of its peak. It is then faded out entirely across FADE (UV y
-   below the far edge), and above the far edge it only rises RISE into the
-   trees before stopping. */
-const DEPTH = 0.08
-const FALLOFF = 1.3
-const FADE = [0.08, 0.2]
+   Intensity is 1 at the far edge and eases down to FOREGROUND at the bottom
+   of the photo. Above the far edge it only rises RISE into the trees before
+   stopping. */
+const FOREGROUND = 0.6
 const RISE = 0.012 // ≈44px of the source photo
 // Feather past the banks: a fixed margin plus a share of the half-width
-const BANK_FEATHER = [0.008, 0.2]
+const BANK_FEATHER = [0.008, 0.1]
 
 /* ── Distortion ──
    Amplitudes are fractions of the image height at full intensity, so the
@@ -80,12 +88,11 @@ const BLUR_BIAS = 1.3 // peak mip bias of the drifting blur patches
 
 /* ── Canvas band ──
    Everything above reaches no higher than the rise over the far edge
-   (FAR_Y − RISE ≈ 0.643) and no lower than the fade (FAR_Y + FADE[1] =
-   0.855), so the canvas spans just CANVAS_Y of the photo's height, full
-   width. The texture spans a little more, TEX_Y, for the distortion to
-   sample from. */
-const CANVAS_Y = [0.64, 0.86]
-const TEX_Y = [0.63, 0.87]
+   (FAR_Y − RISE ≈ 0.643) and runs on to the bottom of the photo, so the
+   canvas spans CANVAS_Y of the photo's height, full width. The texture
+   starts a little higher, TEX_Y, for the distortion to sample from. */
+const CANVAS_Y = [0.64, 1]
+const TEX_Y = [0.63, 1]
 // Device pixel ratio ceiling. The band is small enough to afford full density
 // on any current screen.
 const MAX_DPR = 3
@@ -134,6 +141,8 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   if (!gl) return null
 
   const f1 = (x: number) => x.toFixed(5)
+  const bankY = BANKS.map((b) => f1(b[0])).join(", ")
+  const bankX = BANKS.map((b) => `vec2(${f1(b[1])}, ${f1(b[2])})`).join(", ")
 
   const VS = `#version 300 es
     layout(location = 0) in vec2 aPos;
@@ -151,9 +160,22 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     out vec4 outColor;
 
     const float FAR_Y = ${f1(FAR_Y)};
-    const vec2 FAR_X = vec2(${f1(FAR_X[0])}, ${f1(FAR_X[1])});
-    const vec2 BANK_SLOPE = vec2(${f1(BANK_SLOPE[0])}, ${f1(BANK_SLOPE[1])});
+    const int NB = ${BANKS.length};
+    const float BANK_Y[NB] = float[NB](${bankY});
+    const vec2 BANK_X[NB] = vec2[NB](${bankX});
     const float HORIZON_Y = ${f1(HORIZON_Y)};
+
+    // The banks (left, right) at height y. Above the far edge they are the
+    // far edge's own, so the rise into the trees sits squarely over the water.
+    vec2 banks(float y) {
+      for (int i = 1; i < NB; i++) {
+        if (y <= BANK_Y[i]) {
+          float t = clamp((y - BANK_Y[i - 1]) / (BANK_Y[i] - BANK_Y[i - 1]), 0.0, 1.0);
+          return mix(BANK_X[i - 1], BANK_X[i], t);
+        }
+      }
+      return BANK_X[NB - 1];
+    }
 
     // Cheap 3D value noise — the third axis is time, so the pattern boils in
     // place instead of just scrolling past.
@@ -212,20 +234,16 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       float dy = uv.y - FAR_Y;
       float below = max(dy, 0.0);
 
-      // The river's wedge at this height — above the far edge it is the far
-      // edge's own width, so the rise into the trees sits squarely over the
-      // water
-      vec2 bank = FAR_X + vec2(-BANK_SLOPE.x, BANK_SLOPE.y) * below;
-      float center = 0.5 * (bank.x + bank.y);
+      vec2 bank = banks(uv.y);
       float halfW = 0.5 * (bank.y - bank.x);
       float feather = ${f1(BANK_FEATHER[0])} + halfW * ${f1(BANK_FEATHER[1])};
-      float inRiver = 1.0 - smoothstep(halfW, halfW + feather, abs(uv.x - center));
+      float inRiver = 1.0 - smoothstep(halfW, halfW + feather, abs(uv.x - 0.5 * (bank.x + bank.y)));
 
-      // Distance up the river (1 at the far edge), and the extent envelope
-      float dist = pow(${f1(DEPTH)} / (${f1(DEPTH)} + below), ${f1(FALLOFF)});
+      // The extent envelope: full strength at the far edge, easing to
+      // FOREGROUND at the bottom of the photo
       float env = dy < 0.0
         ? 1.0 - smoothstep(0.0, ${f1(RISE)}, -dy)
-        : dist * (1.0 - smoothstep(${f1(FADE[0])}, ${f1(FADE[1])}, below));
+        : mix(1.0, ${f1(FOREGROUND)}, below / ${f1(1 - FAR_Y)});
       float m = inRiver * env;
 
       // Transparent where there is nothing to distort, so the <img> beneath
@@ -237,11 +255,14 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
         return;
       }
 
-      // Water-plane coordinates. Depth runs as log(h), lateral as offset over
-      // h, so a fixed noise cell covers less and less of the screen the
-      // further up the river it lies — the shimmer tightens with the river.
+      // Water-plane coordinates, about the river's axis. Depth runs as
+      // log(h), lateral as offset over h, so a fixed noise cell covers less
+      // and less of the screen the further up the river it lies — the
+      // shimmer tightens with the river. h levels off toward NEAR_H in the
+      // foreground, where the cells would otherwise grow into swells.
       float h = max(uv.y - HORIZON_Y, 0.003);
-      vec4 hz = haze(vec2((uv.x - center) * uAspect / h * 0.5, log(h) * 2.5)
+      h = h / (1.0 + h / ${f1(NEAR_H)});
+      vec4 hz = haze(vec2((uv.x - ${f1(AXIS_X)}) * uAspect / h * 0.5, log(h) * 2.5)
                      * ${f1(TIGHTEN)});
 
       vec2 d = (hz.xy * vec2(${f1(WARP_AMP[0])}, ${f1(WARP_AMP[1])})
