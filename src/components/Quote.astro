@@ -47,8 +47,12 @@
     </cite>
   </div>
 
+  <!-- place-self-end: the section's place-items-center reaches this absolute
+       line too in Safari, which aligns it within the box its insets leave
+       it (the section inset by 24px at the bottom and right). Centred, that
+       pulled it off the corner; aligned to the end, it sits at the insets. -->
   <p
-    class="absolute bottom-6 right-6 md:bottom-10 md:right-12 font-mono text-[10px] md:text-xs text-white/30 tracking-wide"
+    class="absolute bottom-6 right-6 md:bottom-10 md:right-12 place-self-end font-mono text-[10px] md:text-xs text-white/30 tracking-wide"
   >
     &ldquo;Eh, maybe...&rdquo; &mdash; Dominic Clerici
   </p>
