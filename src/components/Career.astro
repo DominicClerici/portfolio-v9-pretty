@@ -805,6 +805,21 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         letters = panel.querySelectorAll(".ch:not(.logo)").length;
         morph.place(x, r.top - s.top, r.width, instant, delay);
       };
+      // After a layout change the slot is only measured again. On phones,
+      // resize fires every time the address bar slides in or out, which
+      // happens mid-scroll; cutting the glide to its end there made the
+      // logo stutter back and forth. Reflowing keeps it moving and just
+      // shifts where it lands.
+      const reflowLogo = () => {
+        if (!morph || activeStep < 0) return;
+        const panel = section.querySelector<HTMLElement>(
+          `.panel[data-panel="${stepMap[activeStep]}"]`,
+        )!;
+        const r = panel.querySelector(".logo-slot")!.getBoundingClientRect();
+        const s = stack.getBoundingClientRect();
+        logoX = r.left - s.left;
+        morph.reflow(logoX, r.top - s.top, r.width);
+      };
 
       // ── Selection ──
       let activeStep = -1;
@@ -939,18 +954,18 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       window.addEventListener("resize", () => {
         measure();
         frame();
-        placeLogo(true);
+        reflowLogo();
       });
       measure();
       frame();
       // The name reflows when the display face arrives, moving the slot.
-      document.fonts?.ready.then(() => placeLogo(true));
+      document.fonts?.ready.then(reflowLogo);
 
       if ("ResizeObserver" in window) {
         const ro = new ResizeObserver(() => {
           measure();
           frame();
-          placeLogo(true);
+          reflowLogo();
         });
         // travelPx is derived from these two boxes, so observing them directly
         // is what keeps the cache honest between resize events.
