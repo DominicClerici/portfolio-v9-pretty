@@ -17,13 +17,27 @@
  * off at zero speed and land at zero speed, and if the target changes
  * mid-flight they bend toward it from where they are instead of restarting,
  * so fast scrolling through several entries stays one continuous melt. The
- * canvas glides to wherever the next logo sits on the same curve, and the
- * colour turns around the hue wheel (OKLCH) rather than through grey.
+ * canvas glides to wherever the next logo sits on the same curve.
+ *
+ * Each logo is painted with its own linear gradient (a flat colour is a
+ * gradient of one). Every pixel works out what each logo in the blend
+ * would paint there, exactly as the SVG would, and mixes those by the same
+ * weights, turning around the hue wheel (OKLCH) rather than through grey. So
+ * the gradients cross-fade point by point as the shape melts, and at rest
+ * the canvas matches the plain SVG.
  *
  * WebGL2 only. Without it, the caller keeps the plain inline SVGs.
  */
 
-export type Logo = { path: string; color: string }
+/** A linear gradient in the logo's 100×100 box: from → to, stops as
+ *  [offset 0…1, "#rrggbb"]. Interpolated in sRGB, as SVG does. */
+export type LogoPaint = {
+  from: [number, number]
+  to: [number, number]
+  stops: [number, string][]
+}
+
+export type Logo = { path: string; paint: LogoPaint }
 
 export type LogoMorph = {
   canvas: HTMLCanvasElement
@@ -63,6 +77,8 @@ const GLIDE_RATE = 10
 // away toward either end, the easing faster, so it is gone at rest.
 const BLOAT = 2.6
 const BLUR = 5
+// Gradient stops per logo the shader takes; fewer are padded with the last.
+const STOPS = 3
 
 // ── Distance fields ──
 // Felzenszwalb & Huttenlocher's exact squared Euclidean distance transform,
@@ -157,55 +173,33 @@ const fieldOf = (path: string) => {
 }
 
 // ── Colour ──
-const toLinear = (c: number) =>
-  c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-const toGamma = (c: number) =>
-  c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055
+const rgb = (hex: string) =>
+  [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
 
-// "#rrggbb" -> [L, C, h] (OKLCH, h in radians)
-const oklch = (hex: string) => {
-  const [r, g, b] = [1, 3, 5].map((i) =>
-    toLinear(parseInt(hex.slice(i, i + 2), 16) / 255),
+// OKLab a, b of "#rrggbb".
+const ab = (hex: string) => {
+  const [r, g, b] = rgb(hex).map((c) =>
+    c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
   )
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
-  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
-  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s
-  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
-  return [L, Math.hypot(A, B), Math.atan2(B, A)]
-}
-
-const rgbOf = ([L, C, h]: number[]) => {
-  const A = C * Math.cos(h)
-  const B = C * Math.sin(h)
-  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3
-  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3
-  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3
   return [
-    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    -0.0041960863 * l - 0.7034186147 * m + 1.707608369 * s,
-  ].map((c) => Math.min(1, Math.max(0, toGamma(c))))
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ]
 }
 
-// Blend along the shorter way round the hue wheel. Folded in heaviest
-// first, so a two-way blend is exact and a stray third barely registers.
-const mixColor = (lch: number[][], w: Float32Array) => {
-  const order = [...w.keys()].filter((i) => w[i] > 0).sort((a, b) => w[b] - w[a])
-  let [L, C, h] = lch[order[0]]
-  let acc = w[order[0]]
-  for (const i of order.slice(1)) {
-    const t = w[i] / (acc + w[i])
-    const [L2, C2, h2] = lch[i]
-    let dh = h2 - h
-    dh -= Math.round(dh / (2 * Math.PI)) * 2 * Math.PI
-    L += (L2 - L) * t
-    C += (C2 - C) * t
-    h += dh * t
-    acc += w[i]
+// A gradient's overall hue: the chroma-weighted mean of its stops'.
+const hueOf = (paint: LogoPaint) => {
+  let a = 0
+  let b = 0
+  for (const [, hex] of paint.stops) {
+    const [x, y] = ab(hex)
+    a += x
+    b += y
   }
-  return rgbOf([L, C, h])
+  return Math.atan2(b, a)
 }
 
 // ── GL ──
@@ -221,19 +215,85 @@ const fragFor = (n: number) => `#version 300 es
 precision highp float;
 precision highp sampler2DArray;
 uniform sampler2DArray uField;
+// The logos in the blend, heaviest first: how many, their weights, and
+// which layer (logo) each is.
+uniform int uCount;
 uniform float uW[${n}];
+uniform int uLayer[${n}];
+// Per logo: gradient start (xy) and direction over its length² (zw), and
+// its stops as (sRGB, offset), and its overall hue.
+uniform vec4 uGrad[${n}];
+uniform float uHue[${n}];
+uniform vec4 uStop[${n * STOPS}];
 uniform float uBloat;
 uniform float uBlur;
 uniform float uPx;
-uniform vec3 uColor;
 in vec2 vUv;
 out vec4 o;
 float field(vec2 uv) {
   float d = 0.0;
   for (int i = 0; i < ${n}; i++) {
-    if (uW[i] > 0.0) d += uW[i] * texture(uField, vec3(uv, float(i))).r;
+    if (i >= uCount) break;
+    d += uW[i] * texture(uField, vec3(uv, float(uLayer[i]))).r;
   }
   return d;
+}
+// What logo l paints at p (logo units), as OKLCH.
+vec3 paint(int l, vec2 p) {
+  vec4 g = uGrad[l];
+  float t = clamp(dot(p - g.xy, g.zw), 0.0, 1.0);
+  vec4 a = uStop[l * ${STOPS}];
+  vec3 c = a.rgb;
+  for (int k = 1; k < ${STOPS}; k++) {
+    vec4 b = uStop[l * ${STOPS} + k];
+    if (t > a.w) c = mix(a.rgb, b.rgb, clamp((t - a.w) / max(b.w - a.w, 1e-5), 0.0, 1.0));
+    a = b;
+  }
+  vec3 lin = mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
+  vec3 lms = pow(mat3(
+    0.4122214708, 0.2119034982, 0.0883024619,
+    0.5363325363, 0.6806995451, 0.2817188376,
+    0.0514459929, 0.1073969566, 0.6299787005) * lin, vec3(1.0 / 3.0));
+  vec3 lab = mat3(
+    0.2104542553, 1.9779984951, 0.0259040371,
+    0.7936177850, -2.4285922050, 0.7827717662,
+    -0.0040720468, 0.4505937099, -0.8086757660) * lms;
+  return vec3(lab.x, length(lab.yz), atan(lab.z, lab.y));
+}
+vec3 rgbOf(vec3 lch) {
+  vec3 lms = mat3(
+    1.0, 1.0, 1.0,
+    0.3963377774, -0.1055613458, -0.0894841775,
+    0.2158037573, -0.0638541728, -1.2914855480) *
+    vec3(lch.x, lch.y * cos(lch.z), lch.y * sin(lch.z));
+  vec3 lin = mat3(
+    4.0767416621, -1.2684380046, -0.0041960863,
+    -3.3077115913, 2.6097574011, -0.7034186147,
+    0.2309699292, -0.3413193965, 1.7076083690) * (lms * lms * lms);
+  lin = clamp(lin, 0.0, 1.0);
+  return mix(12.92 * lin, 1.055 * pow(lin, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, lin));
+}
+float wrap(float a) { return a - 6.2831853 * floor(a / 6.2831853 + 0.5); }
+// Blend round the hue wheel, the shorter way between the two logos' overall
+// hues. Deciding that per pixel instead would split a gradient whose far
+// ends lie either side of opposite into two halves turning opposite ways,
+// with a seam between. Folded in heaviest first, so a two-way blend is exact
+// and a stray third barely registers.
+vec3 color(vec2 p) {
+  vec3 c = paint(uLayer[0], p);
+  float ref = uHue[uLayer[0]];
+  float acc = uW[0];
+  for (int i = 1; i < ${n}; i++) {
+    if (i >= uCount) break;
+    vec3 c2 = paint(uLayer[i], p);
+    float t = uW[i] / (acc + uW[i]);
+    float way = wrap(uHue[uLayer[i]] - ref);
+    float dh = way + wrap(c2.z - c.z - way);
+    c = vec3(mix(c.xy, c2.xy, t), c.z + dh * t);
+    ref += way * t;
+    acc += uW[i];
+  }
+  return rgbOf(c);
 }
 void main() {
   float d = field(vUv);
@@ -247,7 +307,8 @@ void main() {
   }
   d -= uBloat;
   float a = clamp(0.5 - d / uPx, 0.0, 1.0);
-  o = vec4(uColor * a, a);
+  if (a <= 0.0) discard;
+  o = vec4(color(vUv * ${SPAN.toFixed(1)} - ${MARGIN.toFixed(1)}) * a, a);
 }`
 
 export const logoMorph = (
@@ -283,12 +344,32 @@ export const logoMorph = (
   gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
   gl.useProgram(prog)
+  const uCount = gl.getUniformLocation(prog, "uCount")
   const uW = gl.getUniformLocation(prog, "uW")
+  const uLayer = gl.getUniformLocation(prog, "uLayer")
   const uBloat = gl.getUniformLocation(prog, "uBloat")
   const uBlur = gl.getUniformLocation(prog, "uBlur")
   const uPx = gl.getUniformLocation(prog, "uPx")
-  const uColor = gl.getUniformLocation(prog, "uColor")
   gl.uniform1i(gl.getUniformLocation(prog, "uField"), 0)
+  // The paints never change: set them once.
+  const grad = new Float32Array(n * 4)
+  const stops = new Float32Array(n * STOPS * 4)
+  logos.forEach(({ paint: { from, to, stops: st } }, i) => {
+    const dx = to[0] - from[0]
+    const dy = to[1] - from[1]
+    const len2 = dx * dx + dy * dy || 1
+    grad.set([from[0], from[1], dx / len2, dy / len2], i * 4)
+    for (let k = 0; k < STOPS; k++) {
+      const [at, hex] = st[Math.min(k, st.length - 1)]
+      stops.set([...rgb(hex), k < st.length ? at : 1], (i * STOPS + k) * 4)
+    }
+  })
+  gl.uniform4fv(gl.getUniformLocation(prog, "uGrad"), grad)
+  gl.uniform4fv(gl.getUniformLocation(prog, "uStop"), stops)
+  gl.uniform1fv(
+    gl.getUniformLocation(prog, "uHue"),
+    logos.map((l) => hueOf(l.paint)),
+  )
   gl.bindVertexArray(gl.createVertexArray())
 
   const tex = gl.createTexture()
@@ -324,7 +405,6 @@ export const logoMorph = (
     idle(warm)
   }
 
-  const lch = logos.map((l) => oklch(l.color))
   // Two lag stages per weight: u chases the target, w chases u.
   const u = new Float32Array(n)
   const w = new Float32Array(n)
@@ -356,31 +436,32 @@ export const logoMorph = (
     const g = gl!
     const px = size * (SPAN / 100)
     canvas.style.transform = `translate3d(${(pw[0] - (px - size) / 2).toFixed(2)}px, ${(pw[1] - (px - size) / 2).toFixed(2)}px, 0)`
-    // Weights too small to see are dropped, and the rest renormalised, so
-    // the shader only samples the fields actually in the blend.
+    // Weights too small to see are dropped, and the rest renormalised and
+    // passed heaviest first, so the shader only samples the fields actually
+    // in the blend.
+    const order = [...w.keys()]
+      .filter((i) => w[i] > 1e-3 && ready[i])
+      .sort((a, b) => w[b] - w[a])
+    const sum = order.reduce((s, i) => s + w[i], 0)
     const ws = new Float32Array(n)
-    let sum = 0
-    for (let i = 0; i < n; i++) {
-      if (w[i] > 1e-3 && ready[i]) {
-        ws[i] = w[i]
-        sum += w[i]
-      }
-    }
+    const layers = new Int32Array(n)
     let sq = 0
-    for (let i = 0; i < n; i++) {
-      ws[i] /= sum
+    order.forEach((l, i) => {
+      ws[i] = w[l] / sum
+      layers[i] = l
       sq += ws[i] * ws[i]
-    }
+    })
     g.viewport(0, 0, canvas.width, canvas.height)
     g.clearColor(0, 0, 0, 0)
     g.clear(g.COLOR_BUFFER_BIT)
+    g.uniform1i(uCount, order.length)
     g.uniform1fv(uW, ws)
+    g.uniform1iv(uLayer, layers)
     // 2(1 − Σw²) is 0 at rest and 1 halfway between two.
     const mid = 2 * (1 - sq)
     g.uniform1f(uBloat, BLOAT * mid * mid)
     g.uniform1f(uBlur, BLUR * mid)
     g.uniform1f(uPx, SPAN / canvas.width)
-    g.uniform3fv(uColor, mixColor(lch, ws))
     g.drawArrays(g.TRIANGLES, 0, 3)
   }
 

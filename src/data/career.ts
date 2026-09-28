@@ -3,6 +3,7 @@ import rumorLogo from "../assets/logos/rumor.svg?raw";
 import squibLogo from "../assets/logos/squib.svg?raw";
 import artesianLogo from "../assets/logos/artesian-builds.svg?raw";
 import mcdonaldsLogo from "../assets/logos/mcdonalds.svg?raw";
+import type { LogoPaint } from "../scripts/logo-morph";
 
 // Career entries, newest first, for the Career section.
 //
@@ -17,6 +18,8 @@ import mcdonaldsLogo from "../assets/logos/mcdonalds.svg?raw";
 //
 // `logo` is the company's mark as SVG markup: one path, filled even-odd, set
 // to fill a 100×100 box (see the note in Career.astro on how they morph).
+// Its fill is a flat colour or a linear gradient in the box's own units
+// (gradientUnits="userSpaceOnUse"), which the morph reads back via logoPaint.
 export interface CareerEntry {
   period: string;
   start: string;
@@ -51,7 +54,7 @@ export const entries: CareerEntry[] = [
       "Diarization",
     ],
     url: "https://junior.ai/",
-    accent: "#3fe0c5",
+    accent: "#508DE3",
     logo: juniorLogo,
   },
   {
@@ -73,7 +76,7 @@ export const entries: CareerEntry[] = [
       "Swift",
     ],
     url: "https://www.therumor.com/",
-    accent: "#dcb563",
+    accent: "#FFDC52",
     logo: rumorLogo,
   },
   {
@@ -88,7 +91,7 @@ export const entries: CareerEntry[] = [
     skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
     tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
     url: "https://www.heysquib.com/",
-    accent: "#ae92ff",
+    accent: "#BF66FF",
     logo: squibLogo,
   },
   {
@@ -103,7 +106,7 @@ export const entries: CareerEntry[] = [
     skills: ["Full Stack", "Internal Tooling", "SEO", "Data Analysis"],
     tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
     url: "https://en.wikipedia.org/wiki/Artesian_Builds",
-    accent: "#72a0ff",
+    accent: "#5C92FF",
     logo: artesianLogo,
   },
   {
@@ -239,6 +242,26 @@ export const axisAt = (now: number): Axis => {
 
 // The path data out of an entry's logo markup.
 export const logoPath = (e: CareerEntry) => /\sd="([^"]+)"/.exec(e.logo)![1];
+
+// The logo's fill as a gradient line in its 100×100 box. A flat fill is a
+// gradient of one colour.
+export const logoPaint = (e: CareerEntry): LogoPaint => {
+  const g = /<linearGradient([^>]*)>(.*?)<\/linearGradient>/.exec(e.logo);
+  if (!g) {
+    const c = /fill="(#[0-9a-fA-F]{6})"/.exec(e.logo)![1];
+    return { from: [0, 0], to: [100, 100], stops: [[0, c]] };
+  }
+  const at = (name: string, fallback: number) =>
+    +(new RegExp(`\\s${name}="([^"]+)"`).exec(g[1])?.[1] ?? fallback);
+  return {
+    from: [at("x1", 0), at("y1", 0)],
+    to: [at("x2", 100), at("y2", 0)],
+    stops: [...g[2].matchAll(/<stop([^>]*)\/>/g)].map(([, a]) => [
+      +(/offset="([^"]+)"/.exec(a)?.[1] ?? 0),
+      /stop-color="([^"]+)"/.exec(a)![1],
+    ]),
+  };
+};
 
 // "2026-09" -> "Sep 2026"
 const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");

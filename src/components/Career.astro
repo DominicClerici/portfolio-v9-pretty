@@ -477,7 +477,14 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 </style>
 
 <script>
-  import { axisAt, entries, logoPath, nowYear, ordered } from "../data/career";
+  import {
+    axisAt,
+    entries,
+    logoPaint,
+    logoPath,
+    nowYear,
+    ordered,
+  } from "../data/career";
   import { logoMorph } from "../scripts/logo-morph";
   {
     const section = document.querySelector<HTMLElement>("#career");
@@ -762,7 +769,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // over the slot after the name on show. If WebGL goes, the inline SVGs
       // in the slots take back over.
       const morph = logoMorph(
-        entries.map((e) => ({ path: logoPath(e), color: e.accent })),
+        entries.map((e) => ({ path: logoPath(e), paint: logoPaint(e) })),
         stepMap[0],
         () => {
           delete section.dataset.morph;
