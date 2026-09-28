@@ -64,14 +64,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       >
         <!-- ── Time axis (top on mobile, foot of the frame on desktop) ── -->
         <div class="axis">
-          <div class="flex items-baseline justify-between mb-3 lg:mb-4">
-            <h2
-              class="font-mono text-[11px] lg:text-[12px] leading-none tracking-[-0.02em] uppercase text-n-400"
-            >
-              Career&ensp;<span class="text-n-600">/</span>&ensp;<span
-                class="count text-n-100 tabular-nums">01</span
-              ><span class="text-n-600 tabular-nums"> — {pad(N)}</span>
-            </h2>
+          <div class="flex items-baseline justify-end mb-3 lg:mb-4">
+            <h2 class="sr-only">Career</h2>
             <span
               class="readout font-mono text-[11px] lg:text-[12px] leading-none tracking-[-0.02em] text-n-400 tabular-nums"
               aria-hidden="true">{ordered[0].entry.start.replace("-", ".")}</span
@@ -298,8 +292,16 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     pointer-events: none;
   }
 
+  /* The name and its logo always share one line: the longest of them
+     ("Artesian Builds" plus the logo) runs to just under 8em, so below
+     ~440px the size tracks the container width (the viewport less the
+     2rem gutter) instead of the fluid ramp. */
   .name {
-    font-size: clamp(3.25rem, calc(3.25rem + (100vw - 27.5rem) * 0.09), 10rem);
+    font-size: clamp(
+      2rem,
+      min(3.25rem + (100vw - 27.5rem) * 0.09, (100vw - 2rem) / 8),
+      10rem
+    );
   }
 
   /* The logo sits on the baseline after the last word (inside its span, so
@@ -312,6 +314,14 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     width: 0.7em;
     height: 0.7em;
     margin-left: 0.18em;
+  }
+
+  /* A touch larger on phones and tablets, where the name is smaller. */
+  @media (max-width: 1023px) {
+    .logo-slot {
+      width: 0.8em;
+      height: 0.8em;
+    }
   }
 
   .logo-slot .logo,
@@ -332,7 +342,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     }
 
     .name {
-      font-size: 2.75rem;
+      font-size: min(2.75rem, (100vw - 2rem) / 8);
     }
 
     .desc {
@@ -493,7 +503,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       const bars = section.querySelectorAll<HTMLElement>(".bar");
       const panels = section.querySelectorAll<HTMLElement>(".panel");
       const chart = section.querySelector<HTMLElement>(".chart")!;
-      const count = section.querySelector<HTMLElement>(".count")!;
       const readout = section.querySelector<HTMLElement>(".readout")!;
       const stack = section.querySelector<HTMLElement>(".stack")!;
 
@@ -825,7 +834,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
               p.kind.draw(p.el, p.s);
             }
           });
-        count.textContent = String(step + 1).padStart(2, "0");
         if (morph) {
           const instant = first || reduceMotion.matches;
           morph.show(stepMap[step], instant);
