@@ -247,12 +247,15 @@ class Casino {
     if (!on) {
       if (this.heldEdge !== null) root.style.backgroundColor = this.heldEdge
       this.heldEdge = null
+      delete root.dataset.casinoHeld
       return
     }
     const atEnd = !!this.dock || window.scrollY + window.innerHeight >= root.scrollHeight - 8
     if (!this.sheet.active || !atEnd) return
     this.heldEdge = root.style.backgroundColor
     root.style.backgroundColor = STATUS_BG
+    // For the page's own end to match too (the footer's peek)
+    root.dataset.casinoHeld = ""
   }
 
   /* ── Navigation ── */
@@ -447,7 +450,8 @@ class Casino {
 
     // Focus lands on the shell itself when the dialog opens, not the first
     // button, so nothing wears a focus ring until the keyboard asks for one
-    const shell = h("div", { class: "cz-shell", tabindex: "-1", autofocus: true }, top, this.main, status, toasts)
+    const glow = h("div", { class: "cz-glow", "aria-hidden": "true" })
+    const shell = h("div", { class: "cz-shell", tabindex: "-1", autofocus: true }, glow, top, this.main, status, toasts)
     dialog.append(shell)
     this.shell = shell
     this.sheet = new Sheet(

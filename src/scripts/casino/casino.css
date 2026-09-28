@@ -127,13 +127,30 @@
   overflow: hidden;
   border: 1px solid var(--cz-line);
   border-radius: var(--cz-radius);
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgb(206 247 158 / 0.05), transparent 60%),
-    var(--cz-bg);
+  background: var(--cz-bg);
+  /* So the glow below can sit between the shell's background and its
+     content */
+  isolation: isolate;
   box-shadow:
     0 40px 120px -20px rgb(0 0 0 / 0.8),
     0 0 0 1px rgb(255 255 255 / 0.02) inset;
   animation: cz-in 0.42s var(--cz-ease) both;
+}
+
+/* The glow behind the handle. On a layer of its own so it can fade: down at
+   the footer's peek (sheet.ts, is-docked) the sheet is the peek, which is
+   flat, and it only glows once it's up. */
+.cz-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 60% at 50% -10%, rgb(206 247 158 / 0.05), transparent 60%);
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.cz-shell.is-docked .cz-glow {
+  opacity: 0;
 }
 
 .cz.is-closing .cz-shell {

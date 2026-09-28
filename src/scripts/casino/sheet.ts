@@ -175,6 +175,14 @@ export class Sheet {
     this.measure()
     if (reducedMotion.matches) return this.set(0)
     this.y = this.dockY ?? this.height
+    // Starting from the dock, start as the dock looks, without the glow
+    // (casino.css), and bring it in on the way up. Played rather than left
+    // to the class's transition: the sheet was hidden until this same task,
+    // so there is no earlier style for a transition to start from.
+    if (this.dockY !== null)
+      this.shell
+        .querySelector(".cz-glow")
+        ?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: "ease" })
     void this.springTo0(0, OPEN_SPRING)
   }
 

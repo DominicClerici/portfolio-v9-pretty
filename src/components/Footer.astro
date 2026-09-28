@@ -401,12 +401,20 @@ const connect = [
      there, in the contact section's own colour). So here the footer grows
      upward by the toolbar's difference (lvh − svh), all of it top padding:
      the content keeps its svh-tall box and its place against the bottom,
-     exactly as before, and the band above it is just more of the photo. */
+     exactly as before, and the band above it is just more of the photo.
+
+     In iOS Safari it grows by a bleed more (--overlay-bleed, 0 elsewhere):
+     the screen runs on above the large viewport, under the status bar, and
+     at the end of the page that strip still showed the contact section's
+     near-black above the footer. Taller by more than any bar, the footer is
+     the window there too, onto the sky the photo's pin carries above it. */
   @supports (height: 100lvh) {
     @media (max-width: 767px) {
       #site-footer {
-        padding-top: calc(100lvh - 100svh);
-        height: calc(max(680px, 100svh) + 100lvh - 100svh);
+        padding-top: calc(100lvh - 100svh + var(--overlay-bleed));
+        height: calc(
+          max(680px, 100svh) + 100lvh - 100svh + var(--overlay-bleed)
+        );
       }
     }
   }
@@ -437,6 +445,17 @@ const connect = [
       background: var(--sky-portrait);
     }
   }
+  /* On phones the page ends on the casino peek, and the photo stops a few
+     pixels short of that, behind the peek. The peek's foot rarely lands on
+     a whole pixel, and where it and the photo shared an edge, that edge's
+     last row blended the two into a faint light line. With nothing behind
+     it but the page's own bottom colour, which is the peek's, there is
+     nothing to see. */
+  @media (max-width: 767px) {
+    .footer-photo-track {
+      bottom: 4px;
+    }
+  }
 
   /* The blur-up, cut and pinned to match whichever photo the <picture>
      picks. */
@@ -451,15 +470,12 @@ const connect = [
   }
 
   /* The casino peek: the phone sheet's top bar (casino.css), value for
-     value, over the start of its body. The sheet's glow is sized off its
-     own height, which the peek doesn't have, so it is sized off the height
-     the sheet would be instead. */
+     value, over the start of its body. Flat, without the glow the open
+     sheet has behind its handle: the sheet fades that out when it comes
+     down to the peek, so the drawer is one colour, the same as the page's
+     bottom colour past the end of the page (index.astro's edgeBottom). */
   .casino-peek {
-    --sheet-h: calc(100svh - max(env(safe-area-inset-top), 16px) - 24px);
-    /* The peek's colour along its foot, the glow averaged across a phone's
-       width: what carries it on below, here and past the end of the page
-       (index.astro's edgeBottom) */
-    --peek-foot: #0e0f0d;
+    --peek-bg: var(--color-n-950);
     /* The bar less its last 3px: 2px of padding and its 1px border, which
        would sit right at the end of the page. Plus the peek's own top
        border. */
@@ -467,23 +483,24 @@ const connect = [
     overflow: hidden;
     border-top: 1px solid var(--color-n-800);
     border-radius: 20px 20px 0 0;
-    background:
-      radial-gradient(
-        120% calc(0.6 * var(--sheet-h)) at 50% calc(-0.1 * var(--sheet-h)),
-        rgb(206 247 158 / 0.05),
-        transparent 60%
-      ),
-      var(--color-n-950);
+    background: var(--peek-bg);
     /* Carries the drawer on a little past the end of the footer, over the
        sliver left below it when the page isn't a whole number of pixels
        tall. A shadow is ink rather than content, so it adds no scroll (and
        the footer clips only sideways, to let it show). */
-    box-shadow: 0 12px 0 0 var(--peek-foot);
+    box-shadow: 0 12px 0 0 var(--peek-bg);
     font-size: 13px;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
+  }
+  /* While the sheet is up at the end of the page (index.ts, holdEdge) the
+     page's end takes on the colour of its status bar, --cz-status-bg, and
+     so does the peek under it, the last of the page Safari might take its
+     toolbar's colour from. */
+  :global(html[data-casino-held]) .casino-peek {
+    --peek-bg: #080808;
   }
   .casino-peek:focus-visible {
     outline: 2px solid var(--color-bio-lime);
