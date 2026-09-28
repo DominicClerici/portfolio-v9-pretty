@@ -77,12 +77,11 @@ const connect = [
        top bar showing the bare page. The page itself is drawn under the bars,
        and so now is the photo.
 
-       It never moves, the end of the page included. The pin itself is only
-       as tall as the screen is with Safari's bars out (svh), which is as
-       much as there is above the page's end when Safari brings them back
-       there, so the track never runs out under it. The photo hangs from its
-       top at the full height of the screen (lvh) regardless, and the track
-       clips whatever of it would hang past the page's end.
+       It never moves, the end of the page included. The pin is no taller
+       than the sky above the photo, so the track can never run out under it
+       and push it up; the photo hangs from its foot at the full height of
+       the screen (lvh), and the track clips whatever of it would hang past
+       the page's end.
 
        Above the photo, the pin carries it on up past the top of the screen in
        the colour of the photo's own top edge, its sky (--overlay-bleed, 0 off
@@ -401,29 +400,26 @@ const connect = [
 </footer>
 
 <style>
-  /* Phones only. An svh-tall footer is shorter than the screen once the
-     browser's toolbar retracts, so scrolled to the bottom the contact
-     section's rounded foot showed above it (wider screens have the cap bar
-     there, in the contact section's own colour). So here the footer grows
-     upward by the toolbar's difference (lvh − svh), all of it top padding:
-     the content keeps its svh-tall box and its place against the bottom,
-     exactly as before, and the band above it is just more of the photo.
+  /* Phones only. The footer is as tall as the screen can ever be (lvh),
+     plus the status bar's height (the top safe area), so that scrolled to
+     the end it still reaches past the top of the screen, under the status
+     bar, and the contact section's near-black never shows above it (wider
+     screens have the cap bar there, in the contact section's own colour).
 
-     It grows by the status bar's height more (the top safe area): the
-     screen runs on above the viewport, under the status bar, and at the end
-     of the page that strip showed the contact section's near-black above
-     the footer. Taller by that, the footer is the window there too, onto
-     the sky the photo's pin carries above it, and no taller. */
-  @supports (height: 100lvh) {
+     Its content box, though, is the viewport as it is right now (dvh), and
+     the rest is top padding. At the end of the page Safari brings its
+     toolbar back up and the page ends above it, leaving less of the screen
+     than even svh promises; a box of any fixed height would put the
+     statement and the button up under the status bar there. Only the split
+     between padding and content moves as the toolbar does, never the
+     footer's height, so the page's length (and where it is scrolled to)
+     never changes. */
+  @supports (height: 100dvh) {
     @media (max-width: 767px) {
       #site-footer {
-        padding-top: calc(
-          100lvh - 100svh + env(safe-area-inset-top, 0px)
-        );
-        height: calc(
-          max(680px, 100svh) + 100lvh - 100svh +
-            env(safe-area-inset-top, 0px)
-        );
+        --footer-h: calc(max(680px, 100lvh) + env(safe-area-inset-top, 0px));
+        height: var(--footer-h);
+        padding-top: calc(var(--footer-h) - max(680px, 100dvh));
       }
     }
   }
@@ -431,9 +427,7 @@ const connect = [
   /* The photo's track, pin and frame (see the markup). The track starts a
      screen above the footer, so the pin is stuck from the moment the footer
      shows, and clips (never scrolls: clip, not hidden, or the pin would
-     stick to it) the photo where it would hang past the page's end. The pin
-     stops 8px short of the small viewport: the track ends 4px short of the
-     page on phones (see below), and the pin must never reach its end. 100vh
+     stick to it) the photo where it would hang past the page's end. 100vh
      first for iOS before 15.4, where it is the large viewport too. */
   .footer-photo-track {
     top: calc(-100vh - var(--overlay-bleed));
@@ -442,8 +436,7 @@ const connect = [
   }
   .footer-photo-pin {
     top: calc(-1 * var(--overlay-bleed));
-    height: calc(100vh + var(--overlay-bleed) - 8px);
-    height: calc(100svh + var(--overlay-bleed) - 8px);
+    height: var(--overlay-bleed);
   }
   .footer-photo-sky {
     height: var(--overlay-bleed);
