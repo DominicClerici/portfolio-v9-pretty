@@ -2787,10 +2787,13 @@
     -webkit-backdrop-filter: none;
     animation: none;
   }
+  /* Reaching up past the top of the screen's box, so it dims under
+     Safari's top bar too (see --overlay-bleed in global.css). Not past the
+     bottom: under the toolbar is the drawer's (index.ts, holdEdge). */
   .cz-scrim {
     display: block;
     position: fixed;
-    inset: 0;
+    inset: calc(-1 * var(--overlay-bleed)) 0 0;
     background: rgb(0 0 0 / 0.55);
   }
   .cz-shell {
@@ -2811,7 +2814,7 @@
   .cz-top {
     position: relative;
     gap: 8px 10px;
-    padding: 22px max(8px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+    padding: 18px max(8px, env(safe-area-inset-right)) 5px max(14px, env(safe-area-inset-left));
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;

@@ -59,7 +59,7 @@ const connect = [
 
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-x-clip md:overflow-hidden"
 >
   <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
        page (-z-10), so the opaque sections above the footer hide it and the
@@ -98,7 +98,7 @@ const connect = [
        decorative. -->
   <div
     class="footer-canvas-wrap fixed inset-0 -z-10"
-    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
+    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder});--sky-landscape:${photo.landscape.sky};--sky-portrait:${photo.portrait.sky}`}
     aria-hidden="true"
   >
     <div class="footer-photo-frame absolute inset-x-0 top-0 h-full">
@@ -356,9 +356,10 @@ const connect = [
 
          It is drawn to match the sheet's own bar (casino.css, the phone
          sheet) edge for edge, so the sheet can stand in for it without a
-         seam. Below it the drawer carries on, through the safe area and,
-         past the end of the page, under Safari's toolbar, where the
-         page's bottom colour (Layout's edgeBottom) is the drawer's. -->
+         seam, but cut off just short of the bar's bottom border: the page
+         ends a couple of pixels above it. Past the end of the page, under
+         Safari's toolbar, the drawer carries on in the page's bottom colour
+         (Layout's edgeBottom), which is the drawer's. -->
     <button
       type="button"
       data-casino-peek
@@ -397,6 +398,25 @@ const connect = [
     }
   }
 
+  /* iOS Safari lays fixed boxes out between its bars, so with the page at
+     its end the top bar was left over the bare page (the footer is only a
+     window onto the photo), which is near-black there. The wrap carries the
+     photo on up past its top edge in the colour of the photo's own top edge,
+     its sky, far enough to cover any bar (--overlay-bleed is 0 off iOS). */
+  .footer-canvas-wrap::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 100%;
+    height: var(--overlay-bleed);
+    background: var(--sky-landscape);
+  }
+  @media (max-width: 1023px) and (orientation: portrait) {
+    .footer-canvas-wrap::before {
+      background: var(--sky-portrait);
+    }
+  }
+
   /* The blur-up, cut and pinned to match whichever photo the <picture>
      picks. */
   .footer-photo-frame {
@@ -432,7 +452,11 @@ const connect = [
      the sheet would be instead. */
   .casino-peek {
     --sheet-h: calc(100svh - max(env(safe-area-inset-top), 16px) - 24px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* The bar less its last 3px: 2px of padding and its 1px border, which
+       would sit right at the end of the page. Plus the peek's own top
+       border. */
+    height: 58px;
+    overflow: hidden;
     border-top: 1px solid var(--color-n-800);
     border-radius: 20px 20px 0 0;
     background:
@@ -442,6 +466,12 @@ const connect = [
         transparent 60%
       ),
       var(--color-n-950);
+    /* Carries the drawer on a little past the end of the footer. The page
+       is rarely a whole number of pixels tall, and scrolled to its end the
+       sliver left over below the footer would otherwise show the photo
+       behind it. A shadow is ink rather than content, so it adds no scroll
+       (and the footer clips only sideways on phones, to let it show). */
+    box-shadow: 0 12px 0 0 var(--color-n-950);
     font-size: 13px;
     touch-action: none;
     user-select: none;
@@ -462,13 +492,13 @@ const connect = [
     background: var(--color-n-700);
     transform: translateX(-50%);
   }
-  /* 22px over and 8px under a row as tall as the sheet's 36px buttons */
+  /* 18px over and 5px under a row as tall as the sheet's 36px buttons */
   .casino-peek-bar {
     display: flex;
     align-items: center;
-    height: 67px;
-    padding: 22px max(8px, env(safe-area-inset-right))
-      8px max(14px, env(safe-area-inset-left));
+    height: 60px;
+    padding: 18px max(8px, env(safe-area-inset-right))
+      5px max(14px, env(safe-area-inset-left));
     border-bottom: 1px solid var(--color-n-800);
   }
   .casino-peek-title {

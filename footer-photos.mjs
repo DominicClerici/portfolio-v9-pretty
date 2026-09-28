@@ -66,6 +66,9 @@ const PORTRAIT_ASPECT = 3 / 4
 const LANDSCAPE_WIDTHS = [1280, 1920, 2560, 3840, 5120]
 const PORTRAIT_WIDTHS = [900, 1320, 1900, 2280]
 
+// How many of the source's top rows the sky colour is averaged over
+const SKY_ROWS = 24
+
 const AVIF = { quality: 62, effort: 6 }
 const WEBP = { quality: 84, effort: 6, smartSubsample: true }
 
@@ -129,6 +132,15 @@ async function renderSet(label, region, widths, fade) {
       console.log(`${file.padEnd(38)} ${(size / 1024).toFixed(0).padStart(5)} KB`)
     }
   }
+  // The sky at the cut's top edge, averaged along it: the colour the footer
+  // carries the photo on with, up past the top of the screen
+  const { data: row } = await sharp(SOURCE)
+    .extract({ ...region, height: SKY_ROWS })
+    .resize({ width: 1, height: 1, kernel: "lanczos3", fit: "fill" })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const sky = "#" + [...row.subarray(0, 3)].map((c) => c.toString(16).padStart(2, "0")).join("")
   // 24px blur-up, shown until the real photo arrives
   const tiny = await cut()
     .resize({ width: region.width >= region.height ? 24 : 18 })
@@ -142,6 +154,7 @@ async function renderSet(label, region, widths, fade) {
     avif: set.avif.join(", "),
     webp: set.webp.join(", "),
     placeholder: `data:image/webp;base64,${tiny.toString("base64")}`,
+    sky,
   }
 }
 

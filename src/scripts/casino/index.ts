@@ -57,6 +57,9 @@ const QUIPS = [
 ]
 
 const TITLE = "/dev/null/casino.sh"
+
+// The status bar's colour: its 25% black over the shell's --cz-bg
+const STATUS_BG = "#080808"
 const SCRIPT = "casino.sh"
 
 const FACTORIES: Record<GameId, () => Game> = {
@@ -97,6 +100,8 @@ class Casino {
   // the sheet rises out of it and settles back into it (see sheet.ts)
   private dock: HTMLElement | null = null
   private releaseScroll: (() => void) | null = null
+  // The page's own root colour, while the sheet has it (holdEdge)
+  private heldEdge: string | null = null
 
   constructor() {
     if (!prefs.name) prefs.name = randomName()
@@ -133,6 +138,7 @@ class Casino {
     this.dialog.showModal()
     // Before the sheet measures the dock, in case holding the page moves it
     this.lockPage(true)
+    this.holdEdge(true)
     if (this.sheet.active && rise) this.sheet.enter()
     // For the page's own animations to stand down while it's covered
     window.dispatchEvent(new CustomEvent("casino", { detail: true }))
@@ -189,6 +195,7 @@ class Casino {
       this.closing = false
       this.dock = null
       this.lockPage(false)
+      this.holdEdge(false)
       window.dispatchEvent(new CustomEvent("casino", { detail: false }))
       document.title = this.pageTitle
       this.releaseNet()
@@ -226,6 +233,25 @@ class Casino {
     if (!on) return
     if (window.innerWidth > html.clientWidth) this.releaseScroll = holdScroll(this.dialog)
     else html.style.overflow = "hidden"
+  }
+
+  /** A sheet opened at the very end of the page sits right on it, and on
+      iOS all there is under Safari's toolbar below it is the root colour
+      (Layout's page ends). While it's up that takes the colour of the
+      sheet's own foot, the status bar, so the sheet runs on under the
+      toolbar; closed, the page's comes back. Anywhere else the end isn't
+      on screen, so it's left alone. */
+  private holdEdge(on: boolean) {
+    const root = document.documentElement
+    if (!on) {
+      if (this.heldEdge !== null) root.style.backgroundColor = this.heldEdge
+      this.heldEdge = null
+      return
+    }
+    const atEnd = window.scrollY + window.innerHeight >= root.scrollHeight - 2
+    if (!this.sheet.active || !atEnd) return
+    this.heldEdge = root.style.backgroundColor
+    root.style.backgroundColor = STATUS_BG
   }
 
   /* ── Navigation ── */
