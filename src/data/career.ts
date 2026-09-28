@@ -1,3 +1,9 @@
+import juniorLogo from "../assets/logos/junior.svg?raw";
+import rumorLogo from "../assets/logos/rumor.svg?raw";
+import squibLogo from "../assets/logos/squib.svg?raw";
+import artesianLogo from "../assets/logos/artesian-builds.svg?raw";
+import mcdonaldsLogo from "../assets/logos/mcdonalds.svg?raw";
+
 // Career entries, newest first, for the Career section.
 //
 // `accent` is the UI-side partner of the company's orb in PinnedCanvas.astro:
@@ -8,6 +14,9 @@
 // Dates are "YYYY-MM" and inclusive: an entry runs from the start of its
 // first month to the end of its last. No `end` means it's the current job,
 // and runs to today.
+//
+// `logo` is the company's mark as SVG markup: one path, filled even-odd, set
+// to fill a 100×100 box (see the note in Career.astro on how they morph).
 export interface CareerEntry {
   period: string;
   start: string;
@@ -20,6 +29,7 @@ export interface CareerEntry {
   tags: string[];
   url: string;
   accent: string;
+  logo: string;
 }
 
 export const entries: CareerEntry[] = [
@@ -42,6 +52,7 @@ export const entries: CareerEntry[] = [
     ],
     url: "https://junior.ai/",
     accent: "#3fe0c5",
+    logo: juniorLogo,
   },
   {
     period: "2025 — 2026",
@@ -63,6 +74,7 @@ export const entries: CareerEntry[] = [
     ],
     url: "https://www.therumor.com/",
     accent: "#dcb563",
+    logo: rumorLogo,
   },
   {
     period: "2024 — 2025",
@@ -77,6 +89,7 @@ export const entries: CareerEntry[] = [
     tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
     url: "https://www.heysquib.com/",
     accent: "#ae92ff",
+    logo: squibLogo,
   },
   {
     period: "2021 — 2022",
@@ -91,6 +104,7 @@ export const entries: CareerEntry[] = [
     tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
     url: "https://en.wikipedia.org/wiki/Artesian_Builds",
     accent: "#72a0ff",
+    logo: artesianLogo,
   },
   {
     period: "2020",
@@ -105,6 +119,7 @@ export const entries: CareerEntry[] = [
     tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
     url: "https://www.mcdonalds.com/us/en-us.html",
     accent: "#ffc83d",
+    logo: mcdonaldsLogo,
   },
 ];
 
@@ -221,6 +236,9 @@ export const axisAt = (now: number): Axis => {
   };
   return { pct, year, bar, marks };
 };
+
+// The path data out of an entry's logo markup.
+export const logoPath = (e: CareerEntry) => /\sd="([^"]+)"/.exec(e.logo)![1];
 
 // "2026-09" -> "Sep 2026"
 const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");

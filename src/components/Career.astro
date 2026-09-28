@@ -34,7 +34,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 
      No card either: the scene is the surface. The company name is set huge
      straight onto the glass and rolls over letter by letter as the entries
-     change; the copy sits beside it, straight on the scene too; and the
+     change, with the company's logo after it melting from one mark into
+     the next; the copy sits beside it, straight on the scene too; and the
      time axis runs the full width along the foot of the
      frame — a Gantt of the whole career with a playhead sweeping across it,
      and the orbs rising through the open band just above it. -->
@@ -139,7 +140,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 
         <!-- ── Entries, stacked in one grid cell so the block never re-flows
              as they switch ── -->
-        <div class="stack grid">
+        <div class="stack relative grid">
           {
             entries.map((entry, i) => (
               <article
@@ -166,6 +167,15 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                       ))}
                       {w < words.length - 1 && (
                         <span aria-hidden="true">&nbsp;</span>
+                      )}
+                      {w === words.length - 1 && (
+                        <span class="logo-slot" aria-hidden="true">
+                          <span
+                            class="ch logo"
+                            style={`--ci: ${words.join("").length}`}
+                            set:html={entry.logo}
+                          />
+                        </span>
                       )}
                     </span>
                   ))}
@@ -290,6 +300,29 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 
   .name {
     font-size: clamp(3.25rem, calc(3.25rem + (100vw - 27.5rem) * 0.09), 10rem);
+  }
+
+  /* The logo sits on the baseline after the last word (inside its span, so
+     it never wraps onto a line of its own), about as tall as a capital.
+     Once the script's morph canvas is up it draws the logo over this slot,
+     gliding from slot to slot, and the inline SVGs stand down; without
+     WebGL2 they stay, and roll over with the letters. */
+  .logo-slot {
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    margin-left: 0.18em;
+  }
+
+  .logo-slot .logo,
+  .logo-slot :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #career[data-morph] .logo-slot .logo {
+    visibility: hidden;
   }
 
   /* Short phones: the longest entry has to fit under the axis. */
@@ -444,7 +477,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 </style>
 
 <script>
-  import { axisAt, nowYear, ordered } from "../data/career";
+  import { axisAt, entries, logoPath, nowYear, ordered } from "../data/career";
+  import { logoMorph } from "../scripts/logo-morph";
   {
     const section = document.querySelector<HTMLElement>("#career");
     if (section) {
@@ -454,6 +488,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       const chart = section.querySelector<HTMLElement>(".chart")!;
       const count = section.querySelector<HTMLElement>(".count")!;
       const readout = section.querySelector<HTMLElement>(".readout")!;
+      const stack = section.querySelector<HTMLElement>(".stack")!;
 
 
       // ── Axis ──
@@ -722,6 +757,39 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         kick();
       };
 
+      // ── Logo ──
+      // One canvas for every entry's logo (see scripts/logo-morph.ts), laid
+      // over the slot after the name on show. If WebGL goes, the inline SVGs
+      // in the slots take back over.
+      const morph = logoMorph(
+        entries.map((e) => ({ path: logoPath(e), color: e.accent })),
+        stepMap[0],
+        () => {
+          delete section.dataset.morph;
+          morph?.canvas.remove();
+        },
+      );
+      if (morph) stack.append(morph.canvas);
+      // Headed left, for a shorter name, the logo would cross the old name
+      // on its way out. Those letters leave left to right, 20ms apart, and
+      // take about a third of a second to clear, so it holds until the last
+      // of them is nearly gone.
+      let logoX = NaN;
+      let letters = 0;
+      const placeLogo = (instant: boolean) => {
+        if (!morph || activeStep < 0) return;
+        const panel = section.querySelector<HTMLElement>(
+          `.panel[data-panel="${stepMap[activeStep]}"]`,
+        )!;
+        const r = panel.querySelector(".logo-slot")!.getBoundingClientRect();
+        const s = stack.getBoundingClientRect();
+        const x = r.left - s.left;
+        const delay = x < logoX - 1 ? 260 + (letters - 1) * 20 : 0;
+        logoX = x;
+        letters = panel.querySelectorAll(".ch:not(.logo)").length;
+        morph.place(x, r.top - s.top, r.width, instant, delay);
+      };
+
       // ── Selection ──
       let activeStep = -1;
       const select = (step: number) => {
@@ -751,6 +819,12 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
             }
           });
         count.textContent = String(step + 1).padStart(2, "0");
+        if (morph) {
+          const instant = first || reduceMotion.matches;
+          morph.show(stepMap[step], instant);
+          placeLogo(instant);
+          section.dataset.morph = "";
+        }
       };
 
       // Scroll-pin: map progress through the tall section to the playhead
@@ -850,19 +924,25 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       window.addEventListener("resize", () => {
         measure();
         frame();
+        placeLogo(true);
       });
       measure();
       frame();
+      // The name reflows when the display face arrives, moving the slot.
+      document.fonts?.ready.then(() => placeLogo(true));
 
       if ("ResizeObserver" in window) {
         const ro = new ResizeObserver(() => {
           measure();
           frame();
+          placeLogo(true);
         });
         // travelPx is derived from these two boxes, so observing them directly
         // is what keeps the cache honest between resize events.
         ro.observe(section);
         ro.observe(pin);
+        // And the logo's slot moves whenever the entries reflow.
+        ro.observe(stack);
       }
 
       // Clicking a bar scrolls the page to that entry's slot in the pin,
