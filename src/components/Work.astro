@@ -54,7 +54,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   <header
     class="max-w-[1200px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 pt-[clamp(96px,14vh,180px)]"
   >
-    <div class="border-t border-ink/20" aria-hidden="true"></div>
   </header>
 
   {
@@ -114,12 +113,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
               </div>
 
               <figure class="we1-fig relative m-0">
-                <span
-                  class="we1-no font-display absolute select-none"
-                  aria-hidden="true"
-                >
-                  No.&thinsp;{i + 1}
-                </span>
                 <div
                   class="we1-arch-wrap relative mx-auto"
                   style={`--ar-d: ${shape.d.ar.toFixed(4)}; --ar-m: ${shape.m.ar.toFixed(4)}; --mask-d: ${shape.d.mask}; --mask-m: ${shape.m.mask};`}
@@ -177,12 +170,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     })
   }
 
-  <div
-    class="max-w-[1200px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 pb-[clamp(96px,14vh,180px)]"
-    aria-hidden="true"
-  >
-    <div class="border-t border-ink/20"></div>
-  </div>
+  <div class="pb-[clamp(96px,14vh,180px)]" aria-hidden="true"></div>
 
   {
     projects.map((project, i) => (
@@ -520,24 +508,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     }
   }
 
-  /* Ghost folio numeral behind the plate */
-  .we1-no {
-    font-size: clamp(6rem, 15vw, 11rem);
-    line-height: 1;
-    color: transparent;
-    -webkit-text-stroke: 1px color-mix(in srgb, var(--acc) 40%, transparent);
-    top: -0.35em;
-    right: -0.08em;
-    z-index: -1;
-    transform: translateY(calc((0.5 - var(--par)) * 60px));
-    will-change: transform;
-  }
-
-  .we1-flip .we1-no {
-    right: auto;
-    left: -0.08em;
-  }
-
   .we1-stamp {
     top: 8%;
     right: -14px;
@@ -696,11 +666,6 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
 
     .we1-rings-m {
       display: block;
-    }
-
-    .we1-no {
-      font-size: clamp(5rem, 22vw, 8rem);
-      top: -0.3em;
     }
 
     .we1-plate {
