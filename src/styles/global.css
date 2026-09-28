@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* The casino (loaded on demand) styles itself in casino.css; keep Tailwind
+   from minting utilities out of its strings into every page's stylesheet. */
+@source not "../scripts/casino";
+@source not "../../multiplayer";
+
 /* ── Self-hosted fonts (latin subset only) ── */
 
 /* Aspekta — 400 only, sole display + body face of the new system */
