@@ -137,7 +137,6 @@ function tier(rank: number) {
 
 function cardEl(card: Card, faceDown = false) {
   const r = RANKS[card.rank]
-  const suit = SUITS[card.suit]
   return h(
     "div",
     { class: `cz-pcard${faceDown ? " is-down" : ""}`, style: `--tier:${tier(card.rank)}` },
@@ -147,11 +146,11 @@ function cardEl(card: Card, faceDown = false) {
       h(
         "div",
         { class: "cz-pcard-face cz-pcard-front" },
-        h("span", { class: "cz-pcard-corner is-tl" }, h("span", { html: r.html }), h("span", { class: "cz-pcard-suit", text: suit })),
+        h("span", { class: "cz-pcard-corner is-tl", html: r.html }),
         h("span", { class: "cz-pcard-art", html: sparkline(card.rank) }),
         h("span", { class: "cz-pcard-big", html: r.html }),
         h("span", { class: "cz-pcard-nick", text: r.nick }),
-        h("span", { class: "cz-pcard-corner is-br" }, h("span", { html: r.html }), h("span", { class: "cz-pcard-suit", text: suit })),
+        h("span", { class: "cz-pcard-corner is-br", html: r.html }),
       ),
       h("div", { class: "cz-pcard-face cz-pcard-back" }, h("span", { text: "O( )" })),
     ),
@@ -184,6 +183,7 @@ export class BigOGame implements Game {
   private optA: HTMLButtonElement
   private optB: HTMLButtonElement
   private skipBtn: HTMLButtonElement
+  private spaceHint: HTMLElement
   private action: ReturnType<typeof actionButton>
   private rail: HTMLElement
   private railList: HTMLElement
@@ -228,6 +228,7 @@ export class BigOGame implements Game {
       h("button", { type: "button", class: `cz-guess ${i ? "is-lo" : "is-hi"}`, onclick: () => this.guess(i) })
     this.optA = opt(0)
     this.optB = opt(1)
+    this.spaceHint = h("span", { text: "deal" })
     this.skipBtn = h("button", { type: "button", class: "cz-ghost-btn", text: "Skip", title: "Swap this card for a fresh one (S)", onclick: () => this.skip() })
     this.action = actionButton(() => (this.hand?.state === "live" ? this.cashOut() : this.deal()))
     this.bet.onChange(() => this.renderControls())
@@ -250,7 +251,13 @@ export class BigOGame implements Game {
         this.bet.el,
         h("div", { class: "cz-guesses" }, this.optA, this.optB),
         h("div", { class: "cz-action-row" }, this.skipBtn, this.action.el),
-        h("p", { class: "cz-hint", html: "<kbd>↑</kbd> <kbd>↓</kbd> call · <kbd>S</kbd> skip · <kbd>Space</kbd> deal, cash out" }),
+        h(
+          "p",
+          { class: "cz-hint" },
+          h("kbd", { text: "↑" }), " ", h("kbd", { text: "↓" }), " call · ",
+          h("kbd", { text: "S" }), " skip · ",
+          h("kbd", { text: "Space" }), " ", this.spaceHint,
+        ),
       ),
       this.rail,
     )
@@ -486,6 +493,7 @@ export class BigOGame implements Game {
     fill(this.optA, a, a.kind === "eq" ? "=" : "↑")
     fill(this.optB, b, b.kind === "eq" ? "=" : "↓")
     this.skipBtn.disabled = !live
+    this.spaceHint.textContent = live ? "cash" : "deal"
     if (live && hand) {
       const win = payout(hand.bet, x100(hand.m))
       this.action.set("Cash out", hand.n ? `${money(win)} · ${mult(x100(hand.m))}` : "make a call first", "cash")

@@ -284,11 +284,25 @@ export function segmented<T extends string | number>(
   return api
 }
 
-/** A big primary action button with a label and a secondary line. */
-export function actionButton(onclick: () => void) {
+/** A big primary action button with a label and a secondary line. With
+    `onPress`, a mouse or touch fires it on pointerdown; keyboard activation
+    still comes through as a click. */
+export function actionButton(onclick: () => void, onPress = false) {
   const main = h("span", { class: "cz-action-main" })
   const sub = h("span", { class: "cz-action-sub" })
-  const el = h("button", { type: "button", class: "cz-action", onclick }, main, sub)
+  const el = h("button", { type: "button", class: "cz-action" }, main, sub)
+  let pressedAt = -Infinity
+  if (onPress)
+    el.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 || el.disabled) return
+      pressedAt = performance.now()
+      onclick()
+    })
+  el.addEventListener("click", (e) => {
+    // The click that follows a handled press (keyboard clicks have no detail)
+    if (e.detail !== 0 && performance.now() - pressedAt < 1000) return
+    onclick()
+  })
   return {
     el,
     set(text: string, detail = "", tone: "go" | "cash" | "idle" | "wait" = "go") {

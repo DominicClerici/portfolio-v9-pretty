@@ -237,7 +237,11 @@ class Casino {
     dialog.addEventListener("mousedown", (e) => {
       if (e.target === dialog) this.close()
     })
-    dialog.addEventListener("keydown", (e) => this.onKey(e))
+    // On the document, not the dialog: a button that disables itself when
+    // pressed (deal, deploy) drops focus to <body>, and its keys with it
+    document.addEventListener("keydown", (e) => {
+      if (this.dialog.open && !this.closing && !e.defaultPrevented) this.onKey(e)
+    })
 
     // Title: the command, with the current game typed on as a flag. In a
     // game it doubles as the way back to the lobby.
@@ -656,7 +660,7 @@ class Lobby {
 
 /* Lobby card previews: tiny looping animations, pure SVG + CSS. */
 const ART: Record<GameId, string> = {
-  crash: `<svg viewBox="0 0 200 110" preserveAspectRatio="none"><defs><linearGradient id="cz-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><g class="cz-art-grid"><path d="M0 27.5h200M0 55h200M0 82.5h200M50 0v110M100 0v110M150 0v110"/></g><path class="cz-art-fill" d="M0 104C60 102 110 92 150 64S190 18 200 8V110H0z" fill="url(#cz-ag)"/><path class="cz-art-line" pathLength="1" d="M0 104C60 102 110 92 150 64S190 18 200 8"/></svg><span class="cz-art-mult">2.41&times;</span>`,
+  crash: `<svg viewBox="0 0 200 110" preserveAspectRatio="none"><defs><linearGradient id="cz-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><g class="cz-art-grid"><path d="M0 27.5h200M0 55h200M0 82.5h200M50 0v110M100 0v110M150 0v110"/></g><g class="cz-art-plot"><path class="cz-art-fill" d="M0 104C60 102 110 92 150 64S190 18 200 8V110H0z" fill="url(#cz-ag)"/><path class="cz-art-line" d="M0 104C60 102 110 92 150 64S190 18 200 8"/></g></svg><span class="cz-art-mult">2.41&times;</span>`,
   bigo: `<span class="cz-art-cardstack"><span class="cz-art-minicard is-a">O(1)</span><span class="cz-art-minicard is-b">O(n&sup2;)</span><span class="cz-art-minicard is-c">O(n!)</span></span>`,
   merge: `<span class="cz-art-reel"><span class="cz-art-strip">${Array.from(
     { length: 20 },

@@ -953,14 +953,6 @@
   }
 }
 
-.cz-crash-round {
-  position: absolute;
-  top: 17px;
-  right: 18px;
-  color: var(--cz-mute);
-  font-size: 10.5px;
-}
-
 .cz-crash-bar {
   position: absolute;
   inset: auto 0 0 0;
@@ -1176,9 +1168,6 @@
 
 .cz-pcard-corner {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   color: var(--tier);
   font-size: 11px;
   line-height: 1.2;
@@ -1192,12 +1181,7 @@
 .cz-pcard-corner.is-br {
   right: 13px;
   bottom: 12px;
-  align-items: flex-end;
   transform: rotate(180deg);
-}
-
-.cz-pcard-suit {
-  color: var(--cz-mute);
 }
 
 .cz-pcard-art {
@@ -2286,8 +2270,17 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* Climb, bust, fade, repeat: everything is invisible at the loop point, so
+   the reset (and the colour going back to lime) never shows */
 .cz-art-crash {
-  animation: cz-art-crash 3.4s linear infinite;
+  animation: cz-art-crash 4s linear infinite;
+}
+
+/* Revealed left to right: x is time, so a linear wipe traces the curve */
+.cz-art-plot {
+  animation:
+    cz-art-draw 4s linear infinite,
+    cz-art-life 4s linear infinite;
 }
 
 .cz-art-line {
@@ -2295,14 +2288,12 @@
   stroke: currentColor;
   stroke-width: 2.5;
   stroke-linecap: round;
-  stroke-dasharray: 1;
   vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 0 5px currentColor);
-  animation: cz-art-draw 3.4s cubic-bezier(0.55, 0, 0.9, 0.5) infinite;
 }
 
 .cz-art-fill {
-  animation: cz-art-fill 3.4s linear infinite;
+  animation: cz-art-fill 4s linear infinite;
 }
 
 .cz-art-mult {
@@ -2312,24 +2303,39 @@
   font-family: var(--font-display);
   font-size: 26px;
   letter-spacing: -0.04em;
+  animation: cz-art-life 4s linear infinite;
 }
 
 @keyframes cz-art-draw {
   0% {
-    stroke-dashoffset: 1;
+    clip-path: inset(-10% 100% -10% 0);
   }
-  78%,
+  68%,
   100% {
-    stroke-dashoffset: 0;
+    clip-path: inset(-10% 0 -10% 0);
+  }
+}
+
+@keyframes cz-art-life {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  5%,
+  82% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 0;
   }
 }
 
 @keyframes cz-art-fill {
   0%,
-  20% {
+  15% {
     opacity: 0;
   }
-  78%,
+  68%,
   100% {
     opacity: 1;
   }
@@ -2337,10 +2343,10 @@
 
 @keyframes cz-art-crash {
   0%,
-  77% {
+  67% {
     color: var(--cz-lime);
   }
-  79%,
+  69%,
   100% {
     color: var(--cz-coral);
   }
@@ -3025,5 +3031,11 @@
     animation-iteration-count: 1 !important;
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;
+  }
+  /* The crash preview's last frame is its faded-out one: show the bust */
+  .cz .cz-art-plot,
+  .cz .cz-art-fill,
+  .cz .cz-art-mult {
+    animation: none !important;
   }
 }

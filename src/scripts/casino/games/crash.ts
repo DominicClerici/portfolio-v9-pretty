@@ -101,7 +101,6 @@ export class CrashGame implements Game {
   private ctx: CanvasRenderingContext2D
   private multEl: HTMLElement
   private subEl: HTMLElement
-  private roundEl: HTMLElement
   private barEl: HTMLElement
   private historyEl: HTMLElement
   private table: HTMLElement
@@ -145,7 +144,6 @@ export class CrashGame implements Game {
     this.ctx = this.canvas.getContext("2d")!
     this.multEl = h("div", { class: "cz-crash-mult", text: "1.00×" })
     this.subEl = h("div", { class: "cz-crash-sub" })
-    this.roundEl = h("div", { class: "cz-crash-round" })
     this.barEl = h("div", { class: "cz-crash-bar" }, h("span"))
     this.historyEl = h("div", { class: "cz-crash-history", "aria-label": "Recent rounds" })
 
@@ -155,7 +153,6 @@ export class CrashGame implements Game {
       this.canvas,
       this.historyEl,
       h("div", { class: "cz-crash-center" }, this.multEl, this.subEl),
-      this.roundEl,
       this.barEl,
     )
 
@@ -170,7 +167,9 @@ export class CrashGame implements Game {
       value: prefs.get<string>("crash:auto", ""),
     })
     this.autoInput.addEventListener("input", () => prefs.set("crash:auto", this.autoInput.value))
-    this.action = actionButton(() => this.onAction())
+    // On press, not release: a cash-out is a race, and a click can go
+    // missing when the button re-enables under a cursor that hasn't moved
+    this.action = actionButton(() => this.onAction(), true)
     this.bet.onChange(() => this.renderControls())
     wallet.onChange(() => this.renderControls())
 
@@ -625,7 +624,6 @@ export class CrashGame implements Game {
       this.multEl.textContent = "1.00×"
       this.subEl.textContent = net.live || net.status === "connecting" ? "joining the lobby…" : "idle"
     }
-    this.roundEl.textContent = m.round ? `#${m.round}${m.mode === "remote" ? " · shared round" : ""}` : ""
   }
 
   private resize() {
