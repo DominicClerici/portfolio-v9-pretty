@@ -21,6 +21,8 @@ import {
 import { GAME_INFO, type Game } from "./game"
 import { net, type NetStatus } from "./net"
 import { sfx } from "./sfx"
+import { holdScroll } from "./scroll-hold"
+import { Sheet } from "./sheet"
 import { START_CENTS, prefs, wallet } from "./store"
 import {
   MIN_BET,
@@ -86,6 +88,8 @@ class Casino {
   private balTimer = 0
   private lingerTimer = 0
   private closing = false
+  private sheet!: Sheet
+  private releaseScroll: (() => void) | null = null
 
   constructor() {
     if (!prefs.name) prefs.name = randomName()
@@ -115,7 +119,9 @@ class Casino {
     clearTimeout(this.lingerTimer)
     this.closing = false
     this.dialog.classList.remove("is-closing")
+    this.sheet.reset()
     this.dialog.showModal()
+    if (this.sheet.active) this.sheet.enter()
     this.lockPage(true)
     this.pageTitle = document.title
     document.title = this.titleText()
@@ -134,7 +140,8 @@ class Casino {
     this.quipTimer = window.setInterval(() => this.rotateQuip(), 9000)
   }
 
-  close() {
+  /** `velocity` is the speed (px/ms) a sheet was flung down at, if it was. */
+  close(velocity = 0) {
     if (!this.dialog.open || this.closing) return
     this.closing = true
     clearInterval(this.quipTimer)
@@ -142,6 +149,7 @@ class Casino {
     const done = () => {
       this.dialog.close()
       this.dialog.classList.remove("is-closing")
+      this.sheet.reset()
       this.closing = false
       this.lockPage(false)
       document.title = this.pageTitle
@@ -149,7 +157,8 @@ class Casino {
     }
     if (reducedMotion.matches) return done()
     this.dialog.classList.add("is-closing")
-    window.setTimeout(done, 240)
+    if (this.sheet.active) void this.sheet.exit(velocity).then(done)
+    else window.setTimeout(done, 240)
   }
 
   /** Close the socket, unless a crash bet is still riding: then hold it open
@@ -163,17 +172,22 @@ class Casino {
     if (!this.dialog.open) net.disconnect()
   }
 
+  /** Where scrollbars take up room (desktop), the page keeps its scrollbar
+      and is held still instead: hiding it would widen the viewport, and the
+      usual padding that makes up for that leaves a strip at the right edge
+      where the sections stop short and the fixed footer photo behind them
+      shows through. Where they overlay the page (phones, macOS by default)
+      there is nothing to lose, and overflow: hidden also stops the touch
+      scrolling nothing else can. */
   private lockPage(on: boolean) {
     const html = document.documentElement
     ;(window as unknown as { __smoothScrollLock?: (l: boolean) => void }).__smoothScrollLock?.(on)
-    if (on) {
-      const gap = window.innerWidth - html.clientWidth
-      html.style.overflow = "hidden"
-      if (gap > 0) html.style.paddingRight = `${gap}px`
-    } else {
-      html.style.overflow = ""
-      html.style.paddingRight = ""
-    }
+    this.releaseScroll?.()
+    this.releaseScroll = null
+    html.style.overflow = ""
+    if (!on) return
+    if (window.innerWidth > html.clientWidth) this.releaseScroll = holdScroll(this.dialog)
+    else html.style.overflow = "hidden"
   }
 
   /* ── Navigation ── */
@@ -233,9 +247,12 @@ class Casino {
       e.preventDefault()
       this.close()
     })
-    // A click on the backdrop lands on the dialog itself
+    // A click on the backdrop lands on the dialog itself (or, as a sheet,
+    // on the scrim above it)
+    const scrim = h("div", { class: "cz-scrim", "aria-hidden": "true" })
+    dialog.append(scrim)
     dialog.addEventListener("mousedown", (e) => {
-      if (e.target === dialog) this.close()
+      if (e.target === dialog || e.target === scrim) this.close()
     })
     // On the document, not the dialog: a button that disables itself when
     // pressed (deal, deploy) drops focus to <body>, and its keys with it
@@ -302,6 +319,7 @@ class Casino {
     const top = h(
       "header",
       { class: "cz-top" },
+      h("span", { class: "cz-grabber", "aria-hidden": "true" }),
       this.brand,
       h(
         "div",
@@ -365,6 +383,7 @@ class Casino {
     // button, so nothing wears a focus ring until the keyboard asks for one
     const shell = h("div", { class: "cz-shell", tabindex: "-1", autofocus: true }, top, this.main, status, toasts)
     dialog.append(shell)
+    this.sheet = new Sheet(shell, scrim, top, (v) => this.close(v))
 
     this.renderName()
     this.renderSound()
