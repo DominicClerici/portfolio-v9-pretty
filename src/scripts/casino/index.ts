@@ -137,8 +137,9 @@ class Casino {
     this.sheet.reset()
     this.dialog.showModal()
     // Before the sheet measures the dock, in case holding the page moves it
-    this.lockPage(true)
+    // Before the page is held, while where it's scrolled to still reads true
     this.holdEdge(true)
+    this.lockPage(true)
     if (this.sheet.active && rise) this.sheet.enter()
     // For the page's own animations to stand down while it's covered
     window.dispatchEvent(new CustomEvent("casino", { detail: true }))
@@ -248,7 +249,7 @@ class Casino {
       this.heldEdge = null
       return
     }
-    const atEnd = window.scrollY + window.innerHeight >= root.scrollHeight - 2
+    const atEnd = !!this.dock || window.scrollY + window.innerHeight >= root.scrollHeight - 8
     if (!this.sheet.active || !atEnd) return
     this.heldEdge = root.style.backgroundColor
     root.style.backgroundColor = STATUS_BG

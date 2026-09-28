@@ -59,20 +59,30 @@ const connect = [
 
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-x-clip md:overflow-hidden"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-x-clip"
 >
-  <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
-       page (-z-10), so the opaque sections above the footer hide it and the
-       footer — which has no background of its own — is the only window onto
-       it. That window opening as the footer rises is the reveal, and because
-       the pin is real CSS fixed positioning rather than a scroll-driven
-       transform, the photo cannot drift on compositor-driven (touch)
-       scrolling. Fixed to the *visual* viewport, it also covers the strip
-       below an svh-tall footer when mobile chrome retracts.
+  <!-- The mountain backdrop sits *behind* the whole page (-z-10), so the
+       opaque sections above the footer hide it and the footer — which has no
+       background of its own — is the only window onto it. That window
+       opening as the footer rises is the reveal.
 
-       The wrap itself carries no background colour: Safari (from iOS 26)
-       tints its toolbars from fixed elements' background colours, and
-       without one the page shows through them, edge to edge.
+       It holds still by sticking, not by being fixed. It rides a track that
+       runs from a screen (plus a bleed) above the footer down to the page's
+       end, and sticks to the top of the screen for as long as the track
+       lets it, which is from the moment the footer comes into view; being
+       real CSS positioning, it cannot drift on compositor-driven (touch)
+       scrolling. It is part of the page rather than a fixed box because iOS
+       Safari only draws fixed boxes between its bars: at the end of the page,
+       where Safari brings its bars back, a fixed photo left the band under the
+       top bar showing the bare page. The page itself is drawn under the bars,
+       and so now is the photo. At the page's end the track runs out and the
+       photo comes to rest with its foot on the page's.
+
+       Above the photo, the pin carries it on up past the top of the screen in
+       the colour of the photo's own top edge, its sky (--overlay-bleed, 0 off
+       iOS), for whatever the top bar covers. The pin is kept out of Safari's
+       toolbar tinting (bleed-under-bars, global.css), as it is sticky and
+       spans the screen.
 
        Inside it, the photo's frame: three layers, the photo itself (the real
        background, and all there is without WebGL2 or under reduced motion),
@@ -80,9 +90,10 @@ const connect = [
        texture is up, and above md a scrim that keeps the bone type legible
        against the peak and the near water. The frame's own background is a
        tiny blur-up of whichever cut the <picture> picks, so the text has
-       something to sit on before the real one arrives. The frame fills the
-       wrap, except in iOS Safari, where it is held at a size the toolbar
-       can't change (see the styles).
+       something to sit on before the real one arrives. The frame is held at
+       the height of the screen with the toolbar away (lvh), so the toolbar
+       coming and going only covers and uncovers its foot, rather than
+       re-fitting the photo and sliding the lake up and down with it.
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
@@ -91,17 +102,18 @@ const connect = [
        enough at the bottom for the lake to fill the lower 25% of a tall
        screen. Each is AVIF with a WebP fallback.
 
-       The srcsets are held back in data-srcset: as a fixed element the photo
-       is always "in the viewport" to the browser, so it would load alongside
-       the hero and compete with it. The script sets them once the page has
-       loaded and gone idle instead. Its alt is empty — the scene is
+       The srcsets are held back in data-srcset, so the photo doesn't load
+       alongside the hero and compete with it. The script sets them once the
+       page has loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-0 -z-10"
+    class="footer-photo-track absolute inset-x-0 bottom-0 -z-10 pointer-events-none"
     style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder});--sky-landscape:${photo.landscape.sky};--sky-portrait:${photo.portrait.sky}`}
     aria-hidden="true"
   >
-    <div class="footer-photo-frame absolute inset-x-0 top-0 h-full">
+    <div class="footer-photo-pin sticky bleed-under-bars">
+    <div class="footer-photo-sky absolute inset-x-0 top-0"></div>
+    <div class="footer-photo-frame absolute inset-x-0 bottom-0">
       <picture>
         <source
           media={PORTRAIT}
@@ -142,6 +154,7 @@ const connect = [
       <!-- Placed and sized by the haze over the lake's band of the photo -->
       <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
       <div class="footer-scrim absolute inset-0"></div>
+    </div>
     </div>
   </div>
 
@@ -398,21 +411,29 @@ const connect = [
     }
   }
 
-  /* iOS Safari lays fixed boxes out between its bars, so with the page at
-     its end the top bar was left over the bare page (the footer is only a
-     window onto the photo), which is near-black there. The wrap carries the
-     photo on up past its top edge in the colour of the photo's own top edge,
-     its sky, far enough to cover any bar (--overlay-bleed is 0 off iOS). */
-  .footer-canvas-wrap::before {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    bottom: 100%;
+  /* The photo's track, pin and frame (see the markup). The track starts a
+     pin's height above the footer, so the pin is stuck from the moment the
+     footer shows. 100vh first for iOS before 15.4, where it is the large
+     viewport too. */
+  .footer-photo-track {
+    top: calc(-100vh - var(--overlay-bleed));
+    top: calc(-100lvh - var(--overlay-bleed));
+  }
+  .footer-photo-pin {
+    top: calc(-1 * var(--overlay-bleed));
+    height: calc(100vh + var(--overlay-bleed));
+    height: calc(100lvh + var(--overlay-bleed));
+  }
+  .footer-photo-sky {
     height: var(--overlay-bleed);
     background: var(--sky-landscape);
   }
+  .footer-photo-frame {
+    height: 100vh;
+    height: 100lvh;
+  }
   @media (max-width: 1023px) and (orientation: portrait) {
-    .footer-canvas-wrap::before {
+    .footer-photo-sky {
       background: var(--sky-portrait);
     }
   }
@@ -429,29 +450,16 @@ const connect = [
     }
   }
 
-  /* iOS Safari only (-webkit-touch-callout exists nowhere else). Its bottom
-     toolbar grows and shrinks the viewport, and with it the fixed wrap, as
-     it comes and goes. A frame that followed the wrap would re-fit the photo
-     each time, rescaling it about its top edge so the lake slid up and down
-     with the toolbar. So here the frame keeps the height of the viewport
-     with the toolbar away (lvh), pinned to the top of the screen, and the
-     toolbar only covers and uncovers its foot. The wrap is left as it is,
-     so what Safari samples for its toolbars and draws beneath them does not
-     change. Never shorter than the wrap, so the photo always covers it.
-     100vh first for iOS before 15.4, where it is the large viewport too. */
-  @supports (-webkit-touch-callout: none) {
-    .footer-photo-frame {
-      height: max(100%, 100vh);
-      height: max(100%, 100lvh);
-    }
-  }
-
   /* The casino peek: the phone sheet's top bar (casino.css), value for
      value, over the start of its body. The sheet's glow is sized off its
      own height, which the peek doesn't have, so it is sized off the height
      the sheet would be instead. */
   .casino-peek {
     --sheet-h: calc(100svh - max(env(safe-area-inset-top), 16px) - 24px);
+    /* The peek's colour along its foot, the glow averaged across a phone's
+       width: what carries it on below, here and past the end of the page
+       (index.astro's edgeBottom) */
+    --peek-foot: #0e0f0d;
     /* The bar less its last 3px: 2px of padding and its 1px border, which
        would sit right at the end of the page. Plus the peek's own top
        border. */
@@ -466,12 +474,11 @@ const connect = [
         transparent 60%
       ),
       var(--color-n-950);
-    /* Carries the drawer on a little past the end of the footer. The page
-       is rarely a whole number of pixels tall, and scrolled to its end the
-       sliver left over below the footer would otherwise show the photo
-       behind it. A shadow is ink rather than content, so it adds no scroll
-       (and the footer clips only sideways on phones, to let it show). */
-    box-shadow: 0 12px 0 0 var(--color-n-950);
+    /* Carries the drawer on a little past the end of the footer, over the
+       sliver left below it when the page isn't a whole number of pixels
+       tall. A shadow is ink rather than content, so it adds no scroll (and
+       the footer clips only sideways, to let it show). */
+    box-shadow: 0 12px 0 0 var(--peek-foot);
     font-size: 13px;
     touch-action: none;
     user-select: none;

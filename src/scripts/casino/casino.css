@@ -32,6 +32,10 @@
   --cz-ink: var(--color-ink);
   --cz-bg: var(--color-n-950);
   --cz-panel: var(--color-n-900);
+  /* The status bar's 25% black over --cz-bg, as one colour: the sheet's foot,
+     which the page's root takes on under Safari's toolbar (index.ts,
+     holdEdge) */
+  --cz-status-bg: #080808;
   --cz-raise: var(--color-n-850);
   --cz-line: var(--color-n-800);
   --cz-line-2: var(--color-n-700);
@@ -2609,7 +2613,7 @@
   height: 30px;
   padding: 0 14px;
   border-top: 1px solid var(--cz-line);
-  background: rgb(0 0 0 / 0.25);
+  background: var(--cz-status-bg);
   color: var(--cz-mute);
   font-size: 10.5px;
   white-space: nowrap;
@@ -2775,8 +2779,18 @@
    it. The shadow thrown straight down fills in under the sheet when an
    upward drag stretches it off the bottom edge. */
 @media (max-width: 900px) {
+  /* Kept out of Safari's toolbar tinting, as a fixed box spanning the
+     screen (bleed-under-bars in global.css, which this repeats: the utility
+     doesn't reach this stylesheet). Otherwise Safari covered the toolbar
+     under the sheet with a colour of its own choosing rather than letting
+     the page's, the status bar's, show. The scrim does the same, its dimming
+     moved onto a child. */
   .cz {
     padding: 0;
+    visibility: hidden;
+  }
+  .cz > * {
+    visibility: visible;
   }
   .cz[open] {
     align-items: end;
@@ -2794,7 +2808,14 @@
     display: block;
     position: fixed;
     inset: calc(-1 * var(--overlay-bleed)) 0 0;
+    visibility: hidden;
+  }
+  .cz-scrim::before {
+    content: "";
+    position: absolute;
+    inset: 0;
     background: rgb(0 0 0 / 0.55);
+    visibility: visible;
   }
   .cz-shell {
     width: 100%;
@@ -2804,7 +2825,7 @@
     border-radius: 20px 20px 0 0;
     box-shadow:
       0 -10px 40px -10px rgb(0 0 0 / 0.6),
-      0 64px 0 0 var(--cz-bg);
+      0 64px 0 0 var(--cz-status-bg);
     animation: none;
     will-change: transform;
   }
