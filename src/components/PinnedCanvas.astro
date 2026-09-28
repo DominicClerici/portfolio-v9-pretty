@@ -169,9 +169,9 @@
     // cover it in. ~0.5 keeps the next one rising as the last one leaves.
     const CAREER_GAP_Y = 0.5;
     // Where an orb sits while its entry is at the middle of its slot, as a
-    // fraction of the background height from the bottom — the open band under
-    // the dossier panel, so the company on show has its orb in plain sight
-    // rather than frosted behind the panel.
+    // fraction of the background height from the bottom — the open band
+    // between the copy and the time axis along the foot of the frame, so the
+    // company on show has its orb in plain sight rather than under its words.
     const CAREER_MID_Y = 0.27;
 
     /* ══════════════════════════════════════════════════════════════════ */
@@ -359,12 +359,12 @@
       },
     ];
     /* Placement carries one constraint the hero's does not: the career section
-       keeps live type over the whole left third of the frame (the year spine
-       and the employer list), where the dossier panel is not there to sit
-       between. So the larger orbs stay right of ~0.4 — behind the panel and
-       the open space under it — and the ones that cross the rail stay a touch
-       smaller. Sizes and brightness are kept close so the five read as one
-       set rather than as big ones and stragglers.
+       sets its name and copy straight onto the glass, heaviest over the left
+       of the frame, with nothing between them and the orbs but a scrim. So
+       the larger orbs stay right of ~0.4 — out past the copy column — and the
+       ones that cross the left side stay a touch smaller. Sizes and
+       brightness are kept close so the five read as one set rather than as
+       big ones and stragglers.
                 x     scale  shape (0 sphere, 1 cube)  brightness */
     const CAREER_PLACE = [
       { x: 0.76, s: 0.8, shape: 0 as const, dim: 0.56 },
