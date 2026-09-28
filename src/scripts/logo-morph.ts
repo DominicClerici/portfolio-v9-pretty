@@ -52,6 +52,11 @@ export type LogoMorph = {
     instant?: boolean,
     delay?: number,
   ) => void
+  /** The same box, found again after a layout change (a resize, a font
+   *  load, the mobile address bar coming or going). Whatever is under way
+   *  carries on, only shifted so it lands on the new spot: it never cuts
+   *  to the end of a glide or drops one that is still waiting to set off. */
+  reflow: (x: number, y: number, size: number) => void
 }
 
 // The field covers the logo's 100×100 box plus this much all round, so the
@@ -465,6 +470,16 @@ export const logoMorph = (
     g.drawArrays(g.TRIANGLES, 0, 3)
   }
 
+  const resize = (s: number) => {
+    if (s === size) return false
+    size = s
+    const px = s * (SPAN / 100)
+    const dpr = Math.min(window.devicePixelRatio || 1, 3)
+    canvas.style.width = canvas.style.height = `${px}px`
+    canvas.width = canvas.height = Math.round(px * dpr)
+    return true
+  }
+
   let running = false
   let last = 0
   const tick = (t: number) => {
@@ -531,13 +546,7 @@ export const logoMorph = (
         pt[0] = x
         pt[1] = y
       }
-      if (s !== size) {
-        size = s
-        const px = s * (SPAN / 100)
-        const dpr = Math.min(window.devicePixelRatio || 1, 3)
-        canvas.style.width = canvas.style.height = `${px}px`
-        canvas.width = canvas.height = Math.round(px * dpr)
-      }
+      resize(s)
       if (instant) {
         pt[0] = x
         pt[1] = y
@@ -545,6 +554,31 @@ export const logoMorph = (
         pu[1] = pw[1] = y
         draw()
       } else kick()
+    },
+    reflow: (x, y, s) => {
+      // Where things were headed: the held move if there is one, otherwise
+      // the current target. Everything in flight shifts by the same amount.
+      const dx = x - (pending ? pending.x : pt[0])
+      const dy = y - (pending ? pending.y : pt[1])
+      const resized = resize(s)
+      if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+        // Setting the canvas size clears it; repaint in this frame.
+        if (resized) draw()
+        return
+      }
+      // A held move now lands on the new spot; until it sets off, the logo
+      // keeps to its old slot, which has moved by the same amount.
+      if (pending) {
+        pending.x = x
+        pending.y = y
+      }
+      for (const p of [pt, pu, pw]) {
+        p[0] += dx
+        p[1] += dy
+      }
+      // The running loop picks the shift up next frame; otherwise, or if
+      // the resize just cleared the canvas, paint it now.
+      if (resized || !running) draw()
     },
   }
 }
