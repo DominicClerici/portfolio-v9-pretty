@@ -3,6 +3,8 @@ import ActionButton from "./ActionButton.astro";
 import {
   entries,
   ordered,
+  monthYear,
+  monthIso,
   years,
   yearPct,
   RANGE_START,
@@ -154,21 +156,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                 aria-hidden={i === initialIndex ? "false" : "true"}
                 inert={i !== initialIndex}
               >
-                <div class="in flex items-center gap-3" style="--i: 0">
-                  <span
-                    class="dot w-[7px] h-[7px] rounded-full"
-                    aria-hidden="true"
-                  />
-                  <span class="font-mono text-[12px] lg:text-[13px] leading-none tracking-[-0.02em] uppercase text-n-300">
-                    {entry.title}
-                  </span>
-                  <span class="font-mono text-[12px] lg:text-[13px] leading-none tracking-[-0.02em] text-n-500">
-                    {entry.period}
-                  </span>
-                </div>
-
                 <h3
-                  class="name font-display text-n-100 leading-[0.9] tracking-[-0.035em] mt-3 lg:mt-5"
+                  class="name font-display text-n-100 leading-[0.9] tracking-[-0.035em]"
                   aria-label={entry.company}
                 >
                   {entry.company.split(" ").map((word, w, words) => (
@@ -190,11 +179,36 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                 </h3>
 
                 <div class="grid lg:grid-cols-12 gap-5 lg:gap-x-6 mt-5 lg:mt-10">
-                  <div
-                    class="in hidden lg:block lg:col-span-3 pt-1.5"
-                    style="--i: 1"
-                  >
-                    <ul class="flex flex-col gap-2.5" aria-label="Focus">
+                  <!-- Role and dates head the focus list; the dot and the
+                       dashes share a 12px slot, so every line of text in the
+                       column starts on the same edge. -->
+                  <div class="in lg:col-span-3 pt-1.5" style="--i: 1">
+                    <p class="flex items-center gap-2.5 font-mono text-[12px] lg:text-[13px] leading-none tracking-[-0.02em] uppercase text-n-100">
+                      <span
+                        class="flex justify-center shrink-0 w-3"
+                        aria-hidden="true"
+                      >
+                        <span class="dot w-[7px] h-[7px] rounded-full" />
+                      </span>
+                      {entry.title}
+                    </p>
+                    <p class="pl-[22px] mt-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] text-n-500 tabular-nums">
+                      <time datetime={monthIso(entry.start)}>
+                        {monthYear(entry.start)}
+                      </time>
+                      {" — "}
+                      {entry.now ? (
+                        "Now"
+                      ) : (
+                        <time datetime={monthIso(entry.end)}>
+                          {monthYear(entry.end)}
+                        </time>
+                      )}
+                    </p>
+                    <ul
+                      class="hidden lg:flex flex-col gap-2.5 mt-9"
+                      aria-label="Focus"
+                    >
                       {entry.skills.map((skill) => (
                         <li class="flex items-center gap-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-n-300">
                           <span class="dash w-3 h-px" aria-hidden="true" />
@@ -439,10 +453,18 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
      The outgoing name's letters roll away against the direction of travel
      and its copy lifts off; the incoming one is jumped, untransitioned, to
      the opposite side (.prep) and released, so it always comes in from where
-     the scroll is heading. */
+     the scroll is heading.
+
+     The two names share one box, so their letters cross in flight. To keep
+     that brief, the outgoing letters leave fast, on an ease that gets moving
+     at once, and each incoming letter trails its outgoing one by a beat
+     (the two staggers are nearly matched, so the gap holds along the whole
+     word). Both run at reduced opacity where they overlap: old letters
+     dim to 0.25 on the way out, new ones brighten from 0.25 as they land. */
   .panel[data-on="false"] {
     visibility: hidden;
-    transition: visibility 0s linear 0.45s;
+    /* Held until the last outgoing letter has cleared its clip. */
+    transition: visibility 0s linear 0.65s;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -453,8 +475,10 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 
   @media (prefers-reduced-motion: no-preference) {
     .ch {
-      transition: transform 0.75s var(--ease-settle);
-      transition-delay: calc(var(--ci) * 28ms);
+      transition:
+        transform 0.75s var(--ease-settle),
+        opacity 0.6s ease-out;
+      transition-delay: calc(var(--ci) * 22ms + 100ms);
     }
 
     .in {
@@ -465,10 +489,11 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     }
 
     .panel[data-on="false"] .ch {
+      opacity: 0.25;
       transform: translateY(calc(var(--dir, 1) * -110%));
-      transition-duration: 0.45s;
-      transition-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
-      transition-delay: calc(var(--ci) * 14ms);
+      transition-duration: 0.36s, 0.3s;
+      transition-timing-function: cubic-bezier(0.45, 0, 0.7, 0.3), ease-out;
+      transition-delay: calc(var(--ci) * 20ms);
     }
 
     .panel[data-on="false"] .in {
@@ -484,6 +509,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     }
 
     .panel.prep .ch {
+      opacity: 0.25;
       transform: translateY(calc(var(--dir, 1) * 110%));
     }
 

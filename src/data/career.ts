@@ -120,6 +120,18 @@ export const entries: CareerEntry[] = [
 export const yearPct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
 export const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
 
+// Axis value -> "Sep 2026" / "2026-09". Months come off the same fractional
+// year the playhead read-out uses, so the dates and the axis always agree.
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const monthOf = (v: number) => Math.min(11, Math.floor((v % 1) * 12));
+export const monthYear = (v: number) =>
+  `${MONTHS[monthOf(v)]} ${Math.floor(v)}`;
+export const monthIso = (v: number) =>
+  `${Math.floor(v)}-${String(monthOf(v) + 1).padStart(2, "0")}`;
+
 // Scroll order is oldest-first; each keeps its original index `i`, which is
 // what data-select / data-panel attributes key off.
 export const ordered = entries.map((entry, i) => ({ entry, i })).reverse();
