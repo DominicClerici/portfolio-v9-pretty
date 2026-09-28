@@ -29,8 +29,11 @@ const DISTANCE = 0.35
 // How far an upward drag can stretch the sheet past its resting place.
 const STRETCH = 36
 
-const SPRING = { stiffness: 380, damping: 36 } // near-critical: no wobble
-const OPEN_SPRING = { stiffness: 260, damping: 30 }
+// Critically damped (damping = 2·√stiffness): the quickest settle with no
+// overshoot past the resting place. Snapping back is a touch quicker than
+// rising in, as on iOS.
+const SPRING = { stiffness: 340, damping: 2 * Math.sqrt(340) }
+const OPEN_SPRING = { stiffness: 190, damping: 2 * Math.sqrt(190) }
 
 /** A damped spring from `from` to 0 with a starting velocity (px/ms),
     sampled at 60fps until it settles. */
@@ -78,8 +81,15 @@ export class Sheet {
     return SHEET_QUERY.matches
   }
 
+  // Measured once per gesture or animation, never per frame: reading layout
+  // right after writing a transform would force a style pass on every move
+  private h = 0
+  private measure() {
+    this.h = this.shell.offsetHeight || window.innerHeight
+    return this.h
+  }
   private get height() {
-    return this.shell.offsetHeight || window.innerHeight
+    return this.h || this.measure()
   }
 
   /* ── Motion ── */
@@ -139,6 +149,7 @@ export class Sheet {
   /** Rise in from below the screen. */
   enter() {
     this.stop()
+    this.measure()
     if (reducedMotion.matches) return this.set(0)
     this.y = this.height
     void this.springTo0(0, OPEN_SPRING)
@@ -151,7 +162,7 @@ export class Sheet {
     if (reducedMotion.matches) return Promise.resolve()
     this.stop()
     const from = this.y
-    const to = this.height + 24
+    const to = this.measure() + 24
     const dist = Math.max(1, to - from)
     // The curve's opening slope is 3 (0.2 → 0.6), so over 3·dist/v it leaves
     // at exactly the speed it was thrown, then eases into the edge
@@ -175,6 +186,7 @@ export class Sheet {
   // happened to run, so a busy main thread can't distort the fling speed
   private begin(y: number, t: number) {
     this.stop()
+    this.measure()
     this.dragging = true
     this.samples = [{ t, y }]
     this.origin = y - this.y

@@ -123,6 +123,8 @@ class Casino {
     this.dialog.showModal()
     if (this.sheet.active) this.sheet.enter()
     this.lockPage(true)
+    // For the page's own animations to stand down while it's covered
+    window.dispatchEvent(new CustomEvent("casino", { detail: true }))
     this.pageTitle = document.title
     document.title = this.titleText()
     // Connect first, so a game that can go either way (crash) sees the socket
@@ -152,6 +154,7 @@ class Casino {
       this.sheet.reset()
       this.closing = false
       this.lockPage(false)
+      window.dispatchEvent(new CustomEvent("casino", { detail: false }))
       document.title = this.pageTitle
       this.releaseNet()
     }

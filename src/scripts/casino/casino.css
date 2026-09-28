@@ -56,6 +56,12 @@
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: contain;
+  /* Not the UA's overflow: auto. A shell moved off its resting place (the
+     sheet rising in or being dragged, the desktop entrance) would otherwise
+     make the dialog itself scrollable, and focus or a touch then scrolls it,
+     lifting the whole shell out of place. */
+  overflow: hidden;
+  overflow: clip;
 }
 
 .cz[open] {
@@ -83,7 +89,8 @@
   outline-offset: 2px;
 }
 
-.cz input:focus-visible {
+.cz input:focus-visible,
+.cz .cz-shell:focus-visible {
   outline: none;
 }
 
@@ -2803,7 +2810,7 @@
   }
   .cz-shell {
     width: 100%;
-    height: calc(100% - max(env(safe-area-inset-top), 12px) - 10px);
+    height: calc(100% - max(env(safe-area-inset-top), 16px) - 24px);
     border: 0;
     border-top: 1px solid var(--cz-line);
     border-radius: 20px 20px 0 0;

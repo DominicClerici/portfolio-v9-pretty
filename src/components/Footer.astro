@@ -548,6 +548,10 @@ const connect = [
        motion, or without WebGL2, the photo is left as it is. */
     let haze: HeatHaze | null = null;
     let footerVisible = false;
+    // The casino covers the page; the shimmer has nothing to show under it,
+    // and on a phone its frames would compete with the sheet's
+    let casinoOpen = false;
+    const running = () => footerVisible && !document.hidden && !casinoOpen;
     let decoded = false;
 
     const idle = (fn: () => void) =>
@@ -588,7 +592,7 @@ const connect = [
           decoded = false;
         },
       });
-      if (footerVisible && !document.hidden) haze?.start();
+      if (running()) haze?.start();
     }
 
     function loadPhoto() {
@@ -633,7 +637,7 @@ const connect = [
         if (footerVisible) {
           loadPhoto();
           startHaze();
-          haze?.start();
+          if (running()) haze?.start();
         } else {
           haze?.stop();
         }
@@ -641,9 +645,11 @@ const connect = [
       { threshold: 0 },
     ).observe(footer);
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) haze?.stop();
-      else if (footerVisible) haze?.start();
+    const syncHaze = () => (running() ? haze?.start() : haze?.stop());
+    document.addEventListener("visibilitychange", syncHaze);
+    addEventListener("casino", (e) => {
+      casinoOpen = (e as CustomEvent<boolean>).detail;
+      syncHaze();
     });
 
     /* ── Statement typewriter ──
