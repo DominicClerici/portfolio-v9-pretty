@@ -34,8 +34,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 
      No card either: the scene is the surface. The company name is set huge
      straight onto the glass and rolls over letter by letter as the entries
-     change; the copy sits beside it over a scrim that only darkens where the
-     words are; and the time axis runs the full width along the foot of the
+     change; the copy sits beside it, straight on the scene too; and the
+     time axis runs the full width along the foot of the
      frame — a Gantt of the whole career with a playhead sweeping across it,
      and the orbs rising through the open band just above it. -->
 <section
@@ -58,8 +58,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     class="pin sticky top-0 h-[100svh] overflow-hidden flex items-start bleed-under-bars"
   >
     <div class="frame relative w-full h-full">
-      <div class="scrim" aria-hidden="true"></div>
-
       <div
         class="inner relative h-full max-w-[1524px] mx-auto px-safe-4 sm:px-safe-6 lg:px-safe-12"
       >
@@ -258,20 +256,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 </section>
 
 <style>
-  /* Darkens only where the words are — upper left — so the orbs keep the
-     lower band and the right side of the frame to themselves. */
-  .scrim {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(
-      80% 70% at 20% 35%,
-      rgb(10 10 10 / 0.7),
-      rgb(10 10 10 / 0.25) 60%,
-      transparent 85%
-    );
-  }
-
   .inner {
     display: flex;
     flex-direction: column;
