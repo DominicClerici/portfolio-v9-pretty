@@ -57,6 +57,7 @@ const QUIPS = [
 ]
 
 const TITLE = "/dev/null/casino.sh"
+const SCRIPT = "casino.sh"
 
 const FACTORIES: Record<GameId, () => Game> = {
   crash: () => new CrashGame(),
@@ -71,6 +72,8 @@ class Casino {
   private games = new Map<GameId, Game>()
   private place: Place = prefs.get<Place>("place", "lobby")
   private brand!: HTMLButtonElement
+  private promptEl!: HTMLElement
+  private pathEl!: HTMLElement
   private flagEl!: HTMLElement
   private flagRun = 0
   private pageTitle = ""
@@ -229,7 +232,7 @@ class Casino {
       this.dialog.querySelector<HTMLElement>(".cz-shell")?.focus({ preventScroll: true })
     this.dialog.dataset.place = place
     this.brand.disabled = place === "lobby"
-    this.typeFlag(place === "lobby" ? "" : ` --${place}`, force)
+    this.typeTitle(place, force)
     if (place === "lobby") this.lobby.enter()
     else this.ensureGame(place).enter()
     net.send({ t: "at", at: place })
@@ -263,8 +266,10 @@ class Casino {
       if (this.dialog.open && !this.closing && !e.defaultPrevented) this.onKey(e)
     })
 
-    // Title: the command, with the current game typed on as a flag. In a
-    // game it doubles as the way back to the lobby.
+    // Title: the command. In a game it's retyped as a local run with the
+    // game as a flag, and doubles as the way back to the lobby.
+    this.promptEl = h("span", { class: "cz-brand-prompt" })
+    this.pathEl = h("span", { class: "cz-brand-path" })
     this.flagEl = h("span", { class: "cz-brand-flag" })
     this.brand = h(
       "button",
@@ -275,8 +280,8 @@ class Casino {
         onclick: () => this.go("lobby"),
       },
       svg(icons.back, 14),
-      h("span", { class: "cz-brand-prompt", text: ">" }),
-      h("span", { class: "cz-brand-name", text: TITLE }),
+      this.promptEl,
+      h("span", { class: "cz-brand-name" }, this.pathEl, SCRIPT),
       this.flagEl,
       h("span", { class: "cz-brand-caret", text: "_" }),
     )
@@ -286,7 +291,6 @@ class Casino {
     this.balanceWrap = h(
       "div",
       { class: "cz-balance", "aria-live": "polite" },
-      h("span", { class: "cz-balance-label", text: "balance" }),
       this.balanceEl,
     )
     this.nameChip = h("span", { class: "cz-chip-name" })
@@ -457,32 +461,42 @@ class Casino {
     this.lobby.renderCounts()
   }
 
-  /** Types the game's flag onto the title: back over whatever the old flag
-      doesn't share with the new one, then forward. */
-  private typeFlag(flag: string, instant = false) {
+  /** Retypes the title for a place: each part backs over whatever it
+      doesn't share with its new text, then types forward. Going in, the
+      prompt and path go first; coming back, the flag does. */
+  private typeTitle(place: Place, instant = false) {
     const run = ++this.flagRun
+    const lobby = place === "lobby"
+    const parts: [HTMLElement, string][] = [
+      [this.promptEl, lobby ? "> " : ""],
+      [this.pathEl, lobby ? "/dev/null/" : "./"],
+      [this.flagEl, lobby ? "" : ` --${place}`],
+    ]
+    if (lobby) parts.reverse()
     const done = () => {
-      this.flagEl.textContent = flag
+      for (const [el, text] of parts) el.textContent = text
       if (this.dialog.open) document.title = this.titleText()
     }
     if (instant || reducedMotion.matches || !this.dialog.open) return done()
     const step = () => {
       if (run !== this.flagRun) return
-      const cur = this.flagEl.textContent ?? ""
-      if (cur === flag) return done()
-      if (!flag.startsWith(cur)) {
-        this.flagEl.textContent = cur.slice(0, -1)
-        window.setTimeout(step, 22)
+      const next = parts.find(([el, text]) => el.textContent !== text)
+      if (!next) return done()
+      const [el, text] = next
+      const cur = el.textContent ?? ""
+      if (!text.startsWith(cur)) {
+        el.textContent = cur.slice(0, -1)
+        window.setTimeout(step, 28)
       } else {
-        this.flagEl.textContent = flag.slice(0, cur.length + 1)
-        window.setTimeout(step, 15 + Math.floor(Math.random() * 46))
+        el.textContent = text.slice(0, cur.length + 1)
+        window.setTimeout(step, 19 + Math.floor(Math.random() * 57))
       }
     }
     step()
   }
 
   private titleText() {
-    return TITLE + (this.place === "lobby" ? "" : ` --${this.place}`)
+    return this.place === "lobby" ? TITLE : `./${SCRIPT} --${this.place}`
   }
 
   private rotateQuip() {
@@ -542,6 +556,7 @@ class Lobby {
       if (!res.ok) return say(res.why, "err")
       if (res.name !== prefs.name) this.casino.setName(res.name)
       this.nameInput.value = res.name
+      this.fitName()
       say(`Committed as ${res.name}.`, "ok")
       sfx.click()
     }
@@ -567,6 +582,7 @@ class Lobby {
           // Suggests a name; it only sticks once committed
           onclick: () => {
             this.nameInput.value = randomName()
+            this.fitName()
             say("")
             sfx.click()
           },
@@ -575,7 +591,10 @@ class Lobby {
       ),
       h("button", { type: "submit", class: "cz-name-save", text: "commit" }),
     )
-    this.nameInput.addEventListener("input", () => say(""))
+    this.nameInput.addEventListener("input", () => {
+      say("")
+      this.fitName()
+    })
 
     const cards = GAMES.map((id, i) => {
       const count = h("span", { class: "cz-card-count", hidden: true })
@@ -647,6 +666,14 @@ class Lobby {
 
   renderName() {
     if (document.activeElement !== this.nameInput) this.nameInput.value = prefs.name ?? ""
+    this.fitName()
+  }
+
+  /** Sizes the input to its text (the font is mono), so the closing quote
+      hugs it. field-sizing would do this, but not everywhere yet. */
+  private fitName() {
+    const n = Math.min(Math.max(this.nameInput.value.length, 1), 21)
+    this.nameInput.style.width = `calc(${n}ch + 2px)`
   }
 
   renderCounts() {
