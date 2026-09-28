@@ -59,7 +59,7 @@ const connect = [
 
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-x-clip"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] max-md:-mt-6 overflow-clip"
 >
   <!-- The mountain backdrop sits *behind* the whole page (-z-10), so the
        opaque sections above the footer hide it and the footer — which has no
@@ -67,9 +67,9 @@ const connect = [
        opening as the footer rises is the reveal.
 
        It holds still by sticking, not by being fixed. It rides a track that
-       runs from a screen (plus a bleed) above the footer down to the page's
-       end, and sticks to the top of the screen for as long as the track
-       lets it, which is from the moment the footer comes into view; being
+       runs from a screen (plus a bleed) above the footer to as far past its
+       foot, and sticks to the top of the screen from the moment the footer
+       comes into view; being
        real CSS positioning, it cannot drift on compositor-driven (touch)
        scrolling. It is part of the page rather than a fixed box because iOS
        Safari only draws fixed boxes between its bars: at the end of the page,
@@ -77,11 +77,16 @@ const connect = [
        top bar showing the bare page. The page itself is drawn under the bars,
        and so now is the photo.
 
-       It never moves, the end of the page included. The pin is no taller
-       than the sky above the photo, so the track can never run out under it
-       and push it up; the photo hangs from its foot at the full height of
-       the screen (lvh), and the track clips whatever of it would hang past
-       the page's end.
+       It never moves, the end of the page included: the track runs on past
+       the footer's foot by more than the pin is tall, so it can never run
+       out under the pin and push it up, and the footer clips all of it to
+       its own box (clip, not hidden, which would make the footer a scroller
+       the pin would stick to), so none of it adds to the page's length. The
+       pin holds the whole of the photo: iOS Safari clips what hangs out of
+       a sticky box.
+
+       On phones the footer tucks up under the contact section by the radius
+       of its rounded foot, so that the photo still shows in its corners.
 
        Above the photo, the pin carries it on up past the top of the screen in
        the colour of the photo's own top edge, its sky (--overlay-bleed, 0 off
@@ -118,7 +123,7 @@ const connect = [
   >
     <div class="footer-photo-pin sticky bleed-under-bars">
     <div class="footer-photo-sky absolute inset-x-0 top-0"></div>
-    <div class="footer-photo-frame absolute inset-x-0">
+    <div class="footer-photo-frame absolute inset-x-0 bottom-0">
       <picture>
         <source
           media={PORTRAIT}
@@ -401,10 +406,11 @@ const connect = [
 
 <style>
   /* Phones only. The footer is as tall as the screen can ever be (lvh),
-     plus the status bar's height (the top safe area), so that scrolled to
-     the end it still reaches past the top of the screen, under the status
-     bar, and the contact section's near-black never shows above it (wider
-     screens have the cap bar there, in the contact section's own colour).
+     plus a bleed (--overlay-bleed in iOS Safari, else the status bar's
+     height), so that scrolled to the end it still reaches past the top of
+     the screen, under the status bar, and the contact section's near-black
+     never shows above it (wider screens have the cap bar there, in the
+     contact section's own colour).
 
      Its content box, though, is the viewport as it is right now (dvh), and
      the rest is top padding. At the end of the page Safari brings its
@@ -417,33 +423,37 @@ const connect = [
   @supports (height: 100dvh) {
     @media (max-width: 767px) {
       #site-footer {
-        --footer-h: calc(max(680px, 100lvh) + env(safe-area-inset-top, 0px));
+        /* 1.5rem: what it tucks up under the contact section (-mt-6) */
+        --footer-h: calc(
+          max(680px, 100lvh) +
+            max(var(--overlay-bleed), env(safe-area-inset-top, 0px)) + 1.5rem
+        );
         height: var(--footer-h);
         padding-top: calc(var(--footer-h) - max(680px, 100dvh));
       }
     }
   }
 
-  /* The photo's track, pin and frame (see the markup). The track starts a
-     screen above the footer, so the pin is stuck from the moment the footer
-     shows, and clips (never scrolls: clip, not hidden, or the pin would
-     stick to it) the photo where it would hang past the page's end. 100vh
-     first for iOS before 15.4, where it is the large viewport too. */
+  /* The photo's track, pin and frame (see the markup). The track reaches a
+     pin's height past the footer at both ends: above, so the pin is stuck
+     from the moment the footer shows; below, so it never comes unstuck.
+     100vh first for iOS before 15.4, where it is the large viewport too. */
   .footer-photo-track {
     top: calc(-100vh - var(--overlay-bleed));
     top: calc(-100lvh - var(--overlay-bleed));
-    overflow: clip;
+    bottom: calc(-100vh - var(--overlay-bleed));
+    bottom: calc(-100lvh - var(--overlay-bleed));
   }
   .footer-photo-pin {
     top: calc(-1 * var(--overlay-bleed));
-    height: var(--overlay-bleed);
+    height: calc(100vh + var(--overlay-bleed));
+    height: calc(100lvh + var(--overlay-bleed));
   }
   .footer-photo-sky {
     height: var(--overlay-bleed);
     background: var(--sky-landscape);
   }
   .footer-photo-frame {
-    top: var(--overlay-bleed);
     height: 100vh;
     height: 100lvh;
   }
@@ -452,15 +462,15 @@ const connect = [
       background: var(--sky-portrait);
     }
   }
-  /* On phones the page ends on the casino peek, and the photo stops a few
-     pixels short of that, behind the peek. The peek's foot rarely lands on
-     a whole pixel, and where it and the photo shared an edge, that edge's
-     last row blended the two into a faint light line. With nothing behind
-     it but the page's own bottom colour, which is the peek's, there is
-     nothing to see. */
+  /* On phones the page ends on the casino peek, and the footer's own last
+     few pixels, behind the peek, are the peek's colour over the photo. The
+     peek's foot rarely lands on a whole pixel, and where it and the photo
+     shared an edge, that edge's last row blended the two into a faint light
+     line. With nothing behind it but its own colour, there is nothing to
+     see. (The footer paints above the photo, which is at -z-10.) */
   @media (max-width: 767px) {
-    .footer-photo-track {
-      bottom: 4px;
+    #site-footer {
+      background: linear-gradient(to top, var(--color-n-950) 8px, transparent 8px);
     }
   }
 
@@ -491,11 +501,6 @@ const connect = [
     border-top: 1px solid var(--color-n-800);
     border-radius: 20px 20px 0 0;
     background: var(--peek-bg);
-    /* Carries the drawer on a little past the end of the footer, over the
-       sliver left below it when the page isn't a whole number of pixels
-       tall. A shadow is ink rather than content, so it adds no scroll (and
-       the footer clips only sideways, to let it show). */
-    box-shadow: 0 12px 0 0 var(--peek-bg);
     font-size: 13px;
     touch-action: none;
     user-select: none;
