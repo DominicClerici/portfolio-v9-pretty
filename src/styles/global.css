@@ -308,31 +308,6 @@ h6 {
   border-radius: 2px;
 }
 
-/* ── Dot grid ──
-   Viewport-anchored rather than element-anchored, so adjacent sections that
-   use it (Career -> Quote) share one continuous grid with no seam. */
-.dot-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.05) 1px,
-    transparent 1px
-  );
-  background-size: 26px 26px;
-  background-attachment: fixed;
-}
-
-/* Career and Quote wear the grid on desktop only — below the mobile
-   breakpoint it's dropped there. */
-@media (width < 64rem) {
-  #career .dot-grid,
-  .qv4 .dot-grid {
-    display: none;
-  }
-}
-
 /* The pin is lifted by the overhang with a transform rather than `top` or a
    negative margin, and both alternatives are wrong for the same reason in
    different ways. A sticky `top: -60px` is only honoured once the box has

@@ -47,8 +47,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
   data-step-accent={JSON.stringify(stepAccent)}
   aria-label="Career"
 >
-  <div class="dot-grid" aria-hidden="true"></div>
-
   <!-- The pinned frame: everything inside stays in view while the tall section
        scrolls past, which reads as a scroll-lock without trapping the wheel.
        It is screen-sized, so iOS Safari would take it for a bar to extend
