@@ -573,6 +573,7 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
     botMessage,
     type Pt,
   } from "../scripts/signature";
+  import { holdScroll } from "../scripts/scroll-hold";
 
   {
     const form = document.querySelector<HTMLFormElement>(".cv2-form");
@@ -937,23 +938,32 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
         // The slip tracks its anchor only while the popover is up: subscribe to
         // the shared scroll bus on open, unsubscribe on close.
         let unsubPopover: (() => void) | null = null;
+        let releaseScroll: (() => void) | null = null;
 
-        // Open locks page scroll (compensating for the vanished scrollbar).
-        // Closing early (Esc, light dismiss) abandons an unsent attempt;
-        // once the letter is away, closing just finalizes the sent state
+        // Open locks page scroll. Closing early (Esc, light dismiss) abandons
+        // an unsent attempt; once the letter is away, closing just finalizes
+        // the sent state
         pop.addEventListener("toggle", (e) => {
           const open =
             (e as unknown as { newState: string }).newState === "open";
           const html = document.documentElement;
-          // overflow:hidden blocks native inputs; the engine lock stops the
-          // smooth-scroll's programmatic scrolling, which overflow can't
+          // The page lock blocks native inputs; the engine lock stops the
+          // smooth-scroll's programmatic scrolling, which it can't
           (
             window as unknown as { __smoothScrollLock?: (l: boolean) => void }
           ).__smoothScrollLock?.(open);
+          releaseScroll?.();
+          releaseScroll = null;
+          html.style.overflow = "";
           if (open) {
-            const gap = window.innerWidth - html.clientWidth;
-            html.style.overflow = "hidden";
-            if (gap > 0) html.style.paddingRight = `${gap}px`;
+            // Where scrollbars take up room (desktop), keep the scrollbar and
+            // hold the page still instead: hiding it and padding the gap
+            // leaves a strip at the right edge where the fixed footer photo
+            // shows through. Where they overlay the page, overflow: hidden
+            // loses nothing and also stops touch scrolling.
+            if (window.innerWidth > html.clientWidth)
+              releaseScroll = holdScroll(pop);
+            else html.style.overflow = "hidden";
             // The slip is positioned by hand, so it only needs to track the
             // viewport while it's actually up
             window.addEventListener("resize", placePopover, { passive: true });
@@ -963,8 +973,6 @@ const GHOST_BTN = `font-mono text-[11px] tracking-[-0.02em] uppercase bg-transpa
           window.removeEventListener("resize", placePopover);
           unsubPopover?.();
           unsubPopover = null;
-          html.style.overflow = "";
-          html.style.paddingRight = "";
           drawing = false;
           if (committed) {
             window.clearTimeout(sendT2);

@@ -21,7 +21,7 @@ import {
 import { GAME_INFO, type Game } from "./game"
 import { net, type NetStatus } from "./net"
 import { sfx } from "./sfx"
-import { holdScroll } from "./scroll-hold"
+import { holdScroll } from "../scroll-hold"
 import { Sheet } from "./sheet"
 import { START_CENTS, prefs, wallet } from "./store"
 import {
