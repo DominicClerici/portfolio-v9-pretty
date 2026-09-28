@@ -84,6 +84,13 @@ export default defineConfig({
   env: {
     schema: {
       RESEND_KEY: envField.string({ context: "server", access: "secret" }),
+      /* The casino's multiplayer lobby (see multiplayer/README.md), e.g.
+         wss://casino-lobby.<you>.workers.dev/ws. Unset, the casino runs solo. */
+      PUBLIC_CASINO_WS: envField.string({
+        context: "client",
+        access: "public",
+        optional: true,
+      }),
     },
   },
   vite: {

@@ -5,6 +5,9 @@ docs/
 # generated types
 .astro/
 
+# wrangler's local state (multiplayer/)
+.wrangler/
+
 # dependencies
 node_modules/
 

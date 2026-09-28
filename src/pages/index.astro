@@ -105,15 +105,15 @@ const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
     <Contact />
   </main>
   <Footer />
-  <a
-    href="https://dev.dominicclerici.com"
-    target="_blank"
-    rel="noopener noreferrer"
+  <button
+    type="button"
     data-terminal="scroll"
-    aria-label="Open developer terminal"
-    class="hidden md:inline-flex fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] font-mono text-white pointer-events-none transition-opacity duration-300"
+    data-casino-open
+    aria-label="Open the /dev/null casino, a mini-game easter egg"
+    aria-haspopup="dialog"
+    class="hidden md:inline-flex fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] font-mono text-white pointer-events-none transition-opacity duration-300 cursor-pointer"
     style="opacity: 0"
   >
     <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
-  </a>
+  </button>
 </Layout>

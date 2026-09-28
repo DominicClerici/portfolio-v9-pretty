@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "casino-lobby",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "durable_objects": {
+    "bindings": [{ "name": "LOBBY", "class_name": "Lobby" }]
+  },
+  // SQLite-backed Durable Objects are the ones the Workers free plan includes.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Lobby"] }],
+  "vars": {
+    // Who may open a socket. Add your preview domains here if you want the
+    // casino live on Vercel previews too.
+    "ALLOWED_ORIGINS": "https://www.dominicclerici.com,https://dominicclerici.com,http://localhost:*,http://127.0.0.1:*"
+  },
+  "observability": { "enabled": true }
+}
