@@ -5,10 +5,9 @@ import {
   ordered,
   monthYear,
   monthIso,
-  years,
+  yearMarks,
   yearPct,
   RANGE_START,
-  SPAN,
 } from "../data/career";
 
 // Scroll-pin choreography ----------------------------------------------------
@@ -48,7 +47,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
   data-step-pct={JSON.stringify(stepPct)}
   data-step-map={JSON.stringify(stepMap)}
   data-step-accent={JSON.stringify(stepAccent)}
-  data-range={JSON.stringify([RANGE_START, SPAN])}
   aria-label="Career"
 >
   <div class="dot-grid" aria-hidden="true"></div>
@@ -95,8 +93,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
             aria-label="Employers"
           >
             {
-              years
-                .slice(1)
+              yearMarks
+                .slice(1, -1)
                 .map((y) => (
                   <span
                     class="year-rule absolute top-0 bottom-0 w-px"
@@ -125,13 +123,13 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
           </div>
           <div class="relative h-3 mt-2" aria-hidden="true">
             {
-              years.concat([years[years.length - 1] + 1]).map((y, k) => (
+              yearMarks.map((y, k) => (
                 <span
                   class:list={[
                     "absolute top-0 font-mono text-[10px] leading-none tracking-[-0.02em] text-n-500",
                     k === 0
                       ? ""
-                      : k === years.length
+                      : k === yearMarks.length - 1
                         ? "-translate-x-full"
                         : "-translate-x-1/2",
                   ]}
@@ -460,6 +458,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 </style>
 
 <script>
+  import { pctYear } from "../data/career";
   {
     const section = document.querySelector<HTMLElement>("#career");
     if (section) {
@@ -474,9 +473,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]");
       const stepAccent: string[] = JSON.parse(
         section.dataset.stepAccent || "[]",
-      );
-      const [RANGE_START, SPAN]: number[] = JSON.parse(
-        section.dataset.range || "[0, 1]",
       );
       const N = stepMap.length;
 
@@ -762,7 +758,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         chart.style.setProperty("--yr", `${yr.toFixed(3)}%`);
 
         // Read-out of where the playhead is, to the month.
-        const t = RANGE_START + (yr / 100) * SPAN;
+        const t = pctYear(yr);
         const mo = Math.min(12, Math.floor((t % 1) * 12) + 1);
         const label = `${Math.floor(t)}.${String(mo).padStart(2, "0")}`;
         if (label !== lastLabel) {

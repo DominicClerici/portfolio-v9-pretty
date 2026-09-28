@@ -116,9 +116,68 @@ export const entries: CareerEntry[] = [
   },
 ];
 
-// Time axis: a year maps to its distance from RANGE_START, as a percentage.
-export const yearPct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
-export const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
+// Time axis ------------------------------------------------------------------
+// The axis is not linear in time. A true scale spends half its width on the
+// last three years and most of the rest on empty gaps, so it's warped:
+// piecewise linear between these [year, %] knots. Every placement on the axis
+// (bars, year marks, playhead, read-out) goes through the same mapping, and
+// scroll per entry is unchanged — only where things sit, and so how fast the
+// playhead travels between them, moves.
+//
+//   0 – 40%   McDonald's, Artesian Builds and the gaps around them (the gaps
+//             squeezed to ~20% of their linear width)
+//   40 – 100% Squib, Rumor and Junior
+export const axisKnots: [number, number][] = [
+  [RANGE_START, 0],
+  [2019.05, 0.5], // McDonald's
+  [2019.85, 16],
+  [2021, 19], // Artesian Builds
+  [2022, 37.5],
+  [2024, 40], // Squib
+  [2025, 60], // Rumor
+  [2026.67, 88], // Junior
+  [RANGE_END, 100],
+];
+
+// Piecewise-linear lookup along one column of the knots into the other;
+// clamps outside the range.
+const warp = (v: number, from: 0 | 1) => {
+  const to = from === 0 ? 1 : 0;
+  const k = axisKnots;
+  if (v <= k[0][from]) return k[0][to];
+  for (let j = 1; j < k.length; j++) {
+    if (v <= k[j][from]) {
+      const a = k[j - 1];
+      const b = k[j];
+      return a[to] + ((v - a[from]) / (b[from] - a[from])) * (b[to] - a[to]);
+    }
+  }
+  return k[k.length - 1][to];
+};
+
+// Year -> % along the axis, and back.
+export const yearPct = (v: number) => warp(v, 0);
+export const pctYear = (p: number) => warp(p, 1);
+
+// Year marks on the axis. Squeezed gaps put some years only a couple of
+// percent apart, so a year is only marked if it clears the marks already
+// placed. Placed first: the axis ends, then years a bar starts on, then years
+// a bar ends on, then the rest.
+const MIN_MARK_GAP = 6;
+const onYear = (v: number[]) => v.filter(Number.isInteger);
+const markPriority = new Set([
+  RANGE_START,
+  RANGE_END,
+  ...onYear(entries.map((e) => e.start)),
+  ...onYear(entries.map((e) => e.end)),
+  ...Array.from({ length: SPAN }, (_, i) => RANGE_START + i),
+]);
+const marked: number[] = [];
+for (const y of markPriority) {
+  if (marked.every((m) => Math.abs(yearPct(m) - yearPct(y)) >= MIN_MARK_GAP))
+    marked.push(y);
+}
+export const yearMarks = marked.sort((a, b) => a - b);
 
 // Axis value -> "Sep 2026" / "2026-09". Months come off the same fractional
 // year the playhead read-out uses, so the dates and the axis always agree.
