@@ -76,7 +76,7 @@ export const entries: CareerEntry[] = [
       "Swift",
     ],
     url: "https://www.therumor.com/",
-    accent: "#FFDC52",
+    accent: "#FFE786",
     logo: rumorLogo,
   },
   {
@@ -91,7 +91,7 @@ export const entries: CareerEntry[] = [
     skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
     tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
     url: "https://www.heysquib.com/",
-    accent: "#BF66FF",
+    accent: "#C97DFF",
     logo: squibLogo,
   },
   {
