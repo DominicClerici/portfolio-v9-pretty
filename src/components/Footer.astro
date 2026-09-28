@@ -57,6 +57,26 @@ const connect = [
 ];
 ---
 
+<!-- The screen's own height, for the footer to size its photo and itself
+     from in iOS Safari (see the styles), where no viewport unit covers the
+     whole screen. Set before the footer is laid out, so nothing shifts;
+     screen.height is the portrait height whichever way the phone is held,
+     hence the orientation check. -->
+<script is:inline>
+  ;(function () {
+    function set() {
+      var s = screen
+      var landscape = matchMedia("(orientation: landscape)").matches
+      var h = landscape
+        ? Math.min(s.width, s.height)
+        : Math.max(s.width, s.height)
+      document.documentElement.style.setProperty("--screen-h", h + "px")
+    }
+    set()
+    addEventListener("resize", set, { passive: true })
+  })()
+</script>
+
 <footer
   id="site-footer"
   class="relative h-svh min-h-[680px] md:min-h-[780px] max-md:-mt-6 overflow-clip"
@@ -101,9 +121,9 @@ const connect = [
        against the peak and the near water. The frame's own background is a
        tiny blur-up of whichever cut the <picture> picks, so the text has
        something to sit on before the real one arrives. The frame is held at
-       the height of the screen with the toolbar away (lvh), so the toolbar
-       coming and going only covers and uncovers its foot, rather than
-       re-fitting the photo and sliding the lake up and down with it.
+       the height of the whole screen (--photo-h in the styles), so the
+       toolbar coming and going only covers and uncovers its foot, rather
+       than re-fitting the photo and sliding the lake up and down with it.
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
@@ -405,12 +425,28 @@ const connect = [
 </footer>
 
 <style>
-  /* Phones only. The footer is as tall as the screen can ever be (lvh),
-     plus a bleed (--overlay-bleed in iOS Safari, else the status bar's
-     height), so that scrolled to the end it still reaches past the top of
-     the screen, under the status bar, and the contact section's near-black
-     never shows above it (wider screens have the cap bar there, in the
-     contact section's own colour).
+  /* How tall the photo is: the screen with the toolbar away (lvh). Except
+     in iOS Safari, where even lvh stops short of the bottom of the screen,
+     under the toolbar, and the photo left a band of the bare page there:
+     there it is the screen's own height (--screen-h, set by the script
+     before the footer), which it can't fall short of whatever Safari
+     counts as its viewport. */
+  #site-footer {
+    --photo-h: 100vh;
+    --photo-h: 100lvh;
+  }
+  @supports (-webkit-touch-callout: none) {
+    #site-footer {
+      --photo-h: max(100lvh, var(--screen-h, 0px));
+    }
+  }
+
+  /* Phones only. The footer is as tall as the photo, the whole screen, plus
+     what it tucks up under the contact section (-mt-6): scrolled to the
+     end, where the page stops above Safari's toolbar, that reaches just
+     past the top of the screen, so the contact section's near-black never
+     shows above it, and no further (wider screens have the cap bar there,
+     in the contact section's own colour).
 
      Its content box, though, is the viewport as it is right now (dvh), and
      the rest is top padding. At the end of the page Safari brings its
@@ -423,11 +459,7 @@ const connect = [
   @supports (height: 100dvh) {
     @media (max-width: 767px) {
       #site-footer {
-        /* 1.5rem: what it tucks up under the contact section (-mt-6) */
-        --footer-h: calc(
-          max(680px, 100lvh) +
-            max(var(--overlay-bleed), env(safe-area-inset-top, 0px)) + 1.5rem
-        );
+        --footer-h: calc(max(680px, var(--photo-h)) + 1.5rem);
         height: var(--footer-h);
         padding-top: calc(var(--footer-h) - max(680px, 100dvh));
       }
@@ -436,26 +468,21 @@ const connect = [
 
   /* The photo's track, pin and frame (see the markup). The track reaches a
      pin's height past the footer at both ends: above, so the pin is stuck
-     from the moment the footer shows; below, so it never comes unstuck.
-     100vh first for iOS before 15.4, where it is the large viewport too. */
+     from the moment the footer shows; below, so it never comes unstuck. */
   .footer-photo-track {
-    top: calc(-100vh - var(--overlay-bleed));
-    top: calc(-100lvh - var(--overlay-bleed));
-    bottom: calc(-100vh - var(--overlay-bleed));
-    bottom: calc(-100lvh - var(--overlay-bleed));
+    top: calc(-1 * (var(--photo-h) + var(--overlay-bleed)));
+    bottom: calc(-1 * (var(--photo-h) + var(--overlay-bleed)));
   }
   .footer-photo-pin {
     top: calc(-1 * var(--overlay-bleed));
-    height: calc(100vh + var(--overlay-bleed));
-    height: calc(100lvh + var(--overlay-bleed));
+    height: calc(var(--photo-h) + var(--overlay-bleed));
   }
   .footer-photo-sky {
     height: var(--overlay-bleed);
     background: var(--sky-landscape);
   }
   .footer-photo-frame {
-    height: 100vh;
-    height: 100lvh;
+    height: var(--photo-h);
   }
   @media (max-width: 1023px) and (orientation: portrait) {
     .footer-photo-sky {
