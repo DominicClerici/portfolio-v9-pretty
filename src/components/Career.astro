@@ -4,10 +4,8 @@ import {
   entries,
   ordered,
   monthYear,
-  monthIso,
-  yearMarks,
-  yearPct,
-  RANGE_START,
+  axisAt,
+  nowYear,
 } from "../data/career";
 
 // Scroll-pin choreography ----------------------------------------------------
@@ -16,9 +14,9 @@ import {
 // the end of the axis before the scroll releases. Total travel is therefore
 // N half-viewports, so the section is (N+1) * 50vh tall.
 const N = entries.length;
-// Where each entry's bar starts on the axis, oldest first — the playhead
-// travels bar to bar.
-const stepPct = ordered.map(({ entry }) => yearPct(entry.start));
+// The axis runs to today, so this is only first paint: the script lays it
+// out again from the visitor's clock (see axisAt in data/career.ts).
+const axis = axisAt(nowYear());
 // step index (oldest-first) -> original entry index
 const stepMap = ordered.map(({ i }) => i);
 const stepAccent = ordered.map(({ entry }) => entry.accent);
@@ -44,7 +42,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
   id="career"
   class="relative"
   style={`height: ${(N + 1) * 50}svh; --accent: ${stepAccent[0]}`}
-  data-step-pct={JSON.stringify(stepPct)}
   data-step-map={JSON.stringify(stepMap)}
   data-step-accent={JSON.stringify(stepAccent)}
   aria-label="Career"
@@ -78,7 +75,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
             </h2>
             <span
               class="readout font-mono text-[11px] lg:text-[12px] leading-none tracking-[-0.02em] text-n-400 tabular-nums"
-              aria-hidden="true">{RANGE_START}.01</span
+              aria-hidden="true">{ordered[0].entry.start.replace("-", ".")}</span
             >
           </div>
 
@@ -93,12 +90,12 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
             aria-label="Employers"
           >
             {
-              yearMarks
+              axis.marks
                 .slice(1, -1)
-                .map((y) => (
+                .map((m) => (
                   <span
-                    class="year-rule absolute top-0 bottom-0 w-px"
-                    style={`left: ${yearPct(y)}%`}
+                    class="year-rule"
+                    style={`left: ${m.pct}%`}
                     aria-hidden="true"
                   />
                 ))
@@ -108,7 +105,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                 <button
                   type="button"
                   class="bar absolute"
-                  style={`left: ${yearPct(entry.start)}%; width: ${yearPct(entry.end) - yearPct(entry.start)}%; --lane: ${entry.lane}; --c: ${entry.accent}`}
+                  style={`--l: ${axis.bar(entry).left}; --w: ${axis.bar(entry).width}; --lane: ${entry.lane}; --c: ${entry.accent}`}
                   data-select={i}
                   aria-label={`${entry.company}, ${entry.period}`}
                   aria-current={i === initialIndex ? "true" : "false"}
@@ -121,21 +118,21 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
             }
             <span class="head" aria-hidden="true"></span>
           </div>
-          <div class="relative h-3 mt-2" aria-hidden="true">
+          <div class="marks relative h-3 mt-2" aria-hidden="true">
             {
-              yearMarks.map((y, k) => (
+              axis.marks.map((m, k) => (
                 <span
-                  class:list={[
-                    "absolute top-0 font-mono text-[10px] leading-none tracking-[-0.02em] text-n-500",
+                  class="mark absolute top-0 font-mono text-[10px] leading-none tracking-[-0.02em] text-n-500 whitespace-nowrap"
+                  style={`left: ${m.pct}%`}
+                  data-edge={
                     k === 0
-                      ? ""
-                      : k === yearMarks.length - 1
-                        ? "-translate-x-full"
-                        : "-translate-x-1/2",
-                  ]}
-                  style={`left: ${yearPct(y)}%`}
+                      ? "start"
+                      : k === axis.marks.length - 1
+                        ? "end"
+                        : undefined
+                  }
                 >
-                  {`'${String(y).slice(2)}`}
+                  {m.label}
                 </span>
               ))
             }
@@ -191,16 +188,14 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                       {entry.title}
                     </p>
                     <p class="pl-[22px] mt-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] text-n-500 tabular-nums">
-                      <time datetime={monthIso(entry.start)}>
+                      <time datetime={entry.start}>
                         {monthYear(entry.start)}
                       </time>
                       {" — "}
-                      {entry.now ? (
-                        "Now"
+                      {entry.end ? (
+                        <time datetime={entry.end}>{monthYear(entry.end)}</time>
                       ) : (
-                        <time datetime={monthIso(entry.end)}>
-                          {monthYear(entry.end)}
-                        </time>
+                        "Now"
                       )}
                     </p>
                     <ul
@@ -369,10 +364,31 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
   }
 
   .year-rule {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
     background: rgb(255 255 255 / 0.06);
   }
 
+  .mark {
+    transform: translateX(-50%);
+  }
+
+  .mark[data-edge="start"] {
+    transform: none;
+  }
+
+  .mark[data-edge="end"] {
+    transform: translateX(-100%);
+  }
+
+  /* --l / --w are the bar's left and width in % of the axis; set by the
+     script as well as here. Each bar gives up 1px a side so bars that meet
+     end to end in a lane still read as two. */
   .bar {
+    left: calc(var(--l) * 1% + 1px);
+    width: calc(var(--w) * 1% - 2px);
     top: calc(var(--lane) * (100% + 6px) / var(--lanes));
     height: calc((100% - (var(--lanes) - 1) * 6px) / var(--lanes));
     min-width: 6px;
@@ -458,7 +474,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 </style>
 
 <script>
-  import { pctYear } from "../data/career";
+  import { axisAt, nowYear, ordered } from "../data/career";
   {
     const section = document.querySelector<HTMLElement>("#career");
     if (section) {
@@ -469,7 +485,43 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       const count = section.querySelector<HTMLElement>(".count")!;
       const readout = section.querySelector<HTMLElement>(".readout")!;
 
-      const stepPct: number[] = JSON.parse(section.dataset.stepPct || "[]");
+
+      // ── Axis ──
+      // The axis runs to today, and the page may have been built months ago,
+      // so lay it out again from this visitor's clock: bars, year marks, and
+      // where each entry's bar starts, which is where the playhead heads for.
+      const now = nowYear();
+      const axis = axisAt(now);
+      bars.forEach((bar) => {
+        const { entry } = ordered.find(
+          ({ i }) => i === Number(bar.dataset.select),
+        )!;
+        const { left, width } = axis.bar(entry);
+        bar.style.setProperty("--l", String(left));
+        bar.style.setProperty("--w", String(width));
+      });
+      chart.querySelectorAll(".year-rule").forEach((el) => el.remove());
+      for (const m of axis.marks.slice(1, -1)) {
+        const rule = document.createElement("span");
+        rule.className = "year-rule";
+        rule.style.left = `${m.pct}%`;
+        rule.setAttribute("aria-hidden", "true");
+        chart.prepend(rule);
+      }
+      const marks = section.querySelector<HTMLElement>(".marks")!;
+      const markTpl = marks.firstElementChild!;
+      marks.replaceChildren(
+        ...axis.marks.map((m, k) => {
+          const el = markTpl.cloneNode() as HTMLElement;
+          el.textContent = m.label;
+          el.style.left = `${m.pct}%`;
+          if (k === 0) el.dataset.edge = "start";
+          else if (k === axis.marks.length - 1) el.dataset.edge = "end";
+          else delete el.dataset.edge;
+          return el;
+        }),
+      );
+      const stepPct = ordered.map(({ entry }) => axis.bar(entry).left);
       const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]");
       const stepAccent: string[] = JSON.parse(
         section.dataset.stepAccent || "[]",
@@ -758,8 +810,11 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         chart.style.setProperty("--yr", `${yr.toFixed(3)}%`);
 
         // Read-out of where the playhead is, to the month.
-        const t = pctYear(yr);
-        const mo = Math.min(12, Math.floor((t % 1) * 12) + 1);
+        // Capped at today: in a job's first month the axis runs on to the
+        // end of that month.
+        const t = Math.min(axis.year(yr), now);
+        // (The epsilon keeps a bar start like 2021 + 4/12 from reading as April.)
+        const mo = Math.min(12, Math.floor((t % 1) * 12 + 1e-6) + 1);
         const label = `${Math.floor(t)}.${String(mo).padStart(2, "0")}`;
         if (label !== lastLabel) {
           lastLabel = label;

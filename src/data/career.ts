@@ -5,16 +5,14 @@
 // The section blends between them as the scroll pin moves entry to entry, so
 // the foreground picks up the colour the background is already carrying.
 
-export const RANGE_START = 2019;
-export const RANGE_END = 2027;
-export const SPAN = RANGE_END - RANGE_START;
-
+// Dates are "YYYY-MM" and inclusive: an entry runs from the start of its
+// first month to the end of its last. No `end` means it's the current job,
+// and runs to today.
 export interface CareerEntry {
   period: string;
-  start: number;
-  end: number;
+  start: string;
+  end?: string;
   lane: number;
-  now: boolean;
   company: string;
   title: string;
   description: string;
@@ -27,10 +25,8 @@ export interface CareerEntry {
 export const entries: CareerEntry[] = [
   {
     period: "2026 — Now",
-    start: 2026.67,
-    end: 2027,
+    start: "2026-09",
     lane: 0,
-    now: true,
     company: "Junior",
     title: "Software Engineer",
     description:
@@ -49,10 +45,9 @@ export const entries: CareerEntry[] = [
   },
   {
     period: "2025 — 2026",
-    start: 2025,
-    end: 2026.65,
+    start: "2025-08",
+    end: "2026-08",
     lane: 0,
-    now: false,
     company: "Rumor",
     title: "Full Stack Developer",
     description:
@@ -70,11 +65,10 @@ export const entries: CareerEntry[] = [
     accent: "#dcb563",
   },
   {
-    period: "2024 — 2026",
-    start: 2024,
-    end: 2026,
+    period: "2024 — 2025",
+    start: "2024-12",
+    end: "2025-10",
     lane: 1,
-    now: false,
     company: "Squib",
     title: "Founding Engineer",
     description:
@@ -86,10 +80,9 @@ export const entries: CareerEntry[] = [
   },
   {
     period: "2021 — 2022",
-    start: 2021,
-    end: 2022,
+    start: "2021-05",
+    end: "2022-03",
     lane: 0,
-    now: false,
     company: "Artesian Builds",
     title: "Full Stack Developer",
     description:
@@ -100,11 +93,10 @@ export const entries: CareerEntry[] = [
     accent: "#72a0ff",
   },
   {
-    period: "2019",
-    start: 2019.05,
-    end: 2019.85,
+    period: "2020",
+    start: "2020-04",
+    end: "2020-07",
     lane: 0,
-    now: false,
     company: "McDonald's",
     title: "Crew Member",
     description:
@@ -117,33 +109,63 @@ export const entries: CareerEntry[] = [
 ];
 
 // Time axis ------------------------------------------------------------------
-// The axis is not linear in time. A true scale spends half its width on the
-// last three years and most of the rest on empty gaps, so it's warped:
-// piecewise linear between these [year, %] knots. Every placement on the axis
-// (bars, year marks, playhead, read-out) goes through the same mapping, and
-// scroll per entry is unchanged — only where things sit, and so how fast the
-// playhead travels between them, moves.
-//
-//   0 – 40%   McDonald's, Artesian Builds and the gaps around them (the gaps
-//             squeezed to ~20% of their linear width)
-//   40 – 100% Squib, Rumor and Junior
-export const axisKnots: [number, number][] = [
-  [RANGE_START, 0],
-  [2019.05, 0.5], // McDonald's
-  [2019.85, 16],
-  [2021, 19], // Artesian Builds
-  [2022, 37.5],
-  [2024, 40], // Squib
-  [2025, 60], // Rumor
-  [2026.67, 88], // Junior
-  [RANGE_END, 100],
+// Positions on the axis are "years": fractional years, so May 2021 is 2021.33.
+
+const ym = (s: string) => {
+  const [y, m] = s.split("-").map(Number);
+  return y + (m - 1) / 12;
+};
+
+// Today as a year. The axis runs up to it, so the current job keeps growing
+// without anyone touching this file; the page works it out again on load.
+export const nowYear = (d = new Date()) => {
+  const y = d.getFullYear();
+  const t0 = new Date(y, 0, 1).getTime();
+  const t1 = new Date(y + 1, 0, 1).getTime();
+  return y + (d.getTime() - t0) / (t1 - t0);
+};
+
+export const startOf = (e: CareerEntry) => ym(e.start);
+// The current job runs to today, but always shows at least its first month,
+// however the visitor's clock is set.
+export const endOf = (e: CareerEntry, now: number) =>
+  e.end ? ym(e.end) + 1 / 12 : Math.max(now, ym(e.start) + 1 / 12);
+
+// The axis is not linear in time. The oldest entries get set widths, each
+// with a set gap after it, so short early jobs and the years between them
+// don't crowd out the recent ones:
+const FIXED: [bar: number, gap: number][] = [
+  [8, 3], // McDonald's
+  [15, 4], // Artesian Builds
 ];
+// Everything after them (Squib, Rumor, Junior) shares what's left of the axis
+// in proportion to time, up to today, so as the current job runs on it
+// widens and the others narrow to make room.
+//
+// That makes the axis piecewise linear between [year, %] knots. Every
+// placement on it (bars, year marks, playhead, read-out) goes through the
+// same mapping. Scroll per entry doesn't depend on it; only where things sit,
+// and so how fast the playhead travels between them.
+const knotsAt = (now: number) => {
+  const oldest = ordered.map(({ entry }) => entry);
+  const k: [number, number][] = [];
+  let x = 0;
+  FIXED.forEach(([bar, gap], j) => {
+    k.push([startOf(oldest[j]), x], [endOf(oldest[j], now), x + bar]);
+    x += bar + gap;
+  });
+  const rest = oldest.slice(FIXED.length);
+  k.push(
+    [startOf(rest[0]), x],
+    [Math.max(...rest.map((e) => endOf(e, now))), 100],
+  );
+  return k;
+};
 
 // Piecewise-linear lookup along one column of the knots into the other;
 // clamps outside the range.
-const warp = (v: number, from: 0 | 1) => {
+const warp = (k: [number, number][], v: number, from: 0 | 1) => {
   const to = from === 0 ? 1 : 0;
-  const k = axisKnots;
   if (v <= k[0][from]) return k[0][to];
   for (let j = 1; j < k.length; j++) {
     if (v <= k[j][from]) {
@@ -155,38 +177,57 @@ const warp = (v: number, from: 0 | 1) => {
   return k[k.length - 1][to];
 };
 
-// Year -> % along the axis, and back.
-export const yearPct = (v: number) => warp(v, 0);
-export const pctYear = (p: number) => warp(p, 1);
+// Year marks. Squeezed stretches put some years only a few percent apart, so
+// a year is only marked if it clears the marks already placed, newest first.
+// The ends are always marked: the year the axis starts in, and "Now".
+const MIN_MARK_GAP = 7;
 
-// Year marks on the axis. Squeezed gaps put some years only a couple of
-// percent apart, so a year is only marked if it clears the marks already
-// placed. Placed first: the axis ends, then years a bar starts on, then years
-// a bar ends on, then the rest.
-const MIN_MARK_GAP = 6;
-const onYear = (v: number[]) => v.filter(Number.isInteger);
-const markPriority = new Set([
-  RANGE_START,
-  RANGE_END,
-  ...onYear(entries.map((e) => e.start)),
-  ...onYear(entries.map((e) => e.end)),
-  ...Array.from({ length: SPAN }, (_, i) => RANGE_START + i),
-]);
-const marked: number[] = [];
-for (const y of markPriority) {
-  if (marked.every((m) => Math.abs(yearPct(m) - yearPct(y)) >= MIN_MARK_GAP))
-    marked.push(y);
+export interface Axis {
+  /** year -> % along the axis */
+  pct: (v: number) => number;
+  /** % along the axis -> year */
+  year: (p: number) => number;
+  /** left/width of an entry's bar, in % */
+  bar: (e: CareerEntry) => { left: number; width: number };
+  marks: { pct: number; label: string }[];
 }
-export const yearMarks = marked.sort((a, b) => a - b);
 
-// Axis value -> "Sep 2026" / "2026-09". Months come off the same fractional
-// year the playhead read-out uses, so the dates and the axis always agree.
+export const axisAt = (now: number): Axis => {
+  const k = knotsAt(now);
+  const pct = (v: number) => warp(k, v, 0);
+  const year = (p: number) => warp(k, p, 1);
+  const first = k[0][0];
+  const end = k[k.length - 1][0];
+
+  const kept = [0, 100];
+  const years: number[] = [];
+  for (let y = Math.floor(end); y > first; y--) {
+    const p = pct(y);
+    if (kept.every((q) => Math.abs(q - p) >= MIN_MARK_GAP)) {
+      kept.push(p);
+      years.push(y);
+    }
+  }
+  const short = (y: number) => `'${String(y).slice(2)}`;
+  const marks = [
+    { pct: 0, label: short(Math.floor(first)) },
+    ...years.reverse().map((y) => ({ pct: pct(y), label: short(y) })),
+    { pct: 100, label: "Now" },
+  ];
+
+  const bar = (e: CareerEntry) => {
+    const left = pct(startOf(e));
+    return { left, width: pct(endOf(e, now)) - left };
+  };
+  return { pct, year, bar, marks };
+};
+
+// "2026-09" -> "Sep 2026"
 const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
-const monthOf = (v: number) => Math.min(11, Math.floor((v % 1) * 12));
-export const monthYear = (v: number) =>
-  `${MONTHS[monthOf(v)]} ${Math.floor(v)}`;
-export const monthIso = (v: number) =>
-  `${Math.floor(v)}-${String(monthOf(v) + 1).padStart(2, "0")}`;
+export const monthYear = (s: string) => {
+  const [y, m] = s.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${y}`;
+};
 
 // Scroll order is oldest-first; each keeps its original index `i`, which is
 // what data-select / data-panel attributes key off.
