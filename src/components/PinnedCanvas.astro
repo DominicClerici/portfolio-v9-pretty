@@ -124,7 +124,8 @@
     /* ══ Tunable knobs ══════════════════════════════════════════════════
        Per-object placement/scale plus the scroll response live here; colors
        and drift phase stay in OBJECTS below. The shared feel knobs (pointer
-       sensitivity, easing, drift, fps caps) are the engine defaults in
+       sensitivity, easing, drift, fps caps: display rate up to 165 on
+       WebGL, 30 on the CPU fallback) are the engine defaults in
        src/scripts/glass-scene.ts — override them via createGlassScene()
        options if this scene ever needs its own values. */
 

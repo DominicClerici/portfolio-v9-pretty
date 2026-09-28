@@ -133,16 +133,21 @@ export type GlassSceneOptions = {
   objects: GlassObject[]
   /** parallax shift per unit pointer travel */
   pointerSensitivity?: number
-  /** per-frame catch-up; lower = slower, more fluid/laggy */
+  /** catch-up per 1/30 s (applied frame-rate independently); lower =
+      slower, more fluid/laggy */
   pointerEase?: number
   scrollEase?: number
   /** global multipliers on each object's idle float */
   driftSpeed?: number
   driftAmount?: number
-  /** render framerate cap for the glass pass; 0 = display rate */
+  /** GL framerate ceiling; below it the scene runs at the display's own
+      refresh rate. 0 = no ceiling */
   fpsCap?: number
-  /** refresh rate for the (expensive) scene/blur pass; 0 = every frame */
+  /** GL refresh rate for the scene/blur pass; 0 = every rendered frame */
   sceneFpsCap?: number
+  /** framerate cap for the CPU fallback, whose every frame is the full
+      per-pixel pass */
+  cpuFpsCap?: number
   /** Width of each object set's cross-fade, as a span of the 0…1 darkness.
       The light set fades out over the turn's first `crossfade`, the dark set in
       over its last, so the two overlap by however much this exceeds 0.5 —
@@ -195,8 +200,9 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     scrollEase: SCROLL_EASE = 0.14,
     driftSpeed: DRIFT_SPEED = 1.5,
     driftAmount: DRIFT_AMOUNT = 2.0,
-    fpsCap: FPS_CAP = 60,
-    sceneFpsCap: SCENE_FPS_CAP = 30,
+    fpsCap: FPS_CAP = 165,
+    sceneFpsCap: SCENE_FPS_CAP = 0,
+    cpuFpsCap: CPU_FPS_CAP = 30,
     crossfade: CROSSFADE = 0.62,
     forceCPU = false,
     onCPUFallback,
@@ -207,18 +213,32 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     "(prefers-reduced-motion: reduce)",
   ).matches
 
+  /* ── Easing ──
+     The pointer and scroll catch-ups are exponential, tuned as a fraction per
+     1/30 s step. Each update converts that to the time that actually elapsed,
+     so the feel is the same at 30, 60, 120 or 165 fps. A long gap is clamped
+     so the objects don't leap after a hitch. */
+  const EASE_REF_MS = 1000 / 30
+  const EASE_MAX_MS = 100
+  function easeStep(ease: number, dtMs: number) {
+    if (dtMs <= 0) return 0
+    return 1 - Math.pow(1 - ease, Math.min(dtMs, EASE_MAX_MS) / EASE_REF_MS)
+  }
+
   /* ── Scroll parallax ──
      The caller feeds one lift target (px) per channel from its own scroll
-     wiring; the eased lift the objects actually use catches up once per
-     rendered frame so the parallax glides instead of snapping to the raw
-     scroll position. Channels are independent so one scene can carry two
+     wiring; the eased lift the objects actually use catches up on every scene
+     update so the parallax glides instead of snapping to the raw scroll
+     position. Channels are independent so one scene can carry two
      unrelated climbs at once — objects pick theirs with `lift`. */
   const CHANNELS = 1 + OBJECTS.reduce((n, o) => Math.max(n, o.lift ?? 0), 0)
   const scrollTargets = new Float64Array(CHANNELS)
   const scrollLifts = new Float64Array(CHANNELS) // eased, CSS px
-  function stepScroll() {
+  function stepScroll(dtMs: number) {
+    const k = easeStep(SCROLL_EASE, dtMs)
+    if (!k) return
     for (let i = 0; i < CHANNELS; i++) {
-      scrollLifts[i] += (scrollTargets[i] - scrollLifts[i]) * SCROLL_EASE
+      scrollLifts[i] += (scrollTargets[i] - scrollLifts[i]) * k
     }
   }
 
@@ -243,10 +263,11 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     },
     { passive: true },
   )
-  // Ease the shared pointer toward its target once per rendered frame.
-  function smoothPointer() {
-    px += (tpx - px) * POINTER_EASE
-    py += (tpy - py) * POINTER_EASE
+  // Ease the shared pointer toward its target on every scene update.
+  function smoothPointer(dtMs: number) {
+    const k = easeStep(POINTER_EASE, dtMs)
+    px += (tpx - px) * k
+    py += (tpy - py) * k
   }
   const smoothstep = (e0: number, e1: number, x: number) => {
     const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
@@ -299,37 +320,65 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
   }
 
   type Impl = {
-    render: (tSec: number, sceneDirty?: boolean) => void
+    /** `easeMs`: time the pointer/scroll easing advances by (0 for one-off
+        repaints outside the loop). `sceneDirty`: refresh the scene pass too. */
+    render: (tSec: number, easeMs?: number, sceneDirty?: boolean) => void
     resize: () => void
   }
   let impl: Impl
 
   /* ── Shared render-loop harness (raf, resize, visibility) ── */
-  // rAF always fires at the display's refresh rate; when FPS_CAP is set we
-  // skip the render on frames that arrive before the next slot is due (time
-  // still comes from the real timestamp, so the motion stays correct).
-  const FRAME_MS = FPS_CAP > 0 ? 1000 / FPS_CAP : 0
-  // Frames on which the scene/blur is refreshed. The glass pass draws every
-  // capped frame; the scene pass only when this slot is due (see render()).
-  const SCENE_MS = SCENE_FPS_CAP > 0 ? 1000 / SCENE_FPS_CAP : 0
+  // rAF fires at the display's refresh rate, so a display at or under the
+  // cap renders every frame it's given (60 on 60 Hz, 144 on 144 Hz). Above
+  // the cap, frames that arrive before the next slot are skipped. Slots sit on
+  // a fixed grid, not "cap after the last frame", so a 240 Hz display averages
+  // the cap instead of rounding down to every other frame (120). Time always
+  // comes from the real timestamp, so motion stays correct either way.
+  // Set per backend by useCaps(): the GL passes are cheap enough for the
+  // display rate, the CPU fallback's per-pixel pass is not.
+  let frameMs = 0
+  // Frames on which the scene/blur is refreshed (GL only; 0 = every frame).
+  let sceneMs = 0
+  function useCaps(fps: number, sceneFps: number) {
+    frameMs = fps > 0 ? 1000 / fps : 0
+    sceneMs = sceneFps > 0 ? 1000 / sceneFps : 0
+  }
+  // Slack for rAF timestamp jitter, so a display right at the cap isn't made
+  // to drop frames that land a hair early.
+  const SLOT_SLACK_MS = 1
   let rafId: number | null = null
   let running = false
   let lastT = 0
-  let lastFrameMs = -Infinity
+  let nextFrameMs = -Infinity
   let lastSceneMs = -Infinity
   function loop(ms: number) {
     if (!running) return
     rafId = requestAnimationFrame(loop)
-    if (FRAME_MS && ms - lastFrameMs < FRAME_MS - 1) return
-    lastFrameMs = ms
+    if (frameMs) {
+      if (ms < nextFrameMs - SLOT_SLACK_MS) return
+      nextFrameMs += frameMs
+      // Fell a slot behind (first frame, a hitch, or a display under the cap):
+      // restart the grid from this frame rather than bursting to catch up.
+      if (nextFrameMs < ms) nextFrameMs = ms + frameMs
+    }
     lastT = ms / 1000
-    const sceneDirty = !SCENE_MS || ms - lastSceneMs >= SCENE_MS - 1
-    if (sceneDirty) lastSceneMs = ms
-    impl.render(lastT, sceneDirty)
+    const sceneDirty = !sceneMs || ms - lastSceneMs >= sceneMs - SLOT_SLACK_MS
+    if (!sceneDirty) {
+      impl.render(lastT, 0, false)
+      return
+    }
+    // The first frame after start() has no previous one to measure from.
+    const easeMs = lastSceneMs === -Infinity ? EASE_REF_MS : ms - lastSceneMs
+    lastSceneMs = ms
+    impl.render(lastT, easeMs, true)
   }
   function start() {
     if (running || reducedMotion) return
     running = true
+    // A fresh slot grid, and one nominal easing step on the first frame back
+    // rather than however long the loop was stopped.
+    nextFrameMs = -Infinity
+    lastSceneMs = -Infinity
     rafId = requestAnimationFrame(loop)
   }
   function stop() {
@@ -696,6 +745,7 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
         e.preventDefault()
         stop()
         impl = startCPU()
+        useCaps(CPU_FPS_CAP, 0)
         onCPUFallback?.()
         impl.resize()
         start()
@@ -705,15 +755,15 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
 
     let dpr = 1
     const objBuf = new Float32Array(NOBJ * 3)
-    function render(tSec: number, sceneDirty = true) {
+    function render(tSec: number, easeMs = 0, sceneDirty = true) {
       // Pass 1 — scene into the FBO, then mip it down for the glass blur.
       // Object placement and pointer/scroll easing all live in here, so the
-      // whole block is gated on sceneDirty: it refreshes at SCENE_FPS_CAP
-      // while the glass pass below still draws every frame. The FBO + its
-      // mip chain persist between refreshes for the glass pass to sample.
+      // whole block is gated on sceneDirty: by default it runs every frame,
+      // but SCENE_FPS_CAP can drop it below the glass pass's rate. The FBO +
+      // its mip chain persist between refreshes for the glass pass to sample.
       if (sceneDirty) {
-        smoothPointer()
-        stepScroll()
+        smoothPointer(easeMs)
+        stepScroll(easeMs)
         const m = Math.min(canvas.width, canvas.height)
         layoutObjects(tSec, canvas.width, canvas.height, dpr)
         for (let i = 0; i < NOBJ; i++) {
@@ -852,13 +902,13 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     // per-pixel loop should only pay for the ones actually in frame.
     const active: (typeof objs)[number][] = []
 
-    function render(tSec: number, sceneDirty = true) {
+    function render(tSec: number, easeMs = 0, sceneDirty = true) {
       // Unlike the GL backend there's no cheap glass-only pass here — the
-      // whole frame is the expensive scene recompute — so the SCENE_FPS_CAP
-      // gate skips the entire frame and the canvas keeps its last image.
+      // whole frame is the expensive scene recompute — so the loop runs this
+      // backend at CPU_FPS_CAP and never asks it for a glass-only frame.
       if (!sceneDirty) return
-      smoothPointer()
-      stepScroll()
+      smoothPointer(easeMs)
+      stepScroll(easeMs)
       const m = Math.min(W, H)
       const blur = m * 0.06 // the baked-in "45px" softness
       const period = m * PERIOD_FRAC
@@ -999,8 +1049,10 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
   const glImpl = startGL()
   if (glImpl) {
     impl = glImpl
+    useCaps(FPS_CAP, SCENE_FPS_CAP)
   } else {
     impl = startCPU()
+    useCaps(CPU_FPS_CAP, 0)
     onCPUFallback?.()
   }
 
