@@ -172,20 +172,11 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                 </h3>
 
                 <div class="grid lg:grid-cols-12 gap-5 lg:gap-x-6 mt-5 lg:mt-10">
-                  <!-- Role and dates head the focus list; the dot and the
-                       dashes share a 12px slot, so every line of text in the
-                       column starts on the same edge. -->
                   <div class="in lg:col-span-3 pt-1.5" style="--i: 1">
-                    <p class="flex items-center gap-2.5 font-mono text-[12px] lg:text-[13px] leading-none tracking-[-0.02em] uppercase text-n-100">
-                      <span
-                        class="flex justify-center shrink-0 w-3"
-                        aria-hidden="true"
-                      >
-                        <span class="dot w-[7px] h-[7px] rounded-full" />
-                      </span>
+                    <p class="font-mono text-[12px] lg:text-[13px] leading-none tracking-[-0.02em] uppercase text-n-100">
                       {entry.title}
                     </p>
-                    <p class="pl-[22px] mt-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] text-n-500 tabular-nums">
+                    <p class="mt-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] text-n-500 tabular-nums">
                       <time datetime={entry.start}>
                         {monthYear(entry.start)}
                       </time>
@@ -319,11 +310,6 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 
   /* The accent follows the company on show (--accent, blended by the script
      below), so the foreground carries the colour of the orb behind it. */
-  .dot {
-    background: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
-  }
-
   .dash {
     background: var(--accent);
   }
