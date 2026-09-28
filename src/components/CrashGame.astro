@@ -1,0 +1,922 @@
+---
+// Easter egg behind every `>_` prompt: a game of crash, dressed as a Friday
+// deploy to prod. Stake some of a fake balance, hit Deploy, and the multiplier
+// climbs for as long as prod stays up; roll back before it goes down to keep
+// stake × multiplier. The balance lives in localStorage and is never real
+// money — there's a `git reset --hard` for when it runs out.
+//
+// Anything with [data-crash-open] opens it. The dialog is modal, so focus,
+// Esc and the inert page behind it come from the platform.
+
+// Why prod went down. Rendered (hidden) into the page rather than kept in the
+// script so subset-fonts.py sees every glyph these can show.
+const failures = [
+  "SIGSEGV",
+  "OOMKilled",
+  "npm ERR! peer dep conflict",
+  "undefined is not a function",
+  "DNS. It was DNS.",
+  "left-pad unpublished",
+  "cert expired at midnight",
+  "migration dropped users",
+  "rm -rf ./ (whoops)",
+  "infinite useEffect loop",
+  "us-east-1 is down",
+  "merged on a Friday",
+  "works on my machine",
+  "stack overflow (the bad one)",
+  "null pointer, again",
+  "rate limited by own API",
+];
+---
+
+<dialog
+  id="crash-game"
+  class="crash font-mono"
+  aria-labelledby="crash-title"
+  data-lenis-prevent
+>
+  <div class="crash-win">
+    <div class="crash-bar">
+      <span class="crash-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <h2 id="crash-title" class="crash-title">~/prod $ ./deploy.sh</h2>
+      <button
+        type="button"
+        class="crash-x"
+        data-crash-close
+        aria-label="Close game"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <path
+            d="M2 2l10 10M12 2L2 12"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="crash-body">
+      <div class="crash-top">
+        <div>
+          <div class="crash-label">Balance</div>
+          <div class="crash-balance" data-crash-balance>$1,000.00</div>
+        </div>
+        <ol class="crash-history" data-crash-history aria-label="Last crashes">
+        </ol>
+      </div>
+
+      <div class="crash-stage">
+        <canvas data-crash-canvas aria-hidden="true"></canvas>
+        <div class="crash-readout">
+          <div class="crash-mult" data-crash-mult>1.00x</div>
+          <div class="crash-status" data-crash-status role="status">
+            Ship it? Prod is stable. For now.
+          </div>
+        </div>
+      </div>
+
+      <div class="crash-controls">
+        <label class="crash-field">
+          <span class="crash-label">Stake</span>
+          <span class="crash-input">
+            <span aria-hidden="true">$</span>
+            <input
+              data-crash-bet
+              type="number"
+              inputmode="decimal"
+              min="1"
+              step="1"
+              value="10"
+            />
+          </span>
+        </label>
+        <div class="crash-quick">
+          <button type="button" data-crash-quick="half">1/2</button>
+          <button type="button" data-crash-quick="double">2x</button>
+          <button type="button" data-crash-quick="max">Max</button>
+        </div>
+        <label class="crash-field">
+          <span class="crash-label">Auto rollback</span>
+          <span class="crash-input">
+            <input
+              data-crash-auto
+              type="number"
+              inputmode="decimal"
+              min="1.01"
+              step="0.1"
+              placeholder="off"
+            />
+            <span aria-hidden="true">x</span>
+          </span>
+        </label>
+        <button type="button" class="crash-go" data-crash-go>Deploy</button>
+      </div>
+
+      <p class="crash-foot">
+        <span>Space to deploy / roll back. Esc to walk away.</span>
+        <span>Play money only. No refunds.</span>
+      </p>
+    </div>
+  </div>
+
+  <ul hidden class="font-mono" data-crash-failures>
+    {failures.map((f) => <li>{f}</li>)}
+  </ul>
+  <span hidden class="font-mono"
+    >Deploying... Rolled back at Down at Prod down. Lost Banked Balance empty.
+    git reset --hard Restored left on the table $0123456789.,+-@xX</span
+  >
+</dialog>
+
+<style>
+  .crash {
+    --crash-red: #ff6b5b;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-bone);
+    width: min(560px, calc(100vw - 32px));
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    overflow: visible;
+  }
+  .crash::backdrop {
+    background: rgb(10 10 10 / 0.55);
+    backdrop-filter: blur(3px);
+  }
+
+  .crash-win {
+    background: var(--color-n-950);
+    border: 1px solid var(--color-n-700);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .crash[open] .crash-win {
+      animation: crash-in 0.35s var(--ease-settle);
+    }
+    .crash[open]::backdrop {
+      animation: crash-fade 0.35s ease;
+    }
+    .crash-win.is-shaking {
+      animation: crash-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+    @keyframes crash-in {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+      }
+    }
+    @keyframes crash-fade {
+      from {
+        opacity: 0;
+      }
+    }
+    @keyframes crash-shake {
+      20%,
+      60% {
+        transform: translateX(-6px);
+      }
+      40%,
+      80% {
+        transform: translateX(6px);
+      }
+    }
+  }
+
+  .crash-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px 10px 14px;
+    border-bottom: 1px solid var(--color-n-800);
+    background: var(--color-n-900);
+  }
+  .crash-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .crash-dots i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-n-700);
+  }
+  .crash-title {
+    flex: 1;
+    font-size: 12px;
+    color: var(--color-n-400);
+    letter-spacing: -0.02em;
+  }
+  .crash-x {
+    display: inline-flex;
+    padding: 6px;
+    border-radius: 6px;
+    color: var(--color-n-400);
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      background-color 0.15s;
+  }
+  .crash-x:hover {
+    color: var(--color-bone);
+    background: var(--color-n-800);
+  }
+
+  .crash-body {
+    padding: 16px;
+  }
+
+  .crash-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .crash-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-n-400);
+  }
+  .crash-balance {
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s;
+  }
+  .crash-balance.is-up {
+    color: var(--color-bio-lime);
+    transition: none;
+  }
+  .crash-balance.is-down {
+    color: var(--crash-red);
+    transition: none;
+  }
+
+  .crash-history {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  .crash-history :global(li) {
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: var(--color-n-850);
+    color: var(--color-n-350);
+    font-variant-numeric: tabular-nums;
+  }
+  .crash-history :global(li.is-high) {
+    color: var(--color-bio-lime);
+  }
+  .crash-history :global(li.is-low) {
+    color: var(--crash-red);
+  }
+
+  .crash-stage {
+    position: relative;
+    height: clamp(180px, 34vh, 240px);
+    border-radius: 10px;
+    background: var(--color-n-900);
+    border: 1px solid var(--color-n-800);
+    overflow: hidden;
+  }
+  .crash-stage canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .crash-readout {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 16px;
+  }
+  .crash-mult {
+    font-size: clamp(40px, 11vw, 60px);
+    letter-spacing: -0.05em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 16px rgb(10 10 10 / 0.8);
+  }
+  .crash-stage.is-crashed .crash-mult {
+    color: var(--crash-red);
+  }
+  .crash-stage.is-cashed .crash-mult {
+    color: var(--color-bio-lime);
+  }
+  .crash-status {
+    font-size: 12px;
+    color: var(--color-n-350);
+    text-shadow: 0 1px 8px rgb(10 10 10 / 0.9);
+  }
+
+  .crash-controls {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .crash-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .crash-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-n-700);
+    background: var(--color-n-900);
+    color: var(--color-n-400);
+    font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .crash-input:focus-within {
+    border-color: var(--color-n-400);
+  }
+  .crash-input input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    color: var(--color-bone);
+    outline: none;
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+  }
+  .crash-input input::-webkit-inner-spin-button,
+  .crash-input input::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  .crash-input input::placeholder {
+    color: var(--color-n-500);
+  }
+  .crash-input input:disabled {
+    color: var(--color-n-400);
+  }
+
+  .crash-quick {
+    display: flex;
+    gap: 4px;
+  }
+  .crash-quick button {
+    height: 40px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--color-n-850);
+    color: var(--color-n-350);
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .crash-quick button:hover:not(:disabled) {
+    background: var(--color-n-800);
+    color: var(--color-bone);
+  }
+
+  .crash-go {
+    grid-column: 1 / -1;
+    height: 48px;
+    border-radius: 10px;
+    background: var(--color-bio-lime);
+    color: var(--color-ink);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition:
+      filter 0.15s,
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .crash-go:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+  .crash-go.is-cashout {
+    background: var(--color-bone);
+  }
+  .crash-go.is-reset {
+    text-transform: none;
+    background: var(--color-n-800);
+    color: var(--color-bone);
+  }
+
+  .crash button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .crash button:focus-visible,
+  .crash input:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: 2px;
+  }
+
+  .crash-foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--color-n-500);
+  }
+
+  @media (max-width: 479px) {
+    .crash-controls {
+      grid-template-columns: 1fr 1fr;
+    }
+    .crash-quick {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .crash-quick button {
+      flex: 1;
+    }
+    .crash-foot span:first-child {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const START_BALANCE = 1000;
+  const STORE_KEY = "crash:v1";
+  // Growth rate: m(t) = e^(RATE·t), so 2x at ~6.9s, 10x at ~23s.
+  const RATE = 0.1;
+  // The house keeps 1%: that's the share of rounds that die at 1.00x.
+  const HOUSE_EDGE = 0.01;
+
+  const dialog = document.getElementById("crash-game") as HTMLDialogElement;
+  const $ = <T extends HTMLElement>(sel: string) =>
+    dialog.querySelector<T>(sel)!;
+
+  const win = $<HTMLElement>(".crash-win");
+  const stage = $<HTMLElement>(".crash-stage");
+  const canvas = $<HTMLCanvasElement>("[data-crash-canvas]");
+  const ctx = canvas.getContext("2d")!;
+  const balanceEl = $<HTMLElement>("[data-crash-balance]");
+  const historyEl = $<HTMLOListElement>("[data-crash-history]");
+  const multEl = $<HTMLElement>("[data-crash-mult]");
+  const statusEl = $<HTMLElement>("[data-crash-status]");
+  const betInput = $<HTMLInputElement>("[data-crash-bet]");
+  const autoInput = $<HTMLInputElement>("[data-crash-auto]");
+  const goBtn = $<HTMLButtonElement>("[data-crash-go]");
+  const quickBtns =
+    dialog.querySelectorAll<HTMLButtonElement>("[data-crash-quick]");
+  const failures = Array.from(
+    dialog.querySelectorAll("[data-crash-failures] li"),
+    (li) => li.textContent!,
+  );
+
+  const reducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+
+  /* ── State ── */
+  type Phase = "idle" | "running" | "done";
+  let phase: Phase = "idle";
+  let balance = START_BALANCE;
+  let history: number[] = [];
+  let stake = 0;
+  let crashAt = 1;
+  let autoAt = 0;
+  let cashedAt = 0;
+  let startTime = 0;
+  let mult = 1;
+  let raf = 0;
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      if (saved && Number.isFinite(saved.balance)) {
+        balance = saved.balance;
+        history = Array.isArray(saved.history) ? saved.history.slice(0, 8) : [];
+      }
+    } catch {}
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ balance, history }));
+    } catch {}
+  }
+
+  /* ── Formatting ── */
+  const money = (n: number) =>
+    "$" +
+    n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const x = (m: number) => m.toFixed(2) + "x";
+  const round2 = (n: number) => Math.floor(n * 100 + 1e-6) / 100;
+
+  /* ── Crash point ──
+     Standard provably-fair shape: P(crash >= m) = (1 - edge) / m, floored to
+     the cent. Uses crypto so it can't be gamed by seeding Math.random. */
+  function rollCrash() {
+    const u = crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+    return Math.max(1, Math.floor(((1 - HOUSE_EDGE) / (1 - u)) * 100) / 100);
+  }
+
+  /* ── Rendering ── */
+  function renderBalance(flash?: "up" | "down") {
+    balanceEl.textContent = money(balance);
+    balanceEl.classList.remove("is-up", "is-down");
+    if (flash) {
+      balanceEl.classList.add("is-" + flash);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          balanceEl.classList.remove("is-up", "is-down"),
+        ),
+      );
+    }
+  }
+
+  function renderHistory() {
+    historyEl.replaceChildren(
+      ...history.map((m) => {
+        const li = document.createElement("li");
+        li.textContent = x(m);
+        if (m >= 2) li.className = "is-high";
+        else if (m < 1.2) li.className = "is-low";
+        return li;
+      }),
+    );
+  }
+
+  function renderControls() {
+    const running = phase === "running";
+    const broke = balance < 1 && !running;
+    betInput.disabled = running;
+    autoInput.disabled = running;
+    quickBtns.forEach((b) => (b.disabled = running || broke));
+    goBtn.classList.toggle("is-cashout", running);
+    goBtn.classList.toggle("is-reset", broke);
+    if (broke) {
+      goBtn.textContent = "git reset --hard";
+      goBtn.disabled = false;
+    } else if (running) {
+      goBtn.disabled = cashedAt > 0;
+      goBtn.textContent =
+        cashedAt > 0
+          ? "Rolled back at " + x(cashedAt)
+          : "Roll back  " + money(round2(stake * mult));
+    } else {
+      goBtn.textContent = "Deploy";
+      goBtn.disabled = false;
+    }
+  }
+
+  // Canvas is sized to its box at device resolution; redrawn on demand.
+  let cw = 0;
+  let ch = 0;
+  function sizeCanvas() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cw = r.width;
+    ch = r.height;
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(ch * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  function cssVar(name: string) {
+    return getComputedStyle(dialog).getPropertyValue(name).trim();
+  }
+  let colors = { lime: "", red: "", grid: "", label: "", bone: "" };
+  function readColors() {
+    colors = {
+      lime: cssVar("--color-bio-lime"),
+      red: cssVar("--crash-red"),
+      grid: cssVar("--color-n-800"),
+      label: cssVar("--color-n-500"),
+      bone: cssVar("--color-bone"),
+    };
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cw, ch);
+    if (!cw || !ch) return;
+
+    const t = Math.log(mult) / RATE;
+    // The view grows with the run so the curve always has headroom.
+    const tMax = Math.max(8, t * 1.15);
+    const mMax = Math.max(2, 1 + (mult - 1) * 1.2);
+    const pad = { l: 10, r: 10, t: 12, b: 10 };
+    const px = (tt: number) => pad.l + (tt / tMax) * (cw - pad.l - pad.r);
+    const py = (m: number) =>
+      ch - pad.b - ((m - 1) / (mMax - 1)) * (ch - pad.t - pad.b);
+
+    // Horizontal guides at "nice" multipliers.
+    ctx.font = "10px 'Roboto Mono', monospace";
+    ctx.textBaseline = "bottom";
+    const step = niceStep((mMax - 1) / 4);
+    for (
+      let g = (Math.floor(1 / step + 1e-9) + 1) * step;
+      g < mMax - step * 0.3;
+      g += step
+    ) {
+      const y = Math.round(py(g)) + 0.5;
+      ctx.strokeStyle = colors.grid;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, y);
+      ctx.lineTo(cw - pad.r, y);
+      ctx.stroke();
+      ctx.fillStyle = colors.label;
+      ctx.fillText(x(g), pad.l + 2, y - 3);
+    }
+
+    if (phase === "idle" || t <= 0) return;
+
+    const crashed = phase === "done" && cashedAt === 0;
+    const stroke = crashed ? colors.red : colors.lime;
+
+    ctx.beginPath();
+    const n = 80;
+    for (let i = 0; i <= n; i++) {
+      const tt = (t * i) / n;
+      const X = px(tt);
+      const Y = py(Math.exp(RATE * tt));
+      i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+    }
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // Fill under the curve.
+    ctx.lineTo(px(t), py(1));
+    ctx.lineTo(px(0), py(1));
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, pad.t, 0, ch);
+    grad.addColorStop(0, withAlpha(stroke, 0.22));
+    grad.addColorStop(1, withAlpha(stroke, 0));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Where you bailed.
+    if (cashedAt > 0) {
+      const cx = px(Math.log(cashedAt) / RATE);
+      const cy = py(cashedAt);
+      ctx.fillStyle = colors.bone;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Head of the curve.
+    ctx.fillStyle = stroke;
+    ctx.beginPath();
+    ctx.arc(px(t), py(mult), crashed ? 5 : 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function niceStep(raw: number) {
+    const p = 10 ** Math.floor(Math.log10(raw));
+    const f = raw / p;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+  }
+
+  function withAlpha(hex: string, a: number) {
+    const h = hex.replace("#", "");
+    const v = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16);
+    return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`;
+  }
+
+  /* ── Round flow ── */
+  function readBet() {
+    const v = round2(parseFloat(betInput.value));
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function deploy() {
+    const bet = readBet();
+    if (bet < 1) {
+      statusEl.textContent = "Minimum stake is $1.";
+      return;
+    }
+    if (bet > balance) {
+      statusEl.textContent = "Insufficient funds. Try a smaller PR.";
+      return;
+    }
+    const auto = parseFloat(autoInput.value);
+    autoAt = Number.isFinite(auto) && auto > 1 ? round2(auto) : 0;
+
+    stake = bet;
+    balance = round2(balance - bet);
+    crashAt = rollCrash();
+    cashedAt = 0;
+    mult = 1;
+    phase = "running";
+    startTime = performance.now();
+    save();
+
+    stage.classList.remove("is-crashed", "is-cashed");
+    statusEl.textContent = "Deploying...";
+    renderBalance();
+    renderControls();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function cashOut(at: number) {
+    if (phase !== "running" || cashedAt > 0) return;
+    cashedAt = at;
+    const win = round2(stake * at);
+    balance = round2(balance + win);
+    save();
+    stage.classList.add("is-cashed");
+    statusEl.textContent = `Rolled back at ${x(at)}. Banked +${money(win - stake)}`;
+    renderBalance("up");
+    renderControls();
+  }
+
+  function crash() {
+    phase = "done";
+    mult = crashAt;
+    cancelAnimationFrame(raf);
+
+    history = [crashAt, ...history].slice(0, 8);
+    save();
+    renderHistory();
+
+    const why = failures[Math.floor(Math.random() * failures.length)];
+    if (cashedAt > 0) {
+      const missed = round2(stake * (crashAt - cashedAt));
+      statusEl.textContent =
+        missed > 0
+          ? `Down at ${x(crashAt)}: ${why}. You left ${money(missed)} on the table`
+          : `Down at ${x(crashAt)}: ${why}. Clean getaway.`;
+    } else {
+      stage.classList.remove("is-cashed");
+      stage.classList.add("is-crashed");
+      statusEl.textContent = `Prod down: ${why}. Lost ${money(stake)}`;
+      renderBalance("down");
+      if (!reducedMotion) {
+        win.classList.remove("is-shaking");
+        void win.offsetWidth;
+        win.classList.add("is-shaking");
+      }
+    }
+    multEl.textContent = x(crashAt);
+    draw();
+    renderControls();
+  }
+
+  function tick(now: number) {
+    const t = (now - startTime) / 1000;
+    const m = Math.floor(Math.exp(RATE * t) * 100) / 100;
+
+    if (autoAt && !cashedAt && m >= autoAt && autoAt < crashAt) {
+      cashOut(autoAt);
+    }
+    if (m >= crashAt) {
+      crash();
+      return;
+    }
+    mult = m;
+    multEl.textContent = x(m);
+    if (!cashedAt) renderControls();
+    draw();
+    raf = requestAnimationFrame(tick);
+  }
+
+  function reset() {
+    balance = START_BALANCE;
+    save();
+    statusEl.textContent = "Restored from backup. Try not to do that again.";
+    renderBalance("up");
+    renderControls();
+  }
+
+  function primary() {
+    if (phase === "running") cashOut(mult);
+    else if (balance < 1) reset();
+    else deploy();
+  }
+
+  /* ── Wiring ── */
+  goBtn.addEventListener("click", primary);
+
+  quickBtns.forEach((b) =>
+    b.addEventListener("click", () => {
+      const bet = readBet() || 1;
+      const next =
+        b.dataset.crashQuick === "half"
+          ? bet / 2
+          : b.dataset.crashQuick === "double"
+            ? bet * 2
+            : balance;
+      betInput.value = String(
+        Math.max(1, Math.min(Math.floor(balance), round2(next))),
+      );
+    }),
+  );
+
+  // Space anywhere in the window (other than a field) is the big button.
+  dialog.addEventListener("keydown", (e) => {
+    if (e.key !== " " || e.repeat) return;
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "BUTTON") return;
+    e.preventDefault();
+    primary();
+  });
+  // Enter in a field deploys.
+  [betInput, autoInput].forEach((el) =>
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        primary();
+      }
+    }),
+  );
+
+  dialog
+    .querySelector("[data-crash-close]")!
+    .addEventListener("click", () => dialog.close());
+  // Click on the backdrop closes.
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+
+  const ro = new ResizeObserver(sizeCanvas);
+
+  function open() {
+    if (dialog.open) return;
+    readColors();
+    renderBalance();
+    renderHistory();
+    renderControls();
+    const html = document.documentElement;
+    const gap = window.innerWidth - html.clientWidth;
+    (
+      window as unknown as { __smoothScrollLock?: (l: boolean) => void }
+    ).__smoothScrollLock?.(true);
+    html.style.overflow = "hidden";
+    if (gap > 0) html.style.paddingRight = `${gap}px`;
+    dialog.showModal();
+    // Land focus on the big button, not the close X.
+    goBtn.focus();
+    ro.observe(canvas);
+  }
+
+  dialog.addEventListener("close", () => {
+    // Walking away mid-deploy banks nothing but finishes the round, so the
+    // stake can't be refunded by closing the window.
+    if (phase === "running") {
+      cancelAnimationFrame(raf);
+      crash();
+    }
+    phase = "idle";
+    mult = 1;
+    multEl.textContent = x(1);
+    stage.classList.remove("is-crashed", "is-cashed");
+    ro.disconnect();
+    const html = document.documentElement;
+    html.style.overflow = "";
+    html.style.paddingRight = "";
+    (
+      window as unknown as { __smoothScrollLock?: (l: boolean) => void }
+    ).__smoothScrollLock?.(false);
+  });
+
+  win.addEventListener("animationend", () =>
+    win.classList.remove("is-shaking"),
+  );
+
+  load();
+  document.addEventListener("click", (e) => {
+    const trigger = (e.target as Element).closest?.("[data-crash-open]");
+    if (!trigger) return;
+    e.preventDefault();
+    open();
+  });
+</script>

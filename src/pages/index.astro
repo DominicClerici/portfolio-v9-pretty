@@ -8,6 +8,7 @@ import Career from "../components/Career.astro";
 import Quote from "../components/Quote.astro";
 import Work from "../components/Work.astro";
 import Contact from "../components/Contact.astro";
+import CrashGame from "../components/CrashGame.astro";
 import Footer from "../components/Footer.astro";
 import { projects } from "../data/projects";
 
@@ -105,15 +106,16 @@ const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
     <Contact />
   </main>
   <Footer />
-  <a
-    href="https://dev.dominicclerici.com"
-    target="_blank"
-    rel="noopener noreferrer"
+  <button
+    type="button"
     data-terminal="scroll"
-    aria-label="Open developer terminal"
-    class="hidden md:inline-flex fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] font-mono text-white pointer-events-none transition-opacity duration-300"
+    data-crash-open
+    aria-label="Open a secret game"
+    aria-haspopup="dialog"
+    class="hidden md:inline-flex fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] font-mono text-white pointer-events-none transition-opacity duration-300 cursor-pointer"
     style="opacity: 0"
   >
     <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
-  </a>
+  </button>
+  <CrashGame />
 </Layout>

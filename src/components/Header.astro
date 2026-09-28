@@ -18,16 +18,16 @@ const navLinks = [
   <div
     class="header-enter px-safe-6 lg:px-safe-12 py-7 flex justify-between items-center"
   >
-    <a
-      href="https://dev.dominicclerici.com"
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      type="button"
       data-terminal="header"
-      aria-label="Open developer terminal"
-      class="inline-flex font-mono text-[14px] text-ink py-1.5"
+      data-crash-open
+      aria-label="Open a secret game"
+      aria-haspopup="dialog"
+      class="inline-flex font-mono text-[14px] text-ink py-1.5 cursor-pointer"
     >
       <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
-    </a>
+    </button>
 
     <nav class="flex gap-7 items-center" aria-label="Main navigation">
       {
