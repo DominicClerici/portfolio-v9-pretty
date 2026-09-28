@@ -122,10 +122,7 @@ export const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
 
 // Axis value -> "Sep 2026" / "2026-09". Months come off the same fractional
 // year the playhead read-out uses, so the dates and the axis always agree.
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
+const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
 const monthOf = (v: number) => Math.min(11, Math.floor((v % 1) * 12));
 export const monthYear = (v: number) =>
   `${MONTHS[monthOf(v)]} ${Math.floor(v)}`;

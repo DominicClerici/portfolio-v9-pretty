@@ -161,7 +161,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                   aria-label={entry.company}
                 >
                   {entry.company.split(" ").map((word, w, words) => (
-                    <span class="inline-block overflow-hidden pb-[0.1em] -mb-[0.1em] align-top">
+                    <span class="inline-block overflow-hidden pb-[0.15em] -mb-[0.15em] align-top">
                       {[...word].map((ch, c) => (
                         <span
                           class="ch inline-block"
@@ -450,72 +450,12 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
   }
 
   /* ── Hand-off ──
-     The outgoing name's letters roll away against the direction of travel
-     and its copy lifts off; the incoming one is jumped, untransitioned, to
-     the opposite side (.prep) and released, so it always comes in from where
-     the scroll is heading.
-
-     The two names share one box, so their letters cross in flight. To keep
-     that brief, the outgoing letters leave fast, on an ease that gets moving
-     at once, and each incoming letter trails its outgoing one by a beat
-     (the two staggers are nearly matched, so the gap holds along the whole
-     word). Both run at reduced opacity where they overlap: old letters
-     dim to 0.25 on the way out, new ones brighten from 0.25 as they land. */
+     Driven from the script below, not CSS transitions: a transition that is
+     retargeted mid-flight drops its velocity and restarts its curve (and
+     sits out its delay first), which stutters when the scroll outruns it.
+     Until the script takes over, only the entry on show is visible. */
   .panel[data-on="false"] {
     visibility: hidden;
-    /* Held until the last outgoing letter has cleared its clip. */
-    transition: visibility 0s linear 0.65s;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .panel[data-on="false"] {
-      transition: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .ch {
-      transition:
-        transform 0.75s var(--ease-settle),
-        opacity 0.6s ease-out;
-      transition-delay: calc(var(--ci) * 22ms + 100ms);
-    }
-
-    .in {
-      transition:
-        transform 0.7s var(--ease-settle),
-        opacity 0.5s ease;
-      transition-delay: calc(var(--i, 0) * 60ms + 160ms);
-    }
-
-    .panel[data-on="false"] .ch {
-      opacity: 0.25;
-      transform: translateY(calc(var(--dir, 1) * -110%));
-      transition-duration: 0.36s, 0.3s;
-      transition-timing-function: cubic-bezier(0.45, 0, 0.7, 0.3), ease-out;
-      transition-delay: calc(var(--ci) * 20ms);
-    }
-
-    .panel[data-on="false"] .in {
-      opacity: 0;
-      transform: translateY(calc(var(--dir, 1) * -14px));
-      transition-duration: 0.3s;
-      transition-delay: 0ms;
-    }
-
-    .panel.prep .ch,
-    .panel.prep .in {
-      transition: none;
-    }
-
-    .panel.prep .ch {
-      opacity: 0.25;
-      transform: translateY(calc(var(--dir, 1) * 110%));
-    }
-
-    .panel.prep .in {
-      transform: translateY(calc(var(--dir, 1) * 18px));
-    }
   }
 </style>
 
@@ -568,27 +508,230 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         return `rgb(${c[0]} ${c[1]} ${c[2]})`;
       };
 
+      // ── Hand-off motion ──
+      // Every moving piece — each letter of the name, each block of copy —
+      // carries one value s: 0 at rest, ±1 fully off (+ is below). It is
+      // integrated frame by frame rather than tweened, so whenever the target
+      // changes mid-flight the piece keeps the position and speed it had and
+      // simply bends toward the new one: no restarts, no jumps.
+      //
+      //   leaving  — constant acceleration away from rest (ease-in), keeping
+      //              whatever velocity it already had.
+      //   arriving — a critically damped spring to rest. From off-screen it
+      //              is launched at the spring's own speed, which traces a
+      //              pure ease-out; from mid-flight it just curves back.
+      //
+      // Delays (the letter stagger) only postpone the switch: the piece keeps
+      // moving the old way meanwhile, instead of freezing as a CSS
+      // transition-delay would.
+      type Kind = {
+        draw: (el: HTMLElement, s: number) => void;
+        accel: number; // leaving, in s-units per second²
+        omega: number; // arriving spring stiffness, rad/s
+      };
+      type Piece = {
+        el: HTMLElement;
+        kind: Kind;
+        delayIn: number; // ms, when arriving from off-screen
+        delayOut: number; // ms
+        s: number;
+        v: number;
+        mode: "idle" | "in" | "out";
+        side: number; // leaving: the side it heads for; arriving: comes from
+        next: { mode: "in" | "out"; side: number; at: number } | null;
+      };
+
+      // Letters travel 1.25em. The lowest descender (the q in Squib) hangs
+      // 1.04em below the top of its letter box, and the tallest ascender sits
+      // 0.1em inside it; the clip runs from the box top to 1.05em (the h3's
+      // 0.15em bottom padding), so this clears it both ways with room over.
+      // They dim to 0.25 as they go and brighten from it as they land.
+      const LETTER: Kind = {
+        draw: (el, s) => {
+          el.style.transform = s
+            ? `translate3d(0, ${(s * 1.25).toFixed(4)}em, 0)`
+            : "";
+          el.style.opacity = s
+            ? String(1 - 0.75 * Math.min(1, Math.abs(s) / 0.8))
+            : "";
+        },
+        accel: 2 / 0.36 ** 2, // clears the clip in 0.36s from rest
+        omega: 8,
+      };
+      const COPY: Kind = {
+        draw: (el, s) => {
+          el.style.transform = s
+            ? `translate3d(0, ${(s * 16).toFixed(2)}px, 0)`
+            : "";
+          el.style.opacity = s ? String(1 - Math.min(1, Math.abs(s))) : "";
+        },
+        accel: 2 / 0.3 ** 2,
+        omega: 8,
+      };
+
+      const piecesOf = new Map<HTMLElement, Piece[]>();
+      panels.forEach((panel) => {
+        const on = panel.dataset.on === "true";
+        const make = (
+          el: HTMLElement,
+          kind: Kind,
+          delayIn: number,
+          delayOut: number,
+        ): Piece => {
+          const p: Piece = {
+            el,
+            kind,
+            delayIn,
+            delayOut,
+            s: on ? 0 : 1,
+            v: 0,
+            mode: "idle",
+            side: 1,
+            next: null,
+          };
+          kind.draw(el, p.s);
+          return p;
+        };
+        piecesOf.set(panel, [
+          ...[...panel.querySelectorAll<HTMLElement>(".ch")].map((el) => {
+            const ci = Number(el.style.getPropertyValue("--ci")) || 0;
+            return make(el, LETTER, 100 + ci * 22, ci * 20);
+          }),
+          ...[...panel.querySelectorAll<HTMLElement>(".in")].map((el) => {
+            const i = Number(el.style.getPropertyValue("--i")) || 0;
+            return make(el, COPY, 160 + i * 60, 0);
+          }),
+        ]);
+      });
+
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      );
+      const hidden = (p: Piece) => Math.abs(p.s) >= 1;
+
+      const advance = (p: Piece, t: number, dt: number) => {
+        if (p.next && t >= p.next.at) {
+          const { mode, side } = p.next;
+          p.next = null;
+          p.side = side;
+          if (mode === "in" && hidden(p)) {
+            // Off-screen, so it can be moved to the side it enters from.
+            p.s = side;
+            p.v = -p.kind.omega * side;
+          }
+          p.mode = mode === "out" && hidden(p) && p.v === 0 ? "idle" : mode;
+        }
+        if (p.mode === "in") {
+          const w = p.kind.omega;
+          p.v += (-w * w * p.s - 2 * w * p.v) * dt;
+          p.s += p.v * dt;
+          if (Math.abs(p.s) < 2e-4 && Math.abs(p.v) < 2e-3) {
+            p.s = 0;
+            p.v = 0;
+            p.mode = "idle";
+          }
+        } else if (p.mode === "out") {
+          p.v += p.side * p.kind.accel * dt;
+          p.s += p.v * dt;
+          if (hidden(p) && Math.sign(p.v) === Math.sign(p.s)) {
+            p.s = Math.sign(p.s);
+            p.v = 0;
+            p.mode = "idle";
+          }
+        }
+      };
+
+      let running = false;
+      let lastT = 0;
+      const tick = (t: number) => {
+        // Capped so a backgrounded tab resumes where it left off rather than
+        // leaping; split into small steps so the spring stays exact.
+        const total = Math.min(t - lastT, 64) / 1000;
+        lastT = t;
+        const n = Math.max(1, Math.ceil(total / 0.004));
+        let busy = false;
+        piecesOf.forEach((pieces, panel) => {
+          let shown = panel.dataset.on === "true";
+          for (const p of pieces) {
+            if (p.mode === "idle" && !p.next) continue;
+            const s0 = p.s;
+            for (let k = 0; k < n; k++) advance(p, t, total / n);
+            if (p.s !== s0) p.kind.draw(p.el, p.s);
+            if (p.mode !== "idle" || p.next) busy = true;
+          }
+          if (!shown) shown = pieces.some((p) => !hidden(p));
+          panel.style.visibility = shown ? "visible" : "";
+        });
+        if (busy) requestAnimationFrame(tick);
+        else running = false;
+      };
+      const kick = () => {
+        if (running) return;
+        running = true;
+        lastT = performance.now();
+        requestAnimationFrame(tick);
+      };
+
+      // dir: +1 scrolling down (old leaves upward, new arrives from below).
+      const handOff = (panel: HTMLElement, on: boolean, dir: number) => {
+        const pieces = piecesOf.get(panel)!;
+        if (reduceMotion.matches) {
+          for (const p of pieces) {
+            p.s = on ? 0 : 1;
+            p.v = 0;
+            p.mode = "idle";
+            p.next = null;
+            p.kind.draw(p.el, p.s);
+          }
+          panel.style.visibility = on ? "visible" : "";
+          return;
+        }
+        const now = performance.now();
+        for (const p of pieces) {
+          // A piece still in view turns around at once (with a small ripple
+          // across the word); one that is out of sight waits its turn.
+          const delay = on
+            ? hidden(p)
+              ? p.delayIn
+              : p.delayOut / 2
+            : p.delayOut;
+          p.next = {
+            mode: on ? "in" : "out",
+            side: on ? dir : -dir,
+            at: now + delay,
+          };
+        }
+        kick();
+      };
+
       // ── Selection ──
       let activeStep = -1;
       const select = (step: number) => {
         const dir = activeStep < 0 || step >= activeStep ? 1 : -1;
+        const first = activeStep < 0;
         activeStep = step;
-        section.style.setProperty("--dir", String(dir));
         const key = String(stepMap[step]);
         bars.forEach((b) =>
           b.setAttribute("aria-current", String(b.dataset.select === key)),
         );
         panels.forEach((panel) => {
           const on = panel.dataset.panel === key;
-          if (on && panel.dataset.on !== "true") {
-            panel.classList.add("prep");
-            void panel.offsetWidth;
-            panel.classList.remove("prep");
-          }
+          const was = panel.dataset.on === "true";
           panel.dataset.on = String(on);
           panel.setAttribute("aria-hidden", String(!on));
           panel.inert = !on;
+          if (on !== was && !first) handOff(panel, on, dir);
         });
+        // The first selection only confirms (or corrects) the server-rendered
+        // entry, so it cuts rather than animating in on page load.
+        if (first)
+          panels.forEach((panel) => {
+            const on = panel.dataset.on === "true";
+            for (const p of piecesOf.get(panel)!) {
+              p.s = on ? 0 : 1;
+              p.kind.draw(p.el, p.s);
+            }
+          });
         count.textContent = String(step + 1).padStart(2, "0");
       };
 
