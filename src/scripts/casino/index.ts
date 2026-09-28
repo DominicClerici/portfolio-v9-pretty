@@ -92,6 +92,10 @@ class Casino {
   private lingerTimer = 0
   private closing = false
   private sheet!: Sheet
+  private shell!: HTMLElement
+  // What opened it, when that was the drawer's peek at the foot of the page:
+  // the sheet rises out of it and settles back into it (see sheet.ts)
+  private dock: HTMLElement | null = null
   private releaseScroll: (() => void) | null = null
 
   constructor() {
@@ -117,15 +121,19 @@ class Casino {
 
   /* ── Open / close ── */
 
-  open() {
+  /** `dock` is the peek it was opened from, if it was. `rise` false leaves
+      the sheet where it is, for lift() to pick up. */
+  open(dock: HTMLElement | null = null, rise = true) {
     if (this.dialog.open) return
     clearTimeout(this.lingerTimer)
     this.closing = false
+    this.dock = dock
     this.dialog.classList.remove("is-closing")
     this.sheet.reset()
     this.dialog.showModal()
-    if (this.sheet.active) this.sheet.enter()
+    // Before the sheet measures the dock, in case holding the page moves it
     this.lockPage(true)
+    if (this.sheet.active && rise) this.sheet.enter()
     // For the page's own animations to stand down while it's covered
     window.dispatchEvent(new CustomEvent("casino", { detail: true }))
     this.pageTitle = document.title
@@ -139,10 +147,33 @@ class Casino {
       at: this.place,
       bal: wallet.balance,
     }))
+    // The peek shows the lobby's title, so out of it the title starts there
+    // and retypes itself to wherever the casino was left
+    if (dock) this.typeTitle("lobby", true)
     this.go(this.place, true)
     this.onStatus(net.status)
     this.rotateQuip()
     this.quipTimer = window.setInterval(() => this.rotateQuip(), 9000)
+  }
+
+  /** Opened by a drag on the dock: the sheet comes up under the finger and
+      follows it. Returns the sheet for the gesture's owner to feed, or null
+      if it's already open or not a sheet at this width. */
+  lift(dock: HTMLElement, y: number, t: number) {
+    if (this.dialog.open || !this.sheet.active) return null
+    this.open(dock, false)
+    this.sheet.lift(y, t)
+    return this.sheet
+  }
+
+  /** The dock's offset from the sheet's resting place, while it's on screen. */
+  private dockOffset() {
+    const el = this.dock
+    if (!el?.isConnected) return null
+    const r = el.getBoundingClientRect()
+    const d = this.dialog.getBoundingClientRect()
+    if (!r.height || r.top >= d.bottom) return null
+    return r.top - d.top - this.shell.offsetTop
   }
 
   /** `velocity` is the speed (px/ms) a sheet was flung down at, if it was. */
@@ -156,6 +187,7 @@ class Casino {
       this.dialog.classList.remove("is-closing")
       this.sheet.reset()
       this.closing = false
+      this.dock = null
       this.lockPage(false)
       window.dispatchEvent(new CustomEvent("casino", { detail: false }))
       document.title = this.pageTitle
@@ -232,7 +264,7 @@ class Casino {
       this.dialog.querySelector<HTMLElement>(".cz-shell")?.focus({ preventScroll: true })
     this.dialog.dataset.place = place
     this.brand.disabled = place === "lobby"
-    this.typeTitle(place, force)
+    this.typeTitle(place, force && !this.dock)
     if (place === "lobby") this.lobby.enter()
     else this.ensureGame(place).enter()
     net.send({ t: "at", at: place })
@@ -390,7 +422,14 @@ class Casino {
     // button, so nothing wears a focus ring until the keyboard asks for one
     const shell = h("div", { class: "cz-shell", tabindex: "-1", autofocus: true }, top, this.main, status, toasts)
     dialog.append(shell)
-    this.sheet = new Sheet(shell, scrim, top, (v) => this.close(v))
+    this.shell = shell
+    this.sheet = new Sheet(
+      shell,
+      scrim,
+      top,
+      (v) => this.close(v),
+      () => this.dockOffset(),
+    )
 
     this.renderName()
     this.renderSound()
@@ -725,7 +764,12 @@ const ART: Record<GameId, string> = {
 
 let casino: Casino | null = null
 
-export function open() {
+export function open(dock?: HTMLElement) {
   casino ??= new Casino()
-  casino.open()
+  casino.open(dock)
+}
+
+export function lift(dock: HTMLElement, y: number, t: number) {
+  casino ??= new Casino()
+  return casino.lift(dock, y, t)
 }

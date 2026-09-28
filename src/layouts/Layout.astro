@@ -8,17 +8,37 @@ interface Props {
    *  section rewrites as the door opens: walking into an edition is a real
    *  navigation to /projects/<slug>, just one the page performs on itself. */
   canonical?: string;
+  /** What shows past each end of the page: in the bounce, and on iOS under
+   *  Safari's bars once the page is scrolled all the way to that end, when
+   *  it rests clear of them and nothing of the page is left to draw there.
+   *  The page runs under the bars everywhere else (viewport-fit=cover), so
+   *  each should be the colour of what the page ends on, to carry it on to
+   *  the edge of the screen. Both near-black unless the page says otherwise. */
+  edgeTop?: string;
+  edgeBottom?: string;
 }
 
 const {
   title = "Dominic Clerici — Portfolio",
   description = "Dominic Clerici — engineer and designer in New York. I build web and mobile software end to end, design included.",
   canonical = new URL(Astro.url.pathname, Astro.site).href,
+  edgeTop = "#0a0a0a",
+  edgeBottom = "#0a0a0a",
 } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<!-- The root's background is the canvas's: all that is painted past the
+     ends of the page. It starts as the top's and trades places with the
+     bottom's a screen down (see the head). On <html> rather than <body>, as
+     a body background would paint over the footer's photo, which sits
+     behind the page. -->
+<html
+  lang="en"
+  data-edge-top={edgeTop}
+  data-edge-bottom={edgeBottom}
+  style={`background-color:${edgeTop}`}
+>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -99,9 +119,27 @@ const {
       })()
     </script>
 
+    <script is:inline>
+      // Page ends. Only one end can be showing at a time, so the canvas takes
+      // the top's colour while the page is within a screen of its top and
+      // the bottom's anywhere below that: the trade happens with both ends
+      // well out of sight.
+      ;(function () {
+        var root = document.documentElement
+        var top = root.dataset.edgeTop
+        var bottom = root.dataset.edgeBottom
+        if (top === bottom) return
+        var current = top
+        window.__onSmoothScrollTick(function () {
+          var edge = window.scrollY < window.innerHeight ? top : bottom
+          if (edge !== current) root.style.backgroundColor = current = edge
+        })
+      })()
+    </script>
+
     <slot name="head" />
   </head>
-  <body class="bg-n-950 font-display selection:bg-bio-lime selection:text-ink">
+  <body class="font-display selection:bg-bio-lime selection:text-ink">
     <slot />
     <script>
       import "../scripts/smooth-scroll.ts";

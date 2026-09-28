@@ -12,6 +12,13 @@
    are sampled from the simulation and played with the Web Animations API,
    so they run on the compositor like any CSS animation.
 
+   On the front page it also has a dock: the drawer's top bar, drawn into
+   the foot of the page (the footer's peek). Opened from there, the sheet
+   rises out of the peek rather than the screen's edge, and closes back down
+   into it while it's still on screen; a drag on the peek lifts the sheet
+   itself, handed over mid-gesture (lift). The bar's buttons are hidden while
+   it sits at the dock, as they are on the peek.
+
    Wider screens keep the centred dialog; SHEET_QUERY is the switch, and the
    same width as the stylesheet's own (casino.css). */
 
@@ -66,12 +73,18 @@ export class Sheet {
   private dragging = false
   // Finger position minus sheet offset at grab time
   private origin = 0
+  // The gesture under way began on the dock, so letting go decides between
+  // open and back to the dock rather than between open and dismissed
+  private lifting = false
 
   constructor(
     private shell: HTMLElement,
     private scrim: HTMLElement,
     handle: HTMLElement,
     private onDismiss: (velocity: number) => void,
+    /** Where the dock is, as an offset from the sheet's resting place, or
+        null when there is none on screen. */
+    private dock: () => number | null = () => null,
   ) {
     this.bindHandle(handle)
     this.bindContent()
@@ -84,8 +97,11 @@ export class Sheet {
   // Measured once per gesture or animation, never per frame: reading layout
   // right after writing a transform would force a style pass on every move
   private h = 0
+  private dockY: number | null = null
   private measure() {
     this.h = this.shell.offsetHeight || window.innerHeight
+    const d = this.dock()
+    this.dockY = d !== null && d > 0 && d < this.h ? d : null
     return this.h
   }
   private get height() {
@@ -111,6 +127,12 @@ export class Sheet {
     this.y = y
     this.shell.style.transform = at(y)
     this.scrim.style.opacity = String(this.dim(y))
+    this.docked(y)
+  }
+
+  /** Hides the bar's buttons while the sheet is (nearly) down at the dock. */
+  private docked(y: number) {
+    this.shell.classList.toggle("is-docked", this.dockY !== null && y > this.dockY / 2)
   }
 
   private dim(y: number) {
@@ -122,6 +144,7 @@ export class Sheet {
     const end = frames[frames.length - 1]
     this.shell.style.transform = at(end)
     this.scrim.style.opacity = String(this.dim(end))
+    this.docked(end)
     this.anim = this.shell.animate(
       frames.map((y) => ({ transform: at(y) })),
       { duration, easing },
@@ -146,23 +169,25 @@ export class Sheet {
     return this.play(frames, (frames.length - 1) * (1000 / 60))
   }
 
-  /** Rise in from below the screen. */
+  /** Rise in from the dock, or from below the screen. */
   enter() {
     this.stop()
     this.measure()
     if (reducedMotion.matches) return this.set(0)
-    this.y = this.height
+    this.y = this.dockY ?? this.height
     void this.springTo0(0, OPEN_SPRING)
   }
 
-  /** Leave through the bottom edge, carrying on at `velocity` (px/ms) if it
-      was thrown. Resolves once it's off screen. */
+  /** Leave, down into the dock or out through the bottom edge, carrying on
+      at `velocity` (px/ms) if it was thrown. Resolves once it's there. */
   exit(velocity = 0): Promise<unknown> {
     this.dragging = false
+    this.lifting = false
     if (reducedMotion.matches) return Promise.resolve()
     this.stop()
     const from = this.y
-    const to = this.measure() + 24
+    const h = this.measure()
+    const to = this.dockY ?? h + 24
     const dist = Math.max(1, to - from)
     // The curve's opening slope is 3 (0.2 → 0.6), so over 3·dist/v it leaves
     // at exactly the speed it was thrown, then eases into the edge
@@ -175,9 +200,22 @@ export class Sheet {
   reset() {
     this.stop()
     this.dragging = false
+    this.lifting = false
     this.shell.style.transform = ""
     this.scrim.style.opacity = ""
+    this.shell.classList.remove("is-docked")
     this.y = 0
+  }
+
+  /** Picked up off the dock by a finger (or mouse) already on the move: the
+      sheet starts there and follows it. The gesture's owner feeds it on
+      through move() and end(). */
+  lift(y: number, t: number) {
+    this.stop()
+    this.measure()
+    this.set(this.dockY ?? this.height)
+    this.begin(y, t)
+    this.lifting = true
   }
 
   /* ── Dragging ── */
@@ -192,16 +230,18 @@ export class Sheet {
     this.origin = y - this.y
   }
 
-  private move(y: number, t: number) {
+  move(y: number, t: number) {
     if (!this.dragging) return
     this.samples.push({ t, y })
     while (this.samples.length > 2 && t - this.samples[0].t > 100) this.samples.shift()
     this.set(stretch(y - this.origin))
   }
 
-  private end(t: number) {
+  end(t: number) {
     if (!this.dragging) return
     this.dragging = false
+    const lifting = this.lifting
+    this.lifting = false
     const s = this.samples
     const first = s[0]
     const last = s[s.length - 1]
@@ -209,7 +249,13 @@ export class Sheet {
     // A finger held still before letting go has no speed left
     const v = dt > 0 && t - last.t < 80 ? (last.y - first.y) / dt : 0
     const h = this.height
-    if (v > FLICK || (this.y > h * DISTANCE && v > -0.2)) this.onDismiss(v)
+    if (lifting) {
+      // Mirror of the dismiss: a flick up, or a pull that has brought it
+      // this share of the way up without being thrown back down, opens it
+      const from = this.dockY ?? h
+      if (v < -FLICK || (this.y < from * (1 - DISTANCE) && v < 0.2)) void this.springTo0(v)
+      else this.onDismiss(v)
+    } else if (v > FLICK || (this.y > h * DISTANCE && v > -0.2)) this.onDismiss(v)
     else void this.springTo0(v)
   }
 

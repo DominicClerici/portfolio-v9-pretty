@@ -339,25 +339,44 @@ const connect = [
       >
         Dominic Clerici
       </p>
-      <!-- Phones have none of the >_ prompts the header and cap bar carry,
-           so the casino's door sits here instead, quietly, by the credits -->
-      <div class="mt-4 flex items-center justify-between gap-4">
-        <p
-          class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
-        >
-          &copy; {year} Dominic Clerici. All rights reserved.
-        </p>
-        <button
-          type="button"
-          data-casino-open
-          aria-label="Open the /dev/null casino, a mini-game easter egg"
-          aria-haspopup="dialog"
-          class="md:hidden -my-2 -mr-2 px-2 py-2 font-mono text-[12px] leading-none text-bone/60 hover:text-bone transition-colors duration-150"
-        >
-          &gt;<span class="motion-safe:animate-caret-blink">_</span>
-        </button>
-      </div>
+      <p
+        class="mt-4 font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
+      >
+        &copy; {year} Dominic Clerici. All rights reserved.
+      </p>
     </div>
+
+    <!-- Phones have none of the >_ prompts the header and cap bar carry, so
+         the casino's door is the casino itself: its drawer, peeking up from
+         the foot of the page, just the top bar with its handle and title.
+         The title types itself out once the page is scrolled to the bottom,
+         as the cap bar's prompt does on wider screens. A tap opens the
+         drawer out of it and a pull up lifts it (casino-peek.ts), and it
+         closes back down into it.
+
+         It is drawn to match the sheet's own bar (casino.css, the phone
+         sheet) edge for edge, so the sheet can stand in for it without a
+         seam. Below it the drawer carries on, through the safe area and,
+         past the end of the page, under Safari's toolbar, where the
+         page's bottom colour (Layout's edgeBottom) is the drawer's. -->
+    <button
+      type="button"
+      data-casino-peek
+      aria-label="Open the /dev/null casino, a mini-game easter egg"
+      aria-haspopup="dialog"
+      class="casino-peek md:hidden shrink-0 relative block w-full text-left font-mono cursor-pointer"
+    >
+      <span class="casino-peek-grabber" aria-hidden="true"></span>
+      <span class="casino-peek-bar" aria-hidden="true">
+        <span class="casino-peek-title"
+          ><span class="casino-peek-prompt">&gt; </span><span
+            data-terminal-text></span><span
+            data-terminal-cursor
+            class="casino-peek-prompt">_</span
+          ></span
+        >
+      </span>
+    </button>
   </div>
 </footer>
 
@@ -405,6 +424,60 @@ const connect = [
       height: max(100%, 100vh);
       height: max(100%, 100lvh);
     }
+  }
+
+  /* The casino peek: the phone sheet's top bar (casino.css), value for
+     value, over the start of its body. The sheet's glow is sized off its
+     own height, which the peek doesn't have, so it is sized off the height
+     the sheet would be instead. */
+  .casino-peek {
+    --sheet-h: calc(100svh - max(env(safe-area-inset-top), 16px) - 24px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--color-n-800);
+    border-radius: 20px 20px 0 0;
+    background:
+      radial-gradient(
+        120% calc(0.6 * var(--sheet-h)) at 50% calc(-0.1 * var(--sheet-h)),
+        rgb(206 247 158 / 0.05),
+        transparent 60%
+      ),
+      var(--color-n-950);
+    font-size: 13px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .casino-peek:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: -4px;
+  }
+  .casino-peek-grabber {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--color-n-700);
+    transform: translateX(-50%);
+  }
+  /* 22px over and 8px under a row as tall as the sheet's 36px buttons */
+  .casino-peek-bar {
+    display: flex;
+    align-items: center;
+    height: 67px;
+    padding: 22px max(8px, env(safe-area-inset-right))
+      8px max(14px, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--color-n-800);
+  }
+  .casino-peek-title {
+    padding: 6px 8px 6px 4px;
+    color: var(--color-n-300);
+    white-space: pre;
+  }
+  .casino-peek-prompt {
+    color: var(--color-bio-lime);
   }
 
   /* Holds the haze canvas back until it has drawn a frame over the photo.
@@ -511,6 +584,7 @@ const connect = [
     stopBlink,
   } from "../scripts/terminal";
   import "../scripts/casino-trigger";
+  import { bindPeek } from "../scripts/casino-peek";
 
   {
     const footer = document.getElementById("site-footer")!;
@@ -795,16 +869,37 @@ const connect = [
     );
     let echoVisible = false;
 
+    // The phone's casino peek does the same at the same moment, typing out
+    // the drawer's title rather than the prompt's command. Hidden (wider
+    // screens), it has no box, and is left alone.
+    const peekEl = footer.querySelector<HTMLElement>("[data-casino-peek]")!;
+    const peek = bindPeek(peekEl);
+    const peekState = makeState(peekEl);
+    const PEEK_TITLE = "/dev/null/casino.sh";
+    const PEEK_DELAY_MS = 250;
+    let peekTimer: number | undefined;
+
     function setEchoVisible(visible: boolean) {
       if (visible === echoVisible) return;
       echoVisible = visible;
+      clearTimeout(peekTimer);
       if (visible) {
         headerEcho.classList.add("is-visible");
+        if (peekEl.offsetParent) {
+          peek.warm();
+          peekTimer = window.setTimeout(
+            () => typeText(peekState, PEEK_TITLE),
+            PEEK_DELAY_MS,
+          );
+        }
       } else {
         headerEcho.classList.remove("is-visible");
         cancelAnim(echoState);
         stopBlink(echoState);
         echoState.textEl.textContent = ">";
+        cancelAnim(peekState);
+        stopBlink(peekState);
+        peekState.textEl.textContent = "";
       }
     }
 

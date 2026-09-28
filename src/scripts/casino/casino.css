@@ -2833,6 +2833,12 @@
   }
   .cz-top-end {
     gap: 0;
+    transition: opacity 0.2s ease;
+  }
+  /* Down at the peek it rose from, the bar is the peek: title only */
+  .cz-shell.is-docked .cz-top-end {
+    opacity: 0;
+    pointer-events: none;
   }
   .cz-top-game {
     margin-right: 6px;
