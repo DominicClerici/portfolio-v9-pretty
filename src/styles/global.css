@@ -242,6 +242,39 @@ body {
   scrollbar-gutter: stable;
 }
 
+/* ── The >_ casino prompts ──
+   Each prompt types itself out to `>sudo ./casino.sh_` on hover, but is
+   clickable from the first frame across the whole of that command, not just
+   the `>_` it rests at: the hit area is reserved up front, so a pointer aimed
+   at where the text is about to be never lands on nothing. 18ch is the full
+   command (see TYPE_STRING in scripts/terminal.ts) in the prompt's own mono
+   face. The box itself stays as small as its text, so nothing reflows. */
+[data-terminal]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 18ch;
+}
+
+/* The floating prompt (index.astro) crosses bone sections and near-black ones,
+   and the glass between them. Rather than track what is under it, it inverts
+   whatever that is: a neutral grey differenced against the page lands dark on
+   light ground and light on dark, at about three quarters of a full invert so
+   it stays quiet until pointed at, when it goes to a full one. */
+.term-float {
+  color: rgb(190 190 190);
+  mix-blend-mode: difference;
+  transition:
+    opacity var(--term-fade, 300ms) ease,
+    color 150ms ease;
+}
+.term-float:hover,
+.term-float:focus-visible {
+  color: #fff;
+}
+
 span,
 p {
   letter-spacing: -0.02em;

@@ -704,6 +704,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     type Sub,
   } from "../lib/workShapes";
   import { smoothstep } from "../lib/easing";
+  import { holdScroll } from "../scripts/scroll-hold";
 
   {
     const section = document.querySelector<HTMLElement>(".we1");
@@ -1060,9 +1061,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // assumes the page behind the overlay is still exactly there.
       let lockedY = 0;
       let prevScrollRestoration: History["scrollRestoration"] | null = null;
+      let releaseScroll: (() => void) | null = null;
 
       const lock = (on: boolean) => {
         const html = document.documentElement;
+        releaseScroll?.();
+        releaseScroll = null;
         if (on) {
           lockedY = window.scrollY;
           // history.back() (the close path) makes the browser restore the
@@ -1075,17 +1079,20 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           // unlock.
           prevScrollRestoration = history.scrollRestoration;
           history.scrollRestoration = "manual";
-          // Killing the scrollbar widens the viewport and shifts the centered
-          // layout under the fixed overlay — which is why the closing door
-          // used to land a few pixels off its window and snap on unlock.
-          // Reserve the gutter so the page never moves.
-          const gutter = window.innerWidth - html.clientWidth;
-          html.style.overflow = "hidden";
-          html.style.paddingRight = gutter > 0 ? `${gutter}px` : "";
+          // Where scrollbars take up room (desktop), the page keeps its
+          // scrollbar and is held still instead (wheel and scroll keys
+          // refused outside the spread, anything else snapped back to
+          // lockedY). Killing the scrollbar would widen the viewport and
+          // shift the centered layout under the door, and padding the gap
+          // leaves a strip at the right edge where the fixed footer photo
+          // shows through mid-door. Where scrollbars overlay the page there
+          // is nothing to lose, and overflow: hidden also stops touch.
+          if (window.innerWidth > html.clientWidth)
+            releaseScroll = holdScroll(section);
+          else html.style.overflow = "hidden";
         } else {
           repinPage();
           html.style.overflow = "";
-          html.style.paddingRight = "";
           if (prevScrollRestoration != null) {
             history.scrollRestoration = prevScrollRestoration;
             prevScrollRestoration = null;

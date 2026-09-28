@@ -56,6 +56,12 @@
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: contain;
+  /* Not the UA's overflow: auto. A shell moved off its resting place (the
+     sheet rising in or being dragged, the desktop entrance) would otherwise
+     make the dialog itself scrollable, and focus or a touch then scrolls it,
+     lifting the whole shell out of place. */
+  overflow: hidden;
+  overflow: clip;
 }
 
 .cz[open] {
@@ -83,7 +89,8 @@
   outline-offset: 2px;
 }
 
-.cz input:focus-visible {
+.cz input:focus-visible,
+.cz .cz-shell:focus-visible {
   outline: none;
 }
 
@@ -153,6 +160,12 @@
   from {
     opacity: 0;
   }
+}
+
+/* The sheet's own dimmer and handle (phones only, below) */
+.cz-scrim,
+.cz-grabber {
+  display: none;
 }
 
 /* ── Top bar ── */
@@ -2769,26 +2782,65 @@
   }
 }
 
+/* Phones: a bottom sheet (sheet.ts moves it; SHEET_QUERY there matches this
+   width). It stops a little short of the top of the screen so the page stays
+   in view behind it, and the whole top bar is its handle. The motion is all
+   scripted, so the shell's own keyframes are off, and the dimming is the
+   scrim's rather than the backdrop's, as the drag has to be able to scrub
+   it. The shadow thrown straight down fills in under the sheet when an
+   upward drag stretches it off the bottom edge. */
 @media (max-width: 900px) {
   .cz {
     padding: 0;
   }
+  .cz[open] {
+    align-items: end;
+  }
+  .cz::backdrop {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    animation: none;
+  }
+  .cz-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 0.55);
+  }
   .cz-shell {
     width: 100%;
-    height: 100%;
+    height: calc(100% - max(env(safe-area-inset-top), 16px) - 24px);
     border: 0;
-    border-radius: 0;
+    border-top: 1px solid var(--cz-line);
+    border-radius: 20px 20px 0 0;
+    box-shadow:
+      0 -10px 40px -10px rgb(0 0 0 / 0.6),
+      0 64px 0 0 var(--cz-bg);
+    animation: none;
+    will-change: transform;
   }
-  @keyframes cz-in {
-    from {
-      opacity: 0;
-      transform: translateY(24px);
-    }
+  .cz.is-closing .cz-shell {
+    animation: none;
   }
   .cz-top {
+    position: relative;
     gap: 8px 10px;
-    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 8px
-      max(14px, env(safe-area-inset-left));
+    padding: 22px max(8px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .cz-grabber {
+    display: block;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--cz-line-2);
+    transform: translateX(-50%);
   }
   .cz-balance {
     margin-right: 0;
