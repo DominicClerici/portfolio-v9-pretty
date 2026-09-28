@@ -438,6 +438,12 @@ const connect = [
   @supports (-webkit-touch-callout: none) {
     #site-footer {
       --photo-h: max(100lvh, var(--screen-h, 0px));
+      /* The footer is sized off the whole screen, but the page stops above
+         Safari's toolbar, so that much of it would sit above the top of
+         the screen at the end, doing nothing. This takes part of it back
+         (the phone footer, below). Too much, and the contact section's
+         foot shows at the top of the screen at the end. */
+      --footer-trim: 40px;
     }
   }
 
@@ -459,7 +465,9 @@ const connect = [
   @supports (height: 100dvh) {
     @media (max-width: 767px) {
       #site-footer {
-        --footer-h: calc(max(680px, var(--photo-h)) + 1.5rem);
+        --footer-h: calc(
+          max(680px, var(--photo-h)) + 1.5rem - var(--footer-trim, 0px)
+        );
         height: var(--footer-h);
         padding-top: calc(var(--footer-h) - max(680px, 100dvh));
       }
