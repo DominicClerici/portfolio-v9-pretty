@@ -58,9 +58,15 @@ export function cancelAnim(s: TState) {
   }
 }
 
-export function typeText(s: TState): Promise<boolean> {
+/** Types on from whatever is already there up to `full`: the prompt and its
+    command by default, or any other line a consumer holds (the casino peek
+    types the drawer's own title). */
+export function typeText(
+  s: TState,
+  full = ">" + TYPE_STRING,
+): Promise<boolean> {
   if (prefersReducedMotion) {
-    s.textEl.textContent = ">" + TYPE_STRING
+    s.textEl.textContent = full
     return Promise.resolve(true)
   }
   cancelAnim(s)
@@ -68,7 +74,6 @@ export function typeText(s: TState): Promise<boolean> {
   s.animCancel = cancel
   startBlink(s)
 
-  const full = ">" + TYPE_STRING
   let i = s.textEl.textContent!.length
 
   return new Promise((resolve) => {

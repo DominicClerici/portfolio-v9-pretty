@@ -59,20 +59,35 @@ const connect = [
 
 <footer
   id="site-footer"
-  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-hidden"
+  class="relative h-svh min-h-[680px] md:min-h-[780px] overflow-x-clip"
 >
-  <!-- The mountain backdrop is viewport-fixed and sits *behind* the whole
-       page (-z-10), so the opaque sections above the footer hide it and the
-       footer — which has no background of its own — is the only window onto
-       it. That window opening as the footer rises is the reveal, and because
-       the pin is real CSS fixed positioning rather than a scroll-driven
-       transform, the photo cannot drift on compositor-driven (touch)
-       scrolling. Fixed to the *visual* viewport, it also covers the strip
-       below an svh-tall footer when mobile chrome retracts.
+  <!-- The mountain backdrop sits *behind* the whole page (-z-10), so the
+       opaque sections above the footer hide it and the footer — which has no
+       background of its own — is the only window onto it. That window
+       opening as the footer rises is the reveal.
 
-       The wrap itself carries no background colour: Safari (from iOS 26)
-       tints its toolbars from fixed elements' background colours, and
-       without one the page shows through them, edge to edge.
+       It holds still by sticking, not by being fixed. It rides a track that
+       runs from a screen (plus a bleed) above the footer down to the page's
+       end, and sticks to the top of the screen for as long as the track
+       lets it, which is from the moment the footer comes into view; being
+       real CSS positioning, it cannot drift on compositor-driven (touch)
+       scrolling. It is part of the page rather than a fixed box because iOS
+       Safari only draws fixed boxes between its bars: at the end of the page,
+       where Safari brings its bars back, a fixed photo left the band under the
+       top bar showing the bare page. The page itself is drawn under the bars,
+       and so now is the photo.
+
+       It never moves, the end of the page included. The pin is no taller
+       than the sky above the photo, so the track can never run out under it
+       and push it up; the photo hangs from its foot at the full height of
+       the screen (lvh), and the track clips whatever of it would hang past
+       the page's end.
+
+       Above the photo, the pin carries it on up past the top of the screen in
+       the colour of the photo's own top edge, its sky (--overlay-bleed, 0 off
+       iOS), for whatever the top bar covers. The pin is kept out of Safari's
+       toolbar tinting (bleed-under-bars, global.css), as it is sticky and
+       spans the screen.
 
        Inside it, the photo's frame: three layers, the photo itself (the real
        background, and all there is without WebGL2 or under reduced motion),
@@ -80,9 +95,10 @@ const connect = [
        texture is up, and above md a scrim that keeps the bone type legible
        against the peak and the near water. The frame's own background is a
        tiny blur-up of whichever cut the <picture> picks, so the text has
-       something to sit on before the real one arrives. The frame fills the
-       wrap, except in iOS Safari, where it is held at a size the toolbar
-       can't change (see the styles).
+       something to sit on before the real one arrives. The frame is held at
+       the height of the screen with the toolbar away (lvh), so the toolbar
+       coming and going only covers and uncovers its foot, rather than
+       re-fitting the photo and sliding the lake up and down with it.
 
        The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
@@ -91,17 +107,18 @@ const connect = [
        enough at the bottom for the lake to fill the lower 25% of a tall
        screen. Each is AVIF with a WebP fallback.
 
-       The srcsets are held back in data-srcset: as a fixed element the photo
-       is always "in the viewport" to the browser, so it would load alongside
-       the hero and compete with it. The script sets them once the page has
-       loaded and gone idle instead. Its alt is empty — the scene is
+       The srcsets are held back in data-srcset, so the photo doesn't load
+       alongside the hero and compete with it. The script sets them once the
+       page has loaded and gone idle instead. Its alt is empty — the scene is
        decorative. -->
   <div
-    class="footer-canvas-wrap fixed inset-0 -z-10"
-    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder})`}
+    class="footer-photo-track absolute inset-x-0 bottom-0 -z-10 pointer-events-none"
+    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder});--sky-landscape:${photo.landscape.sky};--sky-portrait:${photo.portrait.sky}`}
     aria-hidden="true"
   >
-    <div class="footer-photo-frame absolute inset-x-0 top-0 h-full">
+    <div class="footer-photo-pin sticky bleed-under-bars">
+    <div class="footer-photo-sky absolute inset-x-0 top-0"></div>
+    <div class="footer-photo-frame absolute inset-x-0">
       <picture>
         <source
           media={PORTRAIT}
@@ -142,6 +159,7 @@ const connect = [
       <!-- Placed and sized by the haze over the lake's band of the photo -->
       <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
       <div class="footer-scrim absolute inset-0"></div>
+    </div>
     </div>
   </div>
 
@@ -339,42 +357,110 @@ const connect = [
       >
         Dominic Clerici
       </p>
-      <!-- Phones have none of the >_ prompts the header and cap bar carry,
-           so the casino's door sits here instead, quietly, by the credits -->
-      <div class="mt-4 flex items-center justify-between gap-4">
-        <p
-          class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
-        >
-          &copy; {year} Dominic Clerici. All rights reserved.
-        </p>
-        <button
-          type="button"
-          data-casino-open
-          aria-label="Open the /dev/null casino, a mini-game easter egg"
-          aria-haspopup="dialog"
-          class="md:hidden -my-2 -mr-2 px-2 py-2 font-mono text-[12px] leading-none text-bone/60 hover:text-bone transition-colors duration-150"
-        >
-          &gt;<span class="motion-safe:animate-caret-blink">_</span>
-        </button>
-      </div>
+      <p
+        class="mt-4 font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
+      >
+        &copy; {year} Dominic Clerici. All rights reserved.
+      </p>
     </div>
+
+    <!-- Phones have none of the >_ prompts the header and cap bar carry, so
+         the casino's door is the casino itself: its drawer, peeking up from
+         the foot of the page, just the top bar with its handle and title.
+         The title types itself out once the page is scrolled to the bottom,
+         as the cap bar's prompt does on wider screens. A tap opens the
+         drawer out of it and a pull up lifts it (casino-peek.ts), and it
+         closes back down into it.
+
+         It is drawn to match the sheet's own bar (casino.css, the phone
+         sheet) edge for edge, so the sheet can stand in for it without a
+         seam, but cut off just short of the bar's bottom border: the page
+         ends a couple of pixels above it. Past the end of the page, under
+         Safari's toolbar, the drawer carries on in the page's bottom colour
+         (Layout's edgeBottom), which is the drawer's. -->
+    <button
+      type="button"
+      data-casino-peek
+      aria-label="Open the /dev/null casino, a mini-game easter egg"
+      aria-haspopup="dialog"
+      class="casino-peek md:hidden shrink-0 relative block w-full text-left font-mono cursor-pointer"
+    >
+      <span class="casino-peek-grabber" aria-hidden="true"></span>
+      <span class="casino-peek-bar" aria-hidden="true">
+        <span class="casino-peek-title"
+          ><span class="casino-peek-prompt">&gt; </span><span
+            data-terminal-text></span><span
+            data-terminal-cursor
+            class="casino-peek-prompt">_</span
+          ></span
+        >
+      </span>
+    </button>
   </div>
 </footer>
 
 <style>
-  /* Phones only. An svh-tall footer is shorter than the screen once the
-     browser's toolbar retracts, so scrolled to the bottom the contact
-     section's rounded foot showed above it (wider screens have the cap bar
-     there, in the contact section's own colour). So here the footer grows
-     upward by the toolbar's difference (lvh − svh), all of it top padding:
-     the content keeps its svh-tall box and its place against the bottom,
-     exactly as before, and the band above it is just more of the photo. */
-  @supports (height: 100lvh) {
+  /* Phones only. The footer is as tall as the screen can ever be (lvh),
+     plus the status bar's height (the top safe area), so that scrolled to
+     the end it still reaches past the top of the screen, under the status
+     bar, and the contact section's near-black never shows above it (wider
+     screens have the cap bar there, in the contact section's own colour).
+
+     Its content box, though, is the viewport as it is right now (dvh), and
+     the rest is top padding. At the end of the page Safari brings its
+     toolbar back up and the page ends above it, leaving less of the screen
+     than even svh promises; a box of any fixed height would put the
+     statement and the button up under the status bar there. Only the split
+     between padding and content moves as the toolbar does, never the
+     footer's height, so the page's length (and where it is scrolled to)
+     never changes. */
+  @supports (height: 100dvh) {
     @media (max-width: 767px) {
       #site-footer {
-        padding-top: calc(100lvh - 100svh);
-        height: calc(max(680px, 100svh) + 100lvh - 100svh);
+        --footer-h: calc(max(680px, 100lvh) + env(safe-area-inset-top, 0px));
+        height: var(--footer-h);
+        padding-top: calc(var(--footer-h) - max(680px, 100dvh));
       }
+    }
+  }
+
+  /* The photo's track, pin and frame (see the markup). The track starts a
+     screen above the footer, so the pin is stuck from the moment the footer
+     shows, and clips (never scrolls: clip, not hidden, or the pin would
+     stick to it) the photo where it would hang past the page's end. 100vh
+     first for iOS before 15.4, where it is the large viewport too. */
+  .footer-photo-track {
+    top: calc(-100vh - var(--overlay-bleed));
+    top: calc(-100lvh - var(--overlay-bleed));
+    overflow: clip;
+  }
+  .footer-photo-pin {
+    top: calc(-1 * var(--overlay-bleed));
+    height: var(--overlay-bleed);
+  }
+  .footer-photo-sky {
+    height: var(--overlay-bleed);
+    background: var(--sky-landscape);
+  }
+  .footer-photo-frame {
+    top: var(--overlay-bleed);
+    height: 100vh;
+    height: 100lvh;
+  }
+  @media (max-width: 1023px) and (orientation: portrait) {
+    .footer-photo-sky {
+      background: var(--sky-portrait);
+    }
+  }
+  /* On phones the page ends on the casino peek, and the photo stops a few
+     pixels short of that, behind the peek. The peek's foot rarely lands on
+     a whole pixel, and where it and the photo shared an edge, that edge's
+     last row blended the two into a faint light line. With nothing behind
+     it but the page's own bottom colour, which is the peek's, there is
+     nothing to see. */
+  @media (max-width: 767px) {
+    .footer-photo-track {
+      bottom: 4px;
     }
   }
 
@@ -390,21 +476,69 @@ const connect = [
     }
   }
 
-  /* iOS Safari only (-webkit-touch-callout exists nowhere else). Its bottom
-     toolbar grows and shrinks the viewport, and with it the fixed wrap, as
-     it comes and goes. A frame that followed the wrap would re-fit the photo
-     each time, rescaling it about its top edge so the lake slid up and down
-     with the toolbar. So here the frame keeps the height of the viewport
-     with the toolbar away (lvh), pinned to the top of the screen, and the
-     toolbar only covers and uncovers its foot. The wrap is left as it is,
-     so what Safari samples for its toolbars and draws beneath them does not
-     change. Never shorter than the wrap, so the photo always covers it.
-     100vh first for iOS before 15.4, where it is the large viewport too. */
-  @supports (-webkit-touch-callout: none) {
-    .footer-photo-frame {
-      height: max(100%, 100vh);
-      height: max(100%, 100lvh);
-    }
+  /* The casino peek: the phone sheet's top bar (casino.css), value for
+     value, over the start of its body. Flat, without the glow the open
+     sheet has behind its handle: the sheet fades that out when it comes
+     down to the peek, so the drawer is one colour, the same as the page's
+     bottom colour past the end of the page (index.astro's edgeBottom). */
+  .casino-peek {
+    --peek-bg: var(--color-n-950);
+    /* The bar less its last 3px: 2px of padding and its 1px border, which
+       would sit right at the end of the page. Plus the peek's own top
+       border. */
+    height: 58px;
+    overflow: hidden;
+    border-top: 1px solid var(--color-n-800);
+    border-radius: 20px 20px 0 0;
+    background: var(--peek-bg);
+    /* Carries the drawer on a little past the end of the footer, over the
+       sliver left below it when the page isn't a whole number of pixels
+       tall. A shadow is ink rather than content, so it adds no scroll (and
+       the footer clips only sideways, to let it show). */
+    box-shadow: 0 12px 0 0 var(--peek-bg);
+    font-size: 13px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* While the sheet is up at the end of the page (index.ts, holdEdge) the
+     page's end takes on the colour of its status bar, --cz-status-bg, and
+     so does the peek under it, the last of the page Safari might take its
+     toolbar's colour from. */
+  :global(html[data-casino-held]) .casino-peek {
+    --peek-bg: #080808;
+  }
+  .casino-peek:focus-visible {
+    outline: 2px solid var(--color-bio-lime);
+    outline-offset: -4px;
+  }
+  .casino-peek-grabber {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--color-n-700);
+    transform: translateX(-50%);
+  }
+  /* 18px over and 5px under a row as tall as the sheet's 36px buttons */
+  .casino-peek-bar {
+    display: flex;
+    align-items: center;
+    height: 60px;
+    padding: 18px max(8px, env(safe-area-inset-right))
+      5px max(14px, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--color-n-800);
+  }
+  .casino-peek-title {
+    padding: 6px 8px 6px 4px;
+    color: var(--color-n-300);
+    white-space: pre;
+  }
+  .casino-peek-prompt {
+    color: var(--color-bio-lime);
   }
 
   /* Holds the haze canvas back until it has drawn a frame over the photo.
@@ -511,6 +645,7 @@ const connect = [
     stopBlink,
   } from "../scripts/terminal";
   import "../scripts/casino-trigger";
+  import { bindPeek } from "../scripts/casino-peek";
 
   {
     const footer = document.getElementById("site-footer")!;
@@ -795,16 +930,37 @@ const connect = [
     );
     let echoVisible = false;
 
+    // The phone's casino peek does the same at the same moment, typing out
+    // the drawer's title rather than the prompt's command. Hidden (wider
+    // screens), it has no box, and is left alone.
+    const peekEl = footer.querySelector<HTMLElement>("[data-casino-peek]")!;
+    const peek = bindPeek(peekEl);
+    const peekState = makeState(peekEl);
+    const PEEK_TITLE = "/dev/null/casino.sh";
+    const PEEK_DELAY_MS = 250;
+    let peekTimer: number | undefined;
+
     function setEchoVisible(visible: boolean) {
       if (visible === echoVisible) return;
       echoVisible = visible;
+      clearTimeout(peekTimer);
       if (visible) {
         headerEcho.classList.add("is-visible");
+        if (peekEl.offsetParent) {
+          peek.warm();
+          peekTimer = window.setTimeout(
+            () => typeText(peekState, PEEK_TITLE),
+            PEEK_DELAY_MS,
+          );
+        }
       } else {
         headerEcho.classList.remove("is-visible");
         cancelAnim(echoState);
         stopBlink(echoState);
         echoState.textEl.textContent = ">";
+        cancelAnim(peekState);
+        stopBlink(peekState);
+        peekState.textEl.textContent = "";
       }
     }
 

@@ -4,10 +4,17 @@
    download, and the click opens it, so the page never pays for the games
    up front. */
 
-type CasinoModule = typeof import("./casino/index")
+export type CasinoModule = typeof import("./casino/index")
 
 let loading: Promise<CasinoModule> | null = null
-const load = () => (loading ??= import("./casino/index"))
+
+/** The casino chunk, fetched once. A failed fetch (deploy mid-visit, flaky
+    network) is forgotten, so the next ask gets one fresh try. */
+export const loadCasino = () =>
+  (loading ??= import("./casino/index").catch((err) => {
+    loading = null
+    throw err
+  }))
 
 const TRIGGER = "[data-casino-open]"
 const trigger = (e: Event) => (e.target as Element | null)?.closest?.(TRIGGER)
@@ -15,16 +22,13 @@ const trigger = (e: Event) => (e.target as Element | null)?.closest?.(TRIGGER)
 document.addEventListener("click", (e) => {
   if (!trigger(e)) return
   e.preventDefault()
-  load()
+  loadCasino()
     .then((m) => m.open())
-    .catch(() => {
-      // A failed chunk (deploy mid-visit, flaky network) gets one fresh try
-      loading = null
-    })
+    .catch(() => {})
 })
 
 const warm = (e: Event) => {
-  if (trigger(e)) void load().catch(() => (loading = null))
+  if (trigger(e)) void loadCasino().catch(() => {})
 }
 document.addEventListener("pointerover", warm, { passive: true })
 document.addEventListener("focusin", warm)
