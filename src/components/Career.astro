@@ -1,135 +1,50 @@
 ---
 import ActionButton from "./ActionButton.astro";
-
-const RANGE_START = 2019;
-const RANGE_END = 2027;
-const SPAN = RANGE_END - RANGE_START;
-
-const entries = [
-  {
-    period: "2026 — Now",
-    start: 2026.67,
-    end: 2027,
-    lane: 0,
-    now: true,
-    company: "Junior",
-    title: "Software Engineer",
-    description:
-      "Junior records expert calls for private equity and consulting firms and turns them into transcripts analysts can search. I'm in the New York office, split between the pipeline that cleans up the audio and the app people read the output in. Getting a number wrong matters here — someone is pricing a deal off it.",
-    skills: ["Full Stack", "Applied AI", "Knowledge Graphs"],
-    tags: [
-      "Python",
-      "TypeScript",
-      "Rust",
-      "PostgreSQL",
-      "AI/ML",
-      "Diarization",
-    ],
-    url: "https://junior.ai/",
-  },
-  {
-    period: "2025 — 2026",
-    start: 2025,
-    end: 2026.65,
-    lane: 0,
-    now: false,
-    company: "Rumor",
-    title: "Full Stack Developer",
-    description:
-      "Built the platform behind Rumor — a private network connecting people to exclusive cultural events. Most of my time went to the host dashboard and the mobile apps: event creation, guest management, and the analytics that sit on top of both. Small team, so I touched most of the stack, from the database layer up to what users see on their phones.",
-    skills: ["Full Stack", "Mobile", "Cloud Infrastructure"],
-    tags: [
-      "TypeScript",
-      "PostgreSQL",
-      "AWS Lambda",
-      "Next.js",
-      "React Native",
-      "Swift",
-    ],
-    url: "https://www.therumor.com/",
-  },
-  {
-    period: "2024 — 2026",
-    start: 2024,
-    end: 2026,
-    lane: 1,
-    now: false,
-    company: "Squib",
-    title: "Founding Engineer",
-    description:
-      "First engineer at an AI research lab building autonomous agents that model human behavior. I helped build Persona, a product that creates AI-powered social profiles — digital twins that grow audiences and predict how communities will respond before a campaign launches. Tiny team at the time, so I'd be deep in agent architecture one week and building the product UI the next.",
-    skills: ["AI/ML", "Autonomous Agents", "Growth Engineering"],
-    tags: ["Go", "TypeScript", "Python", "PostgreSQL"],
-    url: "https://www.heysquib.com/",
-  },
-  {
-    period: "2021 — 2022",
-    start: 2021,
-    end: 2022,
-    lane: 0,
-    now: false,
-    company: "Artesian Builds",
-    title: "Full Stack Developer",
-    description:
-      "Helped overhaul the company website — better design, tighter SEO, load times dropped about 40%. Also built internal tools for tracking sponsorship metrics and Twitch creator stats, which gave management real numbers instead of gut feelings. First job where I shipped things real people used, which changes how carefully you write everything after.",
-    skills: ["Full Stack", "Internal Tooling", "SEO", "Data Analysis"],
-    tags: ["WordPress", "Elementor", "Electron", "Python", "PostgreSQL"],
-    url: "https://en.wikipedia.org/wiki/Artesian_Builds",
-  },
-  {
-    period: "2019",
-    start: 2019.05,
-    end: 2019.85,
-    lane: 0,
-    now: false,
-    company: "McDonald's",
-    title: "Crew Member",
-    description:
-      "Got me my first car at 16 — a '93 Miata with 220k miles on it. I still think about that car more than I probably should.",
-    skills: ["Deep Fryer", "Cash Register", "Drive-Thru", "Customer Service"],
-    tags: ["Ice Cream Machine (Broken)", "McFlurry Assembly", "Headset Comms"],
-    url: "https://www.mcdonalds.com/us/en-us.html",
-  },
-];
-
-// Vertical axis: oldest at the top, so a year maps to distance from RANGE_START
-const yPct = (v: number) => ((v - RANGE_START) / SPAN) * 100;
-const years = Array.from({ length: SPAN }, (_, i) => RANGE_START + i);
-
-// Render order oldest-first while keeping each entry's original index for
-// selection/hover-sync wiring (data-select keys off the original i).
-const orderedEntries = entries.map((entry, i) => ({ entry, i })).reverse();
+import {
+  entries,
+  ordered,
+  monthYear,
+  axisAt,
+  nowYear,
+} from "../data/career";
 
 // Scroll-pin choreography ----------------------------------------------------
 // Each entry gets half a viewport of scroll, plus one extra "run-out" half
-// viewport after the last entry so the marker travels off the final pill to
-// the end of the spine before the scroll releases. Total travel is therefore
-// N half-viewports (N-1 to step through the entries + 1 to run out), so the
-// section is (N+1) * 50vh tall.
+// viewport after the last entry so the playhead travels off the final bar to
+// the end of the axis before the scroll releases. Total travel is therefore
+// N half-viewports, so the section is (N+1) * 50vh tall.
 const N = entries.length;
-const stepPct = orderedEntries.map(({ entry }) => yPct(entry.start));
-// Desktop playhead rides the year-scaled positions so it lines up with the bars.
-const railStart = stepPct[0];
-// Mobile markers are evenly spaced, sitting in the first N-1/N of the rail; the
-// trailing segment (last dot -> end) is the run-out, mirroring the desktop spine.
-const evenPct = orderedEntries.map((_, s) => (N > 0 ? (s / N) * 100 : 0));
+// The axis runs to today, so this is only first paint: the script lays it
+// out again from the visitor's clock (see axisAt in data/career.ts).
+const axis = axisAt(nowYear());
 // step index (oldest-first) -> original entry index
-const stepMap = orderedEntries.map(({ i }) => i);
+const stepMap = ordered.map(({ i }) => i);
+const stepAccent = ordered.map(({ entry }) => entry.accent);
 // The section rests on the oldest entry when the pin engages (progress 0).
 const initialIndex = stepMap[0];
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const stepOf = new Map(ordered.map(({ i }, s) => [i, s + 1]));
+const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
 ---
 
 <!-- No background of its own: it scrolls over the pinned glass canvas in
      PinnedCanvas.astro, whose backdrop has already turned to near-black by
-     exactly the line this section starts on. The dot grid, the rail and the
-     dossier stay — they are what makes this section itself, and they now sit
-     over drifting orbs instead of flat black. -->
+     exactly the line this section starts on.
+
+     No card either: the scene is the surface. The company name is set huge
+     straight onto the glass and rolls over letter by letter as the entries
+     change, with the company's logo after it melting from one mark into
+     the next; the copy sits beside it, straight on the scene too; and the
+     time axis runs the full width along the foot of the
+     frame — a Gantt of the whole career with a playhead sweeping across it,
+     and the orbs rising through the open band just above it. -->
 <section
   id="career"
   class="relative"
-  style={`height: ${(N + 1) * 50}svh`}
-  data-step-pct={JSON.stringify(stepPct)}
+  style={`height: ${(N + 1) * 50}svh; --accent: ${stepAccent[0]}`}
   data-step-map={JSON.stringify(stepMap)}
+  data-step-accent={JSON.stringify(stepAccent)}
   aria-label="Career"
 >
   <div class="dot-grid" aria-hidden="true"></div>
@@ -143,214 +58,198 @@ const initialIndex = stepMap[0];
   <div
     class="pin sticky top-0 h-[100svh] overflow-hidden flex items-start bleed-under-bars"
   >
-    <div
-      class="frame relative w-full max-w-[1524px] mx-auto px-safe-3 sm:px-safe-6 lg:px-safe-12 py-8 lg:pt-[12svh] lg:pb-0"
-    >
-      <!-- Mobile: horizontal timeline above the card strip (oldest left). -->
-      <div class="rail-h lg:hidden relative h-8 mb-5" aria-hidden="true">
-        <div class="absolute inset-x-[7px] top-1/2 -translate-y-1/2">
-          <div
-            class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-n-800"
-          />
-          <div
-            class="rail-fill-h absolute left-0 top-1/2 -translate-y-1/2 h-0.5 rounded-[2px] bg-bio-lime"
-            style="width: 0%"
-          />
-          {
-            orderedEntries.map((_, s) => (
-              <span
-                class="absolute top-1/2 w-[7px] h-[7px] rounded-full bg-n-800 border border-n-700 -translate-x-1/2 -translate-y-1/2"
-                style={`left: ${evenPct[s]}%`}
-              />
-            ))
-          }
-          <div
-            class="rail-tip-h absolute top-1/2 w-[11px] h-[11px] rounded-full bg-bio-lime -translate-x-1/2 -translate-y-1/2"
-            style="left: 0%"
-          />
-        </div>
-      </div>
-
+    <div class="frame relative w-full h-full">
       <div
-        class="main grid lg:grid-cols-[360px_1fr] gap-4 lg:gap-14 items-start"
+        class="inner relative h-full max-w-[1524px] mx-auto px-safe-4 sm:px-safe-6 lg:px-safe-12"
       >
-        <!-- Rail: time spine + employer tabs.
-             min-w-0 lets this grid column shrink to the viewport so the tab
-             strip below scrolls horizontally instead of forcing an overflow. -->
-        <div class="min-w-0 lg:grid lg:grid-cols-[66px_1fr] lg:gap-5">
-          <!-- The spine — V3's chart, rotated vertical -->
-          <div class="spine relative hidden lg:block">
-            <div class="absolute inset-x-0 top-2 bottom-2">
-              <!-- Progress playhead: a horizontal marker line that sweeps down the
-                   timeline (top -> bottom), landing on each bar as it's selected. -->
-              <div
-                class="playhead absolute left-0 right-0"
-                style={`top: ${railStart}%`}
-                aria-hidden="true"
-              />
-              {
-                years.map((y) => (
-                  <div
-                    class="absolute inset-x-0"
-                    style={`top: ${yPct(y)}%`}
-                    aria-hidden="true"
-                  >
-                    <span class="absolute left-0 top-0 -translate-y-1/2 font-mono text-[10px] leading-none tracking-[-0.02em] text-n-400">
-                      {`'${String(y).slice(2)}`}
-                    </span>
-                    <span class="absolute left-7 right-0 top-0 border-t border-n-800" />
-                  </div>
-                ))
-              }
-              {
-                orderedEntries.map(({ entry, i }) => (
-                  <span
-                    class="bar absolute w-[14px] rounded-full border border-n-700"
-                    style={`top: ${yPct(entry.start)}%; height: ${yPct(entry.end) - yPct(entry.start)}%; left: ${30 + entry.lane * 20}px; --d: ${i * 120}ms`}
-                    data-select={i}
-                    data-on={i === initialIndex ? "true" : "false"}
-                    aria-hidden="true"
-                  >
-                    {entry.now && (
-                      <span class="absolute -bottom-[2px] left-1/2 -translate-x-1/2 flex w-[7px] h-[7px]">
-                        <span class="ping absolute inline-flex h-full w-full rounded-full bg-bio-lime opacity-70" />
-                        <span class="relative inline-flex rounded-full h-[7px] w-[7px] bg-bio-lime" />
-                      </span>
-                    )}
-                  </span>
-                ))
-              }
-            </div>
+        <!-- ── Time axis (top on mobile, foot of the frame on desktop) ── -->
+        <div class="axis">
+          <div class="flex items-baseline justify-between mb-3 lg:mb-4">
+            <h2
+              class="font-mono text-[11px] lg:text-[12px] leading-none tracking-[-0.02em] uppercase text-n-400"
+            >
+              Career&ensp;<span class="text-n-600">/</span>&ensp;<span
+                class="count text-n-100 tabular-nums">01</span
+              ><span class="text-n-600 tabular-nums"> — {pad(N)}</span>
+            </h2>
+            <span
+              class="readout font-mono text-[11px] lg:text-[12px] leading-none tracking-[-0.02em] text-n-400 tabular-nums"
+              aria-hidden="true">{ordered[0].entry.start.replace("-", ".")}</span
+            >
           </div>
 
-          <!-- Employer jump buttons — list rows on desktop, chip strip on mobile.
-               Deliberately NOT role="tablist": selection here is driven by scroll
-               position, not by arrow keys, so the tab pattern would promise
-               keyboard semantics this section does not implement. They are plain
-               buttons that scroll to an entry, with aria-current marking the one
-               the playhead is currently on. -->
+          <!-- Deliberately NOT role="tablist": selection here is driven by
+               scroll position, not by arrow keys. The bars are plain buttons
+               that scroll to an entry, with aria-current marking the one the
+               playhead is on. -->
           <div
-            class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 -mx-safe-3 px-safe-3 sm:-mx-safe-6 sm:px-safe-6 lg:mx-0 lg:px-0 pb-1 lg:pb-0"
+            class="chart relative"
+            style={`--lanes: ${lanes}`}
             role="group"
             aria-label="Employers"
           >
             {
-              orderedEntries.map(({ entry, i }) => (
+              axis.marks
+                .slice(1, -1)
+                .map((m) => (
+                  <span
+                    class="year-rule"
+                    style={`left: ${m.pct}%`}
+                    aria-hidden="true"
+                  />
+                ))
+            }
+            {
+              ordered.map(({ entry, i }) => (
                 <button
                   type="button"
-                  class="tab shrink-0 lg:w-full text-left"
-                  aria-current={i === initialIndex ? "true" : "false"}
+                  class="bar absolute"
+                  style={`--l: ${axis.bar(entry).left}; --w: ${axis.bar(entry).width}; --lane: ${entry.lane}; --c: ${entry.accent}`}
                   data-select={i}
+                  aria-label={`${entry.company}, ${entry.period}`}
+                  aria-current={i === initialIndex ? "true" : "false"}
                 >
-                  <span class="block">
-                    <span class="font-mono text-[11px] leading-none tracking-[-0.02em] text-n-400 block">
-                      {entry.period}
-                    </span>
-                    <span class="tab-name font-display leading-tight tracking-[-0.012em] text-[20px] lg:text-[24px] mt-1.5 inline-flex items-center gap-2.5">
-                      <span
-                        class="tab-dot w-[6px] h-[6px] rounded-full bg-bio-lime shrink-0"
-                        aria-hidden="true"
-                      />
-                      {entry.company}
-                    </span>
+                  <span class="bar-label font-mono text-[10px] lg:text-[11px] leading-none tracking-[-0.02em] whitespace-nowrap">
+                    {entry.company}
                   </span>
                 </button>
+              ))
+            }
+            <span class="head" aria-hidden="true"></span>
+          </div>
+          <div class="marks relative h-3 mt-2" aria-hidden="true">
+            {
+              axis.marks.map((m, k) => (
+                <span
+                  class="mark absolute top-0 font-mono text-[10px] leading-none tracking-[-0.02em] text-n-500 whitespace-nowrap"
+                  style={`left: ${m.pct}%`}
+                  data-edge={
+                    k === 0
+                      ? "start"
+                      : k === axis.marks.length - 1
+                        ? "end"
+                        : undefined
+                  }
+                >
+                  {m.label}
+                </span>
               ))
             }
           </div>
         </div>
 
-        <!-- Vertical-alignment wrapper: a fixed 615px box at lg+ so the card
-             slot never changes height as entries switch, which keeps the
-             anchored (centered) layout from re-centering / jiggling. Below lg
-             it carries no height and is inert. -->
-        <div class="min-w-0 lg:h-[615px]">
-          <!-- The dossier panel. min-w-0 keeps it inside the 1fr column instead
-               of expanding past the viewport on small screens. The fill is just
-               shy of opaque: enough that an orb passing behind it tints the
-               panel rather than shows through it, so the dossier still reads as
-               a solid surface but is not a hole cut in the scene. n-850 is one
-               ramp step above the backdrop the glass settles on (n-900), which
-               is what keeps the panel reading as a raised surface — it moved up
-               with the backdrop when that did. -->
-          <div
-            class="relative min-w-0 rounded-[20px] border border-n-800 bg-n-850/90 lg:min-h-[460px] overflow-hidden"
-          >
+        <!-- ── Entries, stacked in one grid cell so the block never re-flows
+             as they switch ── -->
+        <div class="stack relative grid">
           {
             entries.map((entry, i) => (
-              <div
-                class="relative p-5 sm:p-8 lg:p-12"
+              <article
+                class="panel"
                 data-panel={i}
-                hidden={i !== initialIndex}
+                data-on={i === initialIndex ? "true" : "false"}
+                aria-hidden={i === initialIndex ? "false" : "true"}
+                inert={i !== initialIndex}
               >
-                {/* Ghost year watermark */}
-                <span
-                  class="absolute -top-8 right-2 font-display leading-none tracking-[-0.04em] text-white/[0.035] select-none pointer-events-none text-[clamp(9rem,18vw,15rem)]"
-                  aria-hidden="true"
+                <h3
+                  class="name font-display text-n-100 leading-[0.9] tracking-[-0.035em]"
+                  aria-label={entry.company}
                 >
-                  {Math.floor(entry.start)}
-                </span>
-
-                <div class="relative enter">
-                  <div class="flex items-center gap-2.5">
-                    <span
-                      class:list={[
-                        "w-[6px] h-[6px] rounded-full",
-                        entry.now ? "bg-bio-lime" : "bg-n-600",
-                      ]}
-                      aria-hidden="true"
-                    />
-                    <span class="font-mono text-[13px] leading-none tracking-[-0.02em] uppercase text-n-400">
-                      {entry.period}&ensp;·&ensp;{entry.title}
-                    </span>
-                  </div>
-
-                  <h3 class="font-display leading-[0.95] tracking-[-0.02em] text-n-100 mt-4 sm:mt-6 text-[clamp(2.5rem,calc(2.5rem+(100vw-27.5rem)*0.028),4.5rem)]">
-                    {entry.company}
-                  </h3>
-
-                  <p class="font-display text-[16px] lg:text-[17px] leading-[1.6] text-n-350 max-w-[640px] mt-4 sm:mt-6 lg:mt-8">
-                    {entry.description}
-                  </p>
-
-                  <div class="flex flex-wrap gap-x-6 gap-y-3 mt-5 sm:mt-8 lg:mt-10">
-                    {entry.skills.map((skill) => (
-                      <span class="inline-flex items-center gap-2">
+                  {entry.company.split(" ").map((word, w, words) => (
+                    <span class="inline-block overflow-hidden pb-[0.15em] -mb-[0.15em] align-top">
+                      {[...word].map((ch, c) => (
                         <span
-                          class="w-[6px] h-[6px] rounded-full bg-bio-lime"
+                          class="ch inline-block"
+                          style={`--ci: ${c + words.slice(0, w).join("").length}`}
                           aria-hidden="true"
-                        />
-                        <span class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-n-300">
-                          {skill}
+                        >
+                          {ch}
                         </span>
-                      </span>
-                    ))}
-                  </div>
-                  <div class="flex flex-wrap gap-x-4 gap-y-2 mt-4 sm:mt-5">
-                    {entry.tags.map((tag) => (
-                      <span class="font-mono text-[12px] leading-none tracking-[-0.02em] text-n-400">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                      ))}
+                      {w < words.length - 1 && (
+                        <span aria-hidden="true">&nbsp;</span>
+                      )}
+                      {w === words.length - 1 && (
+                        <span class="logo-slot" aria-hidden="true">
+                          <span
+                            class="ch logo"
+                            style={`--ci: ${words.join("").length}`}
+                            set:html={entry.logo}
+                          />
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </h3>
 
-                  <ActionButton
-                    href={entry.url}
-                    icon="external"
-                    variant="solid-dark"
-                    size="sm"
-                    caps
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="mt-6 sm:mt-10 lg:mt-12"
-                  >
-                    Visit {entry.company}
-                  </ActionButton>
+                <div class="grid lg:grid-cols-12 gap-5 lg:gap-x-6 mt-5 lg:mt-10">
+                  <div class="in lg:col-span-3 pt-1.5" style="--i: 1">
+                    <p class="font-mono text-[12px] lg:text-[13px] leading-none tracking-[-0.02em] uppercase text-n-100">
+                      {entry.title}
+                    </p>
+                    <p class="mt-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] text-n-500 tabular-nums">
+                      <time datetime={entry.start}>
+                        {monthYear(entry.start)}
+                      </time>
+                      {" — "}
+                      {entry.end ? (
+                        <time datetime={entry.end}>{monthYear(entry.end)}</time>
+                      ) : (
+                        "Now"
+                      )}
+                    </p>
+                    <ul
+                      class="hidden lg:flex flex-col gap-2.5 mt-9"
+                      aria-label="Focus"
+                    >
+                      {entry.skills.map((skill) => (
+                        <li class="flex items-center gap-2.5 font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-n-300">
+                          <span class="dash w-3 h-px" aria-hidden="true" />
+                          {skill}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div class="lg:col-span-7 xl:col-span-6 max-w-[640px]">
+                    <p
+                      class="desc in font-display text-[16px] lg:text-[18px] leading-[1.6] text-n-300"
+                      style="--i: 2"
+                    >
+                      {entry.description}
+                    </p>
+                    <p
+                      class="in lg:hidden font-mono text-[11px] leading-[1.7] tracking-[-0.02em] uppercase text-n-300 mt-4"
+                      style="--i: 3"
+                    >
+                      {entry.skills.join("  ·  ")}
+                    </p>
+                    <p
+                      class="in font-mono text-[12px] leading-[1.7] tracking-[-0.02em] text-n-500 mt-2 lg:mt-5"
+                      style="--i: 3"
+                    >
+                      {entry.tags.join("  /  ")}
+                    </p>
+                    <div class="in" style="--i: 4">
+                      <ActionButton
+                        href={entry.url}
+                        icon="external"
+                        variant="solid-dark"
+                        size="sm"
+                        caps
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="mt-5 lg:mt-8"
+                      >
+                        Visit {entry.company}
+                      </ActionButton>
+                    </div>
+                  </div>
                 </div>
-              </div>
+                <span class="sr-only">
+                  Entry {stepOf.get(i)} of {N}
+                </span>
+              </article>
             ))
           }
-          </div>
         </div>
       </div>
     </div>
@@ -358,314 +257,637 @@ const initialIndex = stepMap[0];
 </section>
 
 <style>
-  /* Progress playhead — horizontal marker line (desktop), sweeps top -> bottom */
-  .playhead {
-    height: 2px;
-    background: var(--color-bio-lime);
-    transform: translateY(-50%);
-    box-shadow: 0 0 8px
-      color-mix(in srgb, var(--color-bio-lime) 45%, transparent);
+  .inner {
+    display: flex;
+    flex-direction: column;
   }
 
-  .playhead::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 9999px;
-    background: var(--color-bio-lime);
-    transform: translate(-3px, -50%);
-    box-shadow: 0 0 0 4px
-      color-mix(in srgb, var(--color-bio-lime) 18%, transparent);
+  .axis {
+    order: 0;
+    padding-top: 20px;
   }
 
-  .rail-tip-h {
-    box-shadow: 0 0 0 4px
-      color-mix(in srgb, var(--color-bio-lime) 18%, transparent);
-  }
-
-  /* Spine bars */
-  .bar {
-    background: var(--color-n-850);
-    cursor: pointer;
-    /* transform is inert unless the grow-in below is active, so it can live in
-       the single base transition rather than being redeclared under the
-       reduced-motion query. */
-    transition:
-      transform 0.9s var(--ease-rise) var(--d, 0ms),
-      background-color 0.2s ease,
-      border-color 0.2s ease;
-  }
-
-  .bar:hover,
-  .bar.hl {
-    border-color: color-mix(in srgb, var(--color-bio-lime) 50%, transparent);
-    background: var(--color-n-800);
-  }
-
-  .bar[data-on="true"] {
-    background: var(--color-bio-lime);
-    border-color: var(--color-bio-lime);
-  }
-
-  /* Tabs */
-  .tab {
-    cursor: pointer;
-  }
-
-  .tab-name {
-    color: var(--color-n-400);
-    transition: color 0.2s ease;
-  }
-
-  .tab:hover .tab-name,
-  .tab.hl .tab-name {
-    color: var(--color-n-300);
-  }
-
-  .tab[aria-current="true"] .tab-name {
-    color: var(--color-n-100);
-  }
-
-  .tab-dot {
-    opacity: 0;
-    transform: scale(0.4);
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease;
-  }
-
-  .tab[aria-current="true"] .tab-dot {
-    opacity: 1;
-    transform: scale(1);
+  .stack {
+    order: 1;
+    margin-top: 28px;
   }
 
   @media (min-width: 1024px) {
-    .tab {
-      padding: 20px 0;
-      border-top: 1px solid var(--color-n-800);
+    .inner {
+      padding-top: 11svh;
     }
 
-    .tab:last-child {
-      border-bottom: 1px solid var(--color-n-800);
+    .stack {
+      order: 0;
+      margin-top: 0;
+    }
+
+    .axis {
+      order: 1;
+      margin-top: auto;
+      padding-top: 0;
+      padding-bottom: 7svh;
     }
   }
 
-  /* Short desktop viewports: reclaim vertical space by halving the frame's
-     top padding (12svh -> 6svh). */
-  @media (min-width: 1024px) and (max-height: 799px) {
-    .frame {
-      padding-top: 6svh;
+  .stack > .panel {
+    grid-area: 1 / 1;
+  }
+
+  .panel[data-on="false"] {
+    pointer-events: none;
+  }
+
+  .name {
+    font-size: clamp(3.25rem, calc(3.25rem + (100vw - 27.5rem) * 0.09), 10rem);
+  }
+
+  /* The logo sits on the baseline after the last word (inside its span, so
+     it never wraps onto a line of its own), about as tall as a capital.
+     Once the script's morph canvas is up it draws the logo over this slot,
+     gliding from slot to slot, and the inline SVGs stand down; without
+     WebGL2 they stay, and roll over with the letters. */
+  .logo-slot {
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    margin-left: 0.18em;
+  }
+
+  .logo-slot .logo,
+  .logo-slot :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #career[data-morph] .logo-slot .logo {
+    visibility: hidden;
+  }
+
+  /* Short phones: the longest entry has to fit under the axis. */
+  @media (max-width: 1023px) and (max-height: 740px) {
+    .stack {
+      margin-top: 18px;
+    }
+
+    .name {
+      font-size: 2.75rem;
+    }
+
+    .desc {
+      font-size: 15px;
+      line-height: 1.5;
     }
   }
 
-  /* Tall desktop viewports: float the two-column content out of flow so its
-     vertical midline lands on the viewport's 45% line. The frame is the
-     positioning context, sits at the viewport top
-     (sticky top-0 + items-start), and left/right: 3rem mirrors the frame's
-     lg:px-12 so horizontal alignment is unchanged. The dossier's fixed-height
-     wrapper keeps this box a constant height, so translateY(-50%) never
-     re-centers (jiggles) as entries switch. */
-  @media (min-width: 1024px) and (min-height: 1121px) {
-    .main {
-      position: absolute;
-      left: 3rem;
-      right: 3rem;
-      top: 46svh;
-      transform: translateY(-50%);
+  /* The accent follows the company on show (--accent, blended by the script
+     below), so the foreground carries the colour of the orb behind it. */
+  .dash {
+    background: var(--accent);
+  }
+
+  .panel :global(.ab[data-variant]) {
+    --ab-blob: var(--accent);
+    --ab-bg-h: var(--accent);
+    --ab-line-h: var(--accent);
+  }
+
+  /* ── Gantt ── */
+  .chart {
+    height: calc(var(--lanes) * 22px + (var(--lanes) - 1) * 6px);
+    border-left: 1px solid rgb(255 255 255 / 0.12);
+    border-right: 1px solid rgb(255 255 255 / 0.12);
+  }
+
+  @media (min-width: 1024px) {
+    .chart {
+      height: calc(var(--lanes) * 30px + (var(--lanes) - 1) * 8px);
     }
+  }
+
+  .year-rule {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .mark {
+    transform: translateX(-50%);
+  }
+
+  .mark[data-edge="start"] {
+    transform: none;
+  }
+
+  .mark[data-edge="end"] {
+    transform: translateX(-100%);
+  }
+
+  /* --l / --w are the bar's left and width in % of the axis; set by the
+     script as well as here. Each bar gives up 1px a side so bars that meet
+     end to end in a lane still read as two. */
+  .bar {
+    left: calc(var(--l) * 1% + 1px);
+    width: calc(var(--w) * 1% - 2px);
+    top: calc(var(--lane) * (100% + 6px) / var(--lanes));
+    height: calc((100% - (var(--lanes) - 1) * 6px) / var(--lanes));
+    min-width: 6px;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    cursor: pointer;
+    transition:
+      background-color 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+
+  .bar:hover {
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent);
+  }
+
+  .bar[aria-current="true"] {
+    background: color-mix(in srgb, var(--c) 85%, transparent);
+    box-shadow:
+      inset 0 0 0 1px var(--c),
+      0 0 24px color-mix(in srgb, var(--c) 45%, transparent);
+  }
+
+  /* Labels sit inside their bars; below lg the bars are too short for
+     them, and the name is on screen in full anyway. */
+  .bar-label {
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    right: 4px;
+    overflow: hidden;
+    transform: translateY(-50%);
+    text-align: left;
+    color: var(--color-n-400);
+    transition: color 0.35s ease;
+    pointer-events: none;
+  }
+
+  .bar[aria-current="true"] .bar-label {
+    color: var(--color-n-950);
   }
 
   @media (max-width: 1023px) {
-    /* The pin is offset upward by the height of everything above the rail, so
-       that band scrolls off the top of the viewport *before* the section
-       locks — buying back that vertical space on short screens. The offset is
-       measured in JS (--v1-head-h) since that band's height varies with
-       width; it already accounts for the padding the rail should keep above
-       it once stuck. */
-    .pin {
-      top: calc(-1 * var(--v1-head-h, 0px));
-      height: calc(100svh + var(--v1-head-h, 0px));
-    }
-
-    /* The selection state is already carried by the chip's border and fill on
-       mobile, so the dot is redundant width in a strip that is tight for it. */
-    .tab-dot {
+    .bar-label {
       display: none;
-    }
-
-    .tab {
-      border: 1px solid var(--color-n-800);
-      border-radius: 14px;
-      padding: 12px 18px;
-      background: var(--color-n-900);
-      white-space: nowrap;
-    }
-
-    .tab[aria-current="true"] {
-      border-color: var(--color-n-600);
-      background: var(--color-n-850);
     }
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    /* Bars grow down the spine when it scrolls into view */
-    .bar {
-      transform: scaleY(0);
-      transform-origin: top center;
-    }
+  .head {
+    position: absolute;
+    top: -8px;
+    bottom: -8px;
+    left: var(--yr, 0%);
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 2px;
+    background: var(--color-n-100);
+    box-shadow: 0 0 12px rgb(255 255 255 / 0.5);
+    pointer-events: none;
+  }
 
-    .spine.in .bar {
-      transform: scaleY(1);
-    }
+  .head::before {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--color-n-100);
+    transform: translateX(-50%);
+  }
 
-    .ping {
-      animation: v1-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-
-    @keyframes v1-ping {
-      0% {
-        transform: scale(1);
-        opacity: 0.7;
-      }
-      75%,
-      100% {
-        transform: scale(3);
-        opacity: 0;
-      }
-    }
-
-    /* Panel content entrance on tab switch */
-    .enter {
-      animation: v1-rise 0.5s var(--ease-rise) both;
-    }
-
-    @keyframes v1-rise {
-      from {
-        opacity: 0;
-        transform: translateY(16px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+  /* ── Hand-off ──
+     Driven from the script below, not CSS transitions: a transition that is
+     retargeted mid-flight drops its velocity and restarts its curve (and
+     sits out its delay first), which stutters when the scroll outruns it.
+     Until the script takes over, only the entry on show is visible. */
+  .panel[data-on="false"] {
+    visibility: hidden;
   }
 </style>
 
 <script>
+  import {
+    axisAt,
+    entries,
+    logoPaint,
+    logoPath,
+    nowYear,
+    ordered,
+  } from "../data/career";
+  import { logoMorph } from "../scripts/logo-morph";
   {
     const section = document.querySelector<HTMLElement>("#career");
     if (section) {
-      const tabs = section.querySelectorAll<HTMLButtonElement>(".tab");
+      const pin = section.querySelector<HTMLElement>(".pin")!;
       const bars = section.querySelectorAll<HTMLElement>(".bar");
-      const panels = section.querySelectorAll<HTMLElement>("[data-panel]");
-      const pin = section.querySelector<HTMLElement>(".pin");
-      // Mobile: the tab chips live in a horizontal scroller; the selected chip
-      // is kept centered as selection moves (see select()).
-      const tablist = section.querySelector<HTMLElement>("[role='group']");
+      const panels = section.querySelectorAll<HTMLElement>(".panel");
+      const chart = section.querySelector<HTMLElement>(".chart")!;
+      const count = section.querySelector<HTMLElement>(".count")!;
+      const readout = section.querySelector<HTMLElement>(".readout")!;
+      const stack = section.querySelector<HTMLElement>(".stack")!;
 
-      const stepPct: number[] = JSON.parse(section.dataset.stepPct || "[]");
+
+      // ── Axis ──
+      // The axis runs to today, and the page may have been built months ago,
+      // so lay it out again from this visitor's clock: bars, year marks, and
+      // where each entry's bar starts, which is where the playhead heads for.
+      const now = nowYear();
+      const axis = axisAt(now);
+      bars.forEach((bar) => {
+        const { entry } = ordered.find(
+          ({ i }) => i === Number(bar.dataset.select),
+        )!;
+        const { left, width } = axis.bar(entry);
+        bar.style.setProperty("--l", String(left));
+        bar.style.setProperty("--w", String(width));
+      });
+      chart.querySelectorAll(".year-rule").forEach((el) => el.remove());
+      for (const m of axis.marks.slice(1, -1)) {
+        const rule = document.createElement("span");
+        rule.className = "year-rule";
+        rule.style.left = `${m.pct}%`;
+        rule.setAttribute("aria-hidden", "true");
+        chart.prepend(rule);
+      }
+      const marks = section.querySelector<HTMLElement>(".marks")!;
+      const markTpl = marks.firstElementChild!;
+      marks.replaceChildren(
+        ...axis.marks.map((m, k) => {
+          const el = markTpl.cloneNode() as HTMLElement;
+          el.textContent = m.label;
+          el.style.left = `${m.pct}%`;
+          if (k === 0) el.dataset.edge = "start";
+          else if (k === axis.marks.length - 1) el.dataset.edge = "end";
+          else delete el.dataset.edge;
+          return el;
+        }),
+      );
+      const stepPct = ordered.map(({ entry }) => axis.bar(entry).left);
       const stepMap: number[] = JSON.parse(section.dataset.stepMap || "[]");
-      const N = stepPct.length;
+      const stepAccent: string[] = JSON.parse(
+        section.dataset.stepAccent || "[]",
+      );
+      const N = stepMap.length;
 
-      // Desktop: horizontal playhead, positioned in the spine's year-% space.
-      const playhead = section.querySelector<HTMLElement>(".playhead");
-      // Mobile: evenly-spaced rail, so the tip travels linearly with progress.
-      const fillH = section.querySelector<HTMLElement>(".rail-fill-h");
-      const tipH = section.querySelector<HTMLElement>(".rail-tip-h");
-
-      const select = (id: string | undefined) => {
-        if (!id) return;
-        tabs.forEach((t) =>
-          t.setAttribute("aria-current", String(t.dataset.select === id)),
-        );
-        // Bring the newly selected chip into view within the mobile strip.
-        // The guard scopes this to when the strip actually overflows (mobile);
-        // on desktop the tabs stack vertically and this is a no-op.
-        if (tablist && tablist.scrollWidth > tablist.clientWidth) {
-          const active = tablist.querySelector<HTMLElement>(
-            `[data-select="${id}"]`,
-          );
-          if (active) {
-            const cRect = tablist.getBoundingClientRect();
-            const aRect = active.getBoundingClientRect();
-            const delta =
-              aRect.left - cRect.left - (tablist.clientWidth - aRect.width) / 2;
-            tablist.scrollTo({
-              left: tablist.scrollLeft + delta,
-              behavior: "smooth",
-            });
-          }
+      // ── Accent blend ──
+      // The accent follows the selected entry, but crosses over in the stretch
+      // of scroll just before each hand-off instead of cutting, so it moves
+      // with the orb colours behind it — and is whole again the frame the new
+      // entry takes over (which is also where a jump-click lands).
+      const hex = (h: string) => [
+        parseInt(h.slice(1, 3), 16),
+        parseInt(h.slice(3, 5), 16),
+        parseInt(h.slice(5, 7), 16),
+      ];
+      const accents = stepAccent.map(hex);
+      const BLEND = 0.35; // length of the cross-over, in entries
+      const accentAt = (pages: number) => {
+        const a = Math.max(0, Math.min(Math.floor(pages + 0.01), N - 1));
+        let b = a;
+        let t = 0;
+        const x = (pages - (a + 1 - BLEND)) / BLEND;
+        if (a + 1 <= N - 1 && x > 0) {
+          b = a + 1;
+          const c = Math.min(x, 1);
+          t = c * c * (3 - 2 * c);
         }
-        bars.forEach((b) =>
-          b.setAttribute("data-on", String(b.dataset.select === id)),
+        const c = accents[a].map((v, j) =>
+          Math.round(v + (accents[b][j] - v) * t),
         );
-        panels.forEach((panel) => {
-          const show = panel.dataset.panel === id;
-          panel.hidden = !show;
-          if (show) {
-            // retrigger the entrance animation
-            const inner = panel.querySelector<HTMLElement>(".enter");
-            if (inner) {
-              inner.style.animation = "none";
-              void inner.offsetWidth;
-              inner.style.animation = "";
-            }
-          }
-        });
+        return `rgb(${c[0]} ${c[1]} ${c[2]})`;
       };
 
-      // Scroll-pin: map scroll progress through the tall section to a travelling
-      // tip (marker to marker) and the active entry (flips when the tip lands on
-      // the next pill).
-      let activeStep = -1;
+      // ── Hand-off motion ──
+      // Every moving piece — each letter of the name, each block of copy —
+      // carries one value s: 0 at rest, ±1 fully off (+ is below). It is
+      // integrated frame by frame rather than tweened, so whenever the target
+      // changes mid-flight the piece keeps the position and speed it had and
+      // simply bends toward the new one: no restarts, no jumps.
+      //
+      //   leaving  — constant acceleration away from rest (ease-in), keeping
+      //              whatever velocity it already had.
+      //   arriving — a critically damped spring to rest. From off-screen it
+      //              is launched at the spring's own speed, which traces a
+      //              pure ease-out; from mid-flight it just curves back.
+      //
+      // Delays (the letter stagger) only postpone the switch: the piece keeps
+      // moving the old way meanwhile, instead of freezing as a CSS
+      // transition-delay would.
+      type Kind = {
+        draw: (el: HTMLElement, s: number) => void;
+        accel: number; // leaving, in s-units per second²
+        omega: number; // arriving spring stiffness, rad/s
+      };
+      type Piece = {
+        el: HTMLElement;
+        kind: Kind;
+        delayIn: number; // ms, when arriving from off-screen
+        delayOut: number; // ms
+        s: number;
+        v: number;
+        mode: "idle" | "in" | "out";
+        side: number; // leaving: the side it heads for; arriving: comes from
+        next: { mode: "in" | "out"; side: number; at: number } | null;
+      };
 
+      // Letters travel 1.25em. The lowest descender (the q in Squib) hangs
+      // 1.04em below the top of its letter box, and the tallest ascender sits
+      // 0.1em inside it; the clip runs from the box top to 1.05em (the h3's
+      // 0.15em bottom padding), so this clears it both ways with room over.
+      // They dim to 0.25 as they go and brighten from it as they land.
+      const LETTER: Kind = {
+        draw: (el, s) => {
+          el.style.transform = s
+            ? `translate3d(0, ${(s * 1.25).toFixed(4)}em, 0)`
+            : "";
+          el.style.opacity = s
+            ? String(1 - 0.75 * Math.min(1, Math.abs(s) / 0.8))
+            : "";
+        },
+        accel: 2 / 0.36 ** 2, // clears the clip in 0.36s from rest
+        omega: 8,
+      };
+      const COPY: Kind = {
+        draw: (el, s) => {
+          el.style.transform = s
+            ? `translate3d(0, ${(s * 16).toFixed(2)}px, 0)`
+            : "";
+          el.style.opacity = s ? String(1 - Math.min(1, Math.abs(s))) : "";
+        },
+        accel: 2 / 0.3 ** 2,
+        omega: 8,
+      };
+
+      const piecesOf = new Map<HTMLElement, Piece[]>();
+      panels.forEach((panel) => {
+        const on = panel.dataset.on === "true";
+        const make = (
+          el: HTMLElement,
+          kind: Kind,
+          delayIn: number,
+          delayOut: number,
+        ): Piece => {
+          const p: Piece = {
+            el,
+            kind,
+            delayIn,
+            delayOut,
+            s: on ? 0 : 1,
+            v: 0,
+            mode: "idle",
+            side: 1,
+            next: null,
+          };
+          kind.draw(el, p.s);
+          return p;
+        };
+        piecesOf.set(panel, [
+          ...[...panel.querySelectorAll<HTMLElement>(".ch")].map((el) => {
+            const ci = Number(el.style.getPropertyValue("--ci")) || 0;
+            return make(el, LETTER, 100 + ci * 22, ci * 20);
+          }),
+          ...[...panel.querySelectorAll<HTMLElement>(".in")].map((el) => {
+            const i = Number(el.style.getPropertyValue("--i")) || 0;
+            return make(el, COPY, 160 + i * 60, 0);
+          }),
+        ]);
+      });
+
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      );
+      const hidden = (p: Piece) => Math.abs(p.s) >= 1;
+
+      const advance = (p: Piece, t: number, dt: number) => {
+        if (p.next && t >= p.next.at) {
+          const { mode, side } = p.next;
+          p.next = null;
+          p.side = side;
+          if (mode === "in" && hidden(p)) {
+            // Off-screen, so it can be moved to the side it enters from.
+            p.s = side;
+            p.v = -p.kind.omega * side;
+          }
+          p.mode = mode === "out" && hidden(p) && p.v === 0 ? "idle" : mode;
+        }
+        if (p.mode === "in") {
+          const w = p.kind.omega;
+          p.v += (-w * w * p.s - 2 * w * p.v) * dt;
+          p.s += p.v * dt;
+          if (Math.abs(p.s) < 2e-4 && Math.abs(p.v) < 2e-3) {
+            p.s = 0;
+            p.v = 0;
+            p.mode = "idle";
+          }
+        } else if (p.mode === "out") {
+          p.v += p.side * p.kind.accel * dt;
+          p.s += p.v * dt;
+          if (hidden(p) && Math.sign(p.v) === Math.sign(p.s)) {
+            p.s = Math.sign(p.s);
+            p.v = 0;
+            p.mode = "idle";
+          }
+        }
+      };
+
+      let running = false;
+      let lastT = 0;
+      const tick = (t: number) => {
+        // Capped so a backgrounded tab resumes where it left off rather than
+        // leaping; split into small steps so the spring stays exact.
+        const total = Math.min(t - lastT, 64) / 1000;
+        lastT = t;
+        const n = Math.max(1, Math.ceil(total / 0.004));
+        let busy = false;
+        piecesOf.forEach((pieces, panel) => {
+          let shown = panel.dataset.on === "true";
+          for (const p of pieces) {
+            if (p.mode === "idle" && !p.next) continue;
+            const s0 = p.s;
+            for (let k = 0; k < n; k++) advance(p, t, total / n);
+            if (p.s !== s0) p.kind.draw(p.el, p.s);
+            if (p.mode !== "idle" || p.next) busy = true;
+          }
+          if (!shown) shown = pieces.some((p) => !hidden(p));
+          panel.style.visibility = shown ? "visible" : "";
+        });
+        if (busy) requestAnimationFrame(tick);
+        else running = false;
+      };
+      const kick = () => {
+        if (running) return;
+        running = true;
+        lastT = performance.now();
+        requestAnimationFrame(tick);
+      };
+
+      // dir: +1 scrolling down (old leaves upward, new arrives from below).
+      const handOff = (panel: HTMLElement, on: boolean, dir: number) => {
+        const pieces = piecesOf.get(panel)!;
+        if (reduceMotion.matches) {
+          for (const p of pieces) {
+            p.s = on ? 0 : 1;
+            p.v = 0;
+            p.mode = "idle";
+            p.next = null;
+            p.kind.draw(p.el, p.s);
+          }
+          panel.style.visibility = on ? "visible" : "";
+          return;
+        }
+        const now = performance.now();
+        for (const p of pieces) {
+          // A piece still in view turns around at once (with a small ripple
+          // across the word); one that is out of sight waits its turn.
+          const delay = on
+            ? hidden(p)
+              ? p.delayIn
+              : p.delayOut / 2
+            : p.delayOut;
+          p.next = {
+            mode: on ? "in" : "out",
+            side: on ? dir : -dir,
+            at: now + delay,
+          };
+        }
+        kick();
+      };
+
+      // ── Logo ──
+      // One canvas for every entry's logo (see scripts/logo-morph.ts), laid
+      // over the slot after the name on show. If WebGL goes, the inline SVGs
+      // in the slots take back over.
+      const morph = logoMorph(
+        entries.map((e) => ({ path: logoPath(e), paint: logoPaint(e) })),
+        stepMap[0],
+        () => {
+          delete section.dataset.morph;
+          morph?.canvas.remove();
+        },
+      );
+      if (morph) stack.append(morph.canvas);
+      // Headed left, for a shorter name, the logo would cross the old name
+      // on its way out. Those letters leave left to right, 20ms apart, and
+      // take about a third of a second to clear, so it holds until the last
+      // of them is nearly gone.
+      let logoX = NaN;
+      let letters = 0;
+      const placeLogo = (instant: boolean) => {
+        if (!morph || activeStep < 0) return;
+        const panel = section.querySelector<HTMLElement>(
+          `.panel[data-panel="${stepMap[activeStep]}"]`,
+        )!;
+        const r = panel.querySelector(".logo-slot")!.getBoundingClientRect();
+        const s = stack.getBoundingClientRect();
+        const x = r.left - s.left;
+        const delay = x < logoX - 1 ? 260 + (letters - 1) * 20 : 0;
+        logoX = x;
+        letters = panel.querySelectorAll(".ch:not(.logo)").length;
+        morph.place(x, r.top - s.top, r.width, instant, delay);
+      };
+
+      // ── Selection ──
+      let activeStep = -1;
+      const select = (step: number) => {
+        const dir = activeStep < 0 || step >= activeStep ? 1 : -1;
+        const first = activeStep < 0;
+        activeStep = step;
+        const key = String(stepMap[step]);
+        bars.forEach((b) =>
+          b.setAttribute("aria-current", String(b.dataset.select === key)),
+        );
+        panels.forEach((panel) => {
+          const on = panel.dataset.panel === key;
+          const was = panel.dataset.on === "true";
+          panel.dataset.on = String(on);
+          panel.setAttribute("aria-hidden", String(!on));
+          panel.inert = !on;
+          if (on !== was && !first) handOff(panel, on, dir);
+        });
+        // The first selection only confirms (or corrects) the server-rendered
+        // entry, so it cuts rather than animating in on page load.
+        if (first)
+          panels.forEach((panel) => {
+            const on = panel.dataset.on === "true";
+            for (const p of piecesOf.get(panel)!) {
+              p.s = on ? 0 : 1;
+              p.kind.draw(p.el, p.s);
+            }
+          });
+        count.textContent = String(step + 1).padStart(2, "0");
+        if (morph) {
+          const instant = first || reduceMotion.matches;
+          morph.show(stepMap[step], instant);
+          placeLogo(instant);
+          section.dataset.morph = "";
+        }
+      };
+
+      // Scroll-pin: map progress through the tall section to the playhead
+      // (bar to bar, then out to the axis end) and the active entry (flips
+      // when the playhead lands on the next bar). Everything is written only
+      // when it changes.
+      let lastP = -1;
+      let lastAccent = "";
+      let lastLabel = "";
       const render = (p: number) => {
+        if (p === lastP) return;
+        lastP = p;
         // pages: 0..N. Pages [0, N-1] step through the entries; the last page
-        // [N-1, N] is the run-out that carries the marker to the spine's end.
+        // [N-1, N] is the run-out.
         const pages = p * N;
 
-        // Desktop playhead (year-scaled, in the spine's coordinate space).
-        let yearPct: number;
-        if (N <= 1) {
-          yearPct = stepPct[0] ?? 0;
-        } else if (pages <= N - 1) {
-          // Step phase: travel marker to marker, landing on each bar.
+        let yr: number;
+        if (N <= 1) yr = stepPct[0] ?? 0;
+        else if (pages <= N - 1) {
           const s = Math.max(0, Math.min(Math.floor(pages), N - 2));
-          const f = pages - s;
-          yearPct = stepPct[s] + (stepPct[s + 1] - stepPct[s]) * f;
+          yr = stepPct[s] + (stepPct[s + 1] - stepPct[s]) * (pages - s);
         } else {
-          // Run-out phase: from the last bar down to the end of the spine (100%).
-          const runF = Math.min(pages - (N - 1), 1);
-          yearPct = stepPct[N - 1] + (100 - stepPct[N - 1]) * runF;
+          yr =
+            stepPct[N - 1] +
+            (100 - stepPct[N - 1]) * Math.min(pages - (N - 1), 1);
         }
-        if (playhead) playhead.style.top = `${yearPct}%`;
+        chart.style.setProperty("--yr", `${yr.toFixed(3)}%`);
 
-        // Mobile rail is evenly spaced with a trailing run-out segment, so the
-        // tip is linear across the whole track (last dot at (N-1)/N, end at 1).
-        const linPct = p * 100;
-        if (fillH) fillH.style.width = `${linPct}%`;
-        if (tipH) tipH.style.left = `${linPct}%`;
+        // Read-out of where the playhead is, to the month.
+        // Capped at today: in a job's first month the axis runs on to the
+        // end of that month.
+        const t = Math.min(axis.year(yr), now);
+        // (The epsilon keeps a bar start like 2021 + 4/12 from reading as April.)
+        const mo = Math.min(12, Math.floor((t % 1) * 12 + 1e-6) + 1);
+        const label = `${Math.floor(t)}.${String(mo).padStart(2, "0")}`;
+        if (label !== lastLabel) {
+          lastLabel = label;
+          readout.textContent = label;
+        }
 
-        // Small bias so arriving at a marker selects it even when the scroll
+        const accent = accentAt(pages);
+        if (accent !== lastAccent) {
+          lastAccent = accent;
+          section.style.setProperty("--accent", accent);
+        }
+
+        // Small bias so arriving at a bar selects it even when the scroll
         // position lands a sub-pixel short of the exact page boundary.
         const step = Math.max(0, Math.min(Math.floor(pages + 0.01), N - 1));
-        if (step !== activeStep) {
-          activeStep = step;
-          select(String(stepMap[step]));
-        }
+        if (step !== activeStep) select(step);
       };
 
       // Register the pin's entry/exit scroll positions as soft barriers so the
-      // smooth-scroll engine eases into and out of the lock instead of snapping.
-      // Y_top is where the pin engages (content freezes); Y_bottom = Y_top + travel
-      // is where it releases. Only meaningful on desktop where the pin is active.
-      // Both values are scroll-invariant, so they only actually move on resize
-      // or a late layout shift. Recomputing every frame is cheap but publishing
-      // every frame is pointless churn, so only push when they change.
+      // smooth-scroll engine eases into and out of the lock instead of
+      // snapping. Both are scroll-invariant, so they are only published when
+      // they change (resize or a late layout shift).
       let lastTop = NaN;
       let lastTv = NaN;
       const registerBarriers = (rectTop: number, tv: number) => {
@@ -679,42 +901,22 @@ const initialIndex = stepMap[0];
         setBarriers(tv > 0 ? [top, top + tv] : []);
       };
 
-      // Mobile only: let everything above the rail scroll off before the pin
-      // engages, by pulling the pin's sticky top up by that height. RAIL_PAD
-      // is the gap the rail keeps below the viewport top once stuck.
-      const railH = section.querySelector<HTMLElement>(".rail-h");
-      const RAIL_PAD = 20;
-      const mobileMQ = window.matchMedia("(max-width: 1023px)");
-      let headH = 0;
-      // Scroll-invariant (see the barrier note above), so it is measured here
-      // and read from cache in the scroll frame — offsetHeight in a scroll
-      // handler forces a synchronous layout on every frame, page-wide, and
-      // this section is 500svh.
+      // Scroll-invariant, so it is measured here and read from cache in the
+      // scroll frame — offsetHeight in a scroll handler forces a synchronous
+      // layout on every frame, page-wide, and this section is several
+      // viewports tall.
       let travelPx = 0;
       const measure = () => {
-        if (railH) {
-          const mobile = mobileMQ.matches;
-          headH = mobile ? Math.max(0, railH.offsetTop - RAIL_PAD) : 0;
-          section.style.setProperty("--v1-head-h", `${headH}px`);
-        }
-        // Must follow the write above: --v1-head-h feeds .pin's height, so
-        // reading the pin before it settles would measure the stale box.
-        travelPx =
-          section.offsetHeight - (pin?.offsetHeight ?? window.innerHeight);
+        travelPx = section.offsetHeight - pin.offsetHeight;
       };
 
       // On the shared bus this runs inside the engine's tick — the same frame
-      // as its scrollTo — so __scrollProgressLead below reports the entry-brake
-      // lead the engine set this very frame and the pin scrubs *during* the
-      // deceleration with no one-frame trail. The bus fires it at most once per
-      // frame, so no local rAF throttle is needed; under reduced motion its
-      // native scroll listener drives this instead.
+      // as its scrollTo — so __scrollProgressLead reports the entry-brake lead
+      // the engine set this very frame and the pin scrubs *during* the
+      // deceleration with no one-frame trail.
       const frame = () => {
         const rect = section.getBoundingClientRect();
         const tv = travelPx;
-        // entryLead (px) is progress the smooth-scroll engine has advanced
-        // ahead of the real scroll while braking into the lock, so the pin
-        // scrubs *during* the entry deceleration instead of dwelling at zero.
         const lead =
           (
             (window as any).__scrollProgressLead as (() => number) | undefined
@@ -729,79 +931,46 @@ const initialIndex = stepMap[0];
       window.addEventListener("resize", () => {
         measure();
         frame();
+        placeLogo(true);
       });
       measure();
       frame();
+      // The name reflows when the display face arrives, moving the slot.
+      document.fonts?.ready.then(() => placeLogo(true));
 
       if ("ResizeObserver" in window) {
         const ro = new ResizeObserver(() => {
           measure();
           frame();
+          placeLogo(true);
         });
-        // The height above the rail depends on font loading and the panel's
-        // own reflow, both of which land after this runs.
-        if (railH) ro.observe(railH.parentElement ?? railH);
         // travelPx is derived from these two boxes, so observing them directly
         // is what keeps the cache honest between resize events.
         ro.observe(section);
-        if (pin) ro.observe(pin);
+        ro.observe(pin);
+        // And the logo's slot moves whenever the entries reflow.
+        ro.observe(stack);
       }
 
-      // Clicking a tab / bar selects it and scrolls the page to that entry's slot
-      // in the pin, reusing the site's smooth-scroll easing.
-      section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
+      // Clicking a bar scrolls the page to that entry's slot in the pin,
+      // reusing the site's smooth-scroll easing. Selection then follows the
+      // scroll, so the entries scrub through en route rather than flashing.
+      bars.forEach((el) => {
         el.addEventListener("click", () => {
-          const id = el.dataset.select;
-          if (id == null) return;
-          const step = stepMap.indexOf(Number(id));
+          const step = stepMap.indexOf(Number(el.dataset.select));
           if (step < 0) return;
-          // Selection is driven by the scroll handler as the page eases to the
-          // target, so the panels scrub through en route rather than flashing.
-          const tv = travelPx;
           // step k is reached at pages = k, i.e. progress k/N (never in run-out).
           const targetP = N > 0 ? step / N : 0;
           const y =
-            section.getBoundingClientRect().top + window.scrollY + targetP * tv;
+            section.getBoundingClientRect().top +
+            window.scrollY +
+            targetP * travelPx;
           const smooth = (window as any).__smoothScrollTo as
             ((y: number) => void) | undefined;
           if (smooth) smooth(y);
           else window.scrollTo(0, y);
         });
       });
-
-      // Hover sync between spine bars and tab rows — both carry data-select, so
-      // grouping by that value pairs each bar with its tab.
-      const groups = new Map<string, HTMLElement[]>();
-      section.querySelectorAll<HTMLElement>("[data-select]").forEach((el) => {
-        const key = el.dataset.select!;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(el);
-      });
-      groups.forEach((els) => {
-        const toggle = (on: boolean) => () =>
-          els.forEach((el) => el.classList.toggle("hl", on));
-        els.forEach((el) => {
-          el.addEventListener("mouseenter", toggle(true));
-          el.addEventListener("mouseleave", toggle(false));
-        });
-      });
-
-      // Grow-in trigger
-      const spine = section.querySelector<HTMLElement>(".spine");
-      if (spine) {
-        const io = new IntersectionObserver(
-          (obs) => {
-            obs.forEach((e) => {
-              if (e.isIntersecting) {
-                e.target.classList.add("in");
-                io.unobserve(e.target);
-              }
-            });
-          },
-          { threshold: 0.25 },
-        );
-        io.observe(spine);
-      }
     }
   }
 </script>
