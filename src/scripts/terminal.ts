@@ -1,11 +1,11 @@
 /* ── Terminal typing engine ──
    Shared by the hero Header and the footer cap-bar echo. Drives the
-   `>_ ssh dev.dominicclerici.com` prompt: blinking cursor, character-by-
-   character typing, and reverse deletion. The consumers own their own
+   `>_ sudo ./casino` prompt that opens the /dev/null casino: blinking
+   cursor, character-by-character typing, and reverse deletion. The consumers own their own
    trigger wiring (hover, viewport, scroll); this module only owns the
    text/cursor animation state. */
 
-export const TYPE_STRING = "ssh dev.dominicclerici.com"
+export const TYPE_STRING = "sudo ./casino"
 
 export const prefersReducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",

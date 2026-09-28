@@ -8,7 +8,7 @@ My personal developer portfolio. One page, no framework, loads fast. Mostly dark
 
 - **[Astro 6](https://astro.build)** — static site generator that ships zero JavaScript by default
 - **[Tailwind CSS 4](https://tailwindcss.com)** — utility-first styling
-- **Vanilla JS** — for the handful of interactive bits (grid animations, terminal typing effect, mobile menu)
+- **Vanilla JS** — for the handful of interactive bits (grid animations, terminal typing effect, mobile menu, and a small casino)
 - **Self-hosted, subset fonts** — Aspekta, Roboto Mono, and Inter served locally as woff2, trimmed by `subset-fonts.py` to only the exact glyphs used on the site
 
 The whole project runs on just 4 npm dependencies. No React, no Vue, no frameworks beyond Astro itself.
@@ -55,6 +55,8 @@ pnpm build
 
 The script scans the built HTML in `dist/` (where all template expressions have been resolved to real text), figures out which characters each font needs, and trims the font files down to just those glyphs. It prints a summary showing the before/after sizes.
 
+The casino (below) draws all of its text from script, so the same run also cuts it a separate pair of subsets, `*-casino.woff2`, from its source files. Those only load once the casino is opened. Rerun the script after changing any casino copy.
+
 ## Footer Photo
 
 The footer's backdrop (Mount Shuksan over Picture Lake) is cut from a full-resolution original in `photos-src/` (4340×3255), kept out of `public/` so it is never deployed. A Node script renders every size the page serves into `public/photos/` and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
@@ -69,6 +71,17 @@ pnpm photos:footer
 ```
 
 The heat haze over the lake (`src/scripts/heat-haze.ts`) is positioned in the full photo's coordinates, so it follows either crop automatically. Only a new source photo means re-measuring it.
+
+## The casino
+
+The `>_` prompts (header, bottom-left while scrolling, the footer's cap bar, and by the copyright on phones) open the **/dev/null casino**: four lightly programming-themed games played with $1,000 of fake money, kept in `localStorage`.
+
+- **Crash**: a memory graph that climbs until the process dies. Cash out before the OOM killer.
+- **Big O**: hi-lo where the deck is thirteen complexity classes, O(1) to the busy beaver.
+- **Merge Conflict**: roulette on a reel of commits. Ours, theirs, or the conflict.
+- **Plinko**: drop a packet through the load balancer.
+
+It's vanilla TypeScript and canvas in `src/scripts/casino/`, fetched only when someone clicks a prompt, so the page doesn't pay for it. With other visitors online it goes multiplayer: shared Crash rounds, other players' plays showing up at each table, and a leaderboard. That runs on a small Cloudflare Worker in [`multiplayer/`](multiplayer/README.md) (free tier), pointed to by the `PUBLIC_CASINO_WS` env var. Without it, everything plays solo.
 
 ## License
 

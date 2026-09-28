@@ -161,17 +161,16 @@ const connect = [
       <div
         class="footer-header hidden md:flex w-full justify-between items-center"
       >
-        <a
-          href="https://dev.dominicclerici.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
           tabindex="-1"
           data-terminal="footer"
-          class="inline-flex font-mono text-[14px] text-bone py-1.5"
+          data-casino-open
+          class="inline-flex font-mono text-[14px] text-bone py-1.5 cursor-pointer"
         >
           <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span
           >
-        </a>
+        </button>
 
         <nav class="flex gap-7 items-center">
           <a
@@ -340,11 +339,24 @@ const connect = [
       >
         Dominic Clerici
       </p>
-      <p
-        class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60 mt-4"
-      >
-        &copy; {year} Dominic Clerici. All rights reserved.
-      </p>
+      <!-- Phones have none of the >_ prompts the header and cap bar carry,
+           so the casino's door sits here instead, quietly, by the credits -->
+      <div class="mt-4 flex items-center justify-between gap-4">
+        <p
+          class="font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
+        >
+          &copy; {year} Dominic Clerici. All rights reserved.
+        </p>
+        <button
+          type="button"
+          data-casino-open
+          aria-label="Open the /dev/null casino, a mini-game easter egg"
+          aria-haspopup="dialog"
+          class="md:hidden -my-2 -mr-2 px-2 py-2 font-mono text-[12px] leading-none text-bone/60 hover:text-bone transition-colors duration-150"
+        >
+          &gt;<span class="motion-safe:animate-caret-blink">_</span>
+        </button>
+      </div>
     </div>
   </div>
 </footer>
@@ -498,6 +510,7 @@ const connect = [
     cancelAnim,
     stopBlink,
   } from "../scripts/terminal";
+  import "../scripts/casino-trigger";
 
   {
     const footer = document.getElementById("site-footer")!;
