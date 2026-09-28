@@ -24,7 +24,7 @@ const navLinks = [
       data-casino-open
       aria-label="Open the /dev/null casino, a mini-game easter egg"
       aria-haspopup="dialog"
-      class="inline-flex font-mono text-[14px] text-ink py-1.5 cursor-pointer"
+      class="relative inline-flex font-mono text-[14px] text-ink py-1.5 cursor-pointer"
     >
       <span data-terminal-text>&gt;</span><span data-terminal-cursor>_</span>
     </button>
@@ -144,14 +144,14 @@ const navLinks = [
     let heroInView = true;
     let footerInView = false;
 
-    // `duration` overrides the element's own transition for this change;
-    // empty keeps it.
+    // `duration` overrides the element's own fade (see .term-float) for this
+    // change; empty keeps it.
     function update(duration = "") {
       const show = !heroInView && !footerInView;
       if (show === ss.isInView) return;
-      scrollEl!.style.transitionDuration = duration;
+      scrollEl!.style.setProperty("--term-fade", duration);
       if (show) {
-        scrollEl!.style.opacity = "0.5";
+        scrollEl!.style.opacity = "1";
         scrollEl!.classList.remove("pointer-events-none");
         scrollEl!.classList.add("pointer-events-auto");
         ss.isInView = true;
