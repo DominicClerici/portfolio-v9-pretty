@@ -422,7 +422,7 @@ export class CrashGame implements Game {
       this.crashFlash = performance.now()
       this.settle()
       sfx.crash()
-      if (!reducedMotion.matches) {
+      if (prev === "running" && !reducedMotion.matches) {
         this.stage.classList.remove("is-crashing")
         void this.stage.offsetWidth
         this.stage.classList.add("is-crashing")

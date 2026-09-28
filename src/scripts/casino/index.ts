@@ -3,7 +3,7 @@
    trigger.ts), so none of this is paid for by visitors who never find it.
 
    A native modal <dialog> holding a lobby and four games. The shell owns the
-   chrome (tabs, wallet, name, sound, connection status) and the page-scroll
+   chrome (title, wallet, name, sound, connection status) and the page-scroll
    lock; each game owns its own stage and controls (games/*.ts). */
 
 // As a string, injected on first open: a plain import would have Astro hoist
@@ -54,6 +54,8 @@ const QUIPS = [
   "rm -rf / is also technically a strategy.",
 ]
 
+const TITLE = "/dev/null/casino.sh"
+
 const FACTORIES: Record<GameId, () => Game> = {
   crash: () => new CrashGame(),
   bigo: () => new BigOGame(),
@@ -66,17 +68,17 @@ class Casino {
   private views = new Map<Place, HTMLElement>()
   private games = new Map<GameId, Game>()
   private place: Place = prefs.get<Place>("place", "lobby")
-  private tabs = new Map<Place, HTMLButtonElement>()
-  private tabBadges = new Map<GameId, HTMLElement>()
+  private brand!: HTMLButtonElement
+  private flagEl!: HTMLElement
+  private flagRun = 0
+  private pageTitle = ""
   private balanceEl!: HTMLElement
   private balanceWrap!: HTMLElement
   private shownBalance = wallet.balance
   private nameChip!: HTMLElement
   private soundBtn!: HTMLButtonElement
   private statusConn!: HTMLElement
-  private statusPing!: HTMLElement
   private statusQuip!: HTMLElement
-  private statusPlace!: HTMLElement
   private main!: HTMLElement
   private broke!: HTMLElement
   private lobby!: Lobby
@@ -115,6 +117,8 @@ class Casino {
     this.dialog.classList.remove("is-closing")
     this.dialog.showModal()
     this.lockPage(true)
+    this.pageTitle = document.title
+    document.title = this.titleText()
     // Connect first, so a game that can go either way (crash) sees the socket
     // on its way up rather than deciding it's alone
     net.connect(() => ({
@@ -140,6 +144,7 @@ class Casino {
       this.dialog.classList.remove("is-closing")
       this.closing = false
       this.lockPage(false)
+      document.title = this.pageTitle
       this.releaseNet()
     }
     if (reducedMotion.matches) return done()
@@ -200,14 +205,16 @@ class Casino {
       view.hidden = !on
       view.classList.toggle("is-entering", on && prev !== place)
     }
-    for (const [p, tab] of this.tabs) {
-      tab.setAttribute("aria-selected", String(p === place))
-      tab.tabIndex = p === place ? 0 : -1
-    }
+    // Focus left inside a view that just hid would fall out of the dialog
+    // (and take its keyboard shortcuts with it)
+    const active = document.activeElement
+    if (!active || active === document.body || active.closest("[hidden]"))
+      this.dialog.querySelector<HTMLElement>(".cz-shell")?.focus({ preventScroll: true })
+    this.dialog.dataset.place = place
+    this.brand.disabled = place === "lobby"
+    this.typeFlag(place === "lobby" ? "" : ` --${place}`, force)
     if (place === "lobby") this.lobby.enter()
     else this.ensureGame(place).enter()
-    this.statusPlace.textContent =
-      place === "lobby" ? "lobby" : `${place}.ts`
     net.send({ t: "at", at: place })
     this.refreshPresence()
     this.updateBroke()
@@ -218,7 +225,7 @@ class Casino {
   private build() {
     const dialog = h("dialog", {
       class: "cz",
-      "aria-label": "/dev/null casino",
+      "aria-label": TITLE,
       "data-lenis-prevent": true,
     }) as HTMLDialogElement
 
@@ -232,47 +239,23 @@ class Casino {
     })
     dialog.addEventListener("keydown", (e) => this.onKey(e))
 
-    // Brand + tabs
-    const brand = h(
+    // Title: the command, with the current game typed on as a flag. In a
+    // game it doubles as the way back to the lobby.
+    this.flagEl = h("span", { class: "cz-brand-flag" })
+    this.brand = h(
       "button",
-      { type: "button", class: "cz-brand", onclick: () => this.go("lobby") },
+      {
+        type: "button",
+        class: "cz-brand",
+        title: "Back to the lobby (0)",
+        onclick: () => this.go("lobby"),
+      },
+      svg(icons.back, 14),
       h("span", { class: "cz-brand-prompt", text: ">" }),
+      h("span", { class: "cz-brand-name", text: TITLE }),
+      this.flagEl,
       h("span", { class: "cz-brand-caret", text: "_" }),
-      h("span", { class: "cz-brand-name", text: "/dev/null" }),
-      h("span", { class: "cz-brand-sub", text: "casino" }),
     )
-    const tabList = h("div", { class: "cz-tabs", role: "tablist", "aria-label": "Games" })
-    GAMES.forEach((id, i) => {
-      const badge = h("span", { class: "cz-tab-badge", hidden: true })
-      const tab = h(
-        "button",
-        {
-          type: "button",
-          class: "cz-tab",
-          role: "tab",
-          "aria-controls": `cz-view-${id}`,
-          title: `${GAME_INFO[id].title} (${i + 1})`,
-          onclick: () => {
-            sfx.click()
-            this.go(id)
-          },
-        },
-        h("span", { class: "cz-tab-key", text: String(i + 1) }),
-        h("span", { text: GAME_INFO[id].short }),
-        badge,
-      )
-      this.tabs.set(id, tab)
-      this.tabBadges.set(id, badge)
-      tabList.append(tab)
-    })
-    tabList.addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return
-      const i = GAMES.indexOf(this.place as GameId)
-      const next = GAMES[(i + (e.key === "ArrowRight" ? 1 : GAMES.length - 1)) % GAMES.length]
-      this.go(next)
-      this.tabs.get(next)?.focus()
-      e.stopPropagation()
-    })
 
     // Wallet, name, sound, close
     this.balanceEl = h("strong", { class: "cz-balance-value", text: money(wallet.balance) })
@@ -315,9 +298,14 @@ class Casino {
     const top = h(
       "header",
       { class: "cz-top" },
-      brand,
-      tabList,
-      h("div", { class: "cz-top-end" }, this.balanceWrap, nameBtn, this.soundBtn, closeBtn),
+      this.brand,
+      h(
+        "div",
+        { class: "cz-top-end" },
+        h("div", { class: "cz-top-game" }, this.balanceWrap, nameBtn),
+        this.soundBtn,
+        closeBtn,
+      ),
     )
 
     // Views
@@ -330,7 +318,6 @@ class Casino {
       const view = h("section", {
         class: `cz-view cz-game cz-game-${id}`,
         id: `cz-view-${id}`,
-        role: "tabpanel",
         "aria-label": GAME_INFO[id].title,
         hidden: true,
       })
@@ -364,17 +351,8 @@ class Casino {
 
     // Status bar
     this.statusConn = h("span", { class: "cz-status-conn" })
-    this.statusPing = h("span", { class: "cz-status-ping" })
     this.statusQuip = h("span", { class: "cz-status-quip" })
-    this.statusPlace = h("span", { class: "cz-status-place" })
-    const status = h(
-      "footer",
-      { class: "cz-status" },
-      h("span", { class: "cz-status-branch" }, svg(icons.branch, 12), "main"),
-      this.statusConn,
-      this.statusQuip,
-      h("span", { class: "cz-status-end" }, this.statusPing, this.statusPlace, h("span", { text: "UTF-8" })),
-    )
+    const status = h("footer", { class: "cz-status" }, this.statusConn, this.statusQuip)
 
     const toasts = h("div", { class: "cz-toasts" })
     setToastHost(toasts)
@@ -426,6 +404,7 @@ class Casino {
     clearTimeout(this.balTimer)
     this.balTimer = window.setTimeout(() => net.send({ t: "bal", bal: wallet.balance }), 800)
     this.lobby.renderBoard()
+    this.lobby.renderBalance()
   }
 
   private updateBroke() {
@@ -433,38 +412,51 @@ class Casino {
   }
 
   private onStatus(s: NetStatus) {
-    const others = net.others().length
-    const text =
-      s === "live"
-        ? others
-          ? `live · ${others + 1} online`
-          : "live · just you"
-        : s === "connecting"
-          ? "connecting…"
-          : s === "off"
-            ? "solo mode"
-            : "offline · solo mode"
-    this.statusConn.textContent = text
     this.statusConn.dataset.state = s
-    this.statusPing.textContent = s === "live" && net.rtt ? `${Math.round(net.rtt)}ms` : ""
     this.refreshPresence()
   }
 
   private refreshPresence() {
-    for (const id of GAMES) {
-      const n = net.others(id).length
-      const badge = this.tabBadges.get(id)!
-      badge.hidden = n === 0
-      badge.textContent = String(n)
-      badge.title = `${n} other ${n === 1 ? "player" : "players"}`
-    }
-    if (net.live) {
-      const others = net.others().length
-      this.statusConn.textContent = others ? `live · ${others + 1} online` : "live · just you"
-      this.statusPing.textContent = net.rtt ? `${Math.round(net.rtt)}ms` : ""
-    }
+    const s = net.status
+    const others = net.others().length
+    this.statusConn.textContent =
+      s === "live"
+        ? others
+          ? `online · ${others + 1}`
+          : "online"
+        : s === "connecting"
+          ? "connecting…"
+          : "offline"
     this.lobby.renderBoard()
     this.lobby.renderCounts()
+  }
+
+  /** Types the game's flag onto the title: back over whatever the old flag
+      doesn't share with the new one, then forward. */
+  private typeFlag(flag: string, instant = false) {
+    const run = ++this.flagRun
+    const done = () => {
+      this.flagEl.textContent = flag
+      if (this.dialog.open) document.title = this.titleText()
+    }
+    if (instant || reducedMotion.matches || !this.dialog.open) return done()
+    const step = () => {
+      if (run !== this.flagRun) return
+      const cur = this.flagEl.textContent ?? ""
+      if (cur === flag) return done()
+      if (!flag.startsWith(cur)) {
+        this.flagEl.textContent = cur.slice(0, -1)
+        window.setTimeout(step, 22)
+      } else {
+        this.flagEl.textContent = flag.slice(0, cur.length + 1)
+        window.setTimeout(step, 15 + Math.floor(Math.random() * 46))
+      }
+    }
+    step()
+  }
+
+  private titleText() {
+    return TITLE + (this.place === "lobby" ? "" : ` --${this.place}`)
   }
 
   private rotateQuip() {
@@ -502,6 +494,8 @@ class Lobby {
   private boardList: HTMLElement
   private boardCount: HTMLElement
   private counts = new Map<GameId, HTMLElement>()
+  private balanceEl = h("h2", { class: "cz-lobby-balance", "aria-label": "Balance", text: money(wallet.balance) })
+  private shownBalance = wallet.balance
 
   constructor(private casino: Casino) {
     this.nameInput = h("input", {
@@ -512,21 +506,17 @@ class Lobby {
       spellcheck: "false",
       "aria-label": "Your name",
     })
-    this.nameMsg = h("span", { class: "cz-name-msg", "aria-live": "polite" })
+    this.nameMsg = h("p", { class: "cz-name-msg", "aria-live": "polite" })
+    const say = (text: string, tone: "ok" | "err" | "" = "") => {
+      this.nameMsg.textContent = text && `> ${text}`
+      this.nameMsg.dataset.tone = tone
+    }
     const save = () => {
       const res = checkName(this.nameInput.value)
-      if (!res.ok) {
-        this.nameMsg.textContent = res.why
-        this.nameMsg.dataset.tone = "err"
-        return
-      }
-      if (res.name === prefs.name) {
-        this.nameMsg.textContent = ""
-        return
-      }
-      this.casino.setName(res.name)
-      this.nameMsg.textContent = "Saved. Committed as " + res.name + "."
-      this.nameMsg.dataset.tone = "ok"
+      if (!res.ok) return say(res.why, "err")
+      if (res.name !== prefs.name) this.casino.setName(res.name)
+      this.nameInput.value = res.name
+      say(`Committed as ${res.name}.`, "ok")
       sfx.click()
     }
     const nameForm = h(
@@ -548,19 +538,18 @@ class Lobby {
           class: "cz-icon-btn cz-name-reroll",
           title: "Random name",
           "aria-label": "Random name",
+          // Suggests a name; it only sticks once committed
           onclick: () => {
             this.nameInput.value = randomName()
-            save()
+            say("")
+            sfx.click()
           },
         },
         svg(icons.reroll, 16),
       ),
       h("button", { type: "submit", class: "cz-name-save", text: "commit" }),
-      this.nameMsg,
     )
-    this.nameInput.addEventListener("blur", () => {
-      if (this.nameInput.value !== prefs.name) save()
-    })
+    this.nameInput.addEventListener("input", () => say(""))
 
     const cards = GAMES.map((id, i) => {
       const count = h("span", { class: "cz-card-count", hidden: true })
@@ -604,18 +593,20 @@ class Lobby {
         h(
           "div",
           { class: "cz-lobby-hero" },
-          h("h2", { class: "cz-lobby-title" }, "/dev/null ", h("span", { text: "casino" })),
-          h("p", {
-            class: "cz-lobby-copy",
-            text: `Every visitor gets $${(START_CENTS / 100).toLocaleString("en-US")} of fake money. Like everything else sent to /dev/null, it isn't coming back.`,
-          }),
+          this.balanceEl,
           nameForm,
+          this.nameMsg,
         ),
         h("div", { class: "cz-cards" }, cards),
       ),
       this.board,
     )
     this.renderName()
+  }
+
+  renderBalance() {
+    countTo(this.balanceEl, this.shownBalance, wallet.balance, money, 600)
+    this.shownBalance = wallet.balance
   }
 
   enter() {

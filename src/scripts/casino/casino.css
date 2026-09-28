@@ -110,6 +110,7 @@
   outline: none;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   width: min(1240px, 100%);
   height: min(800px, 100%);
   overflow: hidden;
@@ -167,96 +168,84 @@
 
 .cz-brand {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0;
-  padding: 6px 4px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  margin-right: auto;
+  padding: 6px 8px 6px 4px;
+  border-radius: 8px;
   font-size: 13px;
   white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.cz-brand svg {
+  flex: none;
+  width: 0;
+  margin-right: 0;
+  color: var(--cz-dim);
+  opacity: 0;
+  transition:
+    width 0.25s var(--cz-ease),
+    margin 0.25s var(--cz-ease),
+    opacity 0.2s;
+}
+
+.cz-brand:not(:disabled) svg {
+  width: 14px;
+  margin-right: 8px;
+  opacity: 1;
+}
+
+.cz-brand:disabled {
+  cursor: default;
+}
+
+.cz-brand:not(:disabled):hover svg,
+.cz-brand:not(:disabled):hover .cz-brand-name {
+  color: var(--cz-bone);
 }
 
 .cz-brand-prompt {
+  margin-right: 8px;
   color: var(--cz-lime);
+}
+
+.cz-brand-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cz-soft);
+  transition: color 0.15s;
+}
+
+.cz-brand-flag {
+  flex: none;
+  color: var(--cz-lime);
+  white-space: pre;
 }
 
 .cz-brand-caret {
   color: var(--cz-lime);
-  margin-right: 10px;
   animation: var(--animate-caret-blink);
-}
-
-.cz-brand-name {
-  color: var(--cz-bone);
-}
-
-.cz-brand-sub {
-  margin-left: 6px;
-  color: var(--cz-mute);
-}
-
-.cz-tabs {
-  display: flex;
-  gap: 2px;
-  margin: 0 auto;
-  padding: 3px;
-  border: 1px solid var(--cz-line);
-  border-radius: 12px;
-  background: var(--cz-panel);
-}
-
-.cz-tab {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  border-radius: 9px;
-  color: var(--cz-dim);
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  transition:
-    color 0.15s,
-    background-color 0.15s;
-}
-
-.cz-tab:hover {
-  color: var(--cz-bone);
-}
-
-.cz-tab[aria-selected="true"] {
-  background: var(--cz-line);
-  color: var(--cz-bone);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
-}
-
-.cz-tab-key {
-  color: var(--cz-mute);
-  font-size: 10px;
-}
-
-.cz-tab[aria-selected="true"] .cz-tab-key {
-  color: var(--cz-lime);
-}
-
-.cz-tab-badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 5px;
-  border-radius: 99px;
-  background: var(--cz-lime);
-  color: var(--cz-ink);
-  font-size: 10px;
-  letter-spacing: 0;
-  animation: cz-pop 0.35s var(--cz-ease);
 }
 
 .cz-top-end {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 6px;
+}
+
+/* Wallet and name only matter at a table; the lobby shows the balance big */
+.cz-top-game {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: cz-fade 0.3s ease;
+}
+
+.cz[data-place="lobby"] .cz-top-game {
+  display: none;
 }
 
 .cz-balance {
@@ -920,10 +909,6 @@
 .cz-crash-stage[data-phase="crashed"] .cz-crash-sub {
   text-transform: none;
   letter-spacing: -0.01em;
-}
-
-.cz-crash-stage.is-crashing {
-  animation: cz-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
 .cz-crash-stage.is-crashing .cz-crash-mult {
@@ -2081,25 +2066,13 @@
   min-width: 0;
 }
 
-.cz-lobby-title {
+.cz-lobby-balance {
   font-family: var(--font-display);
   font-size: clamp(34px, 4.4vw, 54px);
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: -0.04em;
-}
-
-.cz-lobby-title span {
-  color: var(--cz-mute);
-}
-
-.cz-lobby-copy {
-  max-width: 540px;
-  margin-top: 14px;
-  color: var(--color-n-350);
-  font-family: var(--font-display);
-  font-size: 15.5px;
-  line-height: 1.5;
 }
 
 .cz-name {
@@ -2185,9 +2158,10 @@
 }
 
 .cz-name-msg {
-  flex-basis: 100%;
-  padding: 0 0 4px;
-  font-size: 11px;
+  margin-top: 10px;
+  color: var(--cz-soft);
+  font-size: 12px;
+  animation: cz-fade 0.3s ease;
 }
 
 .cz-name-msg:empty {
@@ -2637,13 +2611,6 @@
   white-space: nowrap;
 }
 
-.cz-status-branch {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--cz-dim);
-}
-
 .cz-status-conn {
   display: inline-flex;
   align-items: center;
@@ -2677,16 +2644,11 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
+  text-align: right;
 }
 
 .cz-status-quip.is-in {
   animation: cz-fade 0.6s ease;
-}
-
-.cz-status-end {
-  display: inline-flex;
-  gap: 14px;
 }
 
 /* ── Toasts, and running out ── */
@@ -2793,9 +2755,6 @@
 /* ── Smaller screens ── */
 
 @media (max-width: 1080px) {
-  .cz-tab {
-    padding: 7px 10px;
-  }
   .cz-chip {
     display: none;
   }
@@ -2821,30 +2780,9 @@
     }
   }
   .cz-top {
-    flex-wrap: wrap;
     gap: 8px 10px;
     padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 8px
       max(14px, env(safe-area-inset-left));
-  }
-  .cz-brand {
-    order: 1;
-  }
-  .cz-top-end {
-    order: 2;
-    margin-left: auto;
-  }
-  .cz-tabs {
-    order: 3;
-    flex-basis: 100%;
-    margin: 0;
-  }
-  .cz-tab {
-    flex: 1;
-    justify-content: center;
-    padding: 8px 6px;
-  }
-  .cz-tab-key {
-    display: none;
   }
   .cz-balance {
     margin-right: 0;
@@ -2974,8 +2912,7 @@
     width: 100%;
     order: -1;
   }
-  .cz-status-quip,
-  .cz-status-end {
+  .cz-status-quip {
     display: none;
   }
   .cz-status {
@@ -2985,9 +2922,6 @@
 }
 
 @media (max-width: 600px) {
-  .cz-brand-sub {
-    display: none;
-  }
   .cz-cards {
     grid-template-columns: 1fr;
   }
