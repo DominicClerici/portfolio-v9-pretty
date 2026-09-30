@@ -14,7 +14,6 @@ export const prefersReducedMotion = window.matchMedia(
 export interface TState {
   textEl: HTMLElement
   cursorEl: HTMLElement
-  blinkInterval: number | null
   visTimer: number | null
   animCancel: { value: boolean } | null
   isInView: boolean
@@ -25,7 +24,6 @@ export function makeState(el: HTMLElement): TState {
   return {
     textEl: el.querySelector("[data-terminal-text]") as HTMLElement,
     cursorEl: el.querySelector("[data-terminal-cursor]") as HTMLElement,
-    blinkInterval: null,
     visTimer: null,
     animCancel: null,
     isInView: false,
@@ -33,22 +31,17 @@ export function makeState(el: HTMLElement): TState {
   }
 }
 
+/* The blink itself is CSS ([data-blink] in global.css); these only switch it.
+   Starting always restarts it from its visible half, as a fresh timer did. */
 export function startBlink(s: TState) {
   if (prefersReducedMotion) return
-  stopBlink(s)
-  s.cursorEl.style.visibility = "visible"
-  s.blinkInterval = window.setInterval(() => {
-    s.cursorEl.style.visibility =
-      s.cursorEl.style.visibility === "hidden" ? "visible" : "hidden"
-  }, 530)
+  const el = s.cursorEl
+  el.setAttribute("data-blink", "")
+  for (const a of el.getAnimations()) a.currentTime = 0
 }
 
 export function stopBlink(s: TState) {
-  if (s.blinkInterval !== null) {
-    clearInterval(s.blinkInterval)
-    s.blinkInterval = null
-  }
-  s.cursorEl.style.visibility = "visible"
+  s.cursorEl.removeAttribute("data-blink")
 }
 
 export function cancelAnim(s: TState) {

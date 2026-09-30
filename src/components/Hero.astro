@@ -49,6 +49,7 @@ import ActionButton from "./ActionButton.astro";
 
 <script>
   import { smoothstep } from "../lib/easing";
+  import { docTop, onLayoutChange } from "../lib/layout-watch";
 
   // Fades each [data-hero-fade] element out as it nears the top of the
   // viewport, and back in as it returns — a pure function of live position,
@@ -68,25 +69,34 @@ import ActionButton from "./ActionButton.astro";
     fadeEls.length &&
     matchMedia("(prefers-reduced-motion: no-preference)").matches
   ) {
+    // The elements move only with the page, so their document tops are
+    // measured on layout changes and the frame is arithmetic (see
+    // lib/layout-watch.ts). Each style is written only when it changes.
+    const fades = fadeEls.map((el) => ({ el, top: 0, opacity: "" }));
+
     const update = () => {
       const vh = window.innerHeight;
-      for (const el of fadeEls) {
-        const rect = el.getBoundingClientRect();
-        const progress = (vh - rect.top) / vh;
+      const y = window.scrollY;
+      for (const f of fades) {
+        const progress = (vh - (f.top - y)) / vh;
         const raw = Math.min(
           1,
           Math.max(0, (progress - FADE_START) / (FADE_END - FADE_START)),
         );
-        const opacity = 1 - smoothstep(raw);
-        el.style.opacity = opacity.toFixed(3);
-        el.style.pointerEvents = opacity < 0.05 ? "none" : "";
+        const opacity = (1 - smoothstep(raw)).toFixed(3);
+        if (opacity === f.opacity) continue;
+        f.opacity = opacity;
+        f.el.style.opacity = opacity;
+        f.el.style.pointerEvents = +opacity < 0.05 ? "none" : "";
       }
     };
 
     // Same-frame under the smooth-scroll engine, native-scroll fallback under
     // reduced motion — the shared bus (Layout head shim) handles both.
     (window as any).__onSmoothScrollTick(update);
-    window.addEventListener("resize", update, { passive: true });
-    update();
+    onLayoutChange(() => {
+      for (const f of fades) f.top = docTop(f.el);
+      update();
+    });
   }
 </script>

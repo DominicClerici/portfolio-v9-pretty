@@ -28,6 +28,8 @@
  *   clean snap-and-accelerate rather than a slow crawl toward the boundary.
  */
 
+import { onLayoutChange } from "../lib/layout-watch"
+
 const prefersReducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",
 ).matches
@@ -52,9 +54,17 @@ if (!prefersReducedMotion) {
   // launch. Small enough that velocity has decayed to ~0 (the "stop").
   const BRAKE_EPS = 1
 
-  const maxScroll = () =>
-    document.documentElement.scrollHeight - window.innerHeight
-  const clamp = (value: number) => Math.max(0, Math.min(value, maxScroll()))
+  // The lower bound, cached: clamp() runs on every wheel event, and reading
+  // scrollHeight there forces a layout whenever anything has been written
+  // since the last frame. It can only move when the window resizes or the
+  // document changes size, which is exactly what onLayoutChange covers (and
+  // it is wired before the resize listener below, so that one clamps against
+  // the new bound).
+  let maxY = 0
+  onLayoutChange(() => {
+    maxY = document.documentElement.scrollHeight - window.innerHeight
+  })
+  const clamp = (value: number) => Math.max(0, Math.min(value, maxY))
 
   let target = window.scrollY
   let current = window.scrollY

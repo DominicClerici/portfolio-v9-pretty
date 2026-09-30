@@ -29,6 +29,8 @@
  * WebGL2 only. Without it, the caller keeps the plain inline SVGs.
  */
 
+import { GRID, MARGIN, SPAN, fieldOf } from "./logo-field"
+
 /** A linear gradient in the logo's 100×100 box: from → to, stops as
  *  [offset 0…1, "#rrggbb"]. Interpolated in sRGB, as SVG does. */
 export type LogoPaint = {
@@ -59,16 +61,6 @@ export type LogoMorph = {
   reflow: (x: number, y: number, size: number) => void
 }
 
-// The field covers the logo's 100×100 box plus this much all round, so the
-// eased-out mid-blend shape and its anti-aliased edge never hit the canvas
-// edge.
-const MARGIN = 12
-const SPAN = 100 + 2 * MARGIN
-// Field resolution, and the supersampling it is averaged down from. 256 over
-// SPAN is a little under a texel per device pixel at the largest the logo is
-// shown; the field is linear near an edge, so filtering keeps it crisp.
-const GRID = 256
-const SS = 3
 // Lag rate, per second, of each of the two stages: about 0.95s to 95%. The
 // shape itself changes mostly while the weights cross the middle, so this
 // is what gives that stretch a third of a second rather than a blink; the
@@ -84,98 +76,6 @@ const BLOAT = 2.6
 const BLUR = 5
 // Gradient stops per logo the shader takes; fewer are padded with the last.
 const STOPS = 3
-
-// ── Distance fields ──
-// Felzenszwalb & Huttenlocher's exact squared Euclidean distance transform,
-// one axis at a time.
-const INF = 1e20
-const edt1d = (
-  f: Float32Array,
-  n: number,
-  d: Float32Array,
-  v: Int32Array,
-  z: Float32Array,
-) => {
-  let k = 0
-  v[0] = 0
-  z[0] = -INF
-  z[1] = INF
-  for (let q = 1; q < n; q++) {
-    let r = v[k]
-    let s = (f[q] + q * q - (f[r] + r * r)) / (2 * q - 2 * r)
-    while (s <= z[k]) {
-      k--
-      r = v[k]
-      s = (f[q] + q * q - (f[r] + r * r)) / (2 * q - 2 * r)
-    }
-    k++
-    v[k] = q
-    z[k] = s
-    z[k + 1] = INF
-  }
-  k = 0
-  for (let q = 0; q < n; q++) {
-    while (z[k + 1] < q) k++
-    const r = v[k]
-    d[q] = (q - r) * (q - r) + f[r]
-  }
-}
-
-const edt2d = (g: Float32Array, n: number) => {
-  const f = new Float32Array(n)
-  const d = new Float32Array(n)
-  const v = new Int32Array(n)
-  const z = new Float32Array(n + 1)
-  for (let x = 0; x < n; x++) {
-    for (let y = 0; y < n; y++) f[y] = g[y * n + x]
-    edt1d(f, n, d, v, z)
-    for (let y = 0; y < n; y++) g[y * n + x] = d[y]
-  }
-  for (let y = 0; y < n; y++) {
-    const row = g.subarray(y * n, y * n + n)
-    f.set(row)
-    edt1d(f, n, d, v, z)
-    row.set(d)
-  }
-}
-
-// The signed distance field of one logo, GRID² texels over SPAN, in logo
-// units. Rasterised SS× finer, measured there, and averaged down.
-const fieldOf = (path: string) => {
-  const R = GRID * SS
-  const c = document.createElement("canvas")
-  c.width = c.height = R
-  const ctx = c.getContext("2d", { willReadFrequently: true })!
-  const s = R / SPAN
-  ctx.setTransform(s, 0, 0, s, MARGIN * s, MARGIN * s)
-  ctx.fill(new Path2D(path), "evenodd")
-  const a = ctx.getImageData(0, 0, R, R).data
-  const toIn = new Float32Array(R * R)
-  const toOut = new Float32Array(R * R)
-  for (let i = 0; i < R * R; i++) {
-    const inside = a[i * 4 + 3] >= 128
-    toIn[i] = inside ? 0 : INF
-    toOut[i] = inside ? INF : 0
-  }
-  edt2d(toIn, R)
-  edt2d(toOut, R)
-  // The outline runs between pixel centres, half a pixel from each side.
-  const field = new Float32Array(GRID * GRID)
-  const unit = SPAN / R / (SS * SS)
-  for (let gy = 0; gy < GRID; gy++) {
-    for (let gx = 0; gx < GRID; gx++) {
-      let sum = 0
-      for (let j = 0; j < SS; j++) {
-        let i = (gy * SS + j) * R + gx * SS
-        for (let k = 0; k < SS; k++, i++) {
-          sum += toIn[i] > 0 ? Math.sqrt(toIn[i]) - 0.5 : 0.5 - Math.sqrt(toOut[i])
-        }
-      }
-      field[gy * GRID + gx] = sum * unit
-    }
-  }
-  return field
-}
 
 // ── Colour ──
 const rgb = (hex: string) =>
@@ -316,10 +216,14 @@ void main() {
   o = vec4(color(vUv * ${SPAN.toFixed(1)} - ${MARGIN.toFixed(1)}) * a, a);
 }`
 
+/** `onReady` fires once the field for `start` is in and the canvas can take
+ *  over from the SVGs: until then it draws nothing, so the caller should keep
+ *  them up and hold off on show/place. */
 export const logoMorph = (
   logos: Logo[],
   start: number,
   onLost: () => void,
+  onReady: () => void,
 ): LogoMorph | null => {
   const n = logos.length
   const canvas = document.createElement("canvas")
@@ -385,35 +289,89 @@ export const logoMorph = (
   gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
-  // Fields are built on demand (the one on show at once, the rest when the
-  // page is idle), about 20ms apiece.
+  // Fields are built in a worker, one at a time and always the one nearest
+  // the logo on show (the one to start on first), since those are what a
+  // scroll reaches next. Each is tens of milliseconds on a laptop and several
+  // times that on a phone, so on the main thread they would land as long
+  // tasks mid-scroll. show() for one that hasn't arrived yet (a scroll
+  // straight past several entries before the worker has caught up) builds it
+  // on the spot, as all of them used to be, so a morph never heads for a
+  // logo it can't draw; the worker's copy is then dropped.
   const ready = new Array<boolean>(n).fill(false)
-  const ensure = (i: number) => {
+  // The logo on show, or headed for
+  let target = start
+  const upload = (i: number, field: Float32Array) => {
     if (ready[i] || lost) return
     ready[i] = true
     gl!.texSubImage3D(
       gl!.TEXTURE_2D_ARRAY, 0, 0, 0, i, GRID, GRID, 1,
-      gl!.RED, gl!.FLOAT, fieldOf(logos[i].path),
+      gl!.RED, gl!.FLOAT, field,
     )
+    if (i === start) onReady()
+    // A field arriving mid-morph joins the blend it was missing from.
+    else if (w[i] > 1e-3) draw()
   }
+  const ensure = (i: number) => {
+    if (!ready[i] && !lost) upload(i, fieldOf(logos[i].path))
+  }
+  // The unbuilt field nearest the one on show.
+  const nearest = () => {
+    let best = -1
+    for (let i = 0; i < n; i++) {
+      if (ready[i]) continue
+      if (best < 0 || Math.abs(i - target) < Math.abs(best - target)) best = i
+    }
+    return best
+  }
+  // Without a usable worker, the old path: one field per idle callback.
   const idle = (cb: () => void) =>
     "requestIdleCallback" in window
       ? requestIdleCallback(() => cb())
       : setTimeout(cb, 50)
-  const warm = () => {
-    // Nearest the one on show first: those are what a scroll reaches next.
-    const next = [...ready.keys()]
-      .filter((i) => !ready[i])
-      .sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0]
-    if (next === undefined || lost) return
+  const warmHere = () => {
+    const next = nearest()
+    if (next < 0 || lost) return
     ensure(next)
-    idle(warm)
+    idle(warmHere)
+  }
+  let worker: Worker | null = null
+  let fellBack = false
+  const noWorker = () => {
+    worker?.terminate()
+    worker = null
+    if (fellBack) return
+    fellBack = true
+    idle(warmHere)
+  }
+  try {
+    if (typeof OffscreenCanvas === "undefined") throw 0
+    worker = new Worker(new URL("./logo-field.worker.ts", import.meta.url), {
+      type: "module",
+    })
+    const ask = () => {
+      const i = nearest()
+      if (i < 0 || !worker) {
+        worker?.terminate()
+        worker = null
+        return
+      }
+      worker.postMessage({ i, path: logos[i].path })
+    }
+    worker.onmessage = (e: MessageEvent<{ i: number; field: Float32Array | null }>) => {
+      const { i, field } = e.data
+      if (!field) return noWorker()
+      upload(i, field)
+      ask()
+    }
+    worker.onerror = noWorker
+    ask()
+  } catch {
+    noWorker()
   }
 
   // Two lag stages per weight: u chases the target, w chases u.
   const u = new Float32Array(n)
   const w = new Float32Array(n)
-  let target = start
   u[start] = w[start] = 1
   // Position: [x, y] of each stage, and where it is headed.
   const pu = [0, 0]
@@ -433,9 +391,15 @@ export const logoMorph = (
   canvas.addEventListener("webglcontextlost", (e) => {
     e.preventDefault()
     lost = true
+    worker?.terminate()
+    worker = null
     onLost()
   })
 
+  // Scratch for draw(), which runs every frame of a morph.
+  const inBlend = new Int32Array(n)
+  const ws = new Float32Array(n)
+  const layers = new Int32Array(n)
   const draw = () => {
     if (lost || !size) return
     const g = gl!
@@ -444,22 +408,34 @@ export const logoMorph = (
     // Weights too small to see are dropped, and the rest renormalised and
     // passed heaviest first, so the shader only samples the fields actually
     // in the blend.
-    const order = [...w.keys()]
-      .filter((i) => w[i] > 1e-3 && ready[i])
-      .sort((a, b) => w[b] - w[a])
-    const sum = order.reduce((s, i) => s + w[i], 0)
-    const ws = new Float32Array(n)
-    const layers = new Int32Array(n)
+    let count = 0
+    let sum = 0
+    for (let i = 0; i < n; i++) {
+      if (w[i] > 1e-3 && ready[i]) {
+        inBlend[count++] = i
+        sum += w[i]
+      }
+    }
+    // Insertion sort, heaviest first: there are at most a handful.
+    for (let a = 1; a < count; a++) {
+      const l = inBlend[a]
+      let b = a - 1
+      for (; b >= 0 && w[inBlend[b]] < w[l]; b--) inBlend[b + 1] = inBlend[b]
+      inBlend[b + 1] = l
+    }
+    ws.fill(0)
+    layers.fill(0)
     let sq = 0
-    order.forEach((l, i) => {
+    for (let i = 0; i < count; i++) {
+      const l = inBlend[i]
       ws[i] = w[l] / sum
       layers[i] = l
       sq += ws[i] * ws[i]
-    })
+    }
     g.viewport(0, 0, canvas.width, canvas.height)
     g.clearColor(0, 0, 0, 0)
     g.clear(g.COLOR_BUFFER_BIT)
-    g.uniform1i(uCount, order.length)
+    g.uniform1i(uCount, count)
     g.uniform1fv(uW, ws)
     g.uniform1iv(uLayer, layers)
     // 2(1 − Σw²) is 0 at rest and 1 halfway between two.
@@ -494,7 +470,6 @@ export const logoMorph = (
       pt[1] = pending.y
       pending = null
     }
-    if (pending) busy = true
     for (let s = 0; s < steps; s++) {
       for (let i = 0; i < n; i++) {
         u[i] += ((i === target ? 1 : 0) - u[i]) * k
@@ -509,9 +484,12 @@ export const logoMorph = (
       if (Math.abs(w[i] - (i === target ? 1 : 0)) > 5e-4) busy = true
     }
     for (let j = 0; j < 2; j++) if (Math.abs(pw[j] - pt[j]) > 0.05) busy = true
-    if (!busy) settle()
-    draw()
-    if (busy) requestAnimationFrame(tick)
+    // With the blend and the glide both at rest and only a held move still
+    // waiting to set off, the frame would be the last one again: skip it,
+    // but keep ticking until the move is due.
+    if (!busy && !pending) settle()
+    if (busy || !pending) draw()
+    if (busy || pending) requestAnimationFrame(tick)
     else running = false
   }
   const settle = () => {
@@ -526,8 +504,6 @@ export const logoMorph = (
     requestAnimationFrame(tick)
   }
 
-  ensure(start)
-  idle(warm)
 
   return {
     canvas,

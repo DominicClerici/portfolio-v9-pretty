@@ -104,6 +104,7 @@
     SPHERE_R_FRAC,
     type GlassObject,
   } from "../scripts/glass-scene";
+  import { docTop, onLayoutChange } from "../lib/layout-watch";
 
   {
     const scope = document.getElementById("hero-scope")!;
@@ -205,6 +206,12 @@
     let careerStep = 1; // scroll the pin gives each entry
     let fadeLead = 1; // how far Career's top edge climbs over the whole turn
     let fadeStart = 1; // scroll into the scope where the turn begins
+    // The anchor's document top. It only moves with the page, so it is
+    // re-measured on any layout change (lib/layout-watch.ts) — undebounced,
+    // unlike measure() below, so the turn can't desync from the section it
+    // is handing over to — rather than read back on every frame, where the
+    // read would force whatever styles earlier subscribers wrote.
+    let anchorDocTop = 0;
 
     const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
     const smoothstep = (e0: number, e1: number, x: number) => {
@@ -220,12 +227,12 @@
         return;
       }
 
-      /* Progress of the turn, straight off the anchor's live top edge: one
+      /* Progress of the turn, straight off the anchor's top edge: one
          fadeLead above the top of the screen is 0 (all bone), level with it is
          1 (all dark), and the pin engages on that same frame. Smoothstepped so
          the backdrop eases into the turn and settles out of it instead of
          starting and stopping on a corner. */
-      const d = clamp01(1 - darkAnchor.getBoundingClientRect().top / fadeLead);
+      const d = clamp01(1 - (anchorDocTop - window.scrollY) / fadeLead);
       const dark = d * d * (3 - 2 * d);
       scene.setDarkness(dark);
       paintTurn(dark);
@@ -539,7 +546,12 @@
     }).observe(scope);
     measure();
     scene.resize();
-    onScrollFrame();
+    if (darkAnchor)
+      onLayoutChange(() => {
+        anchorDocTop = docTop(darkAnchor);
+        onScrollFrame();
+      });
+    else onScrollFrame();
 
     // One observer drives both the warning and (when motion is allowed) the
     // render loop — same element, same threshold.
@@ -557,7 +569,10 @@
       scene.render(40);
     } else {
       document.addEventListener("visibilitychange", () => {
-        document.hidden ? scene.stop() : scene.start();
+        // Back to the tab: resume only if the scope is on screen — the
+        // observer above is what stops the loop while it isn't.
+        if (document.hidden) scene.stop();
+        else if (scopeVisible) scene.start();
       });
       scene.start();
     }

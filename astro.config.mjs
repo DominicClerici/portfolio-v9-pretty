@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
 import vercel from "@astrojs/vercel";
 import { visualizer } from "rollup-plugin-visualizer";
+import { readFile, readdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /* The shaders in glass-scene.ts and heat-haze.ts are template literals, so
    their comments and indentation are string *content* — the JS minifier cannot
@@ -66,10 +69,56 @@ function stripGlslComments() {
   };
 }
 
+/* The components are annotated in HTML comments (<!-- -->) wherever the note
+   belongs to markup, and Astro ships those verbatim: ~11KB of the front page,
+   about an eighth of it once compressed, is commentary no visitor reads.
+   Strip them from the built pages after the fact, so the source keeps them.
+   Raw-text elements (script, style, textarea, pre) are left untouched, since
+   a "<!--" in there is content, not a comment. Runs before the adapter's own
+   build:done copies the pages into its output, as integrations run in order
+   and the adapter is appended last. */
+function stripHtmlComments() {
+  const RAW = /(<(script|style|textarea|pre)\b[\s\S]*?<\/\2\s*>)/gi;
+  const COMMENT = /<!--(?!\[if|<!|>)[\s\S]*?-->/g;
+
+  async function* htmlFiles(dir) {
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) yield* htmlFiles(p);
+      else if (e.name.endsWith(".html")) yield p;
+    }
+  }
+
+  return {
+    name: "strip-html-comments",
+    hooks: {
+      "astro:build:done": async ({ dir, logger }) => {
+        let saved = 0;
+        for await (const file of htmlFiles(fileURLToPath(dir))) {
+          const html = await readFile(file, "utf8");
+          // Odd indices are the raw-text elements the split captured (and
+          // their tag names); only the text between them is stripped.
+          const out = html
+            .split(RAW)
+            .map((part, i) => {
+              if (i % 3 === 0) return part.replace(COMMENT, "");
+              return i % 3 === 1 ? part : "";
+            })
+            .join("");
+          if (out.length === html.length) continue;
+          saved += html.length - out.length;
+          await writeFile(file, out);
+        }
+        logger.info(`stripped ${(saved / 1024).toFixed(1)}KB of HTML comments`);
+      },
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   site: "https://www.dominicclerici.com",
-  integrations: [sitemap()],
+  integrations: [sitemap(), stripHtmlComments()],
   /* Every page stays prerendered; only the two files under src/pages/api opt
      out with `export const prerender = false`, so the adapter emits exactly
      one function and the rest of the site ships as static HTML. */
