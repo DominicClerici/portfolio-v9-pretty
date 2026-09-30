@@ -1,6 +1,6 @@
 /* ── Bottom sheet ──
    On phones the casino rises from the bottom edge as a sheet rather than
-   popping in over the page. Its top bar is the handle: drag it down and the
+   popping in over the page. Its title bar is the handle: drag it down and the
    sheet follows the finger, dimming the page less as it goes; let go and it
    either springs home or carries on out, at the speed it was thrown. From
    anywhere else in the sheet, a pull down from content that's already
@@ -12,12 +12,12 @@
    are sampled from the simulation and played with the Web Animations API,
    so they run on the compositor like any CSS animation.
 
-   On the front page it also has a dock: the drawer's top bar, drawn into
+   On the front page it also has a dock: the window's title bar, drawn into
    the foot of the page (the footer's peek). Opened from there, the sheet
    rises out of the peek rather than the screen's edge, and closes back down
    into it while it's still on screen; a drag on the peek lifts the sheet
-   itself, handed over mid-gesture (lift). The bar's buttons are hidden while
-   it sits at the dock, as they are on the peek.
+   itself, handed over mid-gesture (lift). The bar's caption buttons are
+   hidden while it sits at the dock, as the peek has none.
 
    Wider screens keep the centred dialog; SHEET_QUERY is the switch, and the
    same width as the stylesheet's own (casino.css). */
@@ -130,7 +130,7 @@ export class Sheet {
     this.docked(y)
   }
 
-  /** Hides the bar's buttons while the sheet is (nearly) down at the dock. */
+  /** Hides the caption buttons while the sheet is (nearly) down at the dock. */
   private docked(y: number) {
     this.shell.classList.toggle("is-docked", this.dockY !== null && y > this.dockY / 2)
   }
@@ -175,14 +175,6 @@ export class Sheet {
     this.measure()
     if (reducedMotion.matches) return this.set(0)
     this.y = this.dockY ?? this.height
-    // Starting from the dock, start as the dock looks, without the glow
-    // (casino.css), and bring it in on the way up. Played rather than left
-    // to the class's transition: the sheet was hidden until this same task,
-    // so there is no earlier style for a transition to start from.
-    if (this.dockY !== null)
-      this.shell
-        .querySelector(".cz-glow")
-        ?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: "ease" })
     void this.springTo0(0, OPEN_SPRING)
   }
 
@@ -267,7 +259,7 @@ export class Sheet {
     else void this.springTo0(v)
   }
 
-  /** The top bar: any press there can become a drag, mouse or touch. */
+  /** The title bar: any press there can become a drag, mouse or touch. */
   private bindHandle(handle: HTMLElement) {
     let id: number | null = null
     let startY = 0
@@ -330,7 +322,7 @@ export class Sheet {
         if (!this.active || e.touches.length !== 1) return
         const target = e.target as Element
         // The bar has its own handling; the action buttons fire on press
-        if (target.closest(".cz-top, .cz-action, input, textarea, select")) return
+        if (target.closest(".cz-titlebar, .cz-action, .cz-menu, input, textarea, select")) return
         startX = e.touches[0].clientX
         startY = e.touches[0].clientY
         scroller = scrollerOf(target, this.shell)

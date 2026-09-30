@@ -55,7 +55,7 @@ pnpm build
 
 The script scans the built HTML in `dist/` (where all template expressions have been resolved to real text), figures out which characters each font needs, and trims the font files down to just those glyphs. It prints a summary showing the before/after sizes.
 
-The casino (below) draws all of its text from script, so the same run also cuts it a separate pair of subsets, `*-casino.woff2`, from its source files. Those only load once the casino is opened. Rerun the script after changing any casino copy.
+The casino (below) sets its text in the system's own fonts, so it needs nothing from this script.
 
 ## Footer Photo
 
@@ -74,7 +74,7 @@ The heat haze over the lake (`src/scripts/heat-haze.ts`) is positioned in the fu
 
 ## The casino
 
-The `>_` prompts (header, bottom-left while scrolling, the footer's cap bar, and by the copyright on phones) open the **/dev/null casino**: four lightly programming-themed games played with $1,000 of fake money, kept in `localStorage`.
+The `>_` prompts (header, bottom-left while scrolling, the footer's cap bar, and by the copyright on phones) open the **/dev/null casino**: four lightly programming-themed games played with $1,000 of fake money, kept in `localStorage`. It runs as `casino.exe`, a Windows XP window (Luna blue): title bar, menus, an Explorer-style lobby, balloon tips, and a blue screen when Crash crashes.
 
 - **Crash**: a memory graph that climbs until the process dies. Cash out before the OOM killer.
 - **Big O**: hi-lo where the deck is thirteen complexity classes, O(1) to the busy beaver.

@@ -82,11 +82,17 @@ const bucketOf = (path: number, rows: number) => {
 }
 
 const mix = (a: number[], b: number[], t: number) => a.map((v, i) => Math.round(v + (b[i] - v) * t))
-const LIME = [206, 247, 158]
-const AMBER = [247, 213, 158]
-const CORAL = [255, 122, 107]
-/** Bucket fill by distance from the middle: lime → amber → coral. */
-const heat = (t: number) => (t < 0.5 ? mix(LIME, AMBER, t * 2) : mix(AMBER, CORAL, (t - 0.5) * 2))
+const GREEN = [58, 163, 58]
+const AMBER = [242, 190, 0]
+const RED = [217, 56, 30]
+/** Bucket fill by distance from the middle: green → amber → red. */
+const heat = (t: number) => (t < 0.5 ? mix(GREEN, AMBER, t * 2) : mix(AMBER, RED, (t - 0.5) * 2))
+/** Black or white, whichever reads on a fill. */
+const inkOn = (c: number[]) => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 150 ? "#000" : "#fff")
+
+// The packet: XP's own blue
+const PACKET = "#0054e3"
+const UI_FONT = "Tahoma, Verdana, 'Segoe UI', sans-serif"
 
 export class PlinkoGame implements Game {
   readonly id = "plinko" as const
@@ -246,7 +252,7 @@ export class PlinkoGame implements Game {
         x: g.cx + (k - b.rows / 2) * g.s,
         y: g.bucketY - 8,
         text: profit >= 0 ? `+${moneyShort(profit)}` : `${mult(b.mult)}`,
-        color: profit > 0 ? "#cef79e" : "rgba(247,247,245,.55)",
+        color: profit > 0 ? "#1a7a1a" : "rgba(64,64,64,.75)",
         t0: performance.now(),
       })
       if (b.mult >= 1000) sfx.win(true)
@@ -363,12 +369,12 @@ export class PlinkoGame implements Game {
         if (age < 1) {
           ctx.beginPath()
           ctx.arc(x, y, g.pegR + 10 * age, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(206,247,158,${0.28 * (1 - age)})`
+          ctx.fillStyle = `rgba(47,111,224,${0.28 * (1 - age)})`
           ctx.fill()
         }
         ctx.beginPath()
         ctx.arc(x, y, g.pegR, 0, Math.PI * 2)
-        ctx.fillStyle = age < 1 ? `rgba(206,247,158,${0.5 + 0.5 * (1 - age)})` : "rgba(247,247,245,0.42)"
+        ctx.fillStyle = age < 1 ? `rgba(47,111,224,${0.5 + 0.5 * (1 - age)})` : "rgba(84,98,122,0.75)"
         ctx.fill()
       }
     }
@@ -376,7 +382,7 @@ export class PlinkoGame implements Game {
     // Buckets
     const bw = g.s * 0.9
     const fs = Math.max(7.5, Math.min(12, g.s * 0.3))
-    ctx.font = `${fs}px 'Roboto Mono Casino', 'Roboto Mono', ui-monospace, monospace`
+    ctx.font = `bold ${fs}px ${UI_FONT}`
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
     for (let k = 0; k <= rows; k++) {
@@ -389,20 +395,19 @@ export class PlinkoGame implements Game {
       const glow = age < 1 ? 1 - age : 0
       const y = g.bucketY + bounce
       ctx.beginPath()
-      ctx.roundRect(x - bw / 2, y, bw, g.bucketH, Math.min(6, g.s * 0.16))
-      if (m < 1) {
-        ctx.fillStyle = `rgba(51,51,51,${0.7 + 0.3 * glow})`
-      } else {
-        const c = heat(Math.min(1, t))
-        ctx.fillStyle = `rgba(${c.join(",")},${0.78 + 0.22 * glow})`
-        if (glow) {
-          ctx.shadowColor = `rgba(${c.join(",")},${0.8 * glow})`
-          ctx.shadowBlur = 18 * glow
-        }
+      ctx.roundRect(x - bw / 2, y, bw, g.bucketH, Math.min(3, g.s * 0.1))
+      const c = m < 1 ? [212, 208, 200] : heat(Math.min(1, t))
+      ctx.fillStyle = `rgba(${c.join(",")},${0.85 + 0.15 * glow})`
+      if (glow) {
+        ctx.shadowColor = `rgba(${c.join(",")},${0.8 * glow})`
+        ctx.shadowBlur = 14 * glow
       }
       ctx.fill()
       ctx.shadowBlur = 0
-      ctx.fillStyle = m < 1 ? "rgba(247,247,245,0.55)" : "#0a0a0a"
+      // A bevel's worth of light along the top, as XP's buttons have
+      ctx.fillStyle = "rgba(255,255,255,0.35)"
+      ctx.fillRect(x - bw / 2 + 1, y + 1, bw - 2, Math.max(1, g.bucketH * 0.28))
+      ctx.fillStyle = m < 1 ? "#55524a" : inkOn(c)
       // Narrow buckets (16 rows on a phone) drop the × before they overflow
       let label = `${m}\u00d7`
       if (ctx.measureText(label).width > bw - 3) label = `${m}`
@@ -415,7 +420,7 @@ export class PlinkoGame implements Game {
       const t = now - b.t0
       const p = this.ballAt(b, t)
       if (!p) continue
-      const color = b.ghost ? b.ghost.color : "#cef79e"
+      const color = b.ghost ? b.ghost.color : PACKET
       const r = g.ballR
       // The trail is where the packet was a few ms ago, not where it was on
       // earlier frames, so it reads the same at 30fps as at 120
@@ -436,7 +441,7 @@ export class PlinkoGame implements Game {
       ctx.fill()
       ctx.shadowBlur = 0
       if (b.ghost) {
-        ctx.font = "10px 'Roboto Mono Casino', 'Roboto Mono', ui-monospace, monospace"
+        ctx.font = `10px ${UI_FONT}`
         ctx.fillStyle = hexA(color, 0.8)
         ctx.textAlign = "left"
         ctx.fillText(b.ghost.name, p[0] + r + 4, p[1] - r - 2)
@@ -444,7 +449,7 @@ export class PlinkoGame implements Game {
     }
 
     // Win pop-ups
-    ctx.font = "600 12px 'Roboto Mono Casino', 'Roboto Mono', ui-monospace, monospace"
+    ctx.font = `bold 12px ${UI_FONT}`
     ctx.textAlign = "center"
     for (const pop of this.popups) {
       const t = (now - pop.t0) / 1100

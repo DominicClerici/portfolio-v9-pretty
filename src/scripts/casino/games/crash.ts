@@ -1,5 +1,7 @@
 /* ── Crash ──
    A memory graph that climbs until the process dies. Cash out before it does.
+   Drawn as Task Manager's performance graph, green on black, and when the
+   process dies the stage blue-screens (casino.css).
 
    With the lobby connected, rounds are the server's: everyone watches the
    same curve from the same start time, sees each other's stakes come in
@@ -137,7 +139,7 @@ export class CrashGame implements Game {
   private crashLine = CRASH_LINES[0]
   private crashFlash = 0
   private seenOut = new Map<string, number>()
-  private colors = { lime: "#cef79e", coral: "#ff7a6b" }
+  private colors = { up: "#00ff00", down: "#ff3b30" }
 
   constructor() {
     this.canvas = h("canvas", { class: "cz-crash-canvas" })
@@ -192,8 +194,8 @@ export class CrashGame implements Game {
         h(
           "div",
           { class: "cz-field" },
-          h("label", { class: "cz-label", text: "Auto cash-out" }),
-          h("div", { class: "cz-bet" }, this.autoInput, h("span", { class: "cz-bet-suffix", text: "×" })),
+          h("label", { class: "cz-label", text: "Auto cash-out:" }),
+          h("div", { class: "cz-bet" }, h("span", { class: "cz-textbox" }, this.autoInput, h("span", { class: "cz-bet-suffix", text: "×" }))),
         ),
         this.action.el,
         h("p", { class: "cz-hint", html: "<kbd>Space</kbd> deploy / cash out" }),
@@ -612,7 +614,8 @@ export class CrashGame implements Game {
       const left = Math.max(0, m.endsAt - now)
       this.multEl.textContent = `${(left / 1000).toFixed(1)}s`
       this.subEl.textContent = "compiling · next deploy in"
-      ;(this.barEl.firstChild as HTMLElement).style.transform = `scaleX(${left / CRASH_BET_MS})`
+      // Clipped rather than scaled, so the progress bar's blocks keep their size
+      ;(this.barEl.firstChild as HTMLElement).style.clipPath = `inset(0 ${(100 * (1 - left / CRASH_BET_MS)).toFixed(2)}% 0 0)`
     } else if (m.phase === "running") {
       const x = Math.exp((CRASH_RATE * Math.max(0, now - m.startedAt)) / 1000)
       this.multEl.textContent = `${(Math.floor(x * 100) / 100).toFixed(2)}×`
@@ -635,8 +638,8 @@ export class CrashGame implements Game {
     this.canvas.height = Math.round(r.height * this.dpr)
     const css = getComputedStyle(this.stage)
     this.colors = {
-      lime: css.getPropertyValue("--cz-lime").trim() || this.colors.lime,
-      coral: css.getPropertyValue("--cz-coral").trim() || this.colors.coral,
+      up: css.getPropertyValue("--cz-graph").trim() || this.colors.up,
+      down: css.getPropertyValue("--cz-graph-bad").trim() || this.colors.down,
     }
     this.draw(Date.now())
   }
@@ -664,9 +667,9 @@ export class CrashGame implements Game {
     const { ctx, dpr, w, hgt: H } = this
     if (!w || !H) return
     const m = this.model
-    const { lime, coral } = this.colors
-    const grid = "rgba(247,247,245,0.06)"
-    const label = "rgba(247,247,245,0.38)"
+    const { up, down } = this.colors
+    const grid = "#00602f"
+    const label = "rgba(0,210,0,0.7)"
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, H)
@@ -693,7 +696,7 @@ export class CrashGame implements Game {
     const py = (v: number) => padT + gh - ((v - 1) / (this.yMax - 1)) * gh
 
     // Grid + labels
-    ctx.font = "11px 'Roboto Mono Casino', 'Roboto Mono', ui-monospace, monospace"
+    ctx.font = MONO
     ctx.lineWidth = 1
     ctx.strokeStyle = grid
     ctx.fillStyle = label
@@ -722,7 +725,7 @@ export class CrashGame implements Game {
 
     if (m.phase === "running" || m.phase === "crashed") {
       const crashed = m.phase === "crashed"
-      const color = crashed ? coral : lime
+      const color = crashed ? down : up
       const steps = Math.max(24, Math.min(160, Math.ceil(t * 12)))
       const pts: [number, number][] = []
       for (let i = 0; i <= steps; i++) {
@@ -732,7 +735,7 @@ export class CrashGame implements Game {
 
       // Fill
       const g = ctx.createLinearGradient(0, padT, 0, padT + gh)
-      g.addColorStop(0, hexA(color, crashed ? 0.16 : 0.26))
+      g.addColorStop(0, hexA(color, crashed ? 0.14 : 0.22))
       g.addColorStop(1, hexA(color, 0))
       ctx.beginPath()
       ctx.moveTo(pts[0][0], padT + gh)
@@ -742,17 +745,14 @@ export class CrashGame implements Game {
       ctx.fillStyle = g
       ctx.fill()
 
-      // Line, with a soft glow
+      // Line, crisp, as Task Manager draws it
       ctx.beginPath()
       pts.forEach(([a, b], i) => (i ? ctx.lineTo(a, b) : ctx.moveTo(a, b)))
       ctx.lineJoin = "round"
       ctx.lineCap = "round"
       ctx.strokeStyle = color
-      ctx.shadowColor = hexA(color, 0.6)
-      ctx.shadowBlur = 14
-      ctx.lineWidth = 3
+      ctx.lineWidth = 2
       ctx.stroke()
-      ctx.shadowBlur = 0
 
       // Head
       const [hx, hy] = pts[pts.length - 1]
@@ -772,12 +772,12 @@ export class CrashGame implements Game {
         const age = Math.min(1, (performance.now() - this.crashFlash) / 700)
         ctx.beginPath()
         ctx.arc(hx, hy, 6 + age * 28, 0, Math.PI * 2)
-        ctx.strokeStyle = hexA(coral, 0.7 * (1 - age))
+        ctx.strokeStyle = hexA(down, 0.7 * (1 - age))
         ctx.lineWidth = 2.5
         ctx.stroke()
         ctx.beginPath()
         ctx.arc(hx, hy, 5, 0, Math.PI * 2)
-        ctx.fillStyle = coral
+        ctx.fillStyle = down
         ctx.fill()
       }
 
@@ -795,35 +795,40 @@ export class CrashGame implements Game {
         const age = Math.min(1, (performance.now() - this.seenOut.get(b.id)!) / 350)
         lane = bx - lastX < 90 ? (lane + 1) % 3 : 0
         lastX = bx
-        const c = b.id === myId ? lime : dotColor(b.name)
+        const c = b.id === myId ? up : dotColor(b.name)
         ctx.globalAlpha = age
         ctx.beginPath()
         ctx.arc(bx, by, 4, 0, Math.PI * 2)
-        ctx.fillStyle = "#0a0a0a"
+        ctx.fillStyle = "#000"
         ctx.fill()
         ctx.lineWidth = 2
         ctx.strokeStyle = c
         ctx.stroke()
         const text = `${b.id === myId ? "you" : b.name} ${mult(b.out!)}`
-        ctx.font = "11px 'Roboto Mono Casino', 'Roboto Mono', ui-monospace, monospace"
+        ctx.font = MONO
         const tw = ctx.measureText(text).width
         const lx = Math.min(w - padR - tw - 12, Math.max(padL, bx - tw / 2 - 6))
         const ly = by - 30 - lane * 22 - (1 - age) * 8
         ctx.beginPath()
         ctx.moveTo(bx, by - 5)
         ctx.lineTo(bx, ly + 18)
-        ctx.strokeStyle = hexA(c, 0.35)
+        ctx.strokeStyle = hexA(c, 0.5)
         ctx.lineWidth = 1
         ctx.stroke()
-        roundRect(ctx, lx, ly, tw + 12, 18, 5)
-        ctx.fillStyle = "rgba(16,16,16,0.92)"
-        ctx.fill()
-        ctx.strokeStyle = hexA(c, 0.5)
-        ctx.stroke()
+        // A tooltip, pale yellow with a black edge, and the player's colour
+        // down its side
+        const bx0 = Math.round(lx) + 0.5
+        const by0 = Math.round(ly) + 0.5
+        ctx.fillStyle = "#ffffe1"
+        ctx.fillRect(bx0, by0, tw + 16, 18)
+        ctx.strokeStyle = "#000"
+        ctx.strokeRect(bx0, by0, tw + 16, 18)
         ctx.fillStyle = c
+        ctx.fillRect(bx0 + 1, by0 + 1, 3, 16)
+        ctx.fillStyle = "#000"
         ctx.textAlign = "left"
         ctx.textBaseline = "middle"
-        ctx.fillText(text, lx + 6, ly + 9.5)
+        ctx.fillText(text, bx0 + 9, by0 + 9.5)
         ctx.globalAlpha = 1
       }
     } else {
@@ -831,9 +836,9 @@ export class CrashGame implements Game {
       const yy = py(1)
       const phase = (now % 1600) / 1600
       const g = ctx.createLinearGradient(padL, 0, w - padR, 0)
-      g.addColorStop(Math.max(0, phase - 0.25), hexA(lime, 0.05))
-      g.addColorStop(phase, hexA(lime, 0.55))
-      g.addColorStop(Math.min(1, phase + 0.25), hexA(lime, 0.05))
+      g.addColorStop(Math.max(0, phase - 0.25), hexA(up, 0.05))
+      g.addColorStop(phase, hexA(up, 0.55))
+      g.addColorStop(Math.min(1, phase + 0.25), hexA(up, 0.05))
       ctx.strokeStyle = g
       ctx.lineWidth = 2
       ctx.beginPath()
@@ -846,7 +851,7 @@ export class CrashGame implements Game {
     if (m.phase === "crashed" && !reducedMotion.matches) {
       const age = (performance.now() - this.crashFlash) / 400
       if (age < 1) {
-        ctx.fillStyle = hexA(coral, 0.12 * (1 - age))
+        ctx.fillStyle = hexA(down, 0.12 * (1 - age))
         ctx.fillRect(0, 0, w, H)
       }
     }
@@ -867,12 +872,4 @@ function hexA(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.arcTo(x + w, y, x + w, y + h, r)
-  ctx.arcTo(x + w, y + h, x, y + h, r)
-  ctx.arcTo(x, y + h, x, y, r)
-  ctx.arcTo(x, y, x + w, y, r)
-  ctx.closePath()
-}
+const MONO = "11px 'Lucida Console', Monaco, 'Courier New', monospace"

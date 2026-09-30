@@ -127,11 +127,15 @@ function sparkline(rank: number) {
 }
 
 function tier(rank: number) {
-  // lime (fast) → coral (slow)
+  // green (fast) → amber → red (slow): inks that read on a white card face
   const t = rank / (RANKS.length - 1)
-  const a = [206, 247, 158]
-  const b = [255, 122, 107]
-  const c = a.map((v, i) => Math.round(v + (b[i] - v) * t))
+  const stops = [
+    [0, 122, 20],
+    [196, 120, 0],
+    [204, 0, 0],
+  ]
+  const [a, b, k] = t < 0.5 ? [stops[0], stops[1], t * 2] : [stops[1], stops[2], (t - 0.5) * 2]
+  const c = a.map((v, i) => Math.round(v + (b[i] - v) * k))
   return `rgb(${c.join(",")})`
 }
 

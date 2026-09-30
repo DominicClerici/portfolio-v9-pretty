@@ -70,6 +70,10 @@ export const wallet = {
   get peak() {
     return state.peak
   },
+  /** How many times the wallet has been refilled. */
+  get resets() {
+    return state.resets
+  },
   canAfford(cents: number) {
     return cents > 0 && cents <= state.bal
   },

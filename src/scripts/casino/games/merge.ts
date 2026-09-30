@@ -18,11 +18,13 @@ import {
   actionButton,
   avatar,
   h,
+  icons,
   money,
   moneyShort,
   rand,
   reducedMotion,
   signed,
+  svg,
   toast,
 } from "../ui"
 
@@ -51,6 +53,8 @@ const BRANCHES = [
   "experiment/vibes",
 ]
 const FILES = ["src/wallet.ts", "package-lock.json", "src/index.ts", "README.md", "src/utils/luck.ts"]
+
+const PROMPT = "C:\\dev\\null\\casino>"
 
 const pick = <T>(a: T[]) => a[Math.floor(rand() * a.length)]
 const hash = () => Math.floor(rand() * 0xfffffff).toString(16).padStart(7, "0")
@@ -137,7 +141,12 @@ export class MergeGame implements Game {
       this.historyEl,
       this.reel,
       h("div", { class: "cz-boxes" }, box("o"), box("c"), box("t")),
-      this.log,
+      h(
+        "div",
+        { class: "cz-cmd" },
+        h("div", { class: "cz-cmd-title" }, svg(icons.cmd, 14), h("span", { text: "C:\\WINDOWS\\system32\\cmd.exe" })),
+        this.log,
+      ),
     )
 
     this.bet = new BetInput("merge", "Chip")
@@ -167,7 +176,8 @@ export class MergeGame implements Game {
       ),
     )
 
-    this.line(`$ git status`, "cmd")
+    this.line(`casino shell [Version 5.1.2600]`, "dim")
+    this.line(`${PROMPT}git status`, "cmd")
     this.line(`On branch main. Your balance is up to date with 'origin/main'.`, "dim")
 
     new ResizeObserver(() => this.measure()).observe(this.reel)
@@ -256,7 +266,7 @@ export class MergeGame implements Game {
     }
     this.spin = spin
     const branch = pick(BRANCHES)
-    this.line(`$ git merge ${branch}`, "cmd")
+    this.line(`${PROMPT}git merge ${branch}`, "cmd")
     sfx.click()
     net.send({ t: "play", game: "merge", d: { ...spin.stakes, r: result, ms: SPIN_MS, win: this.winOf(spin) } })
     this.renderControls()

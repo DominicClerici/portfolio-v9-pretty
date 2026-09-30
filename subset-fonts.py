@@ -17,14 +17,11 @@ have been resolved to real text), figures out which characters each font needs,
 and writes trimmed font files to src/assets/fonts/, which the build emits
 under /_astro/ with content-hashed names.
 
-The casino (src/scripts/casino) is the exception: it renders its text from
-script, so none of it is in the HTML. It gets its own pair of subsets
-(*-casino.woff2), cut from its source files instead, which only load when the
-dialog opens. Rerun this after changing any of its copy.
+The casino (src/scripts/casino) needs nothing from here: it is dressed as
+Windows XP and sets its text in the system's own faces (Tahoma and friends).
 """
 
 import os
-import re
 import sys
 from html.entities import html5
 from html.parser import HTMLParser
@@ -50,15 +47,6 @@ FONT_CLASSES = {
 # The <body> in Layout.astro carries font-display, so anything that never hits
 # a font-* class inherits Aspekta. Keep this in sync with that class.
 DEFAULT_FONT = "aspekta"
-
-# The casino's text lives in script, not HTML. Everything printable in ASCII
-# (players type their own names) plus every other character its sources use,
-# written literally or as a \uXXXX / CSS \XXXX escape.
-CASINO_SOURCES = [ROOT / "src" / "scripts" / "casino", ROOT / "multiplayer" / "src"]
-CASINO_FONTS = [
-    ("aspekta-400.woff2", "aspekta-400-casino.woff2"),
-    ("roboto-mono-latin-400.woff2", "roboto-mono-latin-400-casino.woff2"),
-]
 
 # Tags whose text content is not visible and should be skipped.
 # Only tags that have closing tags — void elements (meta, link) can't
@@ -165,23 +153,6 @@ def collect_chars():
     return extractor.chars
 
 
-def collect_casino_chars():
-    """Printable ASCII plus every non-ASCII char in the casino's sources."""
-    chars = {chr(c) for c in range(0x20, 0x7F)}
-    escape = re.compile(r"\\u([0-9a-fA-F]{4})|\\([0-9a-fA-F]{4})\b")
-    for root in CASINO_SOURCES:
-        for fpath in sorted(root.rglob("*")):
-            if fpath.suffix not in {".ts", ".css"}:
-                continue
-            text = fpath.read_text(encoding="utf-8")
-            chars.update(c for c in text if ord(c) > 0x7E and c.isprintable())
-            for m in escape.finditer(text):
-                c = chr(int(m.group(1) or m.group(2), 16))
-                if c.isprintable() or c in TYPOGRAPHIC_SPACES:
-                    chars.add(c)
-    return chars
-
-
 def chars_to_unicodes(charset):
     """Convert a set of characters to a comma-separated U+XXXX string."""
     codepoints = sorted(set(ord(c) for c in charset))
@@ -264,20 +235,6 @@ def main():
 
         print(f"  {filename}")
         print(f"    {before:,}B -> {after:,}B  (saved {saved:,}B / {pct:.0f}%)")
-
-    casino = collect_casino_chars()
-    extra = "".join(sorted((c for c in casino if ord(c) > 0x7E), key=ord))
-    print()
-    print(f"  casino: printable ASCII + {len(extra)} more -> {repr(extra)}")
-    unicodes = chars_to_unicodes(casino)
-    for src_name, out_name in CASINO_FONTS:
-        full_path = FULL_FONTS_DIR / src_name
-        out_path = FONTS_DIR / out_name
-        if not full_path.exists():
-            print(f"  SKIP {out_name} — {src_name} not found in full/")
-            continue
-        subset_font(full_path, out_path, unicodes)
-        print(f"  {out_name}: {out_path.stat().st_size:,}B (loaded with the casino only)")
 
     print()
     total_saved = total_before - total_after

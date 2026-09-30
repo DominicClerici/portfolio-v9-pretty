@@ -415,33 +415,54 @@ const connect = [
     </div>
 
     <!-- Phones have none of the >_ prompts the header and cap bar carry, so
-         the casino's door is the casino itself: its drawer, peeking up from
-         the foot of the page, just the top bar with its handle and title.
-         The title types itself out once the page is scrolled to the bottom,
-         as the cap bar's prompt does on wider screens. A tap opens the
-         drawer out of it and a pull up lifts it (casino-peek.ts), and it
-         closes back down into it.
+         the casino's door is the casino itself: its window, peeking up from
+         the foot of the page, just the title bar with its icon and name, as
+         if minimised there. The name types itself out once the page is
+         scrolled to the bottom, as the cap bar's prompt does on wider
+         screens. A tap opens the window out of it and a pull up lifts it
+         (casino-peek.ts), and it closes back down into it.
 
-         It is drawn to match the sheet's own bar (casino.css, the phone
-         sheet) edge for edge, so the sheet can stand in for it without a
-         seam, but cut off just short of the bar's bottom border: the page
-         ends a couple of pixels above it. Past the end of the page, under
-         Safari's toolbar, the drawer carries on in the page's bottom colour
-         (Layout's edgeBottom), which is the drawer's. -->
+         It is drawn to match the sheet's own title bar (casino.css, the
+         phone sheet) edge for edge, so the sheet can stand in for it
+         without a seam; the page ends at the bar's foot. -->
     <button
       type="button"
       data-casino-peek
       aria-label="Open the /dev/null casino, a mini-game easter egg"
       aria-haspopup="dialog"
-      class="casino-peek md:hidden shrink-0 relative block w-full text-left font-mono cursor-pointer"
+      class="casino-peek md:hidden shrink-0 relative block w-full text-left cursor-pointer"
     >
-      <span class="casino-peek-grabber" aria-hidden="true"></span>
       <span class="casino-peek-bar" aria-hidden="true">
+        <svg class="casino-peek-icon" width="16" height="16" viewBox="0 0 16 16"
+          ><defs
+            ><linearGradient id="casino-peek-die" x1="0" y1="0" x2="1" y2="1"
+              ><stop offset="0" stop-color="#fff"></stop><stop
+                offset="1"
+                stop-color="#cfcfcf"></stop></linearGradient
+            ></defs
+          ><rect
+            x="1.5"
+            y="1.5"
+            width="13"
+            height="13"
+            rx="3"
+            fill="url(#casino-peek-die)"
+            stroke="#5d5d5d"
+            stroke-width=".9"></rect><g fill="#c1121f"
+            ><circle cx="5" cy="5" r="1.35"></circle><circle
+              cx="11"
+              cy="5"
+              r="1.35"></circle><circle cx="8" cy="8" r="1.35"
+            ></circle><circle cx="5" cy="11" r="1.35"></circle><circle
+              cx="11"
+              cy="11"
+              r="1.35"></circle></g
+          ></svg
+        >
         <span class="casino-peek-title"
-          ><span class="casino-peek-prompt">&gt; </span><span
-            data-terminal-text></span><span
+          ><span data-terminal-text></span><span
             data-terminal-cursor
-            class="casino-peek-prompt">_</span
+            class="casino-peek-cursor">_</span
           ></span
         >
       </span>
@@ -530,7 +551,8 @@ const connect = [
      see. (The footer paints above the photo, which is at -z-10.) */
   @media (max-width: 767px) {
     #site-footer {
-      background: linear-gradient(to top, var(--color-n-950) 8px, transparent 8px);
+      /* The foot of the peek's title bar */
+      background: linear-gradient(to top, #003dd7 8px, transparent 8px);
     }
   }
 
@@ -546,64 +568,58 @@ const connect = [
     }
   }
 
-  /* The casino peek: the phone sheet's top bar (casino.css), value for
-     value, over the start of its body. Flat, without the glow the open
-     sheet has behind its handle: the sheet fades that out when it comes
-     down to the peek, so the drawer is one colour, the same as the page's
-     bottom colour past the end of the page (index.astro's edgeBottom). */
+  /* The casino peek: the phone sheet's title bar (casino.css), value for
+     value: an XP window's, Luna blue. The sheet hides its caption buttons
+     when it comes down to the peek, which has none. */
   .casino-peek {
-    --peek-bg: var(--color-n-950);
-    /* The bar less its last 3px: 2px of padding and its 1px border, which
-       would sit right at the end of the page. Plus the peek's own top
-       border. */
-    height: 58px;
+    height: 44px;
     overflow: hidden;
-    border-top: 1px solid var(--color-n-800);
-    border-radius: 20px 20px 0 0;
-    background: var(--peek-bg);
-    font-size: 13px;
+    border-radius: 9px 9px 0 0;
+    background: linear-gradient(
+      180deg,
+      #0997ff,
+      #0053ee 8%,
+      #0050ee 40%,
+      #06f 88%,
+      #06f 93%,
+      #005bff 95%,
+      #003dd7 96%,
+      #003dd7
+    );
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  /* While the sheet is up at the end of the page (index.ts, holdEdge) the
-     page's end takes on the colour of its status bar, --cz-status-bg, and
-     so does the peek under it, the last of the page Safari might take its
-     toolbar's colour from. */
-  :global(html[data-casino-held]) .casino-peek {
-    --peek-bg: #080808;
-  }
   .casino-peek:focus-visible {
-    outline: 2px solid var(--color-bio-lime);
+    outline: 1px dotted #fff;
     outline-offset: -4px;
   }
-  .casino-peek-grabber {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    width: 38px;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--color-n-700);
-    transform: translateX(-50%);
-  }
-  /* 18px over and 5px under a row as tall as the sheet's 36px buttons */
   .casino-peek-bar {
     display: flex;
     align-items: center;
-    height: 60px;
-    padding: 18px max(8px, env(safe-area-inset-right))
-      5px max(14px, env(safe-area-inset-left));
-    border-bottom: 1px solid var(--color-n-800);
+    gap: 4px;
+    height: 44px;
+    padding: 0 max(8px, env(safe-area-inset-right)) 0
+      max(12px, env(safe-area-inset-left));
+  }
+  .casino-peek-icon {
+    flex: none;
+    margin-right: 4px;
   }
   .casino-peek-title {
-    padding: 6px 8px 6px 4px;
-    color: var(--color-n-300);
+    color: #fff;
+    font:
+      bold 14px "Trebuchet MS",
+      Tahoma,
+      Verdana,
+      sans-serif;
+    text-shadow: 1px 1px #0f1089;
     white-space: pre;
   }
-  .casino-peek-prompt {
-    color: var(--color-bio-lime);
+  /* The typing engine wants a cursor; a title bar has none to show */
+  .casino-peek-cursor {
+    display: none;
   }
 
   /* Holds the haze canvas back until it has drawn a frame over the photo.
@@ -1001,7 +1017,7 @@ const connect = [
     const peekEl = footer.querySelector<HTMLElement>("[data-casino-peek]")!;
     const peek = bindPeek(peekEl);
     const peekState = makeState(peekEl);
-    const PEEK_TITLE = "/dev/null/casino.sh";
+    const PEEK_TITLE = "casino.exe";
     const PEEK_DELAY_MS = 250;
     let peekTimer: number | undefined;
 
