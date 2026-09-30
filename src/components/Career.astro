@@ -511,7 +511,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     nowYear,
     ordered,
   } from "../data/career";
-  import { logoMorph } from "../scripts/logo-morph";
+  import { logoMorph, type LogoMorph } from "../scripts/logo-morph";
+  import { docTop, onLayoutChange } from "../lib/layout-watch";
   {
     const section = document.querySelector<HTMLElement>("#career");
     if (section) {
@@ -800,15 +801,58 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // One canvas for every entry's logo (see scripts/logo-morph.ts), laid
       // over the slot after the name on show. If WebGL goes, the inline SVGs
       // in the slots take back over.
-      const morph = logoMorph(
-        entries.map((e) => ({ path: logoPath(e), paint: logoPaint(e) })),
-        stepMap[0],
-        () => {
-          delete section.dataset.morph;
-          morph?.canvas.remove();
+      //
+      // Nothing of it is built while the page is loading: its context, its
+      // shader and its distance fields shouldn't compete with the page's
+      // first seconds. It starts once the page has loaded and gone idle (as
+      // the footer photo does), or sooner if the section comes within a
+      // screen of view first. Not later than that: the fields are built in a
+      // worker, so starting early costs the main thread only the context and
+      // shader, and it means they are all in before anyone scrolls this far —
+      // otherwise the first one to be needed would be built there and then,
+      // on the main thread, mid-scroll. The SVGs are the logo until the first
+      // field is in (see logoMorph's onReady); at rest the canvas draws
+      // exactly what they show, so the hand-over is invisible. `morph` stays
+      // null until it has happened, so everything below treats the canvas as
+      // absent until it can draw.
+      let morph: LogoMorph | null = null;
+      let morphStarted = false;
+      const startMorph = () => {
+        if (morphStarted) return;
+        morphStarted = true;
+        nearIO.disconnect();
+        const m = logoMorph(
+          entries.map((e) => ({ path: logoPath(e), paint: logoPaint(e) })),
+          stepMap[Math.max(activeStep, 0)],
+          () => {
+            morph = null;
+            delete section.dataset.morph;
+            m?.canvas.remove();
+          },
+          () => {
+            if (!m) return;
+            stack.append(m.canvas);
+            morph = m;
+            if (activeStep < 0) return;
+            morph.show(stepMap[activeStep], true);
+            placeLogo(true);
+            section.dataset.morph = "";
+          },
+        );
+      };
+      const nearIO = new IntersectionObserver(
+        (seen) => {
+          if (seen.some((e) => e.isIntersecting)) startMorph();
         },
+        { rootMargin: "100% 0px" },
       );
-      if (morph) stack.append(morph.canvas);
+      nearIO.observe(section);
+      const whenIdle = () =>
+        "requestIdleCallback" in window
+          ? requestIdleCallback(startMorph, { timeout: 2000 })
+          : setTimeout(startMorph, 200);
+      if (document.readyState === "complete") whenIdle();
+      else addEventListener("load", whenIdle, { once: true });
       // Headed left, for a shorter name, the logo would cross the old name
       // on its way out. Those letters leave left to right, 20ms apart, and
       // take about a third of a second to clear, so it holds until the last
@@ -948,11 +992,10 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // they change (resize or a late layout shift).
       let lastTop = NaN;
       let lastTv = NaN;
-      const registerBarriers = (rectTop: number, tv: number) => {
+      const registerBarriers = (top: number, tv: number) => {
         const setBarriers = (window as any).__setScrollBarriers as
           ((ys: number[]) => void) | undefined;
         if (!setBarriers) return;
-        const top = rectTop + window.scrollY;
         if (top === lastTop && tv === lastTv) return;
         lastTop = top;
         lastTv = tv;
@@ -969,8 +1012,13 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // scrolling never moves it sideways).
       let chartW = 0;
       let chartX = 0;
+      // The section moves only with the page (the pin inside it is what
+      // sticks), so its document top is cached too and the frame's rect.top
+      // is sectionTop - scrollY.
+      let sectionTop = 0;
       const measure = () => {
         travelPx = section.offsetHeight - pin.offsetHeight;
+        sectionTop = docTop(section);
         const r = chart.getBoundingClientRect();
         const w = r.width - 2 * chart.clientLeft;
         const x = r.left + chart.clientLeft;
@@ -986,28 +1034,26 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // the engine set this very frame and the pin scrubs *during* the
       // deceleration with no one-frame trail.
       const frame = () => {
-        const rect = section.getBoundingClientRect();
+        const top = sectionTop - window.scrollY;
         const tv = travelPx;
         const lead =
           (
             (window as any).__scrollProgressLead as (() => number) | undefined
           )?.() ?? 0;
         const p =
-          tv > 0 ? Math.max(0, Math.min((-rect.top + lead) / tv, 1)) : 0;
-        registerBarriers(rect.top, tv);
+          tv > 0 ? Math.max(0, Math.min((-top + lead) / tv, 1)) : 0;
+        registerBarriers(sectionTop, tv);
         render(p);
       };
 
       (window as any).__onSmoothScrollTick(frame);
-      window.addEventListener("resize", () => {
+      // Resizes, font loads (the name reflows when the display face
+      // arrives, moving the slot) and anything above shifting the section.
+      onLayoutChange(() => {
         measure();
         frame();
         reflowLogo();
       });
-      measure();
-      frame();
-      // The name reflows when the display face arrives, moving the slot.
-      document.fonts?.ready.then(reflowLogo);
 
       if ("ResizeObserver" in window) {
         const ro = new ResizeObserver(() => {

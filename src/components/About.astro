@@ -151,6 +151,8 @@ const technicalSkills = [
 </style>
 
 <script>
+  import { docTop, onLayoutChange } from "../lib/layout-watch";
+
   {
     /* ══ Scroll-driven reveals ═════════════════════════════════════════════
        Two effects, one scroll listener and one reduced-motion check:
@@ -251,12 +253,16 @@ const technicalSkills = [
         node.parentNode!.replaceChild(frag, node);
       }
 
+      // The paragraph moves only with the page: its document top is measured
+      // on layout changes, not read back every frame (lib/layout-watch.ts).
+      let introTop = 0;
+
       function update() {
         const line = TYPE_VP_FRACTION * window.innerHeight;
         // Characters worth of scroll past the trigger line (0 until crossed).
         const revealed = Math.max(
           0,
-          (line - intro!.getBoundingClientRect().top) / PX_PER_CHAR,
+          (line - (introTop - window.scrollY)) / PX_PER_CHAR,
         );
         for (const c of chunks) {
           // Fire once scroll has advanced past this chunk's trigger point;
@@ -268,11 +274,13 @@ const technicalSkills = [
         }
       }
 
-      update();
       // Shared bus: engine tick under normal motion, native scroll under
       // reduced motion. Fires at most once per frame, so no local throttle.
       (window as any).__onSmoothScrollTick(update);
-      window.addEventListener("resize", update, { passive: true });
+      onLayoutChange(() => {
+        introTop = docTop(intro);
+        update();
+      });
     }
 
     /* ── 2. Stats row reveal ── */

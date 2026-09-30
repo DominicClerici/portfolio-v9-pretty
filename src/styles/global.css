@@ -263,6 +263,19 @@ body {
   width: 18ch;
 }
 
+/* The prompts' cursor blink, switched on by startBlink() in
+   scripts/terminal.ts: on for 530ms, off for 530ms, starting on. A CSS
+   animation rather than a timer toggling it from script, which kept waking
+   the main thread twice a second for as long as a prompt was blinking. */
+[data-terminal-cursor][data-blink] {
+  animation: terminal-caret-blink 1.06s steps(1) infinite;
+}
+@keyframes terminal-caret-blink {
+  50% {
+    visibility: hidden;
+  }
+}
+
 /* The floating prompt (index.astro) crosses bone sections and near-black ones,
    and the glass between them. Rather than track what is under it, it inverts
    whatever that is: a neutral grey differenced against the page lands dark on
