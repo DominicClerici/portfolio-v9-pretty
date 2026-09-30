@@ -10,6 +10,7 @@ import Work from "../components/Work.astro";
 import Contact from "../components/Contact.astro";
 import Footer from "../components/Footer.astro";
 import { projects } from "../data/projects";
+import matcapUrl from "../assets/glass-matcap.avif?url";
 
 // A visitor coming back from /projects/<slug> lands on /#from-<slug>, and the
 // door that runs from full screen down into that edition's window (Work.astro's
@@ -38,7 +39,7 @@ const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
   <link
     slot="head"
     rel="preload"
-    href="/glass-matcap.avif"
+    href={matcapUrl}
     as="image"
     type="image/avif"
   />

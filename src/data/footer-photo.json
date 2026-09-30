@@ -8,9 +8,155 @@
     ],
     "width": 4340,
     "height": 3255,
-    "avif": "/photos/footer-mountain-landscape-1280.avif 1280w, /photos/footer-mountain-landscape-1920.avif 1920w, /photos/footer-mountain-landscape-2560.avif 2560w, /photos/footer-mountain-landscape-3840.avif 3840w, /photos/footer-mountain-landscape-4340.avif 4340w",
-    "webp": "/photos/footer-mountain-landscape-1280.webp 1280w, /photos/footer-mountain-landscape-1920.webp 1920w, /photos/footer-mountain-landscape-2560.webp 2560w, /photos/footer-mountain-landscape-3840.webp 3840w, /photos/footer-mountain-landscape-4340.webp 4340w",
+    "avif": [
+      [
+        "footer-mountain-landscape-1280.avif",
+        1280
+      ],
+      [
+        "footer-mountain-landscape-1600.avif",
+        1600
+      ],
+      [
+        "footer-mountain-landscape-1920.avif",
+        1920
+      ],
+      [
+        "footer-mountain-landscape-2560.avif",
+        2560
+      ],
+      [
+        "footer-mountain-landscape-3024.avif",
+        3024
+      ],
+      [
+        "footer-mountain-landscape-3456.avif",
+        3456
+      ],
+      [
+        "footer-mountain-landscape-3840.avif",
+        3840
+      ],
+      [
+        "footer-mountain-landscape-4340.avif",
+        4340
+      ]
+    ],
+    "webp": [
+      [
+        "footer-mountain-landscape-1280.webp",
+        1280
+      ],
+      [
+        "footer-mountain-landscape-1600.webp",
+        1600
+      ],
+      [
+        "footer-mountain-landscape-1920.webp",
+        1920
+      ],
+      [
+        "footer-mountain-landscape-2560.webp",
+        2560
+      ],
+      [
+        "footer-mountain-landscape-3024.webp",
+        3024
+      ],
+      [
+        "footer-mountain-landscape-3456.webp",
+        3456
+      ],
+      [
+        "footer-mountain-landscape-3840.webp",
+        3840
+      ],
+      [
+        "footer-mountain-landscape-4340.webp",
+        4340
+      ]
+    ],
     "placeholder": "data:image/webp;base64,UklGRhABAABXRUJQVlA4IAQBAADwBQCdASoYABIAPrVSo00nJKMiKAgA4BaJbACdMtCAHvArgQndi89AcV/HZSEMu9F0/XKo/NddsAD+ojgo2gIrLnvNEknBadmHlWD9OS+9GQLKOETGdAJHy3vK5pY/QMphaf61XkAW6E1FdxXSUNBf6LSvsJz1O+CFJZ+cHHV35PUSut4S5Lv4k7T/nI0vCXEFpvNCCoZR4dwiGqRrZ0YZ8IaSiN/X/8kybx3/pDO0qCTn/rkq0eg+WhtIa5o/1faD13j+qT5N+vZixcjkRzxetaK82XEqZ9Lg8xIosXq+EE3lxkItizWB6pg6pg8J1V1vdgfKg9nDZP1uexQa7vQsgAAAAA==",
+    "sky": "#0166b4"
+  },
+  "wide": {
+    "rect": [
+      0,
+      0,
+      1,
+      0.7499231950844855
+    ],
+    "width": 4340,
+    "height": 2441,
+    "avif": [
+      [
+        "footer-mountain-wide-1280.avif",
+        1280
+      ],
+      [
+        "footer-mountain-wide-1600.avif",
+        1600
+      ],
+      [
+        "footer-mountain-wide-1920.avif",
+        1920
+      ],
+      [
+        "footer-mountain-wide-2560.avif",
+        2560
+      ],
+      [
+        "footer-mountain-wide-3024.avif",
+        3024
+      ],
+      [
+        "footer-mountain-wide-3456.avif",
+        3456
+      ],
+      [
+        "footer-mountain-wide-3840.avif",
+        3840
+      ],
+      [
+        "footer-mountain-wide-4340.avif",
+        4340
+      ]
+    ],
+    "webp": [
+      [
+        "footer-mountain-wide-1280.webp",
+        1280
+      ],
+      [
+        "footer-mountain-wide-1600.webp",
+        1600
+      ],
+      [
+        "footer-mountain-wide-1920.webp",
+        1920
+      ],
+      [
+        "footer-mountain-wide-2560.webp",
+        2560
+      ],
+      [
+        "footer-mountain-wide-3024.webp",
+        3024
+      ],
+      [
+        "footer-mountain-wide-3456.webp",
+        3456
+      ],
+      [
+        "footer-mountain-wide-3840.webp",
+        3840
+      ],
+      [
+        "footer-mountain-wide-4340.webp",
+        4340
+      ]
+    ],
+    "placeholder": "data:image/webp;base64,UklGRsoAAABXRUJQVlA4IL4AAADwBACdASoYAA0APrVInkmnJCKhMAgA4BaJbACdH8HOAbn+JMANTlKlZFmQcyqI8gAA/nci9BobV87TA4G+yzt2SMLD6DxDqXv7SDepQR8LLpG2gM8Dgv0lBGU5wjNtXvUDl5Di/nXYDTRTtpl/MOmaPSr5iuLVI/27udDA9/c2xkZA1D4KC9U/l7GO6h2ZK/mtsQrNbCznCOfdowf1HldH9ucbNfHyiNrn2kqQySVzNf+7v0fzaGA+Czf2AAAA",
     "sky": "#0166b4"
   },
   "portrait": {
@@ -22,9 +168,91 @@
     ],
     "width": 1931,
     "height": 2574,
-    "avif": "/photos/footer-mountain-portrait-900.avif 900w, /photos/footer-mountain-portrait-1320.avif 1320w, /photos/footer-mountain-portrait-1900.avif 1900w, /photos/footer-mountain-portrait-1931.avif 1931w",
-    "webp": "/photos/footer-mountain-portrait-900.webp 900w, /photos/footer-mountain-portrait-1320.webp 1320w, /photos/footer-mountain-portrait-1900.webp 1900w, /photos/footer-mountain-portrait-1931.webp 1931w",
+    "avif": [
+      [
+        "footer-mountain-portrait-900.avif",
+        900
+      ],
+      [
+        "footer-mountain-portrait-1320.avif",
+        1320
+      ],
+      [
+        "footer-mountain-portrait-1800.avif",
+        1800
+      ],
+      [
+        "footer-mountain-portrait-1931.avif",
+        1931
+      ]
+    ],
+    "webp": [
+      [
+        "footer-mountain-portrait-900.webp",
+        900
+      ],
+      [
+        "footer-mountain-portrait-1320.webp",
+        1320
+      ],
+      [
+        "footer-mountain-portrait-1800.webp",
+        1800
+      ],
+      [
+        "footer-mountain-portrait-1931.webp",
+        1931
+      ]
+    ],
     "placeholder": "data:image/webp;base64,UklGRvYAAABXRUJQVlA4IOoAAABQBQCdASoSABgAPrVMn0snJCKhqA1Q4BaJagC7IMmJ/i11zhRfPh0z2ZQse42cp57M7QAA/nZilF31TbgdmrYj8xqerTU4bfBGh5rq+lmdKShqPP/VK5cUDpKVzEKDhvWWwmjiAx04AHoVR1TPufYDCj+e/GbZr6GPku30mKPP+83a6bEf2UB93Ch2bzzfaUGKBdld0qOkD4nyCtQ0pKFnbDPdvu7Tijp7PBEfIe11Eq45YXF7xGri4VxuGU1BywHOlJtWdSpcc9HWpXfQ+Nqn1euQjaeD6+1gLD2UwV5NQL9yvTBGHR3tgAA=",
     "sky": "#016ebc"
+  },
+  "phone": {
+    "rect": [
+      0.3331797235023041,
+      0,
+      0.3336405529953917,
+      0.7907834101382488
+    ],
+    "width": 1448,
+    "height": 2574,
+    "avif": [
+      [
+        "footer-mountain-phone-720.avif",
+        720
+      ],
+      [
+        "footer-mountain-phone-1080.avif",
+        1080
+      ],
+      [
+        "footer-mountain-phone-1280.avif",
+        1280
+      ],
+      [
+        "footer-mountain-phone-1448.avif",
+        1448
+      ]
+    ],
+    "webp": [
+      [
+        "footer-mountain-phone-720.webp",
+        720
+      ],
+      [
+        "footer-mountain-phone-1080.webp",
+        1080
+      ],
+      [
+        "footer-mountain-phone-1280.webp",
+        1280
+      ],
+      [
+        "footer-mountain-phone-1448.webp",
+        1448
+      ]
+    ],
+    "placeholder": "data:image/webp;base64,UklGRh4BAABXRUJQVlA4IBIBAADQBgCdASoSACAAPrVKn0mnJCKhMAgA4BaJbACxBv2t/+5AFyBE8C/hl+JlXLpvXMLl8VfDrfi64/Y82lSMRJAA/qGdXcfzrtrZq5XC7tVpF8ebHdYOZP++/yMFu2Mgz5zg6Z92GZxbH1BwApD36pfoCVZ82TCvTK//io259liecjv/aidf8W/sSLI5htmBdg75ex5eYCJJJenjSTxUkFF7S3O2HqKJX0i3Philj1E3usm+0Q5NQL/ebLelSmB0I0kUoJlw/8VFsN3MYc2nxZSwd3BBMkAFgBzORO2MjRejJF9qP4+e4IGcBMA/5bilr0AWpjBQ4vbRqfs29iHlAUAkPeyc1xC7qBHTZYQgyzOsxfgA",
+    "sky": "#016fbd"
   }
 }

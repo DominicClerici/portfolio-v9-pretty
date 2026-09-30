@@ -29,6 +29,10 @@
  * dark, a second set fades up out of it.
  */
 
+// Hashed into /_astro/ by the build (immutable, cached for a year);
+// index.astro preloads the same URL
+import matcapUrl from "../assets/glass-matcap.avif?url"
+
 /* ── Scene & material config ──
    Numbers lifted from the Spline material panels; the few *_TUNE knobs
    translate Spline's world-space units into screen-space fractions. These are
@@ -186,7 +190,7 @@ matcap.onload = () => {
   matcapReady = true
   matcapSubs.forEach((cb) => cb())
 }
-matcap.src = "/glass-matcap.avif"
+matcap.src = matcapUrl
 
 const v3 = (c: number[]) => `vec3(${c.map((x) => x.toFixed(3)).join(", ")})`
 const f1 = (x: number) => x.toFixed(3)
