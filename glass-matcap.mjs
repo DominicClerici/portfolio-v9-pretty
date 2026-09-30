@@ -26,16 +26,16 @@
  *     pnpm photos:matcap     # after changing the source or anything below
  */
 
-import sharp from "sharp"
+import sharp from "sharp";
 
-const SOURCE = "photos-src/glass-matcap.avif"
-const OUT = "src/assets/glass-matcap.avif"
-const SIZE = 256
+const SOURCE = "photos-src/glass-matcap.avif";
+const OUT = "src/assets/glass-matcap.avif";
+const SIZE = 256;
 // Well past what the blur leaves visible; q60 rendered identically too.
-const AVIF = { quality: 75, effort: 9, chromaSubsampling: "4:4:4" }
+const AVIF = { quality: 75, effort: 9, chromaSubsampling: "4:4:4" };
 
 const { size } = await sharp(SOURCE)
   .resize(SIZE, SIZE, { fit: "fill", kernel: "lanczos3" })
   .avif(AVIF)
-  .toFile(OUT)
-console.log(`${OUT}  ${SIZE}×${SIZE}  ${(size / 1024).toFixed(1)} KB`)
+  .toFile(OUT);
+console.log(`${OUT}  ${SIZE}×${SIZE}  ${(size / 1024).toFixed(1)} KB`);
