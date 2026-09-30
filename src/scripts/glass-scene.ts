@@ -29,9 +29,9 @@
  * dark, a second set fades up out of it.
  */
 
-// Hashed into /_astro/ by the build (immutable, cached for a year);
-// index.astro preloads the same URL
-import matcapUrl from "../assets/glass-matcap.avif?url"
+// Inlined as a data: URL: at 256×256 (glass-matcap.mjs) it is ~1.7KB, so it
+// arrives with this module rather than a request after it
+import matcapUrl from "../assets/glass-matcap.avif?inline"
 
 /* ── Scene & material config ──
    Numbers lifted from the Spline material panels; the few *_TUNE knobs
@@ -182,7 +182,9 @@ export type GlassScene = {
 
 /* Sphere texture layer (Spline: Image 100%) — the reference photo of a dark
    glossy ball, projected matcap-style from the impostor normal. Loaded once
-   for every scene on the page; each instance re-renders when it arrives. */
+   for every scene on the page; each instance re-renders when it arrives.
+   Baked down from the 3000×2000 photo by glass-matcap.mjs: seen through the
+   quarter-res scene buffer and the glass blur, 256×256 renders the same. */
 const matcap = new Image()
 let matcapReady = false
 const matcapSubs = new Set<() => void>()
@@ -695,6 +697,10 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
         matcap,
       )
       gl!.pixelStorei(gl!.UNPACK_FLIP_Y_WEBGL, false)
+      // Mipmapped, so a sphere smaller than the texture averages it rather
+      // than sampling scattered texels
+      gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, gl!.LINEAR_MIPMAP_LINEAR)
+      gl!.generateMipmap(gl!.TEXTURE_2D)
       gl!.useProgram(sceneProg)
       gl!.uniform1f(uMatcapOn, 1)
     }
