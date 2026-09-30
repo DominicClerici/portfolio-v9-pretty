@@ -265,6 +265,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       transparent 72%
     );
     opacity: var(--in);
+    /* Faded every frame of a plate's entry and exit: on its own layer that
+       is a compositor opacity change, not a plate-sized repaint. */
+    will-change: opacity;
   }
 
   .we1-flip::before {
@@ -363,6 +366,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     opacity: var(--in);
     transform: scale(calc(0.965 + var(--in) * 0.035));
     transform-origin: center;
+    /* Its own layer, so the entry motion re-rasters only these thin outlines
+       and not the arch wrap's layer, whose drop-shadow blur is the costly
+       part. Opacity rather than transform, so each scale step is redrawn
+       crisp instead of stretching a cached bitmap. */
+    will-change: opacity;
   }
 
   /* One element per sub-shape, sized to that sub exactly — the visible ring
@@ -427,6 +435,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
     /* Small screens keep the old gentle drift instead of the pinned scene */
     .we1-view :global(.we1-gallery) {
       transform: translateY(calc((0.5 - var(--par)) * 26px));
+      /* Moves every scroll frame: composite the translate instead of
+         repainting the window's images. Translate only, so no resampling. */
+      will-change: transform;
     }
   }
 
@@ -705,6 +716,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
   } from "../lib/workShapes";
   import { smoothstep } from "../lib/easing";
   import { holdScroll } from "../scripts/scroll-hold";
+  import { onLayoutChange } from "../lib/layout-watch";
 
   {
     const section = document.querySelector<HTMLElement>(".we1");
@@ -741,7 +753,52 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         arch: plate.querySelector<HTMLElement>(".we1-arch"),
         view: plate.querySelector<HTMLElement>("[data-view]"),
         replica: plate.querySelector<HTMLElement>("[data-view] .we1-gallery"),
+        // Layout, cached (see measureGeo): the plate's document top and left
+        // and its height, and where the arch sits in it with no entry lift.
+        top: 0,
+        left: 0,
+        height: 0,
+        archX: 0,
+        archY: 0,
+        // Last values written, so an unchanged frame writes nothing
+        inStr: "",
+        parStr: "",
       }));
+
+      // ── Plate geometry ──
+      // The scroll frame needs each plate's rect and each arch's. Plates move
+      // only with the page, and an arch moves inside its plate only by its
+      // entry lift, translateY((1 - --in) * 70px) — so both come from numbers
+      // measured when layout changes, rather than from rects read back every
+      // frame, each of which forces a style pass for whatever the frame has
+      // written so far. The lift in force when measuring is the --in last
+      // written (the stylesheet's 1 before the first write).
+      const LIFT_PX = 70;
+      const liftOf = (w: (typeof windows)[number]) =>
+        (1 - (w.inStr ? Number(w.inStr) : 1)) * LIFT_PX;
+      // The scroll driver, once there is one: it re-seats the windows on the
+      // new numbers without waiting for the next scroll.
+      let afterGeo = () => {};
+      const measureGeo = () => {
+        const sx = window.scrollX;
+        const sy = window.scrollY;
+        for (const w of windows) {
+          const r = w.plate.getBoundingClientRect();
+          w.top = r.top + sy;
+          w.left = r.left + sx;
+          w.height = r.height;
+          if (w.arch) {
+            const a = w.arch.getBoundingClientRect();
+            w.archX = a.left - r.left;
+            w.archY = a.top - r.top - liftOf(w);
+          }
+        }
+        afterGeo();
+      };
+      onLayoutChange(measureGeo);
+      // A plate can change size without the document doing so
+      const plateRO = new ResizeObserver(measureGeo);
+      for (const w of windows) plateRO.observe(w.plate);
 
       // ── Waking the window's content ──
       // The replica's images are not decoration inside the window, they *are*
@@ -774,9 +831,11 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       const wakeNearWindows = () => {
         if (!asleep.size) return;
         const vh = window.innerHeight;
+        const sy = window.scrollY;
         for (const [plate, imgs] of asleep) {
-          const rect = plate.getBoundingClientRect();
-          if (rect.bottom < -vh || rect.top > vh * 2) continue;
+          const w = windows.find((w) => w.plate === plate)!;
+          const top = w.top - sy;
+          if (top + w.height < -vh || top > vh * 2) continue;
           for (const img of imgs) img.removeAttribute("loading");
           asleep.delete(plate);
         }
@@ -949,12 +1008,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           const enterSpan = vh * 0.5;
           const exitSpan = vh * 0.35;
 
-          // Batched into read → write → read → write phases across all plates:
-          // interleaving them per plate would force a fresh style/layout pass
-          // for every read after a write.
-          const plateRects = windows.map((w) =>
-            w.plate.getBoundingClientRect(),
-          );
+          const sx = window.scrollX;
+          const sy = window.scrollY;
+          const plateRects = windows.map((w) => {
+            const top = w.top - sy;
+            return { top, bottom: top + w.height, height: w.height };
+          });
 
           // A plate within two screens before the idle measure has run:
           // measure now, so no arch ever shows an unseated scene.
@@ -965,6 +1024,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             measureAll();
           }
 
+          // --par only drives the phone layout's drift (the scene is pinned on
+          // desktop), so it is left alone there.
+          const drift = !desktop.matches;
           windows.forEach((w, k) => {
             const rect = plateRects[k];
             // Not laid out (display: none) — nothing to drive
@@ -974,35 +1036,42 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             // the plate's bottom clears the top, over exitSpan.
             const enter = Math.min(1, Math.max(0, (vh - rect.top) / enterSpan));
             const exit = Math.min(1, Math.max(0, rect.bottom / exitSpan));
-            const eased = smoothstep(Math.min(enter, exit));
-            const par = Math.min(
+            const inStr = smoothstep(Math.min(enter, exit)).toFixed(3);
+            if (inStr !== w.inStr) {
+              w.inStr = inStr;
+              w.plate.style.setProperty("--in", inStr);
+            }
+            if (!drift) return;
+            const parStr = Math.min(
               1,
               Math.max(0, (vh - rect.top) / (vh + rect.height)),
-            );
-            w.plate.style.setProperty("--in", eased.toFixed(3));
-            w.plate.style.setProperty("--par", par.toFixed(3));
+            ).toFixed(3);
+            if (parStr !== w.parStr) {
+              w.parStr = parStr;
+              w.plate.style.setProperty("--par", parStr);
+            }
           });
 
-          // Read after --in lands so each arch rect already carries this
-          // frame's entry transform — the scene must not trail the arch
-          const archRects = windows.map((w, k) => {
-            if (!plateRects[k].height || !w.view || !w.arch) return null;
+          // Each arch where this frame's --in puts it, so the scene never
+          // trails the arch. Only for plates on screen: one off it has nothing
+          // to show, and is seated again the frame it comes back.
+          windows.forEach((w, k) => {
+            const r = plateRects[k];
+            if (!r.height || !w.view || !w.arch) return;
+            if (r.bottom <= 0 || r.top >= vh) return;
             const g = galRects[w.i];
             if (g === undefined) {
               // Not measured yet: the plate is far off, the idle measure
               // will seat it
-              if (!everMeasured) return null;
+              if (!everMeasured) return;
               // Became measurable after an earlier stale measurement
               if (desktop.matches) remeasureSoon();
-              return null;
+              return;
             }
-            return g ? w.arch.getBoundingClientRect() : null;
-          });
-
-          windows.forEach((w, k) => {
-            const a = archRects[k];
-            if (!a || !w.view) return;
-            const t = `translate(${(-a.left).toFixed(2)}px, ${(-a.top).toFixed(2)}px)`;
+            if (!g) return;
+            const left = w.left - sx + w.archX;
+            const top = r.top + w.archY + liftOf(w);
+            const t = `translate(${(-left).toFixed(2)}px, ${(-top).toFixed(2)}px)`;
             if (w.view.style.transform !== t) w.view.style.transform = t;
           });
         }
@@ -1011,6 +1080,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         // (Layout head shim) also covers native scroll and reduced motion.
         // Page-lifetime, so the unsubscribe is discarded.
         (window as any).__onSmoothScrollTick(update);
+        afterGeo = update;
 
         let resizeRaf = 0;
         const onResize = () => {
