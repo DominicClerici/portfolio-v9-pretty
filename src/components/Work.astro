@@ -904,7 +904,12 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           `[data-plate="${i}"] [data-view] .we1-gfig-lead .we1-gframe`,
         );
 
+      // measureAll lays out each hidden spread to measure it: three forced
+      // layouts of large image-laden subtrees. At startup that waits for the
+      // page to load and go idle, unless a plate is scrolled near first.
+      let everMeasured = false;
       const measureAll = () => {
+        everMeasured = true;
         for (const w of windows) {
           const spread = spreadFor(w.i);
           galRects[w.i] = desktop.matches ? spread && galRectOf(spread) : null;
@@ -951,6 +956,15 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             w.plate.getBoundingClientRect(),
           );
 
+          // A plate within two screens before the idle measure has run:
+          // measure now, so no arch ever shows an unseated scene.
+          if (
+            !everMeasured &&
+            plateRects.some((r) => r.height && r.top < vh * 2 && r.bottom > -vh)
+          ) {
+            measureAll();
+          }
+
           windows.forEach((w, k) => {
             const rect = plateRects[k];
             // Not laid out (display: none) — nothing to drive
@@ -975,6 +989,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             if (!plateRects[k].height || !w.view || !w.arch) return null;
             const g = galRects[w.i];
             if (g === undefined) {
+              // Not measured yet: the plate is far off, the idle measure
+              // will seat it
+              if (!everMeasured) return null;
               // Became measurable after an earlier stale measurement
               if (desktop.matches) remeasureSoon();
               return null;
@@ -1005,8 +1022,20 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         };
 
         window.addEventListener("resize", onResize, { passive: true });
-        measureAll();
         update();
+
+        const initialMeasure = () => {
+          if (!everMeasured) {
+            measureAll();
+            update();
+          }
+        };
+        const whenIdle = () =>
+          "requestIdleCallback" in window
+            ? requestIdleCallback(initialMeasure, { timeout: 2000 })
+            : setTimeout(initialMeasure, 200);
+        if (document.readyState === "complete") whenIdle();
+        else window.addEventListener("load", whenIdle, { once: true });
       }
 
       // ── Walk-through-the-door open/close ──

@@ -81,6 +81,12 @@ export default defineConfig({
      until it has. Astro's own prefetch rather than a bare <link rel="prefetch">
      for the fetch() fallback where that relation isn't honoured. */
   prefetch: true,
+  /* Every stylesheet goes into the page's <head> rather than a <link>: the
+     CSS is ~15KB compressed across three files, and fetching them cost a
+     render-blocking round trip after the HTML had already arrived. */
+  build: {
+    inlineStylesheets: "always",
+  },
   env: {
     schema: {
       RESEND_KEY: envField.string({ context: "server", access: "secret" }),

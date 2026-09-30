@@ -113,44 +113,60 @@
       vy: number;
       s: number;
       a: number;
+      f: string; // the canvas font string for s, built once
     };
     let w = 0;
     let h = 0;
     let parts: P[] = [];
     const mouse = { x: -1e4, y: -1e4 };
 
+    // The canvas's page position, for the pointer: cached, and refreshed
+    // on resize or scroll rather than measured on every pointermove.
+    let rect: DOMRect | null = null;
+
     const init = () => {
       const r = canvas.getBoundingClientRect();
+      rect = r;
       if (!r.width || !r.height) return false;
       const dpr = Math.min(devicePixelRatio || 1, 1.5);
       w = r.width;
       h = r.height;
+      // Resizing the canvas resets its whole 2D state, so everything that
+      // holds for every snippet is set once here, not per frame.
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
       if (!parts.length) {
         // One particle per snippet — never repeated.
-        parts = TOKENS.map((t) => ({
-          t,
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.16,
-          vy: (Math.random() - 0.5) * 0.1,
-          s: 10 + Math.random() * 6,
-          a: 0.05 + Math.random() * 0.09,
-        }));
+        parts = TOKENS.map((t) => {
+          const p = {
+            t,
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.16,
+            vy: (Math.random() - 0.5) * 0.1,
+            s: 10 + Math.random() * 6,
+            a: 0.05 + Math.random() * 0.09,
+            f: "",
+          };
+          p.f = `${p.s}px "Roboto Mono", monospace`;
+          return p;
+        });
       }
       return true;
     };
 
-    const draw = (step: boolean) => {
+    // Velocities are in px per 60Hz frame; k scales them to the time that
+    // actually passed, so the drift is the same speed at any refresh rate.
+    const draw = (k: number) => {
       ctx.clearRect(0, 0, w, h);
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "center";
+      let fill = "";
       for (const p of parts) {
-        if (step) {
-          p.x += p.vx;
-          p.y += p.vy;
+        if (k) {
+          p.x += p.vx * k;
+          p.y += p.vy * k;
           if (p.x < -140) p.x = w + 140;
           if (p.x > w + 140) p.x = -140;
           if (p.y < -20) p.y = h + 20;
@@ -160,23 +176,30 @@
         const dy = p.y - mouse.y;
         const glow = Math.max(0, 1 - (dx * dx + dy * dy) / (190 * 190));
         const lit = glow > 0.01;
-        ctx.font = `${p.s}px "Roboto Mono", monospace`;
-        ctx.fillStyle = lit ? LIME : DUST;
+        const color = lit ? LIME : DUST;
+        if (color !== fill) ctx.fillStyle = fill = color;
+        ctx.font = p.f;
         ctx.globalAlpha = lit ? Math.min(0.85, p.a + glow * 0.55) : p.a;
         ctx.fillText(p.t, p.x, p.y);
       }
       ctx.globalAlpha = 1;
     };
 
+    const FRAME_MS = 1000 / 60;
     let raf = 0;
     let running = false;
-    const loop = () => {
-      draw(true);
+    let lastT = 0;
+    const loop = (t: number) => {
+      // Capped so a hitch (or the first frame back) can't leap the field.
+      const k = lastT ? Math.min(t - lastT, 100) / FRAME_MS : 1;
+      lastT = t;
+      draw(k);
       raf = requestAnimationFrame(loop);
     };
     const start = () => {
       if (!running && motionOK && w > 0) {
         running = true;
+        lastT = 0;
         raf = requestAnimationFrame(loop);
       }
     };
@@ -201,18 +224,24 @@
     // Re-init on resize; draw a static frame regardless so reduced-motion
     // users still get the field.
     new ResizeObserver(() => {
-      if (init()) draw(false);
+      if (init()) draw(0);
     }).observe(canvas);
+    // Scrolling moves the canvas without resizing it; the next pointermove
+    // measures it afresh.
+    window.addEventListener("scroll", () => (rect = null), { passive: true });
 
     section.addEventListener(
       "pointermove",
       (e) => {
-        const r = canvas.getBoundingClientRect();
+        const r = (rect ??= canvas.getBoundingClientRect());
         mouse.x = e.clientX - r.left;
         mouse.y = e.clientY - r.top;
       },
       { passive: true },
     );
+    // Something above may have moved it without a scroll; entering is
+    // where that would first matter.
+    section.addEventListener("pointerenter", () => (rect = null));
     section.addEventListener("pointerleave", () => {
       mouse.x = -1e4;
       mouse.y = -1e4;

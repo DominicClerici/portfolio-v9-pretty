@@ -107,7 +107,9 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
                 </button>
               ))
             }
-            <span class="head" aria-hidden="true"></span>
+            <span class="head-track" aria-hidden="true"
+              ><span class="head"></span></span
+            >
           </div>
           <div class="marks relative h-3 mt-2" aria-hidden="true">
             {
@@ -449,13 +451,29 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     }
   }
 
-  .head {
+  /* The playhead rides a full-width track that the script slides with a
+     transform (in px, snapped to device pixels), so sweeping it costs a
+     repaint of the head alone instead of a style and layout pass over the
+     chart every scroll frame. The transform carries the head's 1px centring
+     offset too, so the snapped edge is the one that is drawn. Deliberately
+     not its own layer (no will-change): a composited layer lands on
+     fractional device pixels on 2.625x/3x screens and softens the line. */
+  .head-track {
     position: absolute;
     top: -8px;
     bottom: -8px;
-    left: var(--yr, 0%);
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  .head {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 2px;
-    margin-left: -1px;
     border-radius: 2px;
     background: var(--color-n-100);
     box-shadow: 0 0 12px rgb(255 255 255 / 0.5);
@@ -501,6 +519,13 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       const bars = section.querySelectorAll<HTMLElement>(".bar");
       const panels = section.querySelectorAll<HTMLElement>(".panel");
       const chart = section.querySelector<HTMLElement>(".chart")!;
+      const headTrack = chart.querySelector<HTMLElement>(".head-track")!;
+      // The accent's only consumers. Set on them rather than on the section,
+      // a custom property changed there restyles every element in Career
+      // (it inherits all the way down) on each frame of the blend.
+      const accentEls = section.querySelectorAll<HTMLElement>(
+        ".dash, .panel .ab[data-variant]",
+      );
       const readout = section.querySelector<HTMLElement>(".readout")!;
       const stack = section.querySelector<HTMLElement>(".stack")!;
 
@@ -860,6 +885,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // when the playhead lands on the next bar). Everything is written only
       // when it changes.
       let lastP = -1;
+      let lastX = NaN;
       let lastAccent = "";
       let lastLabel = "";
       const render = (p: number) => {
@@ -879,7 +905,18 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
             stepPct[N - 1] +
             (100 - stepPct[N - 1]) * Math.min(pages - (N - 1), 1);
         }
-        chart.style.setProperty("--yr", `${yr.toFixed(3)}%`);
+        // The head's left edge (1px left of centre), snapped to the device
+        // pixel `left` used to land it on: rounded where it lands on screen,
+        // since the chart itself can start part-way into a pixel.
+        const dpr = window.devicePixelRatio || 1;
+        const x =
+          Math.round((chartX + (+yr.toFixed(3) / 100) * chartW - 1) * dpr) /
+            dpr -
+          chartX;
+        if (x !== lastX) {
+          lastX = x;
+          headTrack.style.transform = `translateX(${x}px)`;
+        }
 
         // Read-out of where the playhead is, to the month.
         // Capped at today: in a job's first month the axis runs on to the
@@ -896,7 +933,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         const accent = accentAt(pages);
         if (accent !== lastAccent) {
           lastAccent = accent;
-          section.style.setProperty("--accent", accent);
+          for (const el of accentEls) el.style.setProperty("--accent", accent);
         }
 
         // Small bias so arriving at a bar selects it even when the scroll
@@ -927,8 +964,21 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // layout on every frame, page-wide, and this section is several
       // viewports tall.
       let travelPx = 0;
+      // The playhead's track spans the chart's padding box, as `left: %` did:
+      // its unrounded width and on-screen left edge (the pin is sticky, so
+      // scrolling never moves it sideways).
+      let chartW = 0;
+      let chartX = 0;
       const measure = () => {
         travelPx = section.offsetHeight - pin.offsetHeight;
+        const r = chart.getBoundingClientRect();
+        const w = r.width - 2 * chart.clientLeft;
+        const x = r.left + chart.clientLeft;
+        if (w !== chartW || x !== chartX) {
+          chartW = w;
+          chartX = x;
+          lastP = -1; // the playhead's px position moves with them
+        }
       };
 
       // On the shared bus this runs inside the engine's tick — the same frame
@@ -969,6 +1019,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
         // is what keeps the cache honest between resize events.
         ro.observe(section);
         ro.observe(pin);
+        ro.observe(chart);
         // And the logo's slot moves whenever the entries reflow.
         ro.observe(stack);
       }
