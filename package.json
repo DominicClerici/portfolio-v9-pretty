@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "photos:footer": "node footer-photos.mjs"
+    "photos:footer": "node footer-photos.mjs",
+    "photos:matcap": "node glass-matcap.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",

@@ -16,14 +16,34 @@ const navigate = [
 ];
 
 // Screens that get the portrait cut. Keep in step with the same query in the
-// styles, which picks its blur-up.
+// styles, which picks its blur-up. Of those, the ones narrower than 9:16 (all
+// but the widest phones) get its middle, the phone cut, which is exactly the
+// part of it they show. Landscape desktops at least 16:9 get the wide cut,
+// the photo's top 16:9: the most of it they show, pinned to its top.
 const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
+const PHONE = `${PORTRAIT} and (max-aspect-ratio: 9/16)`;
+const WIDE = "(min-width: 1024px) and (min-aspect-ratio: 16/9)";
+// The generated files, which the build emits under /_astro/ with a hash in
+// their names (immutable, so cached for a year) — src/assets rather than
+// public/, whose files are revalidated on every visit.
+const files = import.meta.glob<string>("../assets/footer/*", {
+  query: "?url",
+  import: "default",
+  eager: true,
+});
+const srcset = (set: [string, number][]) =>
+  set.map(([file, w]) => `${files[`../assets/footer/${file}`]} ${w}w`).join(", ");
 // Each cut is cover-fitted to a screen-tall frame, so its displayed width is
 // the screen's height × its aspect — unless the screen is wider than that,
 // when the width fills it.
 const sizes = ({ width, height }: { width: number; height: number }) =>
   `(min-aspect-ratio: ${width}/${height}) 100vw, ${+((100 * width) / height).toFixed(2)}vh`;
-const PORTRAIT_SIZES = sizes(photo.portrait);
+// Most specific first: the <picture> takes the first <source> that matches
+const cuts = [
+  { media: PHONE, cut: photo.phone },
+  { media: PORTRAIT, cut: photo.portrait },
+  { media: WIDE, cut: photo.wide },
+];
 const LANDSCAPE_SIZES = sizes(photo.landscape);
 
 // Each with the icon it wears on phones, where the links sit beside the
@@ -125,12 +145,14 @@ const connect = [
        toolbar coming and going only covers and uncovers its foot, rather
        than re-fitting the photo and sliding the lake up and down with it.
 
-       The photo (Mount Shuksan over Picture Lake, 4:3) comes in two cuts,
+       The photo (Mount Shuksan over Picture Lake, 4:3) comes in four cuts,
        rendered by footer-photos.mjs: the whole of it for landscape screens,
        pinned to its top centre so the peak always shows, 1280w up to its full
-       4340w; and a 3:4 crop for phones and portrait tablets, cut just short
-       enough at the bottom for the lake to fill the lower 25% of a tall
-       screen. Each is AVIF with a WebP fallback.
+       4340w, and its top 16:9 for desktops at least that wide; a 3:4 crop for
+       portrait tablets, cut just short enough at the bottom for the lake to
+       fill the lower 25% of a tall screen, and its middle 9:16 for phones.
+       Each is only as much of the photo as the screens it goes to can show,
+       and each is AVIF with a WebP fallback.
 
        The srcsets are held back in data-srcset, so the photo doesn't load
        alongside the hero and compete with it. The script sets them once the
@@ -145,34 +167,37 @@ const connect = [
     <div class="footer-photo-sky absolute inset-x-0 top-0"></div>
     <div class="footer-photo-frame absolute inset-x-0 bottom-0">
       <picture>
+        {
+          cuts.map(({ media, cut }) => (
+            <>
+              <source
+                media={media}
+                type="image/avif"
+                data-srcset={srcset(cut.avif as [string, number][])}
+                sizes={sizes(cut)}
+              />
+              <source
+                media={media}
+                type="image/webp"
+                data-srcset={srcset(cut.webp as [string, number][])}
+                sizes={sizes(cut)}
+              />
+            </>
+          ))
+        }
         <source
-          media={PORTRAIT}
           type="image/avif"
-          data-srcset={photo.portrait.avif}
-          sizes={PORTRAIT_SIZES}
-        />
-        <source
-          media={PORTRAIT}
-          type="image/webp"
-          data-srcset={photo.portrait.webp}
-          sizes={PORTRAIT_SIZES}
-        />
-        <source
-          type="image/avif"
-          data-srcset={photo.landscape.avif}
+          data-srcset={srcset(photo.landscape.avif as [string, number][])}
           sizes={LANDSCAPE_SIZES}
         />
         <img
           class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-          data-srcset={photo.landscape.webp}
-          data-cuts={JSON.stringify({
-            landscape: [photo.landscape.width, photo.landscape.height, photo.landscape.rect],
-            portrait: [
-              photo.portrait.width,
-              photo.portrait.height,
-              photo.portrait.rect,
-            ],
-          })}
+          data-srcset={srcset(photo.landscape.webp as [string, number][])}
+          data-cuts={JSON.stringify(
+            Object.fromEntries(
+              Object.entries(photo).map(([name, c]) => [name, [c.width, c.height, c.rect]]),
+            ),
+          )}
           sizes={LANDSCAPE_SIZES}
           width={photo.landscape.width}
           height={photo.landscape.height}
@@ -735,7 +760,7 @@ const connect = [
         : setTimeout(fn, 200);
 
     // The photo's current source, for the haze: its files are named for their
-    // cut and width (footer-mountain-<cut>-<width>.<ext>), and each cut's
+    // cut and width (footer-mountain-<cut>-<width>.<hash>.<ext>), and each cut's
     // pixel size and place in the full photo ride on the <img>. The height
     // follows from the cut's aspect, rounded as the generator's resize rounds
     // it — naturalHeight won't do, as for a srcset pick it is divided by the
@@ -744,7 +769,7 @@ const connect = [
       photo.dataset.cuts!,
     );
     const source = () => {
-      const [, cut, w] = /-(landscape|portrait)-(\d+)\.\w+$/.exec(
+      const [, cut, w] = /footer-mountain-([a-z]+)-(\d+)\./.exec(
         photo.currentSrc,
       )!;
       const [cw, ch, rect] = cuts[cut];

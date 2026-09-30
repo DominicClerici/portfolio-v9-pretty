@@ -149,6 +149,14 @@ export default defineConfig({
     },
   },
   vite: {
+    build: {
+      /* Never inline fonts as data: URLs (Vite does below 4KB, and the Aspekta
+         subset is 3.5KB). Inlined, a font rides in every page's HTML instead
+         of being cached once, and the preload in Layout.astro would fetch a
+         URL the @font-face rule never asks for. Everything else keeps the
+         default. */
+      assetsInlineLimit: (file) => (file.endsWith(".woff2") ? false : undefined),
+    },
     plugins: [
       tailwindcss(),
       stripGlslComments(),

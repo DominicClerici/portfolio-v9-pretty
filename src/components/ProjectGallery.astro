@@ -4,6 +4,7 @@
 // the label), inside the spread, and — leadOnly — as the mobile spread's hero
 // plate, the landing spot the arch's plate flies out to. The portal clones
 // these at open time, so the markup has to survive cloneNode without JS wiring.
+import type { ImageMetadata } from "astro";
 import type { GalleryPlate } from "../data/projects";
 
 interface Props {
@@ -16,8 +17,30 @@ const { gallery, decorative = false, leadOnly = false } = Astro.props;
 
 const plates = leadOnly ? gallery.slice(0, 1) : gallery;
 
-const srcset = (src: string) =>
-  `${src} 1x, ${src.replace(".webp", "-2x.webp")} 2x`;
+// Imported rather than served from public/, so the build emits them under
+// /_astro/ with a hash in their names: immutable, and cached for a year.
+const images = import.meta.glob<ImageMetadata>("../assets/photos/*.webp", {
+  import: "default",
+  eager: true,
+});
+const image = (file: string) => {
+  const img = images[`../assets/photos/${file}`];
+  if (!img) throw new Error(`ProjectGallery: no src/assets/photos/${file}`);
+  return img;
+};
+// By width, so the browser takes the 1x plate wherever it covers the column
+// at the screen's density (a 592px column on a 2x laptop needs 1184px) rather
+// than the 2x one on every 2x screen
+const srcset = (file: string) =>
+  [image(file), image(file.replace(".webp", "-2x.webp"))]
+    .map((img) => `${img.src} ${img.width}w`)
+    .join(", ");
+// The column's width: the spread's gallery column on desktop (the page less
+// the 36rem story, the 6rem gap and 48px of padding each side, and past
+// 1280px half the overflow as well); the page's width, at most, below that.
+// The home page's replica is seated at the same width, or narrower.
+const sizes =
+  "(min-width: 1280px) calc(50vw - 128px), (min-width: 1024px) calc(100vw - 768px), 100vw";
 ---
 
 <div class:list={["we1-gallery flex flex-col", leadOnly && "we1-ghero"]}>
@@ -26,8 +49,11 @@ const srcset = (src: string) =>
       <figure class:list={["m-0", k === 0 && "we1-gfig-lead"]}>
         <div class="we1-gframe relative overflow-hidden">
           <img
-            src={g.src}
+            src={image(g.src).src}
             srcset={srcset(g.src)}
+            sizes={sizes}
+            width={image(g.src).width}
+            height={image(g.src).height}
             alt={decorative ? "" : g.alt}
             class={
               k === 0

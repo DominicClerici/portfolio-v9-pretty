@@ -1,5 +1,9 @@
 ---
 import "../styles/global.css";
+// The same hashed URLs global.css's @font-face rules resolve to, so the
+// preloads are the requests those rules use
+import aspektaUrl from "../assets/fonts/aspekta-400.woff2?url";
+import robotoMonoUrl from "../assets/fonts/roboto-mono-latin-400.woff2?url";
 
 interface Props {
   title?: string;
@@ -63,8 +67,8 @@ const {
     <meta name="twitter:image" content="https://www.dominicclerici.com/og-image.png" />
 
     <title>{title}</title>
-    <link rel="preload" href="/fonts/aspekta-400.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/roboto-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={aspektaUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={robotoMonoUrl} as="font" type="font/woff2" crossorigin />
 
     <script is:inline>
       // Shared scroll bus. Defined here in <head>, inline, so it exists before

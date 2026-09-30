@@ -14,7 +14,8 @@ Usage:
 
 The script scans the built HTML in dist/ (where all Astro template expressions
 have been resolved to real text), figures out which characters each font needs,
-and writes trimmed font files to public/fonts/.
+and writes trimmed font files to src/assets/fonts/, which the build emits
+under /_astro/ with content-hashed names.
 
 The casino (src/scripts/casino) is the exception: it renders its text from
 script, so none of it is in the HTML. It gets its own pair of subsets
@@ -37,7 +38,7 @@ except ImportError:
 
 ROOT = Path(__file__).parent
 DIST = ROOT / "dist"
-FONTS_DIR = ROOT / "public" / "fonts"
+FONTS_DIR = ROOT / "src" / "assets" / "fonts"
 FULL_FONTS_DIR = ROOT / "fonts-src"
 
 # Tailwind class -> font key

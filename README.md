@@ -35,7 +35,7 @@ Requires Node >= 22.12.0.
 
 The fonts are self-hosted and subset to only the characters that actually appear on the site. This means no requests to Google Fonts, faster load times, and smaller files.
 
-The original (un-subset) font files live in `public/fonts/full/`. The subset versions that get deployed live in `public/fonts/`. A Python script handles the subsetting automatically.
+The original (un-subset) font files live in `fonts-src/`. The subset versions that get deployed live in `src/assets/fonts/`, which the build emits under `/_astro/` with a content hash in each name, so they are cached for a year and a re-subset reaches returning visitors straight away. A Python script handles the subsetting automatically.
 
 **If you change any visible text on the site and introduce characters that weren't there before** (for example, adding a `?` or `!` to a headline, or a name with an accented character), you need to re-subset the fonts:
 
@@ -59,7 +59,7 @@ The casino (below) draws all of its text from script, so the same run also cuts 
 
 ## Footer Photo
 
-The footer's backdrop (Mount Shuksan over Picture Lake) is cut from a full-resolution original in `photos-src/` (4340×3255), kept out of `public/` so it is never deployed. A Node script renders every size the page serves into `public/photos/` and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
+The footer's backdrop (Mount Shuksan over Picture Lake) is cut from a full-resolution original in `photos-src/` (4340×3255), kept out of `public/` so it is never deployed. A Node script renders every size the page serves into `src/assets/footer/` (emitted under `/_astro/` with hashed names, so cached as immutable) and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
 
 - **landscape cut** for landscape screens: the whole photo, pinned to its top centre so the peak always shows, from 1280w up to its full 4340w
 - **portrait cut** for phones and portrait tablets: cropped at the bottom only as far as it takes for the lake to fill the lower 25% of a tall screen, and trimmed to 3:4 about the centre, with a faint dark fade baked into its foot to keep the name legible over the lake
