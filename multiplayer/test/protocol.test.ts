@@ -19,9 +19,9 @@ test("crash curve and its inverse agree", () => {
   assert.equal(crashAt(0), 100)
 })
 
-// Every point in [1.00, 1.01) floors to 1.00, so 1 − 0.99/1.01 ≈ 1.98% of
-// rounds bust there, while any target x still pays back 99% on average
-test("bust points: P(>= x) = 0.99 / x, ~2% at 1.00x, capped", () => {
+// Every point in [1.00, 1.01) floors to 1.00, so 1 − 0.97/1.01 ≈ 3.96% of
+// rounds bust there, while any target x still pays back 97% on average
+test("bust points: P(>= x) = 0.97 / x, ~4% at 1.00x, capped", () => {
   assert.equal(crashPoint(0), 100)
   assert.equal(crashPoint(0.0099), 100)
   assert.equal(crashPoint(0.999999999), CRASH_MAX)
@@ -35,9 +35,9 @@ test("bust points: P(>= x) = 0.99 / x, ~2% at 1.00x, capped", () => {
     if (p >= 1000) atLeast10++
     if (p === 100) instant++
   }
-  assert.ok(Math.abs(atLeast2 / N - 0.495) < 0.01, `P(>=2x) ${atLeast2 / N}`)
-  assert.ok(Math.abs(atLeast10 / N - 0.099) < 0.005, `P(>=10x) ${atLeast10 / N}`)
-  assert.ok(Math.abs(instant / N - (1 - 0.99 / 1.01)) < 0.003, `P(1.00x) ${instant / N}`)
+  assert.ok(Math.abs(atLeast2 / N - 0.485) < 0.01, `P(>=2x) ${atLeast2 / N}`)
+  assert.ok(Math.abs(atLeast10 / N - 0.097) < 0.005, `P(>=10x) ${atLeast10 / N}`)
+  assert.ok(Math.abs(instant / N - (1 - 0.97 / 1.01)) < 0.003, `P(1.00x) ${instant / N}`)
 })
 
 test("names: shape rules", () => {
