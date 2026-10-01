@@ -1,7 +1,7 @@
 /* ── Crash ──
-   A memory graph that climbs until the process dies. Cash out before it does.
-   Drawn as Task Manager's performance graph, green on black, and when the
-   process dies the stage blue-screens (casino.css).
+   A multiplier that climbs until it crashes. Cash out before it does.
+   Drawn as Task Manager's performance graph, green on black, and when it
+   crashes the stage blue-screens (casino.css).
 
    With the lobby connected, rounds are the server's: everyone watches the
    same curve from the same start time, sees each other's stakes come in
@@ -67,30 +67,16 @@ interface MyBet {
 }
 
 const CRASH_LINES = [
-  "Segmentation fault (core dumped)",
-  "Killed: out of memory",
-  "java.lang.StackOverflowError",
-  "panic: runtime error: index out of range",
-  "TypeError: undefined is not a function",
-  "Kernel panic - not syncing",
-  "RecursionError: maximum recursion depth exceeded",
-  "Process exited with code 139",
-  "FATAL ERROR: JavaScript heap out of memory",
-  "thread 'main' panicked at 'called unwrap() on None'",
-  "Bus error (core dumped)",
-  "NullPointerException at Main.java:1",
+  "IRQL_NOT_LESS_OR_EQUAL",
+  "PAGE_FAULT_IN_NONPAGED_AREA",
+  "KMODE_EXCEPTION_NOT_HANDLED",
+  "UNMOUNTABLE_BOOT_VOLUME",
+  "BAD_POOL_HEADER",
+  "NTFS_FILE_SYSTEM",
+  "INACCESSIBLE_BOOT_DEVICE",
+  "KERNEL_DATA_INPAGE_ERROR",
+  "UNEXPECTED_KERNEL_MODE_TRAP",
 ]
-
-function flavour(m: number) {
-  if (m < 1.3) return "allocating…"
-  if (m < 2) return "heap growing"
-  if (m < 3) return "memory leak detected"
-  if (m < 5) return "GC can't keep up"
-  if (m < 10) return "swap thrashing"
-  if (m < 25) return "the OOM killer is watching"
-  if (m < 100) return "how is this still running"
-  return "this is a cosmic ray, surely"
-}
 
 const hex3 = () => Math.floor(rand() * 0xffffff).toString(16).padStart(6, "0")
 
@@ -198,7 +184,7 @@ export class CrashGame implements Game {
           h("div", { class: "cz-bet" }, h("span", { class: "cz-textbox" }, this.autoInput, h("span", { class: "cz-bet-suffix", text: "×" }))),
         ),
         this.action.el,
-        h("p", { class: "cz-hint", html: "<kbd>Space</kbd> deploy / cash out" }),
+        h("p", { class: "cz-hint", html: "<kbd>Space</kbd> bet / cash out" }),
       ),
       this.table,
     )
@@ -441,7 +427,7 @@ export class CrashGame implements Game {
     if (my.out == null) {
       my.settled = true
       sfx.lose()
-      toast(`Crashed at ${mult(this.model.point)}. ${money(my.amount)} sent to /dev/null.`, "loss")
+      toast(`Crashed at ${mult(this.model.point)}. ${money(my.amount)} lost.`, "loss")
     }
     this.renderControls()
   }
@@ -549,12 +535,12 @@ export class CrashGame implements Game {
       return
     }
     if (m.phase === "betting" && my) {
-      a.set(my.pending ? "Deploying…" : "Deployed", `${money(my.amount)} riding${my.auto ? ` · auto ${mult(my.auto)}` : ""}`, "wait")
+      a.set(my.pending ? "Placing bet…" : "Bet placed", `${money(my.amount)} riding${my.auto ? ` · auto ${mult(my.auto)}` : ""}`, "wait")
       a.disabled = true
       return
     }
     if (m.phase === "betting") {
-      a.set("Deploy", this.bet.valid ? `${money(this.bet.cents)} on this round` : "enter a bet", "go")
+      a.set("Bet", this.bet.valid ? `${money(this.bet.cents)} on this round` : "enter a bet", "go")
       a.disabled = !this.bet.valid
       return
     }
@@ -563,7 +549,7 @@ export class CrashGame implements Game {
       a.disabled = false
       return
     }
-    a.set(this.queued ? "Queued · cancel" : "Queue next round", this.queued ? "deploys when betting opens" : "this round is already running", this.queued ? "wait" : "idle")
+    a.set(this.queued ? "Queued · cancel" : "Queue next round", this.queued ? "bets when the next round opens" : "this round is already running", this.queued ? "wait" : "idle")
     a.disabled = !this.queued && !this.bet.valid
   }
 
@@ -613,19 +599,19 @@ export class CrashGame implements Game {
     if (m.phase === "betting") {
       const left = Math.max(0, m.endsAt - now)
       this.multEl.textContent = `${(left / 1000).toFixed(1)}s`
-      this.subEl.textContent = "compiling · next deploy in"
+      this.subEl.textContent = ""
       // Clipped rather than scaled, so the progress bar's blocks keep their size
       ;(this.barEl.firstChild as HTMLElement).style.clipPath = `inset(0 ${(100 * (1 - left / CRASH_BET_MS)).toFixed(2)}% 0 0)`
     } else if (m.phase === "running") {
       const x = Math.exp((CRASH_RATE * Math.max(0, now - m.startedAt)) / 1000)
       this.multEl.textContent = `${(Math.floor(x * 100) / 100).toFixed(2)}×`
-      this.subEl.textContent = flavour(x)
+      this.subEl.textContent = ""
     } else if (m.phase === "crashed") {
       this.multEl.textContent = mult(m.point)
       this.subEl.textContent = this.crashLine
     } else {
       this.multEl.textContent = "1.00×"
-      this.subEl.textContent = net.live || net.status === "connecting" ? "joining the lobby…" : "idle"
+      this.subEl.textContent = net.status === "connecting" ? "Connecting…" : ""
     }
   }
 
@@ -832,7 +818,7 @@ export class CrashGame implements Game {
         ctx.globalAlpha = 1
       }
     } else {
-      // Idle line along 1.00×, breathing while the next build compiles
+      // Idle line along 1.00×, breathing between rounds
       const yy = py(1)
       const phase = (now % 1600) / 1600
       const g = ctx.createLinearGradient(padL, 0, w - padR, 0)

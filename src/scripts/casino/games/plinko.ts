@@ -1,11 +1,11 @@
 /* ── Plinko ──
-   Drop a packet through the load balancer. Each row of nodes sends it left
+   Drop a ball through the pegs. Each row of pegs sends it left
    or right (50/50, decided up front), and the bucket it lands in sets the
    payout. Tables are the standard low / medium / high risk sets for 8, 12
    and 16 rows, every one returning ~99%.
 
-   The path is fixed the moment the packet drops; the animation just shows
-   it. Other players' packets fall through your board too, as ghosts with
+   The path is fixed the moment the ball drops; the animation just shows
+   it. Other players' balls fall through your board too, as ghosts with
    their name on, whenever they're on the same number of rows. */
 
 import { PLINKO_ROWS, type PlinkoPlay, type ServerMsg } from "../../../../multiplayer/src/protocol"
@@ -63,7 +63,7 @@ interface Ball {
   t0: number
   ghost?: { name: string; color: string }
   landed?: boolean
-  /** Last row whose node has lit up for this packet. */
+  /** Last row whose peg has lit up for this ball. */
   hitRow: number
 }
 
@@ -90,8 +90,8 @@ const heat = (t: number) => (t < 0.5 ? mix(GREEN, AMBER, t * 2) : mix(AMBER, RED
 /** Black or white, whichever reads on a fill. */
 const inkOn = (c: number[]) => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 150 ? "#000" : "#fff")
 
-// The packet: XP's own blue
-const PACKET = "#0054e3"
+// The ball: XP's own blue
+const BALL = "#0054e3"
 const UI_FONT = "Tahoma, Verdana, 'Segoe UI', sans-serif"
 
 export class PlinkoGame implements Game {
@@ -265,8 +265,8 @@ export class PlinkoGame implements Game {
   }
 
   /* ── Geometry ──
-     Row i has i+3 nodes, one unit apart; the packet starts over the middle
-     node of the top row and moves half a unit per bounce, so after all rows
+     Row i has i+3 pegs, one unit apart; the ball starts over the middle
+     peg of the top row and moves half a unit per bounce, so after all rows
      it sits over bucket k (the number of rightward bounces). */
 
   private geom(rows: number) {
@@ -282,7 +282,7 @@ export class PlinkoGame implements Game {
     return { s, cx, top, rowY, bucketY, bucketH, pegR: Math.max(2, s * 0.085), ballR: Math.max(4, s * 0.2) }
   }
 
-  /** Where a packet is, t ms after it dropped; null once it has landed. */
+  /** Where a ball is, t ms after it dropped; null once it has landed. */
   private ballAt(b: Ball, t: number): [number, number] | null {
     const g = this.geom(b.rows)
     const lift = g.pegR + g.ballR
@@ -332,7 +332,7 @@ export class PlinkoGame implements Game {
     for (const b of this.balls) {
       if (b.landed) continue
       const t = now - b.t0
-      // Each node lights (and ticks) as the packet bounces off it
+      // Each peg lights (and ticks) as the ball bounces off it
       const k = Math.floor((t - FALL_MS) / HOP_MS)
       if (t >= FALL_MS && k < b.rows && k > b.hitRow) {
         b.hitRow = k
@@ -420,9 +420,9 @@ export class PlinkoGame implements Game {
       const t = now - b.t0
       const p = this.ballAt(b, t)
       if (!p) continue
-      const color = b.ghost ? b.ghost.color : PACKET
+      const color = b.ghost ? b.ghost.color : BALL
       const r = g.ballR
-      // The trail is where the packet was a few ms ago, not where it was on
+      // The trail is where the ball was a few ms ago, not where it was on
       // earlier frames, so it reads the same at 30fps as at 120
       for (let i = TRAIL; i >= 1; i--) {
         const q = this.ballAt(b, Math.max(0, t - i * 16))
@@ -466,7 +466,7 @@ export class PlinkoGame implements Game {
     const busy = this.inFlight()
     this.rowsSeg.disabled = busy
     const n = this.balls.filter((b) => !b.ghost && !b.landed).length
-    this.action.set("Drop packet", this.bet.valid ? `${money(this.bet.cents)}${n ? ` · ${n} in flight` : ""}` : "enter a bet", "go")
+    this.action.set("Drop ball", this.bet.valid ? `${money(this.bet.cents)}${n ? ` · ${n} in flight` : ""}` : "enter a bet", "go")
     this.action.disabled = !this.bet.valid
   }
 
@@ -501,7 +501,7 @@ export class PlinkoGame implements Game {
       h("span", { class: "cz-feed-mult", text: mult(d.mult) }),
       h("span", { class: "cz-feed-amt", text: signed(payout(d.bet, d.mult) - d.bet) || "±0" }),
     )
-    // Reveal it when their packet lands
+    // Reveal it when their ball lands
     window.setTimeout(() => {
       this.railList.prepend(li)
       while (this.railList.childElementCount > 8) this.railList.lastElementChild?.remove()

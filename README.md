@@ -74,7 +74,7 @@ The heat haze over the lake (`src/scripts/heat-haze.ts`) is positioned in the fu
 
 ## The casino
 
-The `>_` prompts (header, bottom-left while scrolling, the footer's cap bar, and by the copyright on phones) open the **/dev/null casino**: four lightly programming-themed games played with $1,000 of fake money, kept in `localStorage`. It runs as `casino.exe`, a Windows XP window (Luna blue): title bar, menus, an Explorer-style lobby, balloon tips, and a blue screen when Crash crashes.
+The `>_` prompts (header, bottom-left while scrolling, the footer's cap bar, and by the copyright on phones) open the **/dev/null casino**: four games (Crash, High Low, Roulette and Plinko) played with $1,000 of fake money, kept in `localStorage`. It runs as `casino.exe`, a Windows XP window (Luna blue): title bar, menus, an Explorer-style lobby, balloon tips, and a blue screen when Crash crashes.
 
 - **Crash**: a memory graph that climbs until the process dies. Cash out before the OOM killer.
 - **Big O**: hi-lo where the deck is thirteen complexity classes, O(1) to the busy beaver.

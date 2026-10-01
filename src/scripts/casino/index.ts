@@ -47,22 +47,15 @@ import { MergeGame } from "./games/merge"
 import { PlinkoGame } from "./games/plinko"
 
 const QUIPS = [
-  "It works on my machine.",
   "Please wait while Windows configures your luck…",
   "No real money was harmed in the making of this window.",
-  "Have you tried turning your luck off and on again?",
   "A new version of your luck is available. Restart now?",
-  "Your balance is eventually consistent.",
-  "Found New Hardware: lucky charm. Installing drivers…",
   "Defragmenting your wallet…",
-  "Press Ctrl+Alt+Del to cash out. (Please don't.)",
-  "The house always wins. The house also runs Windows Update.",
-  "casino.exe is Not Responding… just kidding.",
-  "Tip: saving your winnings to a floppy is not a backup.",
+  "It is now safe to turn off your luck.",
 ]
 
 const APP = "casino.exe"
-const ROOT_PATH = "C:\\dev\\null\\casino"
+const ROOT_PATH = "C:\\Program Files\\Casino"
 
 // The status bar's colour, --cz-face: the sheet's foot, which the page's root
 // takes on under Safari's toolbar while the sheet is up (holdEdge)
@@ -76,7 +69,8 @@ const FACTORIES: Record<GameId, () => Game> = {
 }
 
 const placeTitle = (p: Place) => (p === "lobby" ? APP : `${GAME_INFO[p].title} - ${APP}`)
-const placePath = (p: Place) => (p === "lobby" ? ROOT_PATH : `${ROOT_PATH}\\${p}.exe`)
+const placePath = (p: Place) =>
+  p === "lobby" ? ROOT_PATH : `${ROOT_PATH}\\${GAME_INFO[p].title.toLowerCase().replace(/ /g, "")}.exe`
 
 class Casino {
   dialog: HTMLDialogElement
@@ -411,7 +405,7 @@ class Casino {
       if (e.target === dialog || e.target === scrim) this.close()
     })
     // On the document, not the dialog: a button that disables itself when
-    // pressed (deal, deploy) drops focus to <body>, and its keys with it
+    // pressed (deal, bet) drops focus to <body>, and its keys with it
     document.addEventListener("keydown", (e) => {
       if (this.dialog.open && !this.closing && !e.defaultPrevented) this.onKey(e)
     })
@@ -660,7 +654,7 @@ class Casino {
           "div",
           { class: "cz-about-body" },
           h("p", { text: `${APP}` }),
-          h("p", { text: "Version 5.1 (Build 2600.devnull_sp2)" }),
+          h("p", { text: "Version 5.1 (Build 2600.xpsp_sp2_rtm : Service Pack 2)" }),
           h("p", { text: `© ${new Date().getFullYear()} Dominic Clerici. No refunds.` }),
           h("hr"),
           h("p", { text: "This product is licensed to:" }),
@@ -1161,7 +1155,7 @@ function pane(title: string, body: Node[], opts: { special?: boolean; extra?: No
    on its game's own table. */
 const ART: Record<GameId, string> = {
   crash: `<svg viewBox="0 0 200 110" preserveAspectRatio="none"><g class="cz-art-grid"><path d="M0 11h200M0 22h200M0 33h200M0 44h200M0 55h200M0 66h200M0 77h200M0 88h200M0 99h200M20 0v110M40 0v110M60 0v110M80 0v110M100 0v110M120 0v110M140 0v110M160 0v110M180 0v110"/></g><g class="cz-art-plot"><path class="cz-art-fill" d="M0 104C60 102 110 92 150 64S190 18 200 8V110H0z"/><path class="cz-art-line" d="M0 104C60 102 110 92 150 64S190 18 200 8"/></g></svg><span class="cz-art-mult">2.41&times;</span>`,
-  bigo: `<span class="cz-art-cardstack"><span class="cz-art-minicard is-a">O(1)</span><span class="cz-art-minicard is-b">O(n&sup2;)</span><span class="cz-art-minicard is-c">O(n!)</span></span>`,
+  bigo: `<span class="cz-art-cardstack"><span class="cz-art-minicard is-a">A&spades;</span><span class="cz-art-minicard is-b">7&hearts;</span><span class="cz-art-minicard is-c">K&clubs;</span></span>`,
   merge: `<span class="cz-art-reel"><span class="cz-art-strip">${Array.from(
     { length: 20 },
     (_, i) => `<i class="${i % 15 === 7 ? "c" : i % 2 ? "t" : "o"}"></i>`,

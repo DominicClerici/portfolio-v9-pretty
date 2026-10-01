@@ -20,21 +20,21 @@ export const GAME_INFO: Record<GameId, { title: string; short: string; tag: stri
   crash: {
     title: "Crash",
     short: "Crash",
-    tag: "Ride the memory leak. Cash out before the OOM killer shows up.",
+    tag: "Watch the multiplier climb and cash out before it crashes.",
   },
   bigo: {
-    title: "Big O",
-    short: "Big O",
-    tag: "Higher or lower, in asymptotic complexity. Don't get TLE'd.",
+    title: "High Low",
+    short: "High Low",
+    tag: "Guess whether the next card is higher or lower.",
   },
   merge: {
-    title: "Merge Conflict",
-    short: "Merge",
-    tag: "Ours, theirs, or the one nobody wants. Roulette for git.",
+    title: "Roulette",
+    short: "Roulette",
+    tag: "Red or black pays double. Green pays 14×.",
   },
   plinko: {
     title: "Plinko",
     short: "Plinko",
-    tag: "Drop a packet through the load balancer and see where it lands.",
+    tag: "Drop a ball and see where it lands.",
   },
 }

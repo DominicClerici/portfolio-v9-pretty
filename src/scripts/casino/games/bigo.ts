@@ -1,9 +1,9 @@
-/* ── Big O ──
-   Hi-lo, where the deck is thirteen complexity classes, O(1) up to the busy
-   beaver. Call whether the next card grows slower or faster (ties count for
-   you), the multiplier compounds with every right call, and one wrong call
-   takes the lot. Cards are drawn with replacement, so the odds only ever
-   depend on the card showing, and each call pays 0.99 ÷ its chance.
+/* ── High Low ──
+   A plain deck, 2 up to the ace. Call whether the next card is higher or
+   lower (ties count for you), the multiplier compounds with every right call,
+   and one wrong call takes the lot. Cards are drawn with replacement, so the
+   odds only ever depend on the card showing, and each call pays 0.99 ÷ its
+   chance.
 
    Other players at the table show in a rail: their card, their streak, and
    whether they're still alive. */
@@ -28,41 +28,9 @@ import {
   toast,
 } from "../ui"
 
-interface Rank {
-  html: string
-  text: string
-  nick: string
-  f: (n: number) => number
-}
-
-const logStar = (n: number) => {
-  let k = 0
-  while (n > 1) {
-    n = Math.log2(n)
-    k++
-  }
-  return k
-}
-// Stirling's approximation, so the n! curve is smooth between integers
-const fact = (n: number) => Math.sqrt(2 * Math.PI * n) * (n / Math.E) ** n
-
-export const RANKS: Rank[] = [
-  { html: "O(1)", text: "O(1)", nick: "hash lookup", f: () => 1 },
-  { html: "O(log<sup>*</sup>n)", text: "O(log* n)", nick: "union-find", f: (n) => logStar(n) },
-  { html: "O(log log n)", text: "O(log log n)", nick: "van Emde Boas", f: (n) => Math.log2(Math.max(1, Math.log2(n))) + 1 },
-  { html: "O(log n)", text: "O(log n)", nick: "binary search", f: (n) => Math.log2(n) + 1 },
-  { html: "O(n<sup>1/2</sup>)", text: "O(√n)", nick: "trial division", f: (n) => Math.sqrt(n) },
-  { html: "O(n)", text: "O(n)", nick: "linear scan", f: (n) => n },
-  { html: "O(n log n)", text: "O(n log n)", nick: "merge sort", f: (n) => n * Math.log2(n) },
-  { html: "O(n²)", text: "O(n²)", nick: "bubble sort", f: (n) => n * n },
-  { html: "O(n³)", text: "O(n³)", nick: "naive matmul", f: (n) => n ** 3 },
-  { html: "O(2<sup>n</sup>)", text: "O(2^n)", nick: "subset sum", f: (n) => 2 ** n },
-  { html: "O(n!)", text: "O(n!)", nick: "travelling salesman", f: (n) => fact(n) },
-  { html: "O(n<sup>n</sup>)", text: "O(n^n)", nick: "brute force", f: (n) => n ** n },
-  { html: "O(BB(n))", text: "O(BB(n))", nick: "busy beaver", f: (n) => (n < 1.6 ? 1 : 1e9) },
-]
-const SUITS = ["{}", "[]", "()", "<>"]
-const LOSS = ["Wrong Answer", "Time Limit Exceeded", "Runtime Error", "Memory Limit Exceeded"]
+export const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+const SUITS = ["♠", "♥", "♦", "♣"]
+const LOSS = ["Wrong", "Not quite", "Nope"]
 
 type Kind = "hi" | "lo" | "hiS" | "loS" | "eq"
 interface Option {
@@ -111,52 +79,26 @@ interface Hand {
 
 const x100 = (m: number) => Math.floor(m * 100 + 1e-9)
 
-/** Growth curve for a card face: shared axes, square-root scaled so the slow
-    classes are still visibly different from each other. */
-function sparkline(rank: number) {
-  const f = RANKS[rank].f
-  const pts: string[] = []
-  const N = 40
-  for (let i = 0; i <= N; i++) {
-    const n = 1 + (15 * i) / N
-    const y = Math.min(1, Math.sqrt(Math.max(0, f(n)) / 32))
-    pts.push(`${(i / N) * 100},${(58 - y * 54).toFixed(2)}`)
-    if (y >= 1) break
-  }
-  return `<svg class="cz-spark" viewBox="0 0 100 60" preserveAspectRatio="none"><path class="cz-spark-axis" d="M0 58H100M0 4V58"/><polyline points="${pts.join(" ")}"/></svg>`
-}
-
-function tier(rank: number) {
-  // green (fast) → amber → red (slow): inks that read on a white card face
-  const t = rank / (RANKS.length - 1)
-  const stops = [
-    [0, 122, 20],
-    [196, 120, 0],
-    [204, 0, 0],
-  ]
-  const [a, b, k] = t < 0.5 ? [stops[0], stops[1], t * 2] : [stops[1], stops[2], (t - 0.5) * 2]
-  const c = a.map((v, i) => Math.round(v + (b[i] - v) * k))
-  return `rgb(${c.join(",")})`
-}
+/** Hearts and diamonds are red, the rest black. */
+const ink = (suit: number) => (suit === 1 || suit === 2 ? "#c00000" : "#000")
+const label = (card: { rank: number; suit: number }) => `${RANKS[card.rank]}${SUITS[card.suit]}`
 
 function cardEl(card: Card, faceDown = false) {
-  const r = RANKS[card.rank]
+  const corner = () => [h("span", { text: RANKS[card.rank] }), h("span", { text: SUITS[card.suit] })]
   return h(
     "div",
-    { class: `cz-pcard${faceDown ? " is-down" : ""}`, style: `--tier:${tier(card.rank)}` },
+    { class: `cz-pcard${faceDown ? " is-down" : ""}`, style: `--tier:${ink(card.suit)}` },
     h(
       "div",
       { class: "cz-pcard-inner" },
       h(
         "div",
-        { class: "cz-pcard-face cz-pcard-front" },
-        h("span", { class: "cz-pcard-corner is-tl", html: r.html }),
-        h("span", { class: "cz-pcard-art", html: sparkline(card.rank) }),
-        h("span", { class: "cz-pcard-big", html: r.html }),
-        h("span", { class: "cz-pcard-nick", text: r.nick }),
-        h("span", { class: "cz-pcard-corner is-br", html: r.html }),
+        { class: "cz-pcard-face cz-pcard-front", "aria-label": label(card) },
+        h("span", { class: "cz-pcard-corner is-tl" }, ...corner()),
+        h("span", { class: "cz-pcard-big", text: SUITS[card.suit] }),
+        h("span", { class: "cz-pcard-corner is-br" }, ...corner()),
       ),
-      h("div", { class: "cz-pcard-face cz-pcard-back" }, h("span", { text: "O( )" })),
+      h("div", { class: "cz-pcard-face cz-pcard-back" }),
     ),
   )
 }
@@ -202,7 +144,7 @@ export class BigOGame implements Game {
       { class: "cz-bigo-deck", "aria-hidden": "true" },
       h("span", { class: "cz-bigo-deckcard" }),
       h("span", { class: "cz-bigo-deckcard" }),
-      h("span", { class: "cz-bigo-deckcard" }, h("span", { text: "O( )" })),
+      h("span", { class: "cz-bigo-deckcard" }),
     )
     this.verdict = h("div", { class: "cz-verdict", "aria-live": "polite" })
     this.trail = h("div", { class: "cz-bigo-trail", "aria-label": "Cards this hand" })
@@ -215,7 +157,7 @@ export class BigOGame implements Game {
       h(
         "div",
         { class: "cz-bigo-scale", "aria-hidden": "true" },
-        ...RANKS.map((r, i) => h("span", { style: `--tier:${tier(i)}`, "data-rank": String(i), html: r.html })),
+        ...RANKS.map((r, i) => h("span", { "data-rank": String(i), text: r })),
       ),
       h("div", { class: "cz-bigo-table" }, this.deck, h("div", { class: "cz-bigo-slotwrap" }, this.slot, this.verdict)),
       h(
@@ -258,7 +200,7 @@ export class BigOGame implements Game {
         h(
           "p",
           { class: "cz-hint" },
-          h("kbd", { text: "↑" }), " ", h("kbd", { text: "↓" }), " call · ",
+          h("kbd", { text: "↑" }), " ", h("kbd", { text: "↓" }), " guess · ",
           h("kbd", { text: "S" }), " skip · ",
           h("kbd", { text: "Space" }), " ", this.spaceHint,
         ),
@@ -333,7 +275,7 @@ export class BigOGame implements Game {
     if (ok) {
       hand.m *= 0.99 / opt.p
       hand.n++
-      this.setVerdict("Accepted", "ok")
+      this.setVerdict("Correct", "ok")
       sfx.win(hand.n >= 5)
       this.broadcast("win")
     } else {
@@ -341,7 +283,7 @@ export class BigOGame implements Game {
       this.setVerdict(LOSS[Math.floor(rand() * LOSS.length)], "bad")
       sfx.lose()
       this.broadcast("bust")
-      toast(`${money(hand.bet)} lost after ${hand.n} ${hand.n === 1 ? "call" : "calls"}.`, "loss")
+      toast(`${money(hand.bet)} lost${hand.n ? ` after ${hand.n} ${hand.n === 1 ? "guess" : "guesses"}` : ""}.`, "loss")
       if (!reducedMotion.matches) {
         this.slot.classList.remove("is-shake")
         void this.slot.offsetWidth
@@ -372,7 +314,7 @@ export class BigOGame implements Game {
     hand.state = "cashed"
     const win = payout(hand.bet, x100(hand.m))
     wallet.credit(win)
-    this.setVerdict("Submitted", "ok")
+    this.setVerdict("Cashed out", "ok")
     sfx.cashout()
     toast(`Cashed out at ${mult(x100(hand.m))}: ${signed(win - hand.bet)}`, "win")
     this.broadcast("cash")
@@ -424,12 +366,11 @@ export class BigOGame implements Game {
   }
 
   private pushTrail(card: Card, skipped = false) {
-    const r = RANKS[card.rank]
     const mark = skipped ? "skip" : card.guess === "hi" || card.guess === "hiS" ? "↑" : card.guess === "eq" ? "=" : "↓"
     const chip = h(
       "span",
-      { class: `cz-trail-chip${skipped ? " is-skip" : card.ok ? " is-ok" : " is-bad"}`, style: `--tier:${tier(card.rank)}` },
-      h("span", { class: "cz-trail-rank", html: r.html }),
+      { class: `cz-trail-chip${skipped ? " is-skip" : card.ok ? " is-ok" : " is-bad"}`, style: `--tier:${ink(card.suit)}` },
+      h("span", { class: "cz-trail-rank", text: label(card) }),
       h("span", { class: "cz-trail-mark", text: mark }),
     )
     this.trail.append(chip)
@@ -492,7 +433,7 @@ export class BigOGame implements Game {
         h("span", { class: "cz-guess-sub" }, h("span", { text: `${(o.p * 100).toFixed(1)}%` }), h("strong", { text: mult(x100(0.99 / o.p)) })),
       )
       btn.disabled = !live
-      btn.title = `${o.label} ${o.sub}: ${o.kind.startsWith("hi") ? "grows faster" : o.kind.startsWith("lo") ? "grows slower" : "the same class again"}`
+      btn.title = `${o.label} ${o.sub}: ${o.kind.startsWith("hi") ? "a higher card" : o.kind.startsWith("lo") ? "a lower card" : "the same rank again"}`
     }
     fill(this.optA, a, a.kind === "eq" ? "=" : "↑")
     fill(this.optB, b, b.kind === "eq" ? "=" : "↓")
@@ -500,7 +441,7 @@ export class BigOGame implements Game {
     this.spaceHint.textContent = live ? "cash" : "deal"
     if (live && hand) {
       const win = payout(hand.bet, x100(hand.m))
-      this.action.set("Cash out", hand.n ? `${money(win)} · ${mult(x100(hand.m))}` : "make a call first", "cash")
+      this.action.set("Cash out", hand.n ? `${money(win)} · ${mult(x100(hand.m))}` : "make a guess first", "cash")
       this.action.disabled = hand.n === 0
     } else {
       this.action.set("Deal", this.bet.valid ? `${money(this.bet.cents)} to play` : "enter a bet", "go")
@@ -541,7 +482,7 @@ export class BigOGame implements Game {
           avatar(p.name),
           h("span", { class: "cz-seat-name", text: p.name }),
           play
-            ? h("span", { class: "cz-seat-card", style: `--tier:${tier(play.card)}`, html: RANKS[play.card].html })
+            ? h("span", { class: "cz-seat-card", style: `--tier:${ink(play.suit)}`, text: label({ rank: play.card, suit: play.suit }) })
             : h("span", { class: "cz-seat-card is-empty", text: "—" }),
           h("span", {
             class: "cz-seat-res",
@@ -551,7 +492,7 @@ export class BigOGame implements Game {
                 ? `bust · ${moneyShort(play.bet)}`
                 : state === "cash"
                   ? `${mult(play.mult)} · +${moneyShort(payout(play.bet, play.mult) - play.bet)}`
-                  : `${mult(play.mult)} · ${play.n} ${play.n === 1 ? "call" : "calls"}`,
+                  : `${mult(play.mult)} · ${play.n} ${play.n === 1 ? "guess" : "guesses"}`,
           }),
         )
       }),

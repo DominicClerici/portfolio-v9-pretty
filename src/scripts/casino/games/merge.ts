@@ -1,11 +1,11 @@
-/* ── Merge Conflict ──
-   Roulette as a reel of commits. Fifteen to a cycle: seven resolve --ours,
-   seven --theirs, one is a conflict. Stake any mix of the three, run
-   `git merge`, and the reel spins down to whichever commit lands under the
-   head. Ours and theirs pay 2×, a conflict pays 14×.
+/* ── Roulette ──
+   A reel of numbered tiles, fifteen to a cycle: seven red, seven black, and
+   a green zero. Put chips on any mix of the three, spin, and the reel winds
+   down to whichever tile lands under the head. Red and black pay 2×, green
+   pays 14×.
 
-   Other players' spins show up as chips on the boxes they backed, revealed
-   when their own reel would stop, and as lines in the shared merge log. */
+   Other players' spins show up as chips on the colors they backed, revealed
+   when their own reel would stop, and as lines in the shared log. */
 
 import type { MergePlay, ServerMsg } from "../../../../multiplayer/src/protocol"
 import type { Game } from "../game"
@@ -34,30 +34,14 @@ const PAYS: Record<Side, number> = { o: 2, t: 2, c: 14 }
 const CYCLES = 9
 const SPIN_MS = 5200
 
-const SIDE_INFO: Record<Side, { flag: string; name: string; tile: string }> = {
-  o: { flag: "--ours", name: "ours", tile: "ours" },
-  t: { flag: "--theirs", name: "theirs", tile: "theirs" },
-  c: { flag: "CONFLICT", name: "conflict", tile: "<<<<<<<" },
+const SIDE_INFO: Record<Side, { name: string }> = {
+  o: { name: "Red" },
+  t: { name: "Black" },
+  c: { name: "Green" },
 }
+const KEYS: Record<string, Side> = { r: "o", b: "t", g: "c" }
 
-const BRANCHES = [
-  "feature/yolo",
-  "hotfix/please-work",
-  "feat/all-in",
-  "fix/typo-final-FINAL",
-  "refactor/everything",
-  "wip/do-not-merge",
-  "chore/bump-deps",
-  "feat/add-blockchain",
-  "fix/works-on-my-machine",
-  "experiment/vibes",
-]
-const FILES = ["src/wallet.ts", "package-lock.json", "src/index.ts", "README.md", "src/utils/luck.ts"]
-
-const PROMPT = "C:\\dev\\null\\casino>"
-
-const pick = <T>(a: T[]) => a[Math.floor(rand() * a.length)]
-const hash = () => Math.floor(rand() * 0xfffffff).toString(16).padStart(7, "0")
+const PROMPT = "C:\\Program Files\\Casino>"
 
 interface Spin {
   stakes: Record<Side, number>
@@ -92,13 +76,8 @@ export class MergeGame implements Game {
   constructor() {
     this.strip = h("div", { class: "cz-reel-strip" })
     for (let c = 0; c < CYCLES; c++)
-      for (const side of CYCLE) {
-        const tile = h(
-          "div",
-          { class: `cz-tile is-${side}` },
-          h("span", { class: "cz-tile-name", text: SIDE_INFO[side].tile }),
-          h("span", { class: "cz-tile-hash", text: hash() }),
-        )
+      for (const [i, side] of CYCLE.entries()) {
+        const tile = h("div", { class: `cz-tile is-${side}`, "aria-label": `${i} ${SIDE_INFO[side].name}` }, String(i))
         this.tiles.push(tile)
         this.strip.append(tile)
       }
@@ -108,7 +87,7 @@ export class MergeGame implements Game {
       this.strip,
       h("div", { class: "cz-reel-head", "aria-hidden": "true" }),
     )
-    this.historyEl = h("div", { class: "cz-merge-history", "aria-label": "Recent merges" })
+    this.historyEl = h("div", { class: "cz-merge-history", "aria-label": "Recent spins" })
     this.log = h("div", { class: "cz-term", role: "log", "aria-live": "polite" })
 
     const box = (side: Side) => {
@@ -119,14 +98,14 @@ export class MergeGame implements Game {
         {
           type: "button",
           class: `cz-box is-${side}`,
-          title: `Add your bet to ${SIDE_INFO[side].name} (right-click to clear)`,
+          title: `Add a chip to ${SIDE_INFO[side].name.toLowerCase()} (right-click to clear)`,
           onclick: () => this.add(side),
           oncontextmenu: (e: Event) => {
             e.preventDefault()
             this.clear(side)
           },
         },
-        h("span", { class: "cz-box-flag", text: SIDE_INFO[side].flag }),
+        h("span", { class: "cz-box-flag", text: SIDE_INFO[side].name }),
         h("span", { class: "cz-box-pays", text: `${PAYS[side]}×` }),
         stake,
         others,
@@ -150,7 +129,7 @@ export class MergeGame implements Game {
     )
 
     this.bet = new BetInput("merge", "Chip")
-    this.action = actionButton(() => this.merge())
+    this.action = actionButton(() => this.spinNow())
     this.clearBtn = h("button", { type: "button", class: "cz-ghost-btn", text: "Clear bets", onclick: () => this.clear() })
     this.bet.onChange(() => this.renderControls())
     wallet.onChange(() => this.renderControls())
@@ -162,23 +141,21 @@ export class MergeGame implements Game {
         "div",
         { class: "cz-controls" },
         this.bet.el,
-        h("p", { class: "cz-panel-note", text: "Click a box to stake a chip on it. Back as many as you like." }),
+        h("p", { class: "cz-panel-note", text: "Click a color to put a chip on it. Back as many as you like." }),
         h(
           "div",
           { class: "cz-quick" },
           ...(["o", "c", "t"] as Side[]).map((s) =>
-            h("button", { type: "button", class: `cz-quick-btn is-${s}`, text: `+ ${SIDE_INFO[s].name}`, onclick: () => this.add(s) }),
+            h("button", { type: "button", class: `cz-quick-btn is-${s}`, text: `+ ${SIDE_INFO[s].name.toLowerCase()}`, onclick: () => this.add(s) }),
           ),
         ),
         this.clearBtn,
         this.action.el,
-        h("p", { class: "cz-hint", html: "<kbd>O</kbd> <kbd>C</kbd> <kbd>T</kbd> stake · <kbd>Space</kbd> merge" }),
+        h("p", { class: "cz-hint", html: "<kbd>R</kbd> <kbd>G</kbd> <kbd>B</kbd> add a chip · <kbd>Space</kbd> spin" }),
       ),
     )
 
-    this.line(`casino shell [Version 5.1.2600]`, "dim")
-    this.line(`${PROMPT}git status`, "cmd")
-    this.line(`On branch main. Your balance is up to date with 'origin/main'.`, "dim")
+    this.line("Casino [Version 5.1.2600]", "dim")
 
     new ResizeObserver(() => this.measure()).observe(this.reel)
     net.on((msg) => this.onNet(msg))
@@ -197,10 +174,10 @@ export class MergeGame implements Game {
 
   key(e: KeyboardEvent) {
     const k = e.key.toLowerCase()
-    if (k === "o" || k === "t" || k === "c") return this.add(k), true
+    if (KEYS[k]) return this.add(KEYS[k]), true
     if (k === " " || k === "enter") {
       if ((e.target as HTMLElement).closest("button")) return false
-      this.merge()
+      this.spinNow()
       return true
     }
     return false
@@ -238,13 +215,13 @@ export class MergeGame implements Game {
 
   /* ── Spin ── */
 
-  private merge() {
+  private spinNow() {
     if (this.spin && !this.spin.done) return
     const total = this.total()
-    if (!total) return toast("Stake a chip on ours, theirs or conflict first.")
-    if (!wallet.debit(total)) return toast("Your stakes add up to more than your balance.")
+    if (!total) return toast("Put a chip on red, black or green first.")
+    if (!wallet.debit(total)) return toast("Your chips add up to more than your balance.")
 
-    // Start from the same commit in the first cycle, so any spin has room
+    // Start from the same tile in the first cycle, so any spin has room
     this.pos = (Math.floor(this.pos) % CYCLE.length) + CYCLE.length + (this.pos % 1)
     const slot = Math.floor(rand() * CYCLE.length)
     const result = CYCLE[slot]
@@ -265,8 +242,7 @@ export class MergeGame implements Game {
       done: false,
     }
     this.spin = spin
-    const branch = pick(BRANCHES)
-    this.line(`${PROMPT}git merge ${branch}`, "cmd")
+    this.line(`${PROMPT}spin`, "cmd")
     sfx.click()
     net.send({ t: "play", game: "merge", d: { ...spin.stakes, r: result, ms: SPIN_MS, win: this.winOf(spin) } })
     this.renderControls()
@@ -309,17 +285,8 @@ export class MergeGame implements Game {
     const win = this.winOf(spin)
     const staked = spin.stakes.o + spin.stakes.t + spin.stakes.c
     wallet.credit(win)
-    const file = pick(FILES)
-    if (spin.result === "c") {
-      this.line(`CONFLICT (content): Merge conflict in ${file}`, "bad")
-      this.line("Automatic merge failed; fix conflicts and then commit the result.", "dim")
-    } else if (spin.result === "o") {
-      this.line(`Merge made by the 'ours' strategy.`, "ok")
-      this.line(` ${file} | 2 +-`, "dim")
-    } else {
-      this.line(`Merge made by the 'ort' strategy, -X theirs.`, "theirs")
-      this.line(` ${file} | 5 +++--`, "dim")
-    }
+    const n = Math.floor(spin.target) % CYCLE.length
+    this.line(`${n} ${SIDE_INFO[spin.result].name.toLowerCase()}`, spin.result === "o" ? "red" : spin.result === "c" ? "green" : "black")
     const net_ = win - staked
     this.line(
       net_ > 0 ? `  ${signed(net_)}  (${money(win)} back)` : net_ === 0 ? `  even  (${money(win)} back)` : `  ${signed(net_)}`,
@@ -327,13 +294,13 @@ export class MergeGame implements Game {
     )
     if (net_ > 0) sfx.win(spin.result === "c")
     else sfx.lose()
-    if (win > 0 && spin.result === "c") toast(`Conflict! ${signed(net_)}`, "win")
+    if (win > 0 && spin.result === "c") toast(`Green! ${signed(net_)}`, "win")
 
     this.history = [spin.result, ...this.history].slice(0, 30)
     prefs.set("merge:history", this.history)
     this.renderHistory()
 
-    // Re-seat the reel on the same commit near the front, so it never runs out
+    // Re-seat the reel on the same tile near the front, so it never runs out
     window.setTimeout(() => {
       if (this.spin !== spin) return
       const idx = Math.floor(this.pos)
@@ -369,7 +336,7 @@ export class MergeGame implements Game {
 
   private renderHistory() {
     this.historyEl.replaceChildren(
-      h("span", { class: "cz-label", text: "git log" }),
+      h("span", { class: "cz-label", text: "History" }),
       ...this.history.slice(0, 20).map((s) => h("span", { class: `cz-hist is-${s}`, title: SIDE_INFO[s].name })),
     )
   }
@@ -391,15 +358,15 @@ export class MergeGame implements Game {
     this.panel.querySelectorAll<HTMLButtonElement>(".cz-quick-btn").forEach((b) => (b.disabled = spinning))
     for (const side of ["o", "t", "c"] as Side[]) this.boxes[side].el.disabled = spinning
     if (spinning) {
-      this.action.set("Merging…", `${money(total)} riding`, "wait")
+      this.action.set("Spinning…", `${money(total)} riding`, "wait")
       this.action.disabled = true
     } else {
-      this.action.set("git merge", total ? `${money(total)} staked` : "stake a chip first", "go")
+      this.action.set("Spin", total ? `${money(total)} on the table` : "add a chip first", "go")
       this.action.disabled = !total || total > wallet.balance
     }
   }
 
-  private line(text: string, tone: "cmd" | "ok" | "bad" | "dim" | "theirs" | "peer" = "dim") {
+  private line(text: string, tone: "cmd" | "ok" | "bad" | "dim" | "red" | "black" | "green" | "peer" = "dim") {
     const el = h("div", { class: `cz-term-line is-${tone}`, text })
     this.log.append(el)
     while (this.log.childElementCount > 40) this.log.firstElementChild?.remove()
@@ -424,7 +391,7 @@ export class MergeGame implements Game {
       chips.forEach((c) => c.classList.add(c.dataset.side === d.r ? "is-win" : "is-lose"))
       const staked = d.o + d.t + d.c
       const net_ = d.win - staked
-      this.line(`${msg.name} merged -> ${SIDE_INFO[d.r].name}  ${signed(net_) || "±0"}`, "peer")
+      this.line(`${msg.name}: ${SIDE_INFO[d.r].name.toLowerCase()}  ${signed(net_) || "±0"}`, "peer")
       window.setTimeout(() => {
         chips.forEach((c) => {
           c.classList.add("is-out")
