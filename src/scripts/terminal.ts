@@ -1,11 +1,11 @@
 /* ── Terminal typing engine ──
    Shared by the hero Header and the footer cap-bar echo. Drives the
-   `>_ sudo ./casino.sh` prompt that opens the /dev/null casino: blinking
+   `>_ ./casino.exe` prompt that opens the /dev/null casino: blinking
    cursor, character-by-character typing, and reverse deletion. The consumers own their own
    trigger wiring (hover, viewport, scroll); this module only owns the
    text/cursor animation state. */
 
-export const TYPE_STRING = "sudo ./casino.sh"
+export const TYPE_STRING = "./casino.exe"
 
 export const prefersReducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",

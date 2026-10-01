@@ -42,11 +42,11 @@ export const crashAt = (ms: number) =>
 export const crashMsTo = (x100: number) =>
   (Math.log(x100 / 100) / CRASH_RATE) * 1000
 
-/** Bust point from a uniform u ∈ [0,1): P(point ≥ x) = 0.99 / x, so every
-    cash-out target returns 99% over time. About 2% of rounds die at 1.00×
+/** Bust point from a uniform u ∈ [0,1): P(point ≥ x) = 0.97 / x, so every
+    cash-out target returns 97% over time. About 4% of rounds die at 1.00×
     (everything that would land in [1.00, 1.01)). */
 export const crashPoint = (u: number) =>
-  Math.min(CRASH_MAX, Math.max(100, Math.floor(99 / (1 - u))))
+  Math.min(CRASH_MAX, Math.max(100, Math.floor(97 / (1 - u))))
 
 export interface CrashBet {
   id: string

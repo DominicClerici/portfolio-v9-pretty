@@ -252,10 +252,10 @@ body {
 }
 
 /* ── The >_ casino prompts ──
-   Each prompt types itself out to `>sudo ./casino.sh_` on hover, but is
+   Each prompt types itself out to `>./casino.exe_` on hover, but is
    clickable from the first frame across the whole of that command, not just
    the `>_` it rests at: the hit area is reserved up front, so a pointer aimed
-   at where the text is about to be never lands on nothing. 18ch is the full
+   at where the text is about to be never lands on nothing. 14ch is the full
    command (see TYPE_STRING in scripts/terminal.ts) in the prompt's own mono
    face. The box itself stays as small as its text, so nothing reflows. */
 [data-terminal]::after {
@@ -264,7 +264,7 @@ body {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 18ch;
+  width: 14ch;
 }
 
 /* The prompts' cursor blink, switched on by startBlink() in

@@ -2,7 +2,7 @@
    A plain deck, 2 up to the ace. Call whether the next card is higher or
    lower (ties count for you), the multiplier compounds with every right call,
    and one wrong call takes the lot. Cards are drawn with replacement, so the
-   odds only ever depend on the card showing, and each call pays 0.99 ÷ its
+   odds only ever depend on the card showing, and each call pays 0.97 ÷ its
    chance.
 
    Other players at the table show in a rail: their card, their streak, and
@@ -273,7 +273,7 @@ export class BigOGame implements Game {
     this.pushTrail(cur)
     await this.place(next, false)
     if (ok) {
-      hand.m *= 0.99 / opt.p
+      hand.m *= 0.97 / opt.p
       hand.n++
       this.setVerdict("Correct", "ok")
       sfx.win(hand.n >= 5)
@@ -430,7 +430,7 @@ export class BigOGame implements Game {
           h("span", { class: "cz-guess-arrow", text: arrow }),
           h("span", { class: "cz-guess-label" }, h("span", { text: o.label }), h("span", { class: "cz-guess-or", text: o.sub })),
         ),
-        h("span", { class: "cz-guess-sub" }, h("span", { text: `${(o.p * 100).toFixed(1)}%` }), h("strong", { text: mult(x100(0.99 / o.p)) })),
+        h("span", { class: "cz-guess-sub" }, h("span", { text: `${(o.p * 100).toFixed(1)}%` }), h("strong", { text: mult(x100(0.97 / o.p)) })),
       )
       btn.disabled = !live
       btn.title = `${o.label} ${o.sub}: ${o.kind.startsWith("hi") ? "a higher card" : o.kind.startsWith("lo") ? "a lower card" : "the same rank again"}`
