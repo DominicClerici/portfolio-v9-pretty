@@ -269,22 +269,30 @@
        glass carries the middle on its own.
 
        All three are written only when the value moves, so away from the turn
-       this is one compare a frame. */
+       this is one compare a frame.
+
+       While either section is part-way through its fade it is lifted onto a
+       layer of its own (will-change), so the fade is the compositor's to run
+       and each frame of it is a blend of a layer already drawn. Left in the
+       page's own layer, every step of the opacity would repaint the whole
+       section, and both are screen-sized slabs of type. The layer is dropped
+       again as soon as the section is fully in or out, so at rest the text
+       is drawn straight into the page, as crisp as anywhere else on it (see
+       Career's playhead for why that matters). */
     const alpha = (x: number) => (x > 0.999 ? "" : x.toFixed(3));
+    const fade = (el: HTMLElement, x: number) => {
+      el.style.opacity = alpha(x);
+      const layer = x > 0 && x <= 0.999 ? "opacity" : "";
+      if (el.style.willChange !== layer) el.style.willChange = layer;
+    };
     let lastTurn = -1;
     function paintTurn(dark: number) {
       const v = Math.round(dark * 256) / 256;
       if (v === lastTurn) return;
       lastTurn = v;
       scope.style.backgroundColor = backdropColor(v);
-      if (about)
-        about.style.opacity = alpha(
-          1 - smoothstep(ABOUT_OUT[0], ABOUT_OUT[1], v),
-        );
-      if (darkAnchor)
-        darkAnchor.style.opacity = alpha(
-          smoothstep(CAREER_IN[0], CAREER_IN[1], v),
-        );
+      if (about) fade(about, 1 - smoothstep(ABOUT_OUT[0], ABOUT_OUT[1], v));
+      if (darkAnchor) fade(darkAnchor, smoothstep(CAREER_IN[0], CAREER_IN[1], v));
     }
     // Shared scroll bus (Layout head shim) — fires once per frame; the scene's
     // own render loop eases toward the target, so frame-exact timing isn't
