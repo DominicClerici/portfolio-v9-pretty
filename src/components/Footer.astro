@@ -567,6 +567,20 @@ const connect = [
       background-image: var(--blur-portrait);
     }
   }
+  /* The photo stays out of sight over the blur-up until the script has it
+     whole and decoded, then crossfades in, never half-drawn. */
+  .footer-photo {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .footer-photo.is-loaded {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .footer-photo {
+      transition: none;
+    }
+  }
 
   /* The casino peek: the phone sheet's title bar (casino.css), value for
      value: an XP window's, Luna blue. The sheet hides its caption buttons
@@ -820,9 +834,15 @@ const connect = [
         el.srcset = el.dataset.srcset!;
       }
       photo.srcset = photo.dataset.srcset!;
+      // Shown only once the whole file is in and decoded (see the styles):
+      // left to itself, the browser paints the photo as it streams in and
+      // decodes its tiles as they come on screen, so a footer reached early
+      // filled in in bands. A failed decode shows it all the same.
+      const decoding = photo.decode();
+      const show = () => photo.classList.add("is-loaded");
+      decoding.then(show, show);
       if (reducedMotion) return;
-      photo
-        .decode()
+      decoding
         .then(() => {
           decoded = true;
           if (footerVisible) startHaze();
@@ -844,7 +864,8 @@ const connect = [
           io.disconnect();
         }
       },
-      { rootMargin: "600px 0px" },
+      // A screen ahead of the footer, should the idle load not have come yet
+      { rootMargin: "100% 0px" },
     ).observe(footer);
 
     new IntersectionObserver(
