@@ -30,6 +30,7 @@
  */
 
 import { GRID, MARGIN, SPAN, fieldOf } from "./logo-field"
+import { buildProgram, whenLinked } from "../lib/gl-program"
 
 /** A linear gradient in the logo's 100×100 box: from → to, stops as
  *  [offset 0…1, "#rrggbb"]. Interpolated in sRGB, as SVG does. */
@@ -241,44 +242,46 @@ export const logoMorph = (
   }
   if (!gl) return null
 
-  const compile = (type: number, src: string) => {
-    const sh = gl!.createShader(type)!
-    gl!.shaderSource(sh, src)
-    gl!.compileShader(sh)
-    return sh
+  // Linked without waiting on it (src/lib/gl-program.ts). The uniforms are
+  // looked up and the paints set once whenLinked() says it is done; the
+  // fields can go into their texture meanwhile, and onReady waits for both.
+  const prog = buildProgram(gl, VERT, fragFor(n))
+  let linked = false
+  let uCount: WebGLUniformLocation | null = null
+  let uW: WebGLUniformLocation | null = null
+  let uLayer: WebGLUniformLocation | null = null
+  let uBloat: WebGLUniformLocation | null = null
+  let uBlur: WebGLUniformLocation | null = null
+  let uPx: WebGLUniformLocation | null = null
+  const setup = (g: WebGL2RenderingContext) => {
+    g.useProgram(prog)
+    uCount = g.getUniformLocation(prog, "uCount")
+    uW = g.getUniformLocation(prog, "uW")
+    uLayer = g.getUniformLocation(prog, "uLayer")
+    uBloat = g.getUniformLocation(prog, "uBloat")
+    uBlur = g.getUniformLocation(prog, "uBlur")
+    uPx = g.getUniformLocation(prog, "uPx")
+    g.uniform1i(g.getUniformLocation(prog, "uField"), 0)
+    // The paints never change: set them once.
+    const grad = new Float32Array(n * 4)
+    const stops = new Float32Array(n * STOPS * 4)
+    logos.forEach(({ paint: { from, to, stops: st } }, i) => {
+      const dx = to[0] - from[0]
+      const dy = to[1] - from[1]
+      const len2 = dx * dx + dy * dy || 1
+      grad.set([from[0], from[1], dx / len2, dy / len2], i * 4)
+      for (let k = 0; k < STOPS; k++) {
+        const [at, hex] = st[Math.min(k, st.length - 1)]
+        stops.set([...rgb(hex), k < st.length ? at : 1], (i * STOPS + k) * 4)
+      }
+    })
+    g.uniform4fv(g.getUniformLocation(prog, "uGrad"), grad)
+    g.uniform4fv(g.getUniformLocation(prog, "uStop"), stops)
+    g.uniform1fv(
+      g.getUniformLocation(prog, "uHue"),
+      logos.map((l) => hueOf(l.paint)),
+    )
   }
-  const prog = gl.createProgram()!
-  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT))
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fragFor(n)))
-  gl.linkProgram(prog)
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
-  gl.useProgram(prog)
-  const uCount = gl.getUniformLocation(prog, "uCount")
-  const uW = gl.getUniformLocation(prog, "uW")
-  const uLayer = gl.getUniformLocation(prog, "uLayer")
-  const uBloat = gl.getUniformLocation(prog, "uBloat")
-  const uBlur = gl.getUniformLocation(prog, "uBlur")
-  const uPx = gl.getUniformLocation(prog, "uPx")
-  gl.uniform1i(gl.getUniformLocation(prog, "uField"), 0)
-  // The paints never change: set them once.
-  const grad = new Float32Array(n * 4)
-  const stops = new Float32Array(n * STOPS * 4)
-  logos.forEach(({ paint: { from, to, stops: st } }, i) => {
-    const dx = to[0] - from[0]
-    const dy = to[1] - from[1]
-    const len2 = dx * dx + dy * dy || 1
-    grad.set([from[0], from[1], dx / len2, dy / len2], i * 4)
-    for (let k = 0; k < STOPS; k++) {
-      const [at, hex] = st[Math.min(k, st.length - 1)]
-      stops.set([...rgb(hex), k < st.length ? at : 1], (i * STOPS + k) * 4)
-    }
-  })
-  gl.uniform4fv(gl.getUniformLocation(prog, "uGrad"), grad)
-  gl.uniform4fv(gl.getUniformLocation(prog, "uStop"), stops)
-  gl.uniform1fv(
-    gl.getUniformLocation(prog, "uHue"),
-    logos.map((l) => hueOf(l.paint)),
-  )
   gl.bindVertexArray(gl.createVertexArray())
 
   const tex = gl.createTexture()
@@ -307,10 +310,25 @@ export const logoMorph = (
       gl!.TEXTURE_2D_ARRAY, 0, 0, 0, i, GRID, GRID, 1,
       gl!.RED, gl!.FLOAT, field,
     )
-    if (i === start) onReady()
+    if (i === start) {
+      if (linked) onReady()
+    }
     // A field arriving mid-morph joins the blend it was missing from.
     else if (w[i] > 1e-3) draw()
   }
+  whenLinked(gl, [prog], (ok) => {
+    if (lost) return
+    if (!ok) {
+      // As a lost context: the caller keeps its SVGs
+      lost = true
+      worker?.terminate()
+      worker = null
+      return onLost()
+    }
+    setup(gl!)
+    linked = true
+    if (ready[start]) onReady()
+  })
   const ensure = (i: number) => {
     if (!ready[i] && !lost) upload(i, fieldOf(logos[i].path))
   }
@@ -401,7 +419,7 @@ export const logoMorph = (
   const ws = new Float32Array(n)
   const layers = new Int32Array(n)
   const draw = () => {
-    if (lost || !size) return
+    if (lost || !linked || !size) return
     const g = gl!
     const px = size * (SPAN / 100)
     canvas.style.transform = `translate3d(${(pw[0] - (px - size) / 2).toFixed(2)}px, ${(pw[1] - (px - size) / 2).toFixed(2)}px, 0)`
