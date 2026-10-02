@@ -393,3 +393,30 @@ const BackTag = overlay ? "button" : "a";
     }
   }
 </style>
+
+<script>
+  // Wakes the spread's lazy plates a screen (100vh) before they scroll into
+  // sight. The spread is its own scroller, and native lazy loading only
+  // looks ahead along the page's viewport: inside a nested scroller, Safari
+  // and Firefox fetch a lazy image only once it is already on screen, and
+  // Chromium's look-ahead is its own. An observer rooted on the spread, with
+  // a screen of margin below it, holds every browser to the same rule.
+  // Clearing the attribute resumes the deferred load in place. A hidden
+  // (overlay) spread has no layout, so its plates wait until it opens —
+  // when Work.astro hasn't already woken them with their window.
+  for (const spread of document.querySelectorAll<HTMLElement>(".we1-spread")) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          e.target.removeAttribute("loading");
+          io.unobserve(e.target);
+        }
+      },
+      { root: spread, rootMargin: "0px 0px 100% 0px" },
+    );
+    for (const img of spread.querySelectorAll('img[loading="lazy"]')) {
+      io.observe(img);
+    }
+  }
+</script>

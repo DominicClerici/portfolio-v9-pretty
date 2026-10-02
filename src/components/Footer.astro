@@ -864,7 +864,8 @@ const connect = [
           io.disconnect();
         }
       },
-      { rootMargin: "600px 0px" },
+      // A screen ahead of the footer, should the idle load not have come yet
+      { rootMargin: "100% 0px" },
     ).observe(footer);
 
     new IntersectionObserver(

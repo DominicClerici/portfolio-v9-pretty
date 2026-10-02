@@ -11,12 +11,10 @@ interface Props {
   gallery: GalleryPlate[];
   decorative?: boolean;
   leadOnly?: boolean;
-  /** Fetch at once rather than lazily: the standalone project page, where
-   *  the column is the page. The lead plate is its largest paint, so it goes
-   *  first; the rest follow at low priority. Lazy loading can't be left to
-   *  do this there, as the plates sit in the spread's own scroller, and
-   *  outside Chromium a lazy image in a nested scroller isn't fetched until
-   *  it has already scrolled into sight. */
+  /** Fetch the lead plate at once, at high priority: the standalone project
+   *  page, where it is on screen from the first paint (and its largest
+   *  one). The rest stay lazy, and ProjectSpread's script wakes them a
+   *  screen ahead of the reader. */
   eager?: boolean;
 }
 
@@ -72,8 +70,8 @@ const sizes =
                 ? "block w-full h-auto"
                 : "absolute inset-0 w-full h-full object-cover object-top"
             }
-            loading={eager ? "eager" : "lazy"}
-            fetchpriority={eager ? (k === 0 ? "high" : "low") : undefined}
+            loading={eager && k === 0 ? "eager" : "lazy"}
+            fetchpriority={eager && k === 0 ? "high" : undefined}
             decoding="async"
           />
         </div>
