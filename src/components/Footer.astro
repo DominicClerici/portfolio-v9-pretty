@@ -1078,9 +1078,8 @@ const connect = [
       docScrollH = document.documentElement.scrollHeight;
     }
 
-    function onEchoScroll() {
-      const distanceFromBottom =
-        docScrollH - (window.scrollY + window.innerHeight);
+    function onEchoScroll(y = window.scrollY) {
+      const distanceFromBottom = docScrollH - (y + window.innerHeight);
       setEchoVisible(distanceFromBottom <= 6);
     }
     // Shared scroll bus — functional (not decorative), so it must run under

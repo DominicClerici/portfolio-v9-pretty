@@ -778,7 +778,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         (1 - (w.inStr ? Number(w.inStr) : 1)) * LIFT_PX;
       // The scroll driver, once there is one: it re-seats the windows on the
       // new numbers without waiting for the next scroll.
-      let afterGeo = () => {};
+      let afterGeo = (_y: number, _x: number) => {};
       const measureGeo = () => {
         const sx = window.scrollX;
         const sy = window.scrollY;
@@ -793,12 +793,14 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             w.archY = a.top - r.top - liftOf(w);
           }
         }
-        afterGeo();
       };
-      onLayoutChange(measureGeo);
-      // A plate can change size without the document doing so
-      const plateRO = new ResizeObserver(measureGeo);
-      for (const w of windows) plateRO.observe(w.plate);
+      // A plate can change size without the document doing so, so the plates
+      // are watched too
+      onLayoutChange(
+        measureGeo,
+        (y, x) => afterGeo(y, x),
+        windows.map((w) => w.plate),
+      );
 
       // ── Waking the window's content ──
       // The replica's images are not decoration inside the window, they *are*
@@ -839,10 +841,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         if (imgs.length) asleep.set(w.plate, imgs);
       }
 
-      const wakeNearWindows = () => {
+      const wakeNearWindows = (sy = window.scrollY) => {
         if (!asleep.size) return;
         const vh = window.innerHeight;
-        const sy = window.scrollY;
         for (const [plate, imgs] of asleep) {
           const w = windows.find((w) => w.plate === plate)!;
           const top = w.top - sy;
@@ -974,15 +975,37 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           `[data-plate="${i}"] [data-view] .we1-gfig-lead .we1-gframe`,
         );
 
-      // measureAll lays out each hidden spread to measure it: three forced
-      // layouts of large image-laden subtrees. At startup that waits for the
-      // page to load and go idle, unless a plate is scrolled near first.
+      // measureSpreads lays out the hidden spreads to measure them: a forced
+      // layout of large image-laden subtrees. They are fixed overlays with
+      // nothing to say about each other's layout, so all of them are laid
+      // out at once and read in that one pass, rather than one at a time,
+      // each needing a pass of its own. The replicas are written only after.
+      // At startup that waits for the page to load and go idle, unless a
+      // plate is scrolled near first.
       let everMeasured = false;
-      const measureAll = () => {
+      const measureSpreads = () => {
         everMeasured = true;
+        if (!desktop.matches) {
+          for (const w of windows) galRects[w.i] = null;
+          return;
+        }
+        const all = windows.map((w) => spreadFor(w.i));
+        const shown = all.filter((s): s is HTMLElement => !!s?.hidden);
+        for (const s of shown) {
+          s.style.visibility = "hidden";
+          s.hidden = false;
+        }
+        windows.forEach((w, k) => {
+          const spread = all[k];
+          galRects[w.i] = spread && landingRect(spread, galleryFor(spread));
+        });
+        for (const s of shown) {
+          s.hidden = true;
+          s.style.visibility = "";
+        }
+      };
+      const seatReplicas = () => {
         for (const w of windows) {
-          const spread = spreadFor(w.i);
-          galRects[w.i] = desktop.matches ? spread && galRectOf(spread) : null;
           if (!w.view || !w.replica) continue;
           const g = galRects[w.i];
           if (g) {
@@ -996,6 +1019,10 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             w.view.style.transform = "";
           }
         }
+      };
+      const measureAll = () => {
+        measureSpreads();
+        seatReplicas();
       };
 
       if (!reducedMotion) {
@@ -1012,15 +1039,13 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           });
         };
 
-        function update() {
+        function update(sy = window.scrollY, sx = window.scrollX) {
           const vh = window.innerHeight;
           // Fade distance at each edge — a plate eases in over the bottom
           // 50% of the viewport, then eases out over the top 35% as it exits.
           const enterSpan = vh * 0.5;
           const exitSpan = vh * 0.35;
 
-          const sx = window.scrollX;
-          const sy = window.scrollY;
           const plateRects = windows.map((w) => {
             const top = w.top - sy;
             return { top, bottom: top + w.height, height: w.height };
@@ -1093,16 +1118,30 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         (window as any).__onSmoothScrollTick(update);
         afterGeo = update;
 
-        let resizeRaf = 0;
-        const onResize = () => {
-          cancelAnimationFrame(resizeRaf);
-          resizeRaf = requestAnimationFrame(() => {
-            measureAll();
-            update();
-          });
-        };
-
-        window.addEventListener("resize", onResize, { passive: true });
+        // The spreads are viewport-sized overlays, so they are measured again
+        // when the viewport changes size, with the rest of the page's layout
+        // (lib/layout-watch.ts): their reads in its measuring half, the
+        // replicas in its writing half. The windows' own apply above has
+        // re-seated the views on the new rects by then.
+        let vpW = window.innerWidth;
+        let vpH = window.innerHeight;
+        let reseat = false;
+        onLayoutChange(
+          () => {
+            if (window.innerWidth === vpW && window.innerHeight === vpH) return;
+            vpW = window.innerWidth;
+            vpH = window.innerHeight;
+            // Before the first measure there is nothing to bring up to date
+            if (!everMeasured) return;
+            measureSpreads();
+            reseat = true;
+          },
+          () => {
+            if (!reseat) return;
+            reseat = false;
+            seatReplicas();
+          },
+        );
         update();
 
         const initialMeasure = () => {

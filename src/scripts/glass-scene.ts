@@ -32,6 +32,7 @@
 // Inlined as a data: URL: at 256×256 (glass-matcap.mjs) it is ~1.7KB, so it
 // arrives with this module rather than a request after it
 import matcapUrl from "../assets/glass-matcap.avif?inline"
+import { buildProgram, whenLinked } from "../lib/gl-program"
 
 /* ── Scene & material config ──
    Numbers lifted from the Spline material panels; the few *_TUNE knobs
@@ -578,34 +579,44 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
         outColor = vec4(c, 1.0);
       }`
 
-    function compile(type: number, src: string) {
-      const s = gl!.createShader(type)!
-      gl!.shaderSource(s, src)
-      gl!.compileShader(s)
-      if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) {
-        console.error(gl!.getShaderInfoLog(s))
-        return null
+    // Compiled and linked here, but nothing asks how that went until
+    // whenLinked() says it's done (src/lib/gl-program.ts): asking any sooner
+    // would wait out the whole compile on the main thread, mid-way through
+    // the hero's opening. Until then the canvas is held hidden, since a
+    // WebGL canvas with nothing drawn into it yet can show as black; the
+    // scope's own bone background stands in, which is the scene's first
+    // frame minus the glass. Both programs then go to buildGL() for the
+    // rest of the setup, or, should either fail to link, the CPU fallback
+    // takes over as it would have from the start.
+    const sceneProg = buildProgram(gl, VS, SCENE_FS)
+    const glassProg = buildProgram(gl, VS, GLASS_FS)
+    canvas.style.visibility = "hidden"
+    const glCanvas = canvas
+    whenLinked(gl, [sceneProg, glassProg], (ok) => {
+      // The context was lost while waiting, and its handler has moved on
+      if (canvas !== glCanvas) return
+      if (ok) {
+        impl = buildGL(gl!, sceneProg, glassProg)
+        impl.resize()
+        if (running) impl.render(lastT)
+        canvas.style.visibility = ""
+      } else {
+        impl = startCPU()
+        useCaps(CPU_FPS_CAP, 0)
+        onCPUFallback?.()
+        impl.resize()
       }
-      return s
-    }
-    function link(fs: string) {
-      const p = gl!.createProgram()!
-      const v = compile(gl!.VERTEX_SHADER, VS)
-      const f = compile(gl!.FRAGMENT_SHADER, fs)
-      if (!v || !f) return null
-      gl!.attachShader(p, v)
-      gl!.attachShader(p, f)
-      gl!.linkProgram(p)
-      if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) {
-        console.error(gl!.getProgramInfoLog(p))
-        return null
-      }
-      return p
-    }
-    const sceneProg = link(SCENE_FS)
-    const glassProg = link(GLASS_FS)
-    if (!sceneProg || !glassProg) return null
+    })
+    // Stand-in until then: the loop and the callers carry on as normal,
+    // there is just nothing to draw into yet.
+    return { render: () => {}, resize: () => {} }
+  }
 
+  function buildGL(
+    gl: WebGL2RenderingContext,
+    sceneProg: WebGLProgram,
+    glassProg: WebGLProgram,
+  ): Impl {
     const quad = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, quad)
     gl.bufferData(
@@ -820,11 +831,23 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
       gl!.uniform1f(uThick, m * THICK_FRAC)
     }
 
+    // The scope's observer calls this whenever anything inside it reflows,
+    // which mostly leaves the sticky canvas the size it was. Assigning
+    // canvas.width reallocates and clears the drawing buffer even at the
+    // same value, and the FBO would be reallocated with it, so an unchanged
+    // size is left alone.
+    let sized = false
     function resize() {
       const rect = wrap.getBoundingClientRect()
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-      canvas.width = Math.max(1, Math.round(rect.width * dpr))
-      canvas.height = Math.max(1, Math.round(rect.height * dpr))
+      const d = Math.min(window.devicePixelRatio || 1, 1.5)
+      const w = Math.max(1, Math.round(rect.width * d))
+      const h = Math.max(1, Math.round(rect.height * d))
+      if (sized && d === dpr && w === canvas.width && h === canvas.height)
+        return
+      sized = true
+      dpr = d
+      canvas.width = w
+      canvas.height = h
       allocFBO(canvas.width, canvas.height)
       uploadGlassStatics()
       if (reducedMotion || !running) render(reducedMotion ? 40 : lastT)
@@ -862,6 +885,7 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     let H = 300
     let cssH = 1 // wrap height in CSS px, for scroll-lift conversion
     let img: ImageData
+    let sized = false
     let buf: Uint8ClampedArray
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t
@@ -1045,7 +1069,11 @@ export function createGlassScene(opts: GlassSceneOptions): GlassScene {
     function resize() {
       const rect = wrap.getBoundingClientRect()
       cssH = rect.height
-      H = Math.max(1, Math.round((W * rect.height) / Math.max(rect.width, 1)))
+      const h = Math.max(1, Math.round((W * rect.height) / Math.max(rect.width, 1)))
+      // Same as the GL path: an unchanged size keeps its buffer and frame
+      if (sized && h === H) return
+      sized = true
+      H = h
       canvas.width = W
       canvas.height = H
       img = ctx.createImageData(W, H)

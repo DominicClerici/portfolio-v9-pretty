@@ -37,6 +37,8 @@
  * as crisp under the canvas as around it.
  */
 
+import { buildProgram, whenLinked } from "../lib/gl-program"
+
 /* ── Where the lake is ──
    Measured off the source photo (4340×3255), in image UV: x from the left,
    y down from the top. */
@@ -250,28 +252,11 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
       outColor = vec4(col.rgb * alpha, alpha);
     }`
 
-  function compile(type: number, src: string) {
-    const s = gl!.createShader(type)!
-    gl!.shaderSource(s, src)
-    gl!.compileShader(s)
-    if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) {
-      console.error(gl!.getShaderInfoLog(s))
-      return null
-    }
-    return s
-  }
-  const vs = compile(gl.VERTEX_SHADER, VS)
-  const fs = compile(gl.FRAGMENT_SHADER, FS)
-  if (!vs || !fs) return null
-  const prog = gl.createProgram()!
-  gl.attachShader(prog, vs)
-  gl.attachShader(prog, fs)
-  gl.linkProgram(prog)
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(prog))
-    return null
-  }
-  gl.useProgram(prog)
+  // Linked without waiting on it (src/lib/gl-program.ts): the uniforms are
+  // looked up, and the photo's texture filled in, once whenLinked() says the
+  // program is done. Nothing draws before then either way, since draw()
+  // waits for the texture.
+  const prog = buildProgram(gl, VS, FS)
 
   // One oversized triangle covers the viewport
   const buf = gl.createBuffer()
@@ -294,14 +279,38 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
-  const uRes = gl.getUniformLocation(prog, "uRes")
-  const uToUv = gl.getUniformLocation(prog, "uToUv")
-  const uTexRect = gl.getUniformLocation(prog, "uTexRect")
-  const uAspect = gl.getUniformLocation(prog, "uAspect")
-  const uCutH = gl.getUniformLocation(prog, "uCutH")
-  const uTime = gl.getUniformLocation(prog, "uTime")
-  const uLod = gl.getUniformLocation(prog, "uLod")
-  gl.uniform1i(gl.getUniformLocation(prog, "uImg"), 0)
+  let uRes: WebGLUniformLocation | null = null
+  let uToUv: WebGLUniformLocation | null = null
+  let uTexRect: WebGLUniformLocation | null = null
+  let uAspect: WebGLUniformLocation | null = null
+  let uCutH: WebGLUniformLocation | null = null
+  let uTime: WebGLUniformLocation | null = null
+  let uLod: WebGLUniformLocation | null = null
+  const linked = new Promise<void>((resolve) =>
+    whenLinked(gl!, [prog], (ok) => {
+      if (!ok) {
+        // As a lost context: the photo is left on its own
+        if (!lost) {
+          lost = true
+          stop()
+          onLost?.()
+        }
+        // Still resolved, so a bitmap cut meanwhile is closed, not stranded
+        return resolve()
+      }
+      const g = gl!
+      g.useProgram(prog)
+      uRes = g.getUniformLocation(prog, "uRes")
+      uToUv = g.getUniformLocation(prog, "uToUv")
+      uTexRect = g.getUniformLocation(prog, "uTexRect")
+      uAspect = g.getUniformLocation(prog, "uAspect")
+      uCutH = g.getUniformLocation(prog, "uCutH")
+      uTime = g.getUniformLocation(prog, "uTime")
+      uLod = g.getUniformLocation(prog, "uLod")
+      g.uniform1i(g.getUniformLocation(prog, "uImg"), 0)
+      resolve()
+    }),
+  )
 
   let lost = false
   canvas.addEventListener(
@@ -330,8 +339,9 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     const r0 = Math.max(0, Math.floor(toRow(TEX_Y[0])))
     const r1 = Math.min(nh, Math.ceil(toRow(TEX_Y[1])))
     if (r1 <= r0) return
-    createImageBitmap(img, 0, r0, nw, r1 - r0)
-      .then((bmp) => {
+    // The bitmap is cut while the program may still be linking
+    Promise.all([createImageBitmap(img, 0, r0, nw, r1 - r0), linked])
+      .then(([bmp]) => {
         if (id !== loadId || lost) {
           bmp.close()
           return
@@ -380,6 +390,12 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     return [at(x), at(y)]
   }
 
+  // What the last resize() laid out from: the observer below fires on every
+  // change to the frame's box and reload() calls this too, but when none of
+  // these moved the canvas, its size, place and mapping are what they were,
+  // and reassigning canvas.width would only reallocate and clear it.
+  let laidOut: unknown[] = []
+
   /* Sizes and places the canvas over CANVAS_Y of the photo as CSS
      `object-fit: cover` and the <img>'s object-position lay it out in the
      frame, snapped to whole CSS pixels, and maps the canvas's pixels back to
@@ -402,6 +418,9 @@ export function createHeatHaze(opts: HeatHazeOptions): HeatHaze | null {
     const maxY = Math.floor(fh)
     const top = Math.min(maxY, Math.max(0, Math.floor(yAt(CANVAS_Y[0]))))
     const bottom = Math.min(maxY, Math.max(top, Math.ceil(yAt(CANVAS_Y[1]))))
+    const inputs = [src, fw, fh, dpr, px, py, top, bottom]
+    if (inputs.every((v, i) => v === laidOut[i])) return
+    laidOut = inputs
 
     canvas.style.top = `${top}px`
     canvas.style.height = `${bottom - top}px`

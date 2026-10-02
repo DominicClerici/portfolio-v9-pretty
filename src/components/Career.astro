@@ -511,7 +511,7 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
     nowYear,
     ordered,
   } from "../data/career";
-  import { logoMorph, type LogoMorph } from "../scripts/logo-morph";
+  import type { LogoMorph } from "../scripts/logo-morph";
   import { docTop, onLayoutChange } from "../lib/layout-watch";
   {
     const section = document.querySelector<HTMLElement>("#career");
@@ -815,30 +815,38 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // exactly what they show, so the hand-over is invisible. `morph` stays
       // null until it has happened, so everything below treats the canvas as
       // absent until it can draw.
+      //
+      // Its code is fetched then too, rather than with the page: it is half
+      // of this script, shaders and all, and none of it runs before this. A
+      // failed fetch leaves the SVGs, as no WebGL does.
       let morph: LogoMorph | null = null;
       let morphStarted = false;
       const startMorph = () => {
         if (morphStarted) return;
         morphStarted = true;
         nearIO.disconnect();
-        const m = logoMorph(
-          entries.map((e) => ({ path: logoPath(e), paint: logoPaint(e) })),
-          stepMap[Math.max(activeStep, 0)],
-          () => {
-            morph = null;
-            delete section.dataset.morph;
-            m?.canvas.remove();
-          },
-          () => {
-            if (!m) return;
-            stack.append(m.canvas);
-            morph = m;
-            if (activeStep < 0) return;
-            morph.show(stepMap[activeStep], true);
-            placeLogo(true);
-            section.dataset.morph = "";
-          },
-        );
+        import("../scripts/logo-morph")
+          .then(({ logoMorph }) => {
+            const m = logoMorph(
+              entries.map((e) => ({ path: logoPath(e), paint: logoPaint(e) })),
+              stepMap[Math.max(activeStep, 0)],
+              () => {
+                morph = null;
+                delete section.dataset.morph;
+                m?.canvas.remove();
+              },
+              () => {
+                if (!m) return;
+                stack.append(m.canvas);
+                morph = m;
+                if (activeStep < 0) return;
+                morph.show(stepMap[activeStep], true);
+                placeLogo(true);
+                section.dataset.morph = "";
+              },
+            );
+          })
+          .catch(() => {});
       };
       const nearIO = new IntersectionObserver(
         (seen) => {
@@ -857,20 +865,48 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // on its way out. Those letters leave left to right, 20ms apart, and
       // take about a third of a second to clear, so it holds until the last
       // of them is nearly gone.
+      //
+      // Each entry's slot, as a box in the stack (where the canvas sits), is
+      // measured with the rest of the layout in measure() below rather than
+      // read back here: this runs inside the scroll frame, on the very frame
+      // an entry hands over, after select() has just written to every panel,
+      // so reading a rect would force a style and layout pass of the whole
+      // section right as its letters set off. The panels all share one grid
+      // cell and keep their layout while hidden, and the stack carries the
+      // canvas with it as the pin sticks, so a slot's place in the stack only
+      // changes when layout does.
+      type Slot = { x: number; y: number; size: number; letters: number };
+      const slots = new Map<number, Slot>();
+      const slotEls = new Map<number, Element>();
+      panels.forEach((panel) => {
+        const key = Number(panel.dataset.panel);
+        slotEls.set(key, panel.querySelector(".logo-slot")!);
+        slots.set(key, {
+          x: 0,
+          y: 0,
+          size: 0,
+          letters: panel.querySelectorAll(".ch:not(.logo)").length,
+        });
+      });
+      const measureSlots = () => {
+        const s = stack.getBoundingClientRect();
+        slotEls.forEach((el, key) => {
+          const r = el.getBoundingClientRect();
+          const slot = slots.get(key)!;
+          slot.x = r.left - s.left;
+          slot.y = r.top - s.top;
+          slot.size = r.width;
+        });
+      };
       let logoX = NaN;
       let letters = 0;
       const placeLogo = (instant: boolean) => {
         if (!morph || activeStep < 0) return;
-        const panel = section.querySelector<HTMLElement>(
-          `.panel[data-panel="${stepMap[activeStep]}"]`,
-        )!;
-        const r = panel.querySelector(".logo-slot")!.getBoundingClientRect();
-        const s = stack.getBoundingClientRect();
-        const x = r.left - s.left;
+        const { x, y, size, letters: count } = slots.get(stepMap[activeStep])!;
         const delay = x < logoX - 1 ? 260 + (letters - 1) * 20 : 0;
         logoX = x;
-        letters = panel.querySelectorAll(".ch:not(.logo)").length;
-        morph.place(x, r.top - s.top, r.width, instant, delay);
+        letters = count;
+        morph.place(x, y, size, instant, delay);
       };
       // After a layout change the slot is only measured again. On phones,
       // resize fires every time the address bar slides in or out, which
@@ -879,13 +915,9 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // shifts where it lands.
       const reflowLogo = () => {
         if (!morph || activeStep < 0) return;
-        const panel = section.querySelector<HTMLElement>(
-          `.panel[data-panel="${stepMap[activeStep]}"]`,
-        )!;
-        const r = panel.querySelector(".logo-slot")!.getBoundingClientRect();
-        const s = stack.getBoundingClientRect();
-        logoX = r.left - s.left;
-        morph.reflow(logoX, r.top - s.top, r.width);
+        const { x, y, size } = slots.get(stepMap[activeStep])!;
+        logoX = x;
+        morph.reflow(x, y, size);
       };
 
       // ── Selection ──
@@ -1027,14 +1059,15 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
           chartX = x;
           lastP = -1; // the playhead's px position moves with them
         }
+        measureSlots();
       };
 
       // On the shared bus this runs inside the engine's tick — the same frame
       // as its scrollTo — so __scrollProgressLead reports the entry-brake lead
       // the engine set this very frame and the pin scrubs *during* the
       // deceleration with no one-frame trail.
-      const frame = () => {
-        const top = sectionTop - window.scrollY;
+      const frame = (y = window.scrollY) => {
+        const top = sectionTop - y;
         const tv = travelPx;
         const lead =
           (
@@ -1049,26 +1082,18 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       (window as any).__onSmoothScrollTick(frame);
       // Resizes, font loads (the name reflows when the display face
       // arrives, moving the slot) and anything above shifting the section.
-      onLayoutChange(() => {
-        measure();
-        frame();
-        reflowLogo();
-      });
-
-      if ("ResizeObserver" in window) {
-        const ro = new ResizeObserver(() => {
-          measure();
-          frame();
+      // travelPx is derived from the section's and the pin's boxes, so
+      // watching them directly is what keeps the cache honest between resize
+      // events; the chart for the playhead, and the stack because the logo's
+      // slot moves whenever the entries reflow.
+      onLayoutChange(
+        measure,
+        (y) => {
+          frame(y);
           reflowLogo();
-        });
-        // travelPx is derived from these two boxes, so observing them directly
-        // is what keeps the cache honest between resize events.
-        ro.observe(section);
-        ro.observe(pin);
-        ro.observe(chart);
-        // And the logo's slot moves whenever the entries reflow.
-        ro.observe(stack);
-      }
+        },
+        [section, pin, chart, stack],
+      );
 
       // Clicking a bar scrolls the page to that entry's slot in the pin,
       // reusing the site's smooth-scroll easing. Selection then follows the

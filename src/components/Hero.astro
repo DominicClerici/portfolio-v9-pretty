@@ -74,9 +74,8 @@ import ActionButton from "./ActionButton.astro";
     // lib/layout-watch.ts). Each style is written only when it changes.
     const fades = fadeEls.map((el) => ({ el, top: 0, opacity: "" }));
 
-    const update = () => {
+    const update = (y = window.scrollY) => {
       const vh = window.innerHeight;
-      const y = window.scrollY;
       for (const f of fades) {
         const progress = (vh - (f.top - y)) / vh;
         const raw = Math.min(
@@ -96,7 +95,6 @@ import ActionButton from "./ActionButton.astro";
     (window as any).__onSmoothScrollTick(update);
     onLayoutChange(() => {
       for (const f of fades) f.top = docTop(f.el);
-      update();
-    });
+    }, update);
   }
 </script>
