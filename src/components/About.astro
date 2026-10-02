@@ -257,12 +257,12 @@ const technicalSkills = [
       // on layout changes, not read back every frame (lib/layout-watch.ts).
       let introTop = 0;
 
-      function update() {
+      function update(y = window.scrollY) {
         const line = TYPE_VP_FRACTION * window.innerHeight;
         // Characters worth of scroll past the trigger line (0 until crossed).
         const revealed = Math.max(
           0,
-          (line - (introTop - window.scrollY)) / PX_PER_CHAR,
+          (line - (introTop - y)) / PX_PER_CHAR,
         );
         for (const c of chunks) {
           // Fire once scroll has advanced past this chunk's trigger point;

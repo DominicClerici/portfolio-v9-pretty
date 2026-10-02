@@ -90,10 +90,15 @@ const {
         var subs = new Set()
         var lastY = -1
         var queued = false
+        // The position is read once and handed to every subscriber: in
+        // Chrome a scrollY read brings style and layout up to date first, so
+        // each subscriber reading its own, after the ones before it had
+        // written, forced a style and layout pass of its own.
         function run() {
           lastY = window.scrollY
+          var x = window.scrollX
           subs.forEach(function (cb) {
-            cb()
+            cb(lastY, x)
           })
         }
         function onFrame() {
@@ -134,8 +139,8 @@ const {
         var bottom = root.dataset.edgeBottom
         if (top === bottom) return
         var current = top
-        window.__onSmoothScrollTick(function () {
-          var edge = window.scrollY < window.innerHeight ? top : bottom
+        window.__onSmoothScrollTick(function (y) {
+          var edge = y < window.innerHeight ? top : bottom
           if (edge !== current) root.style.backgroundColor = current = edge
         })
       })()

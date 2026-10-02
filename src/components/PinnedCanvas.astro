@@ -219,8 +219,8 @@
       return t * t * (3 - 2 * t);
     };
 
-    function onScrollFrame() {
-      const y = window.scrollY - scopeTop;
+    function onScrollFrame(scrollY = window.scrollY) {
+      const y = scrollY - scopeTop;
 
       if (!darkAnchor) {
         scene.setScrollTarget(Math.max(y, 0) * SCROLL_SENSITIVITY, 0);
@@ -232,7 +232,7 @@
          1 (all dark), and the pin engages on that same frame. Smoothstepped so
          the backdrop eases into the turn and settles out of it instead of
          starting and stopping on a corner. */
-      const d = clamp01(1 - (anchorDocTop - window.scrollY) / fadeLead);
+      const d = clamp01(1 - (anchorDocTop - scrollY) / fadeLead);
       const dark = d * d * (3 - 2 * d);
       scene.setDarkness(dark);
       paintTurn(dark);

@@ -1066,8 +1066,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // as its scrollTo — so __scrollProgressLead reports the entry-brake lead
       // the engine set this very frame and the pin scrubs *during* the
       // deceleration with no one-frame trail.
-      const frame = () => {
-        const top = sectionTop - window.scrollY;
+      const frame = (y = window.scrollY) => {
+        const top = sectionTop - y;
         const tv = travelPx;
         const lead =
           (
@@ -1088,8 +1088,8 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       // slot moves whenever the entries reflow.
       onLayoutChange(
         measure,
-        () => {
-          frame();
+        (y) => {
+          frame(y);
           reflowLogo();
         },
         [section, pin, chart, stack],

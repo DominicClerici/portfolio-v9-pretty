@@ -778,7 +778,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         (1 - (w.inStr ? Number(w.inStr) : 1)) * LIFT_PX;
       // The scroll driver, once there is one: it re-seats the windows on the
       // new numbers without waiting for the next scroll.
-      let afterGeo = () => {};
+      let afterGeo = (_y: number, _x: number) => {};
       const measureGeo = () => {
         const sx = window.scrollX;
         const sy = window.scrollY;
@@ -798,7 +798,7 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // are watched too
       onLayoutChange(
         measureGeo,
-        () => afterGeo(),
+        (y, x) => afterGeo(y, x),
         windows.map((w) => w.plate),
       );
 
@@ -841,10 +841,9 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
         if (imgs.length) asleep.set(w.plate, imgs);
       }
 
-      const wakeNearWindows = () => {
+      const wakeNearWindows = (sy = window.scrollY) => {
         if (!asleep.size) return;
         const vh = window.innerHeight;
-        const sy = window.scrollY;
         for (const [plate, imgs] of asleep) {
           const w = windows.find((w) => w.plate === plate)!;
           const top = w.top - sy;
@@ -1014,15 +1013,13 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
           });
         };
 
-        function update() {
+        function update(sy = window.scrollY, sx = window.scrollX) {
           const vh = window.innerHeight;
           // Fade distance at each edge — a plate eases in over the bottom
           // 50% of the viewport, then eases out over the top 35% as it exits.
           const enterSpan = vh * 0.5;
           const exitSpan = vh * 0.35;
 
-          const sx = window.scrollX;
-          const sy = window.scrollY;
           const plateRects = windows.map((w) => {
             const top = w.top - sy;
             return { top, bottom: top + w.height, height: w.height };
