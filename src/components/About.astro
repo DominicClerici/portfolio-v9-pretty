@@ -279,8 +279,7 @@ const technicalSkills = [
       (window as any).__onSmoothScrollTick(update);
       onLayoutChange(() => {
         introTop = docTop(intro);
-        update();
-      });
+      }, update);
     }
 
     /* ── 2. Stats row reveal ── */

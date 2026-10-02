@@ -96,7 +96,6 @@ import ActionButton from "./ActionButton.astro";
     (window as any).__onSmoothScrollTick(update);
     onLayoutChange(() => {
       for (const f of fades) f.top = docTop(f.el);
-      update();
-    });
+    }, update);
   }
 </script>

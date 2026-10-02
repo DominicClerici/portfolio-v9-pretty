@@ -1049,26 +1049,18 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
       (window as any).__onSmoothScrollTick(frame);
       // Resizes, font loads (the name reflows when the display face
       // arrives, moving the slot) and anything above shifting the section.
-      onLayoutChange(() => {
-        measure();
-        frame();
-        reflowLogo();
-      });
-
-      if ("ResizeObserver" in window) {
-        const ro = new ResizeObserver(() => {
-          measure();
+      // travelPx is derived from the section's and the pin's boxes, so
+      // watching them directly is what keeps the cache honest between resize
+      // events; the chart for the playhead, and the stack because the logo's
+      // slot moves whenever the entries reflow.
+      onLayoutChange(
+        measure,
+        () => {
           frame();
           reflowLogo();
-        });
-        // travelPx is derived from these two boxes, so observing them directly
-        // is what keeps the cache honest between resize events.
-        ro.observe(section);
-        ro.observe(pin);
-        ro.observe(chart);
-        // And the logo's slot moves whenever the entries reflow.
-        ro.observe(stack);
-      }
+        },
+        [section, pin, chart, stack],
+      );
 
       // Clicking a bar scrolls the page to that entry's slot in the pin,
       // reusing the site's smooth-scroll easing. Selection then follows the

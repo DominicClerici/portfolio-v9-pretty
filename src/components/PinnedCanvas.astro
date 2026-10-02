@@ -549,8 +549,7 @@
     if (darkAnchor)
       onLayoutChange(() => {
         anchorDocTop = docTop(darkAnchor);
-        onScrollFrame();
-      });
+      }, onScrollFrame);
     else onScrollFrame();
 
     // One observer drives both the warning and (when motion is allowed) the

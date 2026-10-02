@@ -793,12 +793,14 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
             w.archY = a.top - r.top - liftOf(w);
           }
         }
-        afterGeo();
       };
-      onLayoutChange(measureGeo);
-      // A plate can change size without the document doing so
-      const plateRO = new ResizeObserver(measureGeo);
-      for (const w of windows) plateRO.observe(w.plate);
+      // A plate can change size without the document doing so, so the plates
+      // are watched too
+      onLayoutChange(
+        measureGeo,
+        () => afterGeo(),
+        windows.map((w) => w.plate),
+      );
 
       // ── Waking the window's content ──
       // The replica's images are not decoration inside the window, they *are*

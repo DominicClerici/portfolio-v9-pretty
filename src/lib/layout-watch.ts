@@ -10,24 +10,44 @@
 //
 // "When layout does" is any of: the window resizing, the document's own box
 // changing size (fonts landing, images decoding, a section growing — anything
-// that moves an element also moves the document's end), or the fonts
-// settling. Callbacks run synchronously from those, where layout is already
-// clean, so the measuring itself is cheap.
+// that moves an element also moves the document's end), the fonts settling,
+// or a box a subscriber asked to have watched changing size on its own.
+//
+// Every subscriber is in two halves, and each change runs all the measuring
+// first and all the writing after: one subscriber's reads after another's
+// writes would each force a fresh style and layout pass, and on a phone these
+// run every time the address bar slides in or out, mid-scroll. This way the
+// first read settles layout once and the rest are cheap. One observer covers
+// every watched box, so a change that resizes several of them at once (a
+// font landing resizes most) is still one pass.
 
-const subs = new Set<() => void>();
-let wired = false;
+type Sub = { measure: () => void; apply?: () => void };
+const subs = new Set<Sub>();
+let ro: ResizeObserver | null = null;
 
-const fire = () => subs.forEach((cb) => cb());
+const fire = () => {
+  subs.forEach((s) => s.measure());
+  subs.forEach((s) => s.apply?.());
+};
 
-/** Runs `cb` now and again after anything that can move laid-out content. */
-export function onLayoutChange(cb: () => void): void {
-  subs.add(cb);
-  cb();
-  if (wired) return;
-  wired = true;
-  window.addEventListener("resize", fire, { passive: true });
-  new ResizeObserver(fire).observe(document.documentElement);
-  document.fonts?.ready.then(fire);
+/** Runs `measure` then `apply` now, and again after anything that can move
+ *  laid-out content, including any change to the size of the `watch`ed
+ *  elements. `measure` should only read layout and `apply` only write. */
+export function onLayoutChange(
+  measure: () => void,
+  apply?: () => void,
+  watch: Element[] = [],
+): void {
+  subs.add({ measure, apply });
+  measure();
+  apply?.();
+  if (!ro) {
+    window.addEventListener("resize", fire, { passive: true });
+    ro = new ResizeObserver(fire);
+    ro.observe(document.documentElement);
+    document.fonts?.ready.then(fire);
+  }
+  for (const el of watch) ro.observe(el);
 }
 
 /** The element's top edge in document coordinates. */
