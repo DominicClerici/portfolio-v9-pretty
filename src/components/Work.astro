@@ -819,11 +819,22 @@ const shapeAssets = (id: (typeof projects)[number]["shape"]) => {
       // looked through, therefore its images are needed. Clearing the attribute
       // resumes a deferred load in place, so this costs one property write per
       // window and never runs again.
+      //
+      // The spread the window opens onto wakes with it. Its plates sit in a
+      // nested scroller (the fixed .we1-spread), and lazy loading only looks
+      // ahead along the page's own viewport: inside the spread, Safari and
+      // Firefox fetch a plate only once it has scrolled into sight, so each
+      // one arrived late, in front of the reader. They are the same files as
+      // the window's (same srcset and sizes), so waking them here costs
+      // nothing but cache hits, and they are already decoded-ready by the
+      // time the door opens.
       const asleep = new Map<HTMLElement, HTMLImageElement[]>();
       for (const w of windows) {
-        const imgs = Array.from(
-          w.view?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]') ??
-            [],
+        const spread = spreadFor(w.i);
+        const imgs = [w.view, spread].flatMap((el) =>
+          Array.from(
+            el?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]') ?? [],
+          ),
         );
         if (imgs.length) asleep.set(w.plate, imgs);
       }

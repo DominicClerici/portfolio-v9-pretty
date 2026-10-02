@@ -69,7 +69,7 @@ const BackTag = overlay ? "button" : "a";
   </BackTag>
 
   <div class="we1-sgrid grid grid-cols-1 gap-x-24 px-safe-3 sm:px-safe-6">
-    <ProjectGallery gallery={project.gallery} leadOnly />
+    <ProjectGallery gallery={project.gallery} leadOnly eager={!overlay} />
     <div class="we1-story">
       <Heading
         id={`we1-spread-title-${i}`}
@@ -133,7 +133,7 @@ const BackTag = overlay ? "button" : "a";
       />
     </div>
 
-    <ProjectGallery gallery={project.gallery} />
+    <ProjectGallery gallery={project.gallery} eager={!overlay} />
   </div>
 
   <div class="pb-16 pt-6 text-center">
