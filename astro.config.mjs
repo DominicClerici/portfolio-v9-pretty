@@ -8,14 +8,14 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/* The shaders in glass-scene.ts and heat-haze.ts are template literals, so
+/* The shaders in the WebGL scenes (FILES below) are template literals, so
    their comments and indentation are string *content* — the JS minifier cannot
    reach them, and the GLSL commentary would ship to every visitor. Stripping them at build
    time keeps the annotated source intact while paying nothing for it. Build-only
    so dev still compiles the readable shader (line numbers in a GLSL compile
    error then match the source you are looking at). */
 function stripGlslComments() {
-  const FILES = ["glass-scene.ts", "heat-haze.ts"];
+  const FILES = ["glass-scene.ts", "ink-fluid.ts", "signal-ascii.ts"];
   const SHADER = /`#version 300 es[\s\S]*?`/g;
   const INTERP = /\$\{[^{}]*\}/g;
 

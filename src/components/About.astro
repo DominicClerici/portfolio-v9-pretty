@@ -1,122 +1,171 @@
 ---
-const stats = [
-  { label: "Location", value: "New York", sub: "EST. 2004" },
-  { label: "Experience", value: "4+ years", sub: "9+ years programming" },
-];
+import { conceptualSkills, technicalSkills } from "../data/about";
 
-const conceptualSkills = [
-  "Full Stack",
-  "Applied AI",
-  "Knowledge Graphs",
-  "Mobile Development",
-  "Cloud Infrastructure",
-  "AI/ML",
-  "Autonomous Agents",
-  "Growth Engineering",
-  "Internal Tooling",
-  "SEO",
-  "Data Analysis",
-];
-
-const technicalSkills = [
-  "TypeScript",
-  "Go",
-  "Rust",
-  "Python",
-  "React",
-  "Next.js",
-  "React Native",
-  "Swift",
-  "Node.js",
-  "PostgreSQL",
-  "AWS Lambda",
-  "Electron",
-  "WordPress",
-  "Elementor",
+const figures = [
+  { value: "4+", label: "Years shipping" },
+  { value: "9+", label: "Years programming" },
+  { value: "2004", label: "Established" },
 ];
 ---
 
-<!-- Scrolls over the pinned hero canvas — no background of its own -->
+<!-- Scrolls over the pinned hero canvas — no background of its own. One large
+     paragraph, the skills running past as two bands, and the numbers set as
+     figures. -->
 <section id="about" class="relative">
-  <div class="container-page py-[clamp(120px,18vh,200px)]">
+  <div class="container-page pt-[clamp(120px,18vh,200px)]">
     <h2 class="sr-only">About</h2>
-
-    <hr class="border-t border-ink/20 mt-6 lg:mt-8 mb-10 lg:mb-14" />
-
     <p
       id="about-intro"
-      class="font-display text-ink leading-[1.2] tracking-[-0.006em] max-w-[880px] text-display"
+      class="mx-auto text-center font-display text-ink leading-[1.1] tracking-[-0.022em] max-w-[1180px] text-[clamp(1.875rem,calc(1.875rem+(100vw-27.5rem)*0.031),3.875rem)]"
     >
-      Full-stack engineer at Junior. I&rsquo;ve been programming since before I
-      had any business doing so&nbsp;&mdash;
-      <span class="text-ink/55">
+      Full-stack engineer at Junior. I&rsquo;ve been programming since before
+      I had any business doing so&nbsp;&mdash;
+      <span class="text-ink/50">
         most of what I know came from building things badly the first time.
       </span>
     </p>
+  </div>
 
-    <div
-      class="mt-16 lg:mt-24 pt-8 lg:pt-10 border-t border-ink/20 grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-10"
-    >
+  <!-- The bands are the same lists twice over so each can loop on itself;
+       the copies are for the eye only, and the lists are read from here. -->
+  <ul class="sr-only">
+    {[...conceptualSkills, ...technicalSkills].map((s) => <li>{s}</li>)}
+  </ul>
+  <div class="about-bands mt-[clamp(72px,10vw,150px)]" aria-hidden="true">
+    <div class="about-band about-band--focus font-display text-ink">
       {
-        stats.map((stat) => (
-          <div class="md:col-span-3" data-reveal-col>
+        [0, 1].map(() => (
+          <div class="about-run">
+            {conceptualSkills.map((s) => (
+              <span>
+                {s}
+                <i />
+              </span>
+            ))}
+          </div>
+        ))
+      }
+    </div>
+    <div class="about-band about-band--stack font-mono">
+      {
+        [0, 1].map(() => (
+          <div class="about-run">
+            {technicalSkills.map((s) => <span>{s}</span>)}
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- The foot of the section is left long and empty: PinnedCanvas starts
+       the turn to dark once About's last quarter is on screen, and the
+       figures should mostly have been read on paper by then. -->
+  <div
+    class="container-page pt-[clamp(72px,10vw,150px)] pb-[clamp(320px,50vh,520px)]"
+  >
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-10">
+      {
+        figures.map((f) => (
+          <div class="about-figure" data-reveal-col>
             <div
-              class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-3"
-              data-reveal="label"
-            >
-              {stat.label}
-            </div>
-            <div
-              class="font-display text-[22px] leading-[1.2] tracking-[-0.006em] text-ink"
+              class="about-figure-value font-display text-ink"
               data-reveal="value"
             >
-              {stat.value}
+              {f.value}
             </div>
             <div
-              class="font-mono text-[13px] tracking-[-0.02em] text-ink/45 mt-2"
-              data-reveal="sub"
+              class="font-mono text-[13px] leading-none uppercase text-ink mt-5"
+              data-reveal="label"
             >
-              {stat.sub}
+              {f.label}
             </div>
           </div>
         ))
       }
-
-      <div class="col-span-2 md:col-span-6" data-reveal-col>
-        <div
-          class="font-mono text-[13px] tracking-[-0.02em] uppercase text-ink/45 mb-4"
-          data-reveal="label"
-        >
-          Focus
-        </div>
-        <div class="flex flex-wrap gap-x-6 gap-y-3">
-          {
-            conceptualSkills.map((skill) => (
-              <span
-                class="font-mono text-[13px] tracking-[-0.02em] leading-none uppercase text-ink/80"
-                data-reveal="item"
-              >
-                {skill}
-              </span>
-            ))
-          }
-        </div>
-        <div class="flex flex-wrap gap-x-4 gap-y-2 mt-6">
-          {
-            technicalSkills.map((skill) => (
-              <span
-                class="font-mono text-[13px] tracking-[-0.02em] leading-none text-ink/45"
-                data-reveal="item"
-              >
-                {skill}
-              </span>
-            ))
-          }
-        </div>
-      </div>
     </div>
   </div>
 </section>
+
+<style>
+  .about-bands {
+    display: grid;
+    gap: clamp(18px, 2.2vw, 30px);
+    overflow: hidden;
+  }
+  .about-band {
+    display: flex;
+    width: max-content;
+  }
+  .about-run {
+    display: flex;
+    align-items: center;
+    flex: none;
+  }
+  .about-band--focus {
+    font-size: clamp(2.25rem, 5.4vw, 5rem);
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+  }
+  .about-band--focus span {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    letter-spacing: inherit;
+  }
+  .about-band--focus i {
+    width: 0.2em;
+    height: 0.2em;
+    margin: 0 0.42em;
+    border-radius: 50%;
+    background: var(--color-ink);
+    box-shadow: 0 0 0 0.09em var(--color-bio-lime);
+  }
+  .about-band--stack {
+    font-size: 13px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .about-band--stack span {
+    margin-right: 10px;
+    padding: 11px 16px;
+    border: 1px solid rgb(34 47 48 / 0.28);
+    border-radius: 999px;
+    color: var(--color-ink);
+    white-space: nowrap;
+    background: rgb(247 247 245 / 0.5);
+  }
+  /* Running only while they can be seen (.is-running, from the script): a
+     transform animation left going off screen still costs the compositor a
+     frame every frame. */
+  @media (prefers-reduced-motion: no-preference) {
+    .about-band {
+      animation: about-run 46s linear infinite paused;
+    }
+    .about-band--stack {
+      animation-duration: 58s;
+      animation-direction: reverse;
+    }
+    .about-bands.is-running .about-band {
+      animation-play-state: running;
+    }
+    @keyframes about-run {
+      to {
+        transform: translateX(-50%);
+      }
+    }
+  }
+
+  .about-figure {
+    padding-top: 22px;
+    border-top: 1px solid rgb(34 47 48 / 0.25);
+  }
+  .about-figure-value {
+    font-size: clamp(4.5rem, 10.5vw, 10rem);
+    line-height: 0.86;
+    letter-spacing: -0.055em;
+    font-variant-numeric: lining-nums;
+  }
+</style>
 
 <!-- is:global because these spans are created by the script at runtime and so
      never carry Astro's scope attribute. Kept under #about to contain them. -->
@@ -155,7 +204,7 @@ const technicalSkills = [
 
   {
     /* ══ Scroll-driven reveals ═════════════════════════════════════════════
-       Two effects, one scroll listener and one reduced-motion check:
+       Three effects, one scroll listener and one reduced-motion check:
 
        1. The intro paragraph types itself in. Scroll only *triggers* each
           chunk — every character you scroll past costs PX_PER_CHAR pixels,
@@ -163,13 +212,14 @@ const technicalSkills = [
           fixed-duration CSS transition. The scroll position does not scrub
           the motion, it just fires it. Scrolling back reverses it.
 
-       2. The stats row fades + rises into place, a column at a time, the
+       2. The figures fade + rise into place, a column at a time, the
           moment its top scrolls past REVEAL_VP_FRACTION of the viewport.
-          Within a column the label, value and sub-label cascade; the Focus
-          chips stagger one after another.
+          Within a column the label follows the value.
 
-       Under prefers-reduced-motion neither runs: no chunk spans are created
-       and the stats are never primed, so both stay fully visible.
+       3. The skill bands run only while they are on screen.
+
+       Under prefers-reduced-motion none of them runs: no chunk spans are
+       created, the figures are never primed, and the bands stand still.
 
        The typewriter's own duration and travel are CSS (.chunk, above); the
        knobs here are the ones the script owns. */
@@ -198,15 +248,9 @@ const technicalSkills = [
     const FROM_OPACITY = 0.1;
     // Per-role start offset (px) and stagger delay (s) within a column.
     const ROLE = {
-      label: { y: -4, delay: 0 },
-      value: { y: 6, delay: 0.08 },
-      sub: { y: 4, delay: 0.16 }, // starts + ends slightly after the value
+      value: { y: 6, delay: 0 },
+      label: { y: 4, delay: 0.08 },
     };
-    // Focus chips: each fires FOCUS_STAGGER after the previous, offset from
-    // the Focus label by FOCUS_BASE.
-    const FOCUS_Y = 6;
-    const FOCUS_BASE = 0.08;
-    const FOCUS_STAGGER = 0.02;
 
     const ease = getComputedStyle(document.documentElement)
       .getPropertyValue("--ease-rise")
@@ -282,7 +326,7 @@ const technicalSkills = [
       }, update);
     }
 
-    /* ── 2. Stats row reveal ── */
+    /* ── 2. Figures reveal ── */
     const cols = document.querySelectorAll<HTMLElement>("[data-reveal-col]");
 
     if (cols.length && !reducedMotion) {
@@ -298,20 +342,10 @@ const technicalSkills = [
 
       for (const col of cols) {
         const targets: { node: HTMLElement; fromY: number }[] = [];
-        let itemOrder = 0;
         col.querySelectorAll<HTMLElement>("[data-reveal]").forEach((node) => {
-          const role = node.dataset.reveal;
-          let fromY: number;
-          if (role === "item") {
-            fromY = FOCUS_Y;
-            prime(node, fromY, FOCUS_BASE + itemOrder * FOCUS_STAGGER);
-            itemOrder++;
-          } else {
-            const r = ROLE[role as keyof typeof ROLE] ?? ROLE.value;
-            fromY = r.y;
-            prime(node, fromY, r.delay);
-          }
-          targets.push({ node, fromY });
+          const r = ROLE[node.dataset.reveal as keyof typeof ROLE] ?? ROLE.value;
+          prime(node, r.y, r.delay);
+          targets.push({ node, fromY: r.y });
         });
         primed.set(col, targets);
       }
@@ -334,6 +368,14 @@ const technicalSkills = [
         },
       );
       for (const col of cols) io.observe(col);
+    }
+
+    /* ── 3. Skill bands ── */
+    const bands = document.querySelector<HTMLElement>(".about-bands");
+    if (bands && !reducedMotion) {
+      new IntersectionObserver((entries) => {
+        bands.classList.toggle("is-running", entries[0].isIntersecting);
+      }).observe(bands);
     }
   }
 </script>

@@ -1,62 +1,64 @@
 ---
 /**
- * Pinned glass-canvas scope.
+ * Pinned background scope.
  *
- * The canvas is sticky for the full height of this component, so everything
- * passed in via <slot /> scrolls over a background that holds still, and at
- * the end of the scope the background leaves with the flow.
+ * The background is sticky for the full height of this component, so
+ * everything passed in via <slot /> scrolls over a frame that holds still, and
+ * at the end of the scope the background leaves with the flow.
  *
- * Owns the canvas, the scene wiring, and the CPU-fallback notice. The
- * sections that scroll over it (Hero, About, Career, Quote) are just children.
+ * Owns the two canvases, their wiring, and the CPU-fallback notice. The
+ * sections that scroll over them (Hero, About, Career, Quote) are just
+ * children.
  *
  * ── Light half, dark half ──
- * The scope spans both halves of the page's mood: it opens on bone under the
- * hero and ends on near-black under the quote. The glass does not stop at the
- * seam between them — the backdrop *behind* it turns over instead, the whole
- * plane at once, scrubbed by scroll across the hand-off from About to Career.
- * It starts when About's last quarter clears the bottom of the screen and is
- * complete on the frame Career's top edge reaches the top of it, which is the
- * frame its scroll-pin engages. Because the turn happens behind the cylinders
- * it arrives refracted — the ribs carry it, rather than a flat wash sliding
- * over the frame.
+ * The scope spans both halves of the page's mood, and each half has a
+ * background of its own. Under the hero and About it is a sheet of wet paper:
+ * a fluid simulation carrying three pigments (src/scripts/ink-fluid.ts). Under
+ * Career and the quote it is fluted glass on near-black
+ * (src/scripts/glass-scene.ts), with one orb per employer drifting past while
+ * its entry is on show in the pinned career section.
  *
- * The two sections either side of it cross-fade across it, because neither can
- * sit still while the ground moves under it: About is set in a dark ink for
- * bone, Career in near-white for black, and halfway through the turn the
- * backdrop is the value they both stand out against least. So About dissolves
- * as it leaves, Career surfaces as it arrives, and the glass carries the
- * middle alone (see paintTurn below). The quote, last, is only ever on black.
+ * The turn between them is scrubbed by scroll across the hand-off from About
+ * to Career. It starts when About's last quarter clears the bottom of the
+ * screen and is complete on the frame Career's top edge reaches the top of
+ * it, which is the frame its scroll-pin engages. Over it the paper goes to
+ * the glass's dark backdrop, taking the ink with it, and the glass fades in
+ * above once the two are near enough the same ground to meet on it.
  *
- * Two sets of objects share the canvas across it. The hero's three dissolve
- * into the dark; a second set fades up out of it — one orb per employer, in
- * that company's colours, each drifting past while its entry is on show in the
- * pinned career section. The engine (src/scripts/glass-scene.ts) owns the
- * cross-fade — here we only say how far the turn has come and how far each
- * orb has climbed.
+ * The two sections either side of the turn cross-fade across it, because
+ * neither can sit still while the ground moves under it: About is set in a
+ * dark ink for bone, Career in near-white for black, and halfway through the
+ * turn the backdrop is the value they both stand out against least. So About
+ * dissolves as it leaves and Career surfaces as it arrives (see paintTurn
+ * below). The quote, last, is only ever on black.
+ *
+ * Only the ink is needed to draw the top of the page, so only the ink ships
+ * with it: the glass engine is fetched once the page has loaded and gone
+ * idle, or as soon as the turn is reached if that comes first.
  */
 ---
 
 <!-- The pin is lifted by one overhang and given the runway to still reach
      the scope's end by a negative margin of its own (both in global.css), so
-     the glass comes to rest flush with the quote's bottom edge and the next
-     section starts there.
+     the background comes to rest flush with the quote's bottom edge and the
+     next section starts there.
 
-     The scope's own background is what shows if the canvas never paints at
-     all — no WebGL *and* no 2D context. global.css leaves it bone; the script
-     below repaints it from the same numbers the shader uses as the turn runs,
-     so that last-resort page darkens with the rest. -->
+     The scope's own background is what shows if neither canvas ever paints.
+     global.css leaves it bone; the script below repaints it from the same
+     numbers the shaders use as the turn runs, so that last-resort page
+     darkens with the rest. -->
 <div
   id="hero-scope"
   class="relative"
 >
   <div data-canvas-bg class="sticky top-0 h-[var(--bg-h)]" aria-hidden="true">
-    <!-- Full-bleed clipping container; isolated so the inner clip-path
-         animation composites onto its own layer. -->
-    <div class="absolute inset-0 overflow-hidden isolate transform-gpu">
-      <div class="hero-canvas-wrap absolute inset-0">
-        <canvas id="hero-canvas" class="absolute inset-0 w-full h-full"
-        ></canvas>
-      </div>
+    <div class="hero-canvas-wrap absolute inset-0 overflow-hidden">
+      <canvas id="ink-canvas" class="absolute inset-0 w-full h-full"></canvas>
+      <!-- Over the ink, and out of sight until the turn to dark. -->
+      <canvas
+        id="glass-canvas"
+        class="absolute inset-0 w-full h-full"
+        style="visibility: hidden; opacity: 0"></canvas>
     </div>
   </div>
 
@@ -98,23 +100,23 @@
 </div>
 
 <script>
-  import {
-    backdropColor,
-    createGlassScene,
-    SPHERE_R_FRAC,
-    type GlassObject,
-  } from "../scripts/glass-scene";
+  import { createInk } from "../scripts/ink-fluid";
+  import type { GlassObject, GlassScene } from "../scripts/glass-scene";
+  import { BONE, DARK } from "../lib/gl-kit";
   import { docTop, onLayoutChange } from "../lib/layout-watch";
 
   {
+    // Where in the turn the glass fades in over the ink.
+    const GLASS_IN: [number, number] = [0.45, 1];
+
     const scope = document.getElementById("hero-scope")!;
     const bg = scope.querySelector<HTMLElement>("[data-canvas-bg]")!;
     const wrap = scope.querySelector<HTMLElement>(".hero-canvas-wrap")!;
-    const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement;
+    const inkCanvas = document.getElementById("ink-canvas") as HTMLCanvasElement;
+    const canvas = document.getElementById("glass-canvas") as HTMLCanvasElement;
     // The two sections the turn to dark is measured between — it runs from
     // partway down About to the top edge of Career. Optional: without the
-    // anchor the scope stays bone end to end and only the hero objects move,
-    // which is exactly the pre-dark behaviour.
+    // anchor the scope stays paper end to end.
     const about = scope.querySelector<HTMLElement>("#about");
     const darkAnchor = scope.querySelector<HTMLElement>("#career");
     const reducedMotion = window.matchMedia(
@@ -123,32 +125,9 @@
     const forceCPU = new URLSearchParams(location.search).has("cpu");
 
     /* ══ Tunable knobs ══════════════════════════════════════════════════
-       Per-object placement/scale plus the scroll response live here; colors
-       and drift phase stay in OBJECTS below. The shared feel knobs (pointer
-       sensitivity, easing, drift, fps caps: display rate up to 165 on
-       WebGL, 30 on the CPU fallback) are the engine defaults in
-       src/scripts/glass-scene.ts — override them via createGlassScene()
-       options if this scene ever needs its own values. */
-
-    // — Object placement —
-    //   pos: center as a fraction of the viewport (x from left, y-up from
-    //   bottom). scale: multiplier on the base sphere radius (SPHERE_R_FRAC).
-    //   The teal sphere's x is an edge-touch point + one radius (edgeR: 1),
-    //   so it reads a touch differently from the free-placed cube/purple.
-    const TEAL_POS = { x: 0.5, y: 0.56 };
-    const TEAL_SCALE = 1.0;
-    const CUBE_POS = { x: 0.05, y: 0.12 };
-    const CUBE_SCALE = 0.7;
-    const PURPLE_POS = { x: 0.92, y: -0.1 };
-    const PURPLE_SCALE = 0.55;
-
-    // — Sensitivity (how far the objects move for a given input) —
-    const SCROLL_SENSITIVITY = 0.45; // object climb per px scrolled
-    // Once the turn to dark begins the light-half objects are on their way
-    // out, so they leave faster than the page — they read as going, rather
-    // than as hanging there fading. They travel this many background heights
-    // over the turn, whatever length it works out to.
-    const HERO_EXIT_SENSITIVITY = 0.85;
+       The glass's shared feel knobs (pointer sensitivity, easing, drift, fps
+       caps) are the engine defaults in src/scripts/glass-scene.ts, and the
+       ink's are at the top of src/scripts/ink-fluid.ts. */
 
     // — The turn to dark —
     // Where in About it starts, as a fraction of that section's height measured
@@ -179,33 +158,30 @@
     /* ══════════════════════════════════════════════════════════════════ */
 
     /* ── Scroll behavior ──
-       The background is pinned (sticky) for the whole scope — now hero
-       through quote — so the glass cylinders hold still in screen space the
-       entire way down and only leave with the flow at the very end.
+       The background is pinned (sticky) for the whole scope, hero through
+       quote, so it holds still in screen space the entire way down and only
+       leaves with the flow at the very end.
 
        Three things are scrubbed from scroll position, all measured against
        the scope's own top so nothing here depends on this being the first
        thing on the page:
 
-       · channel 0, the hero/about objects. They climb at SCROLL_SENSITIVITY
-         until the turn to dark begins, then leave over it.
-       · channels 1…N, one per career orb, each zeroed on the scroll position
+       · the ink's sheet, which rides up with the page at a fraction of its
+         speed.
+       · one lift channel per career orb, each zeroed on the scroll position
          where its employer's entry sits mid-slot in the pinned career section
          — so every orb crosses the middle of the frame while its company is
-         the one being read.
+         the one being read. Eased inside the engine, so the parallax glides.
        · the turn itself, read straight off the anchor section's live top edge
          rather than off a cached scroll position, so it cannot desync from
-         the section it is handing over to no matter what reflows above.
-
-       Both lifts are eased inside the engine, so the parallax glides. The turn
-       is not: the page's smooth-scroll already carries it, and a second lag
-       would leave the backdrop trailing the section. */
+         the section it is handing over to no matter what reflows above. Not
+         eased: the page's smooth-scroll already carries it, and a second lag
+         would leave the backdrop trailing the section. */
     let scopeTop = 0; // the scope's document offset
     let bgH = 1; // pinned background height (CSS px)
     let careerAt = 1; // scroll into the scope where Career's pin engages
     let careerStep = 1; // scroll the pin gives each entry
     let fadeLead = 1; // how far Career's top edge climbs over the whole turn
-    let fadeStart = 1; // scroll into the scope where the turn begins
     // The anchor's document top. It only moves with the page, so it is
     // re-measured on any layout change (lib/layout-watch.ts) — undebounced,
     // unlike measure() below, so the turn can't desync from the section it
@@ -222,10 +198,8 @@
     function onScrollFrame(scrollY = window.scrollY) {
       const y = scrollY - scopeTop;
 
-      if (!darkAnchor) {
-        scene.setScrollTarget(Math.max(y, 0) * SCROLL_SENSITIVITY, 0);
-        return;
-      }
+      ink?.setScroll(Math.max(y, 0));
+      if (!darkAnchor) return;
 
       /* Progress of the turn, straight off the anchor's top edge: one
          fadeLead above the top of the screen is 0 (all bone), level with it is
@@ -234,17 +208,16 @@
          starting and stopping on a corner. */
       const d = clamp01(1 - (anchorDocTop - scrollY) / fadeLead);
       const dark = d * d * (3 - 2 * d);
-      scene.setDarkness(dark);
+      if (dark > 0) loadGlass();
+      ink?.setDarkness(dark);
+      showGlass(smoothstep(GLASS_IN[0], GLASS_IN[1], dark));
       paintTurn(dark);
-
-      // Light half: climb with the page, then leave over the turn.
-      const climb = Math.min(Math.max(y, 0), fadeStart) * SCROLL_SENSITIVITY;
-      scene.setScrollTarget(climb + d * bgH * HERO_EXIT_SENSITIVITY, 0);
+      if (!scene) return;
 
       // Dark half: orb i is at rest (lift 0, i.e. CAREER_MID_Y) when entry i
       // is mid-slot, and rides CAREER_GAP_Y background heights per entry.
       const rate = (CAREER_GAP_Y * bgH) / careerStep;
-      for (let i = 0; i < CAREER_OBJECTS.length; i++) {
+      for (let i = 0; i < CAREER_PLACE.length; i++) {
         const mid = careerAt + (i + 0.5) * careerStep;
         scene.setScrollTarget((y - mid) * rate, 1 + i);
       }
@@ -252,9 +225,9 @@
 
     /* Three things off the canvas move with the backdrop.
 
-       The scope's own background, which is all that shows if no canvas paints
-       at all, is repainted from the engine's own colours so that last-resort
-       page darkens too.
+       The scope's own background, which is all that shows if neither canvas
+       paints at all, is repainted from the two engines' shared colours so
+       that last-resort page darkens too.
 
        And the two sections either side of the turn, which cross-fade across it
        exactly as the two sets of orbs do. Neither can simply sit there while
@@ -266,7 +239,7 @@
        instead of beside it. So each is at full strength while it is the one
        being read, and the handover happens in between: About dissolves into
        the dark as it leaves, Career surfaces out of it as it arrives, and the
-       glass carries the middle on its own.
+       background carries the middle on its own.
 
        All three are written only when the value moves, so away from the turn
        this is one compare a frame.
@@ -290,7 +263,9 @@
       const v = Math.round(dark * 256) / 256;
       if (v === lastTurn) return;
       lastTurn = v;
-      scope.style.backgroundColor = backdropColor(v);
+      scope.style.backgroundColor = `rgb(${BONE.map((c, i) =>
+        Math.round(255 * (c + (DARK[i] - c) * v)),
+      ).join(" ")})`;
       if (about) fade(about, 1 - smoothstep(ABOUT_OUT[0], ABOUT_OUT[1], v));
       if (darkAnchor) fade(darkAnchor, smoothstep(CAREER_IN[0], CAREER_IN[1], v));
     }
@@ -299,42 +274,24 @@
     // required, but this keeps it to one listener across the site.
     (window as any).__onSmoothScrollTick(onScrollFrame);
 
-    // Once the iris-open finishes, drop the clip so no stale clip-path
-    // lingers on the canvas. The animation itself must be removed too: its
-    // fill-mode keeps applying the end keyframe over any inline clip-path
-    // override.
-    wrap.addEventListener("animationend", (e) => {
-      if (e.animationName === "hero-iris-open") {
-        wrap.style.animation = "none";
-        wrap.style.clipPath = "none";
-      }
-    });
-
     /* ── Scene config ──
        The glass render itself (WebGL2 + CPU fallback) lives in the shared
        engine, src/scripts/glass-scene.ts — only object layout and scroll
-       wiring live here. */
-    // Scene objects, composited back-to-front (smaller/farther first). All
-    // share the same glass material, sensitivity and easing; only color and
-    // drift phase differ here — placement/scale come from the knobs up top.
-    // shape: 0 sphere, 1 cube. edgeR shifts the center right by that many
-    // radii (lets the teal sphere rest against the page's center line).
-    // Gradients are linear, 0% at the top of the object → 100% at the bottom.
-    /* The dark half's orbs — one per employer, oldest first, each in its
-       company's colours. Same material and drift as the hero's, but they read
-       differently against near-black: where the hero's three are dark shapes
-       pushing through bone, these are lit ones surfacing out of black, so the
-       matcap (a dark glossy ball) is mostly off and `dim` holds them back from
-       being the brightest thing over the copy.
+       wiring live here. shape: 0 sphere, 1 cube. Gradients are linear, 0% at
+       the top of the object → 100% at the bottom. */
+    /* The orbs — one per employer, oldest first, each in its company's
+       colours. They are lit shapes surfacing out of black, so the matcap (a
+       dark glossy ball) is mostly off and `dim` holds them back from being
+       the brightest thing over the copy.
 
        The two gradients map onto a brand pair: ga0 is the top of the orb, ga1
        the lower half, and the material itself rolls the bottom rim to white —
        which is where the "and white" of the blue and purple pairs comes from,
        with ga1 pushed pale to meet it. gb0 is the shadowed base under both.
 
-       zone: 1 marks them as belonging below the front — they stay at zero
-       coverage until it has risen past them — and each rides its own lift
-       channel (1 + index) so it can be timed to its own entry. */
+       zone: 1 marks them as belonging to the dark side of the engine's
+       backdrop, where this scene holds it throughout, and each rides its own
+       lift channel (1 + index) so it can be timed to its own entry. */
     const CAREER_ORBS = [
       {
         // McDonald's — Golden Arches over a ketchup red
@@ -374,9 +331,9 @@
         gb0: [0.02, 0.2, 0.42],
       },
     ];
-    /* Placement carries one constraint the hero's does not: the career section
-       sets its name and copy straight onto the glass, heaviest over the left
-       of the frame, with nothing at all between them and the orbs. So
+    /* Placement carries one constraint: the career section sets its name and
+       copy straight onto the glass, heaviest over the left of the frame,
+       with nothing at all between them and the orbs. So
        the larger orbs stay right of ~0.4 — out past the copy column — and the
        ones that cross the left side stay a touch smaller. Sizes and
        brightness are kept close so the five read as one set rather than as
@@ -390,98 +347,55 @@
       { x: 0.56, s: 0.92, shape: 0 as const, dim: 0.52 },
     ];
 
-    const CAREER_OBJECTS: GlassObject[] = CAREER_PLACE.map((p, i) => {
-      const c = CAREER_ORBS[i];
-      return {
-        shape: p.shape,
-        mat: c.mat ?? 0,
-        rFrac: SPHERE_R_FRAC * p.s,
-        cx: p.x,
-        cy: CAREER_MID_Y,
-        edgeR: 0,
-        ga0: c.ga0,
-        ga1: c.ga1,
-        gb0: c.gb0,
-        gaMix: c.gaMix ?? 0.66,
-        gbMix: c.gbMix ?? 0.34,
-        dim: p.dim,
-        // Staggered phases and mildly irregular speeds so the stream never
-        // settles into a visible rhythm.
-        driftAmp: 0.034 + (i % 3) * 0.008,
-        driftYScale: 0.7,
-        spdX: 0.15 + i * 0.017,
-        spdY: 0.1 + i * 0.011,
-        phX: i * 1.37,
-        phY: 2.4 + i * 0.93,
-        lift: 1 + i,
-        zone: 1,
-      };
-    });
+    const careerObjects = (baseR: number) =>
+      CAREER_PLACE.map((p, i): GlassObject => {
+        const c = CAREER_ORBS[i];
+        return {
+          shape: p.shape,
+          mat: c.mat ?? 0,
+          rFrac: baseR * p.s,
+          cx: p.x,
+          cy: CAREER_MID_Y,
+          edgeR: 0,
+          ga0: c.ga0,
+          ga1: c.ga1,
+          gb0: c.gb0,
+          gaMix: c.gaMix ?? 0.66,
+          gbMix: c.gbMix ?? 0.34,
+          dim: p.dim,
+          // Staggered phases and mildly irregular speeds so the stream never
+          // settles into a visible rhythm.
+          driftAmp: 0.034 + (i % 3) * 0.008,
+          driftYScale: 0.7,
+          spdX: 0.15 + i * 0.017,
+          spdY: 0.1 + i * 0.011,
+          phX: i * 1.37,
+          phY: 2.4 + i * 0.93,
+          lift: 1 + i,
+          zone: 1,
+        };
+      });
 
-    const OBJECTS: GlassObject[] = [
-      {
-        // purple sphere — back, smallest, lower-right
-        shape: 0,
-        mat: 0,
-        rFrac: SPHERE_R_FRAC * PURPLE_SCALE,
-        cx: PURPLE_POS.x,
-        cy: PURPLE_POS.y,
-        edgeR: 0,
-        ga0: [0.541, 0.329, 0.941],
-        ga1: [0.725, 0.549, 1.0],
-        gb0: [0.369, 0.173, 0.753],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.04,
-        driftYScale: 0.7,
-        spdX: 0.17,
-        spdY: 0.11,
-        phX: 2.1,
-        phY: 4.3,
-      },
-      {
-        // blue cube — middle, lower-left
-        shape: 1,
-        mat: 0,
-        rFrac: SPHERE_R_FRAC * CUBE_SCALE,
-        cx: CUBE_POS.x,
-        cy: CUBE_POS.y,
-        edgeR: 0,
-        ga0: [0.133, 0.651, 0.949],
-        ga1: [0.525, 0.847, 1.0],
-        gb0: [0.055, 0.388, 0.784],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.038,
-        driftYScale: 0.7,
-        spdX: 0.19,
-        spdY: 0.13,
-        phX: 0.7,
-        phY: 1.9,
-      },
-      {
-        // teal sphere — front, largest. #04D800 → #22DB14 → #fff over
-        // #006C22 → #fff.
-        shape: 0,
-        mat: 1,
-        rFrac: SPHERE_R_FRAC * TEAL_SCALE,
-        cx: TEAL_POS.x,
-        cy: TEAL_POS.y,
-        edgeR: 1,
-        ga0: [0.126, 0.997, 0.2],
-        ga1: [0.233, 0.979, 0.778],
-        gb0: [0.0, 0.824, 0.533],
-        gaMix: 0.6,
-        gbMix: 0.4,
-        driftAmp: 0.05,
-        driftYScale: 0.6,
-        spdX: 0.21,
-        spdY: 0.13,
-        phX: 0.0,
-        phY: 1.7,
-      },
-      ...CAREER_OBJECTS,
-    ];
+    /* ── Which background is running ──
+       The two canvases hand over across the turn, and each scene only runs
+       while its canvas can be seen: the ink until the glass is opaque over
+       it, the glass from the moment it starts to show. */
+    const ink = createInk({ canvas: inkCanvas, wrap, reducedMotion });
+    let scene: GlassScene | null = null;
+    let glassAlpha = 0;
+    function showGlass(a: number) {
+      if (a === glassAlpha) return;
+      glassAlpha = a;
+      canvas.style.opacity = a > 0.999 ? "" : a.toFixed(3);
+      canvas.style.visibility = a > 0 ? "" : "hidden";
+      syncRunning();
+    }
+    function syncRunning() {
+      if (reducedMotion) return;
+      const live = scopeVisible && !document.hidden;
+      live && glassAlpha < 1 ? ink?.start() : ink?.stop();
+      live && glassAlpha > 0 ? scene?.start() : scene?.stop();
+    }
 
     /* ── GPU-acceleration notice ──
        Revealed only while the CPU fallback is driving the scene (WebGL
@@ -493,16 +407,28 @@
       gpuWarning.style.display = usingCPU && scopeVisible ? "flex" : "none";
     }
 
-    const scene = createGlassScene({
-      canvas,
-      wrap,
-      objects: OBJECTS,
-      forceCPU,
-      onCPUFallback: () => {
-        usingCPU = true;
-        syncWarning();
-      },
-    });
+    let glassWanted = false;
+    function loadGlass() {
+      if (glassWanted) return;
+      glassWanted = true;
+      import("../scripts/glass-scene").then((glass) => {
+        scene = glass.createGlassScene({
+          canvas,
+          wrap,
+          objects: careerObjects(glass.SPHERE_R_FRAC),
+          forceCPU,
+          onCPUFallback: () => {
+            usingCPU = true;
+            syncWarning();
+          },
+        });
+        scene.setDarkness(1);
+        scene.resize();
+        onScrollFrame();
+        if (reducedMotion) scene.render(40);
+        else syncRunning();
+      });
+    }
 
     /* Everything scroll-invariant, cached here so the per-frame path reads no
        layout it doesn't have to. Re-run on resize and whenever the scope's
@@ -523,7 +449,7 @@
       const pin = darkAnchor.querySelector<HTMLElement>(".pin");
       const travel =
         darkAnchor.offsetHeight - (pin?.offsetHeight ?? window.innerHeight);
-      let entries = CAREER_OBJECTS.length;
+      let entries = CAREER_PLACE.length;
       try {
         entries = JSON.parse(darkAnchor.dataset.stepMap || "[]").length || entries;
       } catch {}
@@ -540,7 +466,6 @@
         : anchorTop;
       const turnAt = aboutTop + aboutH * (1 - FADE_FROM_BOTTOM);
       fadeLead = Math.max(anchorTop - turnAt + window.innerHeight, 1);
-      fadeStart = Math.max(anchorTop - fadeLead, 0);
     }
 
     let resizeTimer: number | undefined;
@@ -548,12 +473,12 @@
       clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         measure();
-        scene.resize();
+        ink?.resize();
+        scene?.resize();
         onScrollFrame();
       }, 120);
     }).observe(scope);
     measure();
-    scene.resize();
     if (darkAnchor)
       onLayoutChange(() => {
         anchorDocTop = docTop(darkAnchor);
@@ -566,22 +491,24 @@
       (entries) => {
         scopeVisible = entries[0].isIntersecting;
         syncWarning();
-        if (reducedMotion) return;
-        scopeVisible ? scene.start() : scene.stop();
+        syncRunning();
       },
       { threshold: 0 },
     ).observe(scope);
 
-    if (reducedMotion) {
-      scene.render(40);
-    } else {
-      document.addEventListener("visibilitychange", () => {
-        // Back to the tab: resume only if the scope is on screen — the
-        // observer above is what stops the loop while it isn't.
-        if (document.hidden) scene.stop();
-        else if (scopeVisible) scene.start();
-      });
-      scene.start();
-    }
+    // The glass is not needed until the turn, so it waits for the page to be
+    // done loading and idle (onScrollFrame fetches it sooner on a page opened
+    // part-way down).
+    const whenIdle = () =>
+      "requestIdleCallback" in window
+        ? requestIdleCallback(loadGlass, { timeout: 4000 })
+        : setTimeout(loadGlass, 1500);
+    if (document.readyState === "complete") whenIdle();
+    else addEventListener("load", whenIdle, { once: true });
+
+    // Back to the tab: resume only what is on screen — the observer above is
+    // what stops the loops while the scope isn't.
+    if (!reducedMotion)
+      document.addEventListener("visibilitychange", syncRunning);
   }
 </script>

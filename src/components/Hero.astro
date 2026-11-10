@@ -3,49 +3,77 @@ import ActionButton from "./ActionButton.astro";
 ---
 
 <!-- Scrolls over the pinned canvas in PinnedCanvas.astro — no background of
-     its own. Height must match --hero-h, which the pin is measured against. -->
+     its own. Height must match --hero-h, which the pin is measured against.
+
+     A poster on wet paper: a centred statement in the open middle of the
+     sheet, where the ink (src/scripts/ink-fluid.ts) is, and the name set the
+     full width of its foot. -->
 <section id="hero" class="relative h-[var(--hero-h)]">
   <div
-    class="relative z-10 h-full flex flex-col justify-between gap-y-[100px] px-safe-3 sm:px-safe-6 lg:px-safe-12 pt-[clamp(112px,calc(112px+(100vw-440px)*0.036),148px)] pb-[clamp(32px,calc(32px+(100vw-440px)*0.012),44px)]"
+    class="relative z-10 h-full flex flex-col px-safe-3 sm:px-safe-6 lg:px-safe-12 pt-[clamp(88px,calc(88px+(100vw-440px)*0.036),124px)] pb-[clamp(14px,calc(14px+(100vw-440px)*0.01),26px)]"
   >
-    <h1
-      class="hero-enter-mask font-display text-ink leading-none text-hero mt-[clamp(0px,calc((100vw-768px)*0.125),32px)]"
-    >
-      <span>Dominic Clerici</span>
-    </h1>
-
-    <div
-      data-hero-fade
-      class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6"
-    >
-      <div class="max-w-[640px]">
+    <div class="flex-1 min-h-0 flex flex-col justify-center pb-[2vh]">
+      <div data-hero-fade class="flex flex-col items-center text-center">
         <span
-          class="hero-enter flex items-center mb-5 font-mono text-[13px] leading-none uppercase text-ink/60"
+          class="hero-enter mb-[clamp(16px,1.8vw,26px)] font-mono text-[13px] leading-none uppercase text-ink/60"
+          style="--enter-delay: 0.75s"
         >
           Engineer &amp; Designer&ensp;·&ensp;New York
         </span>
         <!-- Always exactly two lines, split at the <br>; the size is capped so
              the longer line (~14em) fits inside the px-3 gutters on any phone. -->
         <p
-          class="hero-enter whitespace-nowrap font-display text-ink/90 leading-[1.2] tracking-[-0.02em] text-[min(var(--text-lead),calc((100vw-24px)/14.6))]"
+          class="hero-enter whitespace-nowrap font-display text-ink leading-[1.12] tracking-[-0.025em] text-[min(clamp(1.5rem,3.3vw,3rem),calc((100vw-24px)/14.6))]"
+          style="--enter-delay: 0.85s"
         >
-          I design and build software that&rsquo;s<br />fast, useful, and
-          worth looking at.
+          I design and build software that&rsquo;s<br />fast, useful, and worth
+          looking at.
         </p>
+        <!-- ActionButton hands its style to the link inside it, so the delay
+             rides on a wrapper. -->
+        <div
+          class="hero-enter-cta mt-[clamp(22px,2.6vw,38px)]"
+          style="--enter-delay: 1.15s"
+        >
+          <ActionButton href="#work" icon="down" variant="solid" caps>
+            View selected work
+          </ActionButton>
+        </div>
       </div>
-
-      <ActionButton
-        href="#work"
-        icon="down"
-        variant="solid"
-        caps
-        class="hero-enter-cta shrink-0"
-      >
-        View selected work
-      </ActionButton>
     </div>
+
+    <h1
+      class="hero-name hero-enter-mask font-display text-ink"
+      style="--enter-delay: 0.4s"
+    >
+      <span>Dominic Clerici</span>
+    </h1>
   </div>
 </section>
+
+<style>
+  /* The name runs gutter to gutter at every width: it is 6.43em wide at this
+     tracking, so the size is the measure divided by a little more than that. */
+  .hero-name {
+    --gutter: 0.75rem;
+    font-size: min(calc((100vw - 2 * var(--gutter)) / 6.5), 15.5rem);
+    line-height: 0.82;
+    letter-spacing: -0.05em;
+    white-space: nowrap;
+    text-align: center;
+    padding: 0.06em 0 0.05em;
+  }
+  @media (width >= 40rem) {
+    .hero-name {
+      --gutter: 1.5rem;
+    }
+  }
+  @media (width >= 64rem) {
+    .hero-name {
+      --gutter: 3rem;
+    }
+  }
+</style>
 
 <script>
   import { smoothstep } from "../lib/easing";

@@ -23,8 +23,8 @@ import { projects } from "../data/projects";
 const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
 ---
 
-{/* Past the top, the hero's backdrop (BG in glass-scene.ts, the colour
-    the glass sits on before the turn to dark); past the bottom, the casino
+{/* Past the top, the hero's paper (BONE in lib/gl-kit.ts, the colour the
+    ink sits on before the turn to dark); past the bottom, the casino
     drawer's peek (--peek-bg in Footer.astro), as on phones the page ends on the drawer peeking up from
     the foot of the footer, and past the end it carries on under Safari's
     toolbar. */}
@@ -81,11 +81,12 @@ const arrivals = Object.fromEntries(projects.map((p, i) => [p.slug, i]));
 
   <Header />
   <main>
-    {/* One pinned glass background carries all four: the hero and About over
-        bone, Career and Quote over near-black, and the turn between them is
-        the background's own — see PinnedCanvas.astro. Career has to stay
-        directly after About (the turn is measured from one to the other) and
-        Quote last (the glass leaves with the flow at the end of the scope). */}
+    {/* One pinned background carries all four: the hero and About over ink
+        on bone, Career and Quote over glass on near-black, and the turn
+        between them is the background's own — see PinnedCanvas.astro. Career
+        has to stay directly after About (the turn is measured from one to
+        the other) and Quote last (the background leaves with the flow at the
+        end of the scope). */}
     <PinnedCanvas>
       <Hero />
       <About />

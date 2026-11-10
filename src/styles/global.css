@@ -355,47 +355,20 @@ h6 {
   margin-top: calc(-1 * var(--bg-h));
 }
 
-/* Last-resort backdrop for the scope, visible only if the canvas never paints
-   at all (no WebGL *and* no 2D context — the CPU fallback covers the common
-   case). The scope's backdrop turns from bone to near-black as it is scrolled,
-   so the value here is only the starting one: PinnedCanvas repaints it inline
-   from the engine's own colours for the rest of the turn. It is stated here
+/* Last-resort backdrop for the scope, visible only if neither canvas ever
+   paints (no WebGL2 for the ink, and for the glass no 2D context either).
+   The scope's backdrop turns from bone to near-black as it is scrolled, so
+   the value here is only the starting one: PinnedCanvas repaints it inline
+   from the engines' own colours for the rest of the turn. It is stated here
    rather than left to the page so that a scope whose script never runs at all
    is still bone rather than whatever is behind it. */
 #hero-scope {
   background-color: var(--color-bone);
 }
 
-/* Radius of the iris the canvas opens from (see the keyframes below). */
-.hero-canvas-wrap {
-  --iris-r: 100px;
-}
-
-@media (width >= 64rem) {
-  .hero-canvas-wrap {
-    --iris-r: 200px;
-  }
-}
-
-/* Iris-open on load: the canvas dilates from a rounded point at the center
-   of the viewport — inset(50% round R) → inset(0 round 0), matching
-   integratedbio.com (2s expo.inOut, 0.3s delay). The end state is fully
-   borderless — the frame only arrives later, driven by scroll. */
+/* The hero's copy rises in over the first second and a half, each piece on
+   its own --enter-delay. */
 @media (prefers-reduced-motion: no-preference) {
-  .hero-canvas-wrap {
-    animation: hero-iris-open 1.6s cubic-bezier(0.87, 0, 0.13, 1) 0.3s both;
-  }
-
-  @keyframes hero-iris-open {
-    from {
-      clip-path: inset(50% 50% 50% 50% round var(--iris-r, 100px));
-    }
-    to {
-      clip-path: inset(0% 0% 0% 0% round 0px);
-    }
-  }
-
-  /* Content enters once the iris has opened (reference timeline: 1.6s) */
   .hero-enter {
     opacity: 0;
     transform: translateY(30px);

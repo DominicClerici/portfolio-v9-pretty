@@ -68,6 +68,10 @@ const lanes = Math.max(...entries.map((e) => e.lane)) + 1;
               class="readout font-mono text-[11px] lg:text-[12px] leading-none tracking-[-0.02em] text-n-400 tabular-nums"
               aria-hidden="true">{ordered[0].entry.start.replace("-", ".")}</span
             >
+            <!-- The readout is rewritten by script as the playhead moves, so
+                 every digit it can show is named here for subset-fonts.py,
+                 which only sees the built HTML. -->
+            <span class="font-mono" hidden>0123456789</span>
           </div>
 
           <!-- Deliberately NOT role="tablist": selection here is driven by

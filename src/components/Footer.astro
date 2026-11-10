@@ -1,6 +1,5 @@
 ---
 import ActionButton from "./ActionButton.astro";
-import photo from "../data/footer-photo.json";
 
 const year = new Date().getFullYear();
 
@@ -15,36 +14,10 @@ const navigate = [
   { label: "Contact", href: "#contact" },
 ];
 
-// Screens that get the portrait cut. Keep in step with the same query in the
-// styles, which picks its blur-up. Of those, the ones narrower than 9:16 (all
-// but the widest phones) get its middle, the phone cut, which is exactly the
-// part of it they show. Landscape desktops at least 16:9 get the wide cut,
-// the photo's top 16:9: the most of it they show, pinned to its top.
-const PORTRAIT = "(max-width: 1023px) and (orientation: portrait)";
-const PHONE = `${PORTRAIT} and (max-aspect-ratio: 9/16)`;
-const WIDE = "(min-width: 1024px) and (min-aspect-ratio: 16/9)";
-// The generated files, which the build emits under /_astro/ with a hash in
-// their names (immutable, so cached for a year) — src/assets rather than
-// public/, whose files are revalidated on every visit.
-const files = import.meta.glob<string>("../assets/footer/*", {
-  query: "?url",
-  import: "default",
-  eager: true,
-});
-const srcset = (set: [string, number][]) =>
-  set.map(([file, w]) => `${files[`../assets/footer/${file}`]} ${w}w`).join(", ");
-// Each cut is cover-fitted to a screen-tall frame, so its displayed width is
-// the screen's height × its aspect — unless the screen is wider than that,
-// when the width fills it.
-const sizes = ({ width, height }: { width: number; height: number }) =>
-  `(min-aspect-ratio: ${width}/${height}) 100vw, ${+((100 * width) / height).toFixed(2)}vh`;
-// Most specific first: the <picture> takes the first <source> that matches
-const cuts = [
-  { media: PHONE, cut: photo.phone },
-  { media: PORTRAIT, cut: photo.portrait },
-  { media: WIDE, cut: photo.wide },
-];
-const LANDSCAPE_SIZES = sizes(photo.landscape);
+// The characters the backdrop is drawn in, darkest to brightest (RAMP in
+// src/scripts/signal-ascii.ts, less its leading space). Printed as the
+// footer's legend, which is also what puts them in the subset font.
+const RAMP = ".:-=+*#%@";
 
 // Each with the icon it wears on phones, where the links sit beside the
 // button rather than in a column: GitHub's and LinkedIn's marks (filled, from
@@ -77,7 +50,7 @@ const connect = [
 ];
 ---
 
-<!-- The screen's own height, for the footer to size its photo and itself
+<!-- The screen's own height, for the footer to size its backdrop and itself
      from in iOS Safari (see the styles), where no viewport unit covers the
      whole screen. Set before the footer is laid out, so nothing shifts;
      screen.height is the portrait height whichever way the phone is held,
@@ -101,8 +74,8 @@ const connect = [
   id="site-footer"
   class="relative h-svh min-h-[680px] md:min-h-[780px] max-md:-mt-6 overflow-clip"
 >
-  <!-- The mountain backdrop sits *behind* the whole page (-z-10), so the
-       opaque sections above the footer hide it and the footer — which has no
+  <!-- The backdrop sits *behind* the whole page (-z-10), so the opaque
+       sections above the footer hide it and the footer — which has no
        background of its own — is the only window onto it. That window
        opening as the footer rises is the reveal.
 
@@ -113,103 +86,38 @@ const connect = [
        real CSS positioning, it cannot drift on compositor-driven (touch)
        scrolling. It is part of the page rather than a fixed box because iOS
        Safari only draws fixed boxes between its bars: at the end of the page,
-       where Safari brings its bars back, a fixed photo left the band under the
-       top bar showing the bare page. The page itself is drawn under the bars,
-       and so now is the photo.
+       where Safari brings its bars back, a fixed backdrop left the band under
+       the top bar showing the bare page. The page itself is drawn under the
+       bars, and so now is the backdrop.
 
        It never moves, the end of the page included: the track runs on past
        the footer's foot by more than the pin is tall, so it can never run
        out under the pin and push it up, and the footer clips all of it to
        its own box (clip, not hidden, which would make the footer a scroller
-       the pin would stick to), so none of it adds to the page's length. The
-       pin holds the whole of the photo: iOS Safari clips what hangs out of
-       a sticky box.
+       the pin would stick to), so none of it adds to the page's length.
 
        On phones the footer tucks up under the contact section by the radius
-       of its rounded foot, so that the photo still shows in its corners.
+       of its rounded foot, so that the backdrop still shows in its corners.
 
-       Above the photo, the pin carries it on up past the top of the screen in
-       the colour of the photo's own top edge, its sky (--overlay-bleed, 0 off
-       iOS), for whatever the top bar covers. The pin is kept out of Safari's
-       toolbar tinting (bleed-under-bars, global.css), as it is sticky and
-       spans the screen.
+       The pin is the backdrop's ground, and carries it on up past the top of
+       the screen (--overlay-bleed, 0 off iOS) for whatever the top bar
+       covers. It is kept out of Safari's toolbar tinting (bleed-under-bars,
+       global.css), as it is sticky and spans the screen.
 
-       Inside it, the photo's frame: three layers, the photo itself (the real
-       background, and all there is without WebGL2 or under reduced motion),
-       the heat-haze canvas drawn pixel-for-pixel over the lake once its
-       texture is up, and above md a scrim that keeps the bone type legible
-       against the peak and the near water. The frame's own background is a
-       tiny blur-up of whichever cut the <picture> picks, so the text has
-       something to sit on before the real one arrives. The frame is held at
-       the height of the whole screen (--photo-h in the styles), so the
-       toolbar coming and going only covers and uncovers its foot, rather
-       than re-fitting the photo and sliding the lake up and down with it.
-
-       The photo (Mount Shuksan over Picture Lake, 4:3) comes in four cuts,
-       rendered by footer-photos.mjs: the whole of it for landscape screens,
-       pinned to its top centre so the peak always shows, 1280w up to its full
-       4340w, and its top 16:9 for desktops at least that wide; a 3:4 crop for
-       portrait tablets, cut just short enough at the bottom for the lake to
-       fill the lower 25% of a tall screen, and its middle 9:16 for phones.
-       Each is only as much of the photo as the screens it goes to can show,
-       and each is AVIF with a WebP fallback.
-
-       The srcsets are held back in data-srcset, so the photo doesn't load
-       alongside the hero and compete with it. The script sets them once the
-       page has loaded and gone idle instead. Its alt is empty — the scene is
-       decorative. -->
+       Inside it, the frame: a canvas the height of the whole screen
+       (--stage-h in the styles), on which a knot is drawn in characters
+       (src/scripts/signal-ascii.ts) wherever the layout below leaves room
+       for it — the empty box marked data-knot. Without WebGL2 the ground is
+       all there is, and the footer reads the same without it. -->
   <div
-    class="footer-photo-track absolute inset-x-0 bottom-0 -z-10 pointer-events-none"
-    style={`--blur-landscape:url(${photo.landscape.placeholder});--blur-portrait:url(${photo.portrait.placeholder});--sky-landscape:${photo.landscape.sky};--sky-portrait:${photo.portrait.sky}`}
+    class="footer-bg-track absolute inset-x-0 bottom-0 -z-10 pointer-events-none"
     aria-hidden="true"
   >
-    <div class="footer-photo-pin sticky bleed-under-bars">
-    <div class="footer-photo-sky absolute inset-x-0 top-0"></div>
-    <div class="footer-photo-frame absolute inset-x-0 bottom-0">
-      <picture>
-        {
-          cuts.map(({ media, cut }) => (
-            <>
-              <source
-                media={media}
-                type="image/avif"
-                data-srcset={srcset(cut.avif as [string, number][])}
-                sizes={sizes(cut)}
-              />
-              <source
-                media={media}
-                type="image/webp"
-                data-srcset={srcset(cut.webp as [string, number][])}
-                sizes={sizes(cut)}
-              />
-            </>
-          ))
-        }
-        <source
-          type="image/avif"
-          data-srcset={srcset(photo.landscape.avif as [string, number][])}
-          sizes={LANDSCAPE_SIZES}
-        />
-        <img
-          class="footer-photo absolute inset-0 w-full h-full object-cover object-top"
-          data-srcset={srcset(photo.landscape.webp as [string, number][])}
-          data-cuts={JSON.stringify(
-            Object.fromEntries(
-              Object.entries(photo).map(([name, c]) => [name, [c.width, c.height, c.rect]]),
-            ),
-          )}
-          sizes={LANDSCAPE_SIZES}
-          width={photo.landscape.width}
-          height={photo.landscape.height}
-          alt=""
-          decoding="async"
-          fetchpriority="low"
-        />
-      </picture>
-      <!-- Placed and sized by the haze over the lake's band of the photo -->
-      <canvas id="footer-canvas" class="absolute left-0 w-full"></canvas>
-      <div class="footer-scrim absolute inset-0"></div>
-    </div>
+    <div class="footer-bg-pin sticky bleed-under-bars">
+      <div class="footer-bg-frame absolute inset-x-0 bottom-0">
+        <canvas id="footer-canvas" class="absolute inset-0 w-full h-full"
+        ></canvas>
+      </div>
     </div>
   </div>
 
@@ -270,10 +178,16 @@ const connect = [
       </div>
     </div>
 
+    <!-- Two columns from md up: the copy down the left, and on the right the
+         room the knot is drawn in. On phones the knot takes the open middle
+         of the screen instead, between the button and the name. -->
     <div
-      class="flex-1 min-h-0 flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-16 px-safe-3 sm:px-safe-6 lg:px-safe-12 pt-10 md:pt-16"
+      class="flex-1 min-h-0 flex flex-col md:grid md:grid-cols-12 md:gap-x-6 px-safe-3 sm:px-safe-6 lg:px-safe-12 pt-10 md:pt-16"
     >
-      <div class="@container lg:flex-1 max-w-[600px]">
+      <div
+        class="md:col-span-7 flex flex-col md:justify-between gap-10 md:pb-12 lg:pb-16"
+      >
+      <div class="@container w-full max-w-[600px]">
         <!-- Statement: typed out as a short sequence once the footer is well
              in view (see script). Three layers share one grid cell: an sr-only
              copy for assistive tech, an invisible ghost of the statement that
@@ -284,8 +198,8 @@ const connect = [
 
              The lines never wrap: the type is capped so the longer of the two
              (~14em) always fits the column — 100cqi is the wrapper's width,
-             which is why the wrapper is a size container that flexes into the
-             space the nav leaves on lg rather than sizing to its text. -->
+             which is why the wrapper is a size container rather than a box
+             sized to its text. -->
         <p
           class="grid whitespace-pre font-display text-bone leading-[1.2] tracking-[-0.02em] text-[min(clamp(1.5rem,calc(1rem+2vw),2.5rem),calc(100cqi/14.6))]"
         >
@@ -306,7 +220,7 @@ const connect = [
              place of the nav columns, drawn in a little tighter on the
              narrowest (360px) screens so the row still fits -->
         <div class="mt-8 flex items-center gap-2.5 min-[380px]:gap-4">
-          <ActionButton href="#contact" icon="right" variant="solid" caps>
+          <ActionButton href="#contact" icon="right" variant="solid-dark" caps>
             Get in touch
           </ActionButton>
           <ul class="md:hidden flex items-center gap-1" aria-label="Connect">
@@ -348,10 +262,7 @@ const connect = [
         </div>
       </div>
 
-      <div
-        class="hidden md:flex items-start justify-between lg:justify-end gap-8 lg:gap-14"
-      >
-        <nav class="flex gap-8 lg:gap-14" aria-label="Footer navigation">
+        <nav class="hidden md:flex gap-8 lg:gap-14" aria-label="Footer navigation">
           <div class="border-l border-bone/25 pl-5 lg:pl-6 lg:min-w-[150px]">
             <p
               class="font-mono text-[12px] leading-none tracking-[-0.02em] uppercase text-bone/65"
@@ -399,6 +310,13 @@ const connect = [
           </div>
         </nav>
       </div>
+
+      <div
+        class="flex-1 min-h-0 md:col-span-5 md:mb-8"
+        data-knot
+        aria-hidden="true"
+      >
+      </div>
     </div>
 
     <div class="shrink-0 px-safe-3 sm:px-safe-6 lg:px-safe-12 pb-5 md:pb-6">
@@ -407,11 +325,14 @@ const connect = [
       >
         Dominic Clerici
       </p>
-      <p
-        class="mt-4 font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
+      <div
+        class="mt-4 flex justify-between gap-6 font-mono text-[11px] leading-none tracking-[-0.02em] uppercase text-bone/60"
       >
-        &copy; {year} Dominic Clerici. All rights reserved.
-      </p>
+        <p>&copy; {year} Dominic Clerici. All rights reserved.</p>
+        <p class="hidden md:block" aria-hidden="true">
+          Drawn in&ensp;<span class="text-bio-lime/80">{RAMP}</span>
+        </p>
+      </div>
     </div>
 
     <!-- Phones have none of the >_ prompts the header and cap bar carry, so
@@ -471,19 +392,19 @@ const connect = [
 </footer>
 
 <style>
-  /* How tall the photo is: the screen with the toolbar away (lvh). Except
+  /* How tall the backdrop is: the screen with the toolbar away (lvh). Except
      in iOS Safari, where even lvh stops short of the bottom of the screen,
-     under the toolbar, and the photo left a band of the bare page there:
+     under the toolbar, and the backdrop left a band of the bare page there:
      there it is the screen's own height (--screen-h, set by the script
      before the footer), which it can't fall short of whatever Safari
      counts as its viewport. */
   #site-footer {
-    --photo-h: 100vh;
-    --photo-h: 100lvh;
+    --stage-h: 100vh;
+    --stage-h: 100lvh;
   }
   @supports (-webkit-touch-callout: none) {
     #site-footer {
-      --photo-h: max(100lvh, var(--screen-h, 0px));
+      --stage-h: max(100lvh, var(--screen-h, 0px));
       /* The footer is sized off the whole screen, but the page stops above
          Safari's toolbar, so that much of it would sit above the top of
          the screen at the end, doing nothing. This takes part of it back
@@ -493,7 +414,7 @@ const connect = [
     }
   }
 
-  /* Phones only. The footer is as tall as the photo, the whole screen, plus
+  /* Phones only. The footer is as tall as the backdrop, the whole screen, plus
      what it tucks up under the contact section (-mt-6): scrolled to the
      end, where the page stops above Safari's toolbar, that reaches just
      past the top of the screen, so the contact section's near-black never
@@ -512,7 +433,7 @@ const connect = [
     @media (max-width: 767px) {
       #site-footer {
         --footer-h: calc(
-          max(680px, var(--photo-h)) + 1.5rem - var(--footer-trim, 0px)
+          max(680px, var(--stage-h)) + 1.5rem - var(--footer-trim, 0px)
         );
         height: var(--footer-h);
         padding-top: calc(var(--footer-h) - max(680px, 100dvh));
@@ -520,65 +441,32 @@ const connect = [
     }
   }
 
-  /* The photo's track, pin and frame (see the markup). The track reaches a
-     pin's height past the footer at both ends: above, so the pin is stuck
+  /* The backdrop's track, pin and frame (see the markup). The track reaches
+     a pin's height past the footer at both ends: above, so the pin is stuck
      from the moment the footer shows; below, so it never comes unstuck. */
-  .footer-photo-track {
-    top: calc(-1 * (var(--photo-h) + var(--overlay-bleed)));
-    bottom: calc(-1 * (var(--photo-h) + var(--overlay-bleed)));
+  .footer-bg-track {
+    top: calc(-1 * (var(--stage-h) + var(--overlay-bleed)));
+    bottom: calc(-1 * (var(--stage-h) + var(--overlay-bleed)));
   }
-  .footer-photo-pin {
+  /* DARK in lib/gl-kit.ts, which is what the canvas clears to. */
+  .footer-bg-pin {
     top: calc(-1 * var(--overlay-bleed));
-    height: calc(var(--photo-h) + var(--overlay-bleed));
+    height: calc(var(--stage-h) + var(--overlay-bleed));
+    background: var(--color-n-900);
   }
-  .footer-photo-sky {
-    height: var(--overlay-bleed);
-    background: var(--sky-landscape);
-  }
-  .footer-photo-frame {
-    height: var(--photo-h);
-  }
-  @media (max-width: 1023px) and (orientation: portrait) {
-    .footer-photo-sky {
-      background: var(--sky-portrait);
-    }
+  .footer-bg-frame {
+    height: var(--stage-h);
   }
   /* On phones the page ends on the casino peek, and the footer's own last
-     few pixels, behind the peek, are the peek's colour over the photo. The
-     peek's foot rarely lands on a whole pixel, and where it and the photo
-     shared an edge, that edge's last row blended the two into a faint light
-     line. With nothing behind it but its own colour, there is nothing to
-     see. (The footer paints above the photo, which is at -z-10.) */
+     few pixels, behind the peek, are the peek's colour over the backdrop.
+     The peek's foot rarely lands on a whole pixel, and where it and the
+     backdrop shared an edge, that edge's last row blended the two into a
+     faint line. With nothing behind it but its own colour, there is nothing
+     to see. (The footer paints above the backdrop, which is at -z-10.) */
   @media (max-width: 767px) {
     #site-footer {
       /* The foot of the peek's title bar */
       background: linear-gradient(to top, #003dd7 8px, transparent 8px);
-    }
-  }
-
-  /* The blur-up, cut and pinned to match whichever photo the <picture>
-     picks. */
-  .footer-photo-frame {
-    background: var(--blur-landscape) center top / cover;
-  }
-  /* Same query as PORTRAIT in the frontmatter. */
-  @media (max-width: 1023px) and (orientation: portrait) {
-    .footer-photo-frame {
-      background-image: var(--blur-portrait);
-    }
-  }
-  /* The photo stays out of sight over the blur-up until the script has it
-     whole and decoded, then crossfades in, never half-drawn. */
-  .footer-photo {
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-  .footer-photo.is-loaded {
-    opacity: 1;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .footer-photo {
-      transition: none;
     }
   }
 
@@ -636,57 +524,6 @@ const connect = [
     display: none;
   }
 
-  /* Holds the haze canvas back until it has drawn a frame over the photo.
-     Where it draws, it matches the <img> beneath pixel-for-pixel (and it is
-     transparent everywhere else), so the fade only brings the shimmer up
-     rather than swapping one picture for another. */
-  #footer-canvas {
-    opacity: 0;
-    transition: opacity 0.6s ease;
-  }
-  #footer-canvas.is-ready {
-    opacity: 1;
-  }
-
-  /* Darkens the sky behind the statement and nav and the near water behind
-     the giant name; the middle stays clear so the peak and the far shore,
-     where the shimmer peaks, read at full strength. */
-  .footer-scrim {
-    background: linear-gradient(
-      to bottom,
-      rgb(10 10 10 / 0.5) 0%,
-      rgb(10 10 10 / 0.25) 28%,
-      rgb(10 10 10 / 0) 42%,
-      rgb(10 10 10 / 0) 58%,
-      rgb(10 10 10 / 0.3) 76%,
-      rgb(10 10 10 / 0.6) 100%
-    );
-  }
-  /* Below lg the nav columns stack under the statement and land on the
-     snowfields and pale granite themselves, so the scrim holds its strength
-     down past them, then clears over the trees and the far shore. */
-  @media (max-width: 1023px) {
-    .footer-scrim {
-      background: linear-gradient(
-        to bottom,
-        rgb(10 10 10 / 0.5) 0%,
-        rgb(10 10 10 / 0.5) 22%,
-        rgb(10 10 10 / 0.5) 48%,
-        rgb(10 10 10 / 0) 60%,
-        rgb(10 10 10 / 0) 68%,
-        rgb(10 10 10 / 0.3) 82%,
-        rgb(10 10 10 / 0.6) 100%
-      );
-    }
-  }
-  /* Phones need none: the statement, the button and the connect icons all
-     sit on the clear sky above the peak, and the name on the lake. */
-  @media (max-width: 767px) {
-    .footer-scrim {
-      display: none;
-    }
-  }
-
   /* Typewriter caret for the statement. Zero net advance (2px border, -2px
      margin) so showing or hiding it never reflows the line. Solid while
      characters are landing, blinking during the pauses, gone otherwise. */
@@ -732,7 +569,7 @@ const connect = [
 </style>
 
 <script>
-  import { createHeatHaze, type HeatHaze } from "../scripts/heat-haze";
+  import type { SignalScene } from "../scripts/signal-ascii";
   import {
     makeState,
     typeText,
@@ -744,7 +581,8 @@ const connect = [
 
   {
     const footer = document.getElementById("site-footer")!;
-    const photo = footer.querySelector<HTMLImageElement>(".footer-photo")!;
+    const frame = footer.querySelector<HTMLElement>(".footer-bg-frame")!;
+    const knotBox = footer.querySelector<HTMLElement>("[data-knot]")!;
     const canvas = document.getElementById(
       "footer-canvas",
     ) as HTMLCanvasElement;
@@ -767,127 +605,73 @@ const connect = [
       name.style.fontSize = `${(100 * width) / Math.max(name.scrollWidth, 1)}px`;
     }
 
-    /* ── Mountain backdrop + heat haze ──
-       The photo starts loading as soon as the page is done with the network
-       and the main thread: after the load event, at the first idle moment,
-       at low fetch priority. Nothing the page needs waits on it, and it is
-       usually in long before the footer is reached. Once it has decoded, the
-       haze takes it as a texture, again in idle time. Arriving at the footer
-       sooner (a jump straight to it) brings each step forward instead. The
-       shimmer only runs while the footer is actually on screen. Under reduced
-       motion, or without WebGL2, the photo is left as it is. */
-    let haze: HeatHaze | null = null;
+    /* ── Backdrop ──
+       Fetched and built a screen and a half ahead of the footer, so nothing
+       of it is paid for by a visit that never gets this far, and it has
+       compiled by the time it is seen. It only runs while the footer is on
+       screen; its opening (the characters booting up) is on its own clock,
+       so that waits for the footer too. Under reduced motion it is one
+       still frame. */
+    let signal: SignalScene | null = null;
     let footerVisible = false;
-    // The casino covers the page; the shimmer has nothing to show under it,
+    // The casino covers the page; the knot has nothing to show under it,
     // and on a phone its frames would compete with the sheet's
     let casinoOpen = false;
-    const running = () => footerVisible && !document.hidden && !casinoOpen;
-    let decoded = false;
+    const syncSignal = () =>
+      footerVisible && !document.hidden && !casinoOpen
+        ? signal?.start()
+        : signal?.stop();
 
-    const idle = (fn: () => void) =>
-      "requestIdleCallback" in window
-        ? requestIdleCallback(fn, { timeout: 2000 })
-        : setTimeout(fn, 200);
+    // Where the layout left room for the knot, in the frame's own terms. The
+    // frame is pinned to the top of the screen, and at the end of the page
+    // the footer's foot is the screen's, so the box is placed from there:
+    // right when the page is at rest on the footer, whatever its height.
+    function place() {
+      const f = footer.getBoundingClientRect();
+      const k = knotBox.getBoundingClientRect();
+      return {
+        x: k.left + k.width / 2,
+        y: window.innerHeight - (f.bottom - (k.top + k.height / 2)),
+        r: Math.min(k.width, k.height) / 2,
+      };
+    }
 
-    // The photo's current source, for the haze: its files are named for their
-    // cut and width (footer-mountain-<cut>-<width>.<hash>.<ext>), and each cut's
-    // pixel size and place in the full photo ride on the <img>. The height
-    // follows from the cut's aspect, rounded as the generator's resize rounds
-    // it — naturalHeight won't do, as for a srcset pick it is divided by the
-    // pick's density and floored.
-    const cuts: Record<string, [number, number, number[]]> = JSON.parse(
-      photo.dataset.cuts!,
-    );
-    const source = () => {
-      const [, cut, w] = /footer-mountain-([a-z]+)-(\d+)\./.exec(
-        photo.currentSrc,
-      )!;
-      const [cw, ch, rect] = cuts[cut];
-      const width = Number(w);
-      return { width, height: Math.round((width * ch) / cw), rect };
-    };
-
-    function startHaze() {
-      if (haze || !decoded) return;
-      haze = createHeatHaze({
-        canvas,
-        frame: footer.querySelector<HTMLElement>(".footer-photo-frame")!,
-        img: photo,
-        source,
-        onReady: () => canvas.classList.add("is-ready"),
-        onLost: () => {
-          canvas.classList.remove("is-ready");
-          haze = null;
-          // Not restarted: a lost context stays with the photo alone
-          decoded = false;
-        },
+    let signalWanted = false;
+    function loadSignal() {
+      if (signalWanted) return;
+      signalWanted = true;
+      import("../scripts/signal-ascii").then(({ createSignal }) => {
+        signal = createSignal({ canvas, wrap: frame, reducedMotion, place });
+        syncSignal();
       });
-      if (running()) haze?.start();
     }
-
-    function loadPhoto() {
-      if (photo.srcset) return;
-      // The <source>s first, so the <img> chooses among all of them
-      for (const el of footer.querySelectorAll<HTMLSourceElement>(
-        "picture source",
-      )) {
-        el.srcset = el.dataset.srcset!;
-      }
-      photo.srcset = photo.dataset.srcset!;
-      // Shown only once the whole file is in and decoded (see the styles):
-      // left to itself, the browser paints the photo as it streams in and
-      // decodes its tiles as they come on screen, so a footer reached early
-      // filled in in bands. A failed decode shows it all the same.
-      const decoding = photo.decode();
-      const show = () => photo.classList.add("is-loaded");
-      decoding.then(show, show);
-      if (reducedMotion) return;
-      decoding
-        .then(() => {
-          decoded = true;
-          if (footerVisible) startHaze();
-          else idle(startHaze);
-        })
-        .catch(() => {});
-      // Turning a tablet or phone switches between the cuts; the haze re-reads
-      // the photo once the new one is in.
-      photo.addEventListener("load", () => haze?.reload());
-    }
-
-    if (document.readyState === "complete") idle(loadPhoto);
-    else addEventListener("load", () => idle(loadPhoto), { once: true });
 
     new IntersectionObserver(
       (entries, io) => {
         if (entries.some((e) => e.isIntersecting)) {
-          loadPhoto();
+          loadSignal();
           io.disconnect();
         }
       },
-      // A screen ahead of the footer, should the idle load not have come yet
-      { rootMargin: "100% 0px" },
+      { rootMargin: "150% 0px" },
     ).observe(footer);
 
     new IntersectionObserver(
       (entries) => {
         footerVisible = entries[0].isIntersecting;
-        if (footerVisible) {
-          loadPhoto();
-          startHaze();
-          if (running()) haze?.start();
-        } else {
-          haze?.stop();
-        }
+        syncSignal();
       },
       { threshold: 0 },
     ).observe(footer);
 
-    const syncHaze = () => (running() ? haze?.start() : haze?.stop());
-    document.addEventListener("visibilitychange", syncHaze);
+    document.addEventListener("visibilitychange", syncSignal);
     addEventListener("casino", (e) => {
       casinoOpen = (e as CustomEvent<boolean>).detail;
-      syncHaze();
+      syncSignal();
     });
+    // A phone's toolbar coming and going moves the footer's foot on screen
+    // without resizing the footer, so the observer below never hears of it.
+    addEventListener("resize", () => signal?.resize(), { passive: true });
 
     /* ── Statement typewriter ──
        Once the viewport's bottom edge has reached the footer's bottom 40%,
@@ -1098,6 +882,7 @@ const connect = [
         // running on every one of those ticks.
         fitName();
         onEchoScroll();
+        signal?.resize();
       }, 120);
     }).observe(footer);
 

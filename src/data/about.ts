@@ -1,0 +1,30 @@
+export const conceptualSkills = [
+  "Full Stack",
+  "Applied AI",
+  "Knowledge Graphs",
+  "Mobile Development",
+  "Cloud Infrastructure",
+  "AI/ML",
+  "Autonomous Agents",
+  "Growth Engineering",
+  "Internal Tooling",
+  "SEO",
+  "Data Analysis",
+];
+
+export const technicalSkills = [
+  "TypeScript",
+  "Go",
+  "Rust",
+  "Python",
+  "React",
+  "Next.js",
+  "React Native",
+  "Swift",
+  "Node.js",
+  "PostgreSQL",
+  "AWS Lambda",
+  "Electron",
+  "WordPress",
+  "Elementor",
+];

@@ -31,6 +31,18 @@ pnpm preview
 
 Requires Node >= 22.12.0.
 
+## Backgrounds
+
+Three WebGL2 scenes sit behind the front page, each fetched only when it is about to be seen:
+
+| Under | Scene | Loaded |
+| --- | --- | --- |
+| Hero, About | `src/scripts/ink-fluid.ts`: a fluid simulation carrying three pigments over paper, stirred by the pointer | With the page |
+| Career, Quote | `src/scripts/glass-scene.ts`: fluted glass on near-black, one orb per employer | Once the page has loaded and gone idle, or when the turn to dark is reached |
+| Footer | `src/scripts/signal-ascii.ts`: a trefoil knot raymarched once per character cell and set in Roboto Mono | A screen and a half ahead of the footer |
+
+`PinnedCanvas.astro` owns the first two and the turn from one to the other; `Footer.astro` owns the third, and draws the knot in whatever room its layout leaves (the empty `data-knot` box). Each scene runs only while it is on screen and the tab is showing. What they share is in `src/lib/gl-kit.ts`.
+
 ## Fonts
 
 The fonts are self-hosted and subset to only the characters that actually appear on the site. This means no requests to Google Fonts, faster load times, and smaller files.
@@ -56,21 +68,6 @@ pnpm build
 The script scans the built HTML in `dist/` (where all template expressions have been resolved to real text), figures out which characters each font needs, and trims the font files down to just those glyphs. It prints a summary showing the before/after sizes.
 
 The casino (below) sets its text in the system's own fonts, so it needs nothing from this script.
-
-## Footer Photo
-
-The footer's backdrop (Mount Shuksan over Picture Lake) is cut from a full-resolution original in `photos-src/` (4340×3255), kept out of `public/` so it is never deployed. A Node script renders every size the page serves into `src/assets/footer/` (emitted under `/_astro/` with hashed names, so cached as immutable) and writes `src/data/footer-photo.json`, which the footer builds its `<picture>` from:
-
-- **landscape cut** for landscape screens: the whole photo, pinned to its top centre so the peak always shows, from 1280w up to its full 4340w
-- **portrait cut** for phones and portrait tablets: cropped at the bottom only as far as it takes for the lake to fill the lower 25% of a tall screen, and trimmed to 3:4 about the centre, with a faint dark fade baked into its foot to keep the name legible over the lake
-
-Both are cut in the files themselves, so no pixels are sent only to be cropped off screen. Each size is written as AVIF with a WebP fallback. The page starts loading the photo once it has itself finished loading and gone idle, at low priority, so the footer is ready before anyone scrolls to it without holding anything else up. To change the crops, sizes or quality, edit the constants at the top of `footer-photos.mjs` and rerun it:
-
-```bash
-pnpm photos:footer
-```
-
-The heat haze over the lake (`src/scripts/heat-haze.ts`) is positioned in the full photo's coordinates, so it follows either crop automatically. Only a new source photo means re-measuring it.
 
 ## The casino
 
