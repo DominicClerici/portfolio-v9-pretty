@@ -4,9 +4,14 @@
 // on paper: each one filters the light the others let through, so where two
 // run together they make a third colour rather than a brighter one.
 //
-// The pointer drags the water and bleeds pigment into it. Two slow wandering
-// brushes keep it moving when nothing else does, so the sheet is alive on a
-// phone too, and a few drops fall as the page opens.
+// The pointer drags the water and bleeds pigment into it, and so does a
+// finger, for as long as it is down (scrolling the page or not). Two slow
+// wandering brushes keep it moving when nothing else does, and a few drops
+// fall as the page opens.
+//
+// The sheet is a loop top to bottom: scrolling slides it through the frame,
+// and what leaves one edge comes back in at the other, so the frame is never
+// short of sheet to show.
 
 import { buildProgram, whenLinked } from "../lib/gl-program";
 import {
@@ -32,6 +37,10 @@ const VELOCITY_FADE = 0.55; // per second
 const DYE_FADE = 0.16; // per second
 const POINTER_FORCE = 3200;
 const POINTER_INK = 0.22;
+// Splat sizes, in short sides squared. A finger is blunter than a cursor.
+const POINTER_RADIUS = 0.0011;
+const TOUCH_RADIUS = 0.0022;
+const TOUCH_DAB = 0.3; // the ink a finger leaves where it lands
 // How far the sheet slides for each px the page scrolls.
 const PARALLAX = 0.5;
 
@@ -71,7 +80,9 @@ uniform vec2 uPoint;
 uniform vec3 uColor;
 uniform float uRadius;
 void main() {
-  vec2 p = (vUv - uPoint) * uShape;
+  vec2 d = vUv - uPoint;
+  d.y = fract(d.y + 0.5) - 0.5;
+  vec2 p = d * uShape;
   o = vec4(texture(uTarget, vUv).xyz + uColor * exp(-dot(p, p) / uRadius), 1.0);
 }`;
 
@@ -267,7 +278,7 @@ export function createInk(init: {
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, filter);
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, filter);
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_S, gl!.CLAMP_TO_EDGE);
-    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_T, gl!.CLAMP_TO_EDGE);
+    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_T, gl!.REPEAT);
     gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA16F, w, h, 0, gl!.RGBA, gl!.HALF_FLOAT, null);
     const fbo = gl!.createFramebuffer()!;
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
@@ -493,16 +504,45 @@ export function createInk(init: {
   // The pointer, as last reported and (lx, ly) as last stirred from, in the
   // frame's own 0…1 with y up. The events only note where it is; the frame
   // that uses it places it, so the canvas is measured once a frame at most.
-  const ptr = { cx: 0, cy: 0, lx: 0, ly: 0, down: false, fresh: false };
+  const ptr = {
+    cx: 0,
+    cy: 0,
+    lx: 0,
+    ly: 0,
+    down: false,
+    fresh: false,
+    touch: false,
+    landed: false,
+  };
   window.addEventListener(
     "pointermove",
     (e) => {
+      // A finger's pointer events stop the moment the browser takes the
+      // gesture for a scroll; its touch events (below) do not.
+      if (e.pointerType === "touch") return;
+      if (ptr.touch) ptr.down = false;
+      ptr.touch = false;
       ptr.cx = e.clientX;
       ptr.cy = e.clientY;
       ptr.fresh = true;
     },
     { passive: true },
   );
+  const onTouch = (e: TouchEvent) => {
+    const f = e.touches[0];
+    if (!f) return;
+    // Each touch is a stroke of its own, not a line from the last one.
+    if (e.type === "touchstart" && e.touches.length === 1) {
+      ptr.down = false;
+      ptr.landed = true;
+    }
+    ptr.touch = true;
+    ptr.cx = f.clientX;
+    ptr.cy = f.clientY;
+    ptr.fresh = true;
+  };
+  window.addEventListener("touchstart", onTouch, { passive: true });
+  window.addEventListener("touchmove", onTouch, { passive: true });
 
   // Which pigment the pointer is loaded with: it turns through the three as
   // it travels, so a long stroke changes colour along its length.
@@ -520,33 +560,44 @@ export function createInk(init: {
       const r = canvas.getBoundingClientRect();
       const x = (ptr.cx - r.left) / r.width;
       const y = 1 - (ptr.cy - r.top) / r.height;
-      if (!ptr.down) {
+      const radius = ptr.touch ? TOUCH_RADIUS : POINTER_RADIUS;
+      // Off the frame (it has scrolled away from under the pointer) the
+      // stroke ends: the sheet's loop would bring it back in at the far edge.
+      if (y < 0 || y > 1) ptr.down = false;
+      else {
+        if (!ptr.down) {
+          ptr.lx = x;
+          ptr.ly = y;
+          ptr.down = true;
+          if (ptr.landed) {
+            travel += 0.2;
+            splat(x, y, 0, 0, pointerInk(TOUCH_DAB), radius);
+          }
+        }
+        const dx = (x - ptr.lx) * shapeX;
+        const dy = (y - ptr.ly) * shapeY;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 0.0005) {
+          travel += dist;
+          const ink = pointerInk(Math.min(1, dist * 26) * POINTER_INK * 4);
+          // Laid along the stroke, so a fast flick is a line and not dots.
+          const n = Math.min(10, Math.max(1, Math.ceil(dist / 0.02)));
+          for (let i = 1; i <= n; i++) {
+            const k = i / n;
+            splat(
+              ptr.lx + (x - ptr.lx) * k,
+              ptr.ly + (y - ptr.ly) * k,
+              (dx * POINTER_FORCE) / n,
+              (dy * POINTER_FORCE) / n,
+              ink.map((v) => v / n),
+              radius,
+            );
+          }
+        }
         ptr.lx = x;
         ptr.ly = y;
-        ptr.down = true;
       }
-      const dx = (x - ptr.lx) * shapeX;
-      const dy = (y - ptr.ly) * shapeY;
-      const dist = Math.hypot(dx, dy);
-      if (dist > 0.0005) {
-        travel += dist;
-        const ink = pointerInk(Math.min(1, dist * 26) * POINTER_INK * 4);
-        // Laid along the stroke, so a fast flick is a line and not dots.
-        const n = Math.min(6, Math.max(1, Math.ceil(dist / 0.02)));
-        for (let i = 1; i <= n; i++) {
-          const k = i / n;
-          splat(
-            ptr.lx + (x - ptr.lx) * k,
-            ptr.ly + (y - ptr.ly) * k,
-            (dx * POINTER_FORCE) / n,
-            (dy * POINTER_FORCE) / n,
-            ink.map((v) => v / n),
-            0.0011,
-          );
-        }
-      }
-      ptr.lx = x;
-      ptr.ly = y;
+      ptr.landed = false;
     }
 
     // Two brushes on slow looping paths, each trailing one pigment and
