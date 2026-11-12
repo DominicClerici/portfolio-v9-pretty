@@ -53,16 +53,17 @@ export const uniforms = <K extends string>(
     names.map((n) => [n, gl.getUniformLocation(prog, n)]),
   ) as Record<K, WebGLUniformLocation | null>;
 
-/** Sizes the canvas's buffer to its wrap, at up to `maxDpr`. Returns whether
- *  the buffer changed. */
+/** Sizes the canvas's buffer to its wrap, at up to `maxDpr`, or to `rows`
+ *  wraps stacked. Returns whether the buffer changed. */
 export function fitCanvas(
   canvas: HTMLCanvasElement,
   wrap: HTMLElement,
   maxDpr: number,
+  rows = 1,
 ): boolean {
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
   const w = Math.max(1, Math.round(wrap.clientWidth * dpr));
-  const h = Math.max(1, Math.round(wrap.clientHeight * dpr));
+  const h = Math.max(1, Math.round(wrap.clientHeight * dpr)) * rows;
   if (canvas.width === w && canvas.height === h) return false;
   canvas.width = w;
   canvas.height = h;

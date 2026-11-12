@@ -30,7 +30,9 @@ import {
 // carries (which is what is seen, so it gets the resolution).
 const SIM_RES = 144;
 const DYE_RES = 900;
-const DYE_RES_SMALL = 560;
+const DYE_RES_SMALL = 800;
+// A frame whose short side is under this many CSS px is a phone's.
+const SMALL_FRAME = 600;
 const PRESSURE_ITERATIONS = 18;
 const CURL = 14; // vorticity confinement: how much the eddies are kept alive
 const VELOCITY_FADE = 0.55; // per second
@@ -41,7 +43,9 @@ const POINTER_INK = 0.22;
 const POINTER_RADIUS = 0.0011;
 const TOUCH_RADIUS = 0.0022;
 const TOUCH_DAB = 0.3; // the ink a finger leaves where it lands
-// How far the sheet slides for each px the page scrolls.
+// How far the sheet slides for each px the page scrolls. Where the canvas
+// does the sliding itself (see createInk), global.css's ink-slide carries
+// the same figure.
 const PARALLAX = 0.5;
 
 // What each pigment lets through at full strength.
@@ -171,6 +175,7 @@ ${HEAD}
 uniform sampler2D uDye;
 uniform vec2 uTexel;
 uniform float uDark;
+uniform float uTiles;
 
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -185,15 +190,16 @@ float vnoise(vec2 p) {
 }
 
 void main() {
-  vec3 c = max(texture(uDye, vUv).rgb, 0.0);
+  vec2 uv = vec2(vUv.x, vUv.y * uTiles);
+  vec3 c = max(texture(uDye, uv).rgb, 0.0);
 
   // Pigment gathers at the rim of a wash as it dries: a little extra where
   // the amount of ink is changing fastest.
   float sum = c.r + c.g + c.b;
-  float sx = dot(texture(uDye, vUv + vec2(uTexel.x * 2.0, 0.0)).rgb, vec3(1.0))
-           - dot(texture(uDye, vUv - vec2(uTexel.x * 2.0, 0.0)).rgb, vec3(1.0));
-  float sy = dot(texture(uDye, vUv + vec2(0.0, uTexel.y * 2.0)).rgb, vec3(1.0))
-           - dot(texture(uDye, vUv - vec2(0.0, uTexel.y * 2.0)).rgb, vec3(1.0));
+  float sx = dot(texture(uDye, uv + vec2(uTexel.x * 2.0, 0.0)).rgb, vec3(1.0))
+           - dot(texture(uDye, uv - vec2(uTexel.x * 2.0, 0.0)).rgb, vec3(1.0));
+  float sy = dot(texture(uDye, uv + vec2(0.0, uTexel.y * 2.0)).rgb, vec3(1.0))
+           - dot(texture(uDye, uv - vec2(0.0, uTexel.y * 2.0)).rgb, vec3(1.0));
   float rim = smoothstep(0.0, 0.22, length(vec2(sx, sy)));
 
   // The paper's tooth takes more pigment in its hollows.
@@ -230,12 +236,30 @@ export type InkScene = {
   setScroll(px: number): void;
   /** The turn to dark, 0 (paper) to 1 (the glass scene's dark backdrop). */
   setDarkness(t: number): void;
+  /** For the ?inkdebug readout: overrides the resolutions and reports what
+   *  is in use. */
+  tune(t: { dpr?: number; dye?: number; sim?: number }): {
+    dpr: number;
+    dye: number;
+    sim: number;
+    buffer: string;
+    dyeGrid: string;
+  };
+  /** For ink-bench.ts: takes the frames out of the loop's hands, to be run
+   *  on demand instead. */
+  probe(): {
+    gl: WebGL2RenderingContext;
+    programs: Record<string, WebGLProgram>;
+    frame(dt: number): void;
+  };
 };
 
-// The buffer stops at 1.5x: the washes are soft, the pigment grid is far
-// coarser than the screen either way, and the last half-step of density is
-// the display pass's whole cost again on a phone.
+// The buffer stops short of the screen's own density: the washes are soft
+// and the pigment grid is coarser than the screen either way. A phone's
+// stops a little higher, chosen by eye on one along with its pigment grid
+// (ink-res-search.mjs measures both).
 const MAX_DPR = 1.5;
+const MAX_DPR_SMALL = 1.5;
 
 export function createInk(init: {
   canvas: HTMLCanvasElement;
@@ -244,6 +268,7 @@ export function createInk(init: {
   reducedMotion: boolean;
 }): InkScene | null {
   const { canvas, wrap, reducedMotion } = init;
+  performance.mark("ink:create");
   const gl = getGL(canvas);
   if (!gl) return null;
   // Rendering to half-float needs one of these; without it there is no sim.
@@ -252,6 +277,16 @@ export function createInk(init: {
     !gl.getExtension("EXT_color_buffer_half_float")
   )
     return null;
+
+  // On a phone the page hears its own scroll position late and in steps (a
+  // fast flick, or Safari's bar sliding, brings it down to ten reports a
+  // second), so a sheet slid from those reports lurches under copy that is
+  // scrolling smoothly. There the canvas slides instead, on a scroll
+  // timeline the compositor runs (global.css, ink-slide): it is --ink-tiles
+  // frames tall, shows the looping sheet that many times over, and moving
+  // it up one frame's height brings it back to where it began.
+  const tiles =
+    Number(getComputedStyle(canvas).getPropertyValue("--ink-tiles")) || 1;
 
   const sources = {
     advect: ADVECT_FS,
@@ -271,6 +306,7 @@ export function createInk(init: {
   ) as Record<Name, WebGLProgram>;
   const U = {} as Record<Name, Record<string, WebGLUniformLocation | null>>;
   bindFullscreenTriangle(gl);
+  performance.mark("ink:built");
 
   function target(w: number, h: number, filter: number): Target {
     const tex = gl!.createTexture()!;
@@ -317,24 +353,35 @@ export function createInk(init: {
   let scroll = 0;
   let lastScroll = 0;
   let dark = 0;
+  let maxDpr = 0;
+  let simRes = SIM_RES;
+  let dyeRes = 0;
+  let rebuild = false;
 
+  // From the frame's own proportions, not the buffer's: those round a
+  // little differently at every pixel ratio, and a grid one row out settles
+  // into a different picture.
   function gridSize(res: number) {
-    const aspect = canvas.width / canvas.height;
+    const aspect = cssW / cssH;
     return aspect >= 1
       ? { w: Math.round(res * aspect), h: res }
       : { w: res, h: Math.round(res / aspect) };
   }
 
   function resize() {
-    const changed = fitCanvas(canvas, wrap, MAX_DPR);
     cssW = wrap.clientWidth;
     cssH = wrap.clientHeight;
-    const aspect = canvas.width / canvas.height;
+    const small = Math.min(cssW, cssH) < SMALL_FRAME;
+    maxDpr ||= small ? MAX_DPR_SMALL : MAX_DPR;
+    const changed = fitCanvas(canvas, wrap, maxDpr, tiles) || rebuild;
+    rebuild = false;
+    const aspect = cssW / cssH;
     shapeX = Math.max(aspect, 1);
     shapeY = Math.max(1 / aspect, 1);
     if (!changed && velocity) return;
-    const sim = gridSize(SIM_RES);
-    const d = gridSize(Math.min(cssW, cssH) < 600 ? DYE_RES_SMALL : DYE_RES);
+    const sim = gridSize(simRes);
+    dyeRes ||= small ? DYE_RES_SMALL : DYE_RES;
+    const d = gridSize(dyeRes);
     // A resize starts the sheet clean: resampling the old one is not worth
     // the code, and the brushes have it wet again within a second.
     for (const p of [velocity, dye, pressure]) {
@@ -426,7 +473,7 @@ export function createInk(init: {
     const tx = 1 / velocity.read.w;
     const ty = 1 / velocity.read.h;
     // The sheet rides up with the page, at a fraction of its speed.
-    const shift = ((scroll - lastScroll) * PARALLAX) / cssH;
+    const shift = tiles > 1 ? 0 : ((scroll - lastScroll) * PARALLAX) / cssH;
     lastScroll = scroll;
 
     let u = use("curl");
@@ -496,6 +543,7 @@ export function createInk(init: {
     tex(u.uDye, dye.read);
     gl!.uniform2f(u.uTexel, 1 / dye.read.w, 1 / dye.read.h);
     gl!.uniform1f(u.uDark, dark);
+    gl!.uniform1f(u.uTiles, tiles);
     blit(null);
   }
 
@@ -559,12 +607,15 @@ export function createInk(init: {
       ptr.fresh = false;
       const r = canvas.getBoundingClientRect();
       const x = (ptr.cx - r.left) / r.width;
-      const y = 1 - (ptr.cy - r.top) / r.height;
+      let y = 1 - (ptr.cy - r.top) / r.height;
       const radius = ptr.touch ? TOUCH_RADIUS : POINTER_RADIUS;
       // Off the frame (it has scrolled away from under the pointer) the
       // stroke ends: the sheet's loop would bring it back in at the far edge.
       if (y < 0 || y > 1) ptr.down = false;
       else {
+        y = (y * tiles) % 1;
+        // Across the seam between two frames of the sheet, the short way.
+        if (ptr.down && Math.abs(y - ptr.ly) > 0.5) ptr.ly += y > ptr.ly ? 1 : -1;
         if (!ptr.down) {
           ptr.lx = x;
           ptr.ly = y;
@@ -659,21 +710,40 @@ export function createInk(init: {
 
   whenLinked(gl, Object.values(progs), (ok) => {
     if (!ok) return;
+    performance.mark("ink:linked");
     const find = (src: string) =>
       Array.from(new Set(Array.from(src.matchAll(/uniform \w+ (\w+);/g), (m) => m[1])));
     for (const n of names) U[n] = uniforms(gl, progs[n], find(sources[n]));
     ready = true;
     resize();
     if (!loop.running && !reducedMotion) draw();
+    performance.mark("ink:ready");
   });
 
   const still = () => {
     if (ready && !loop.running) draw();
   };
 
+  let probed = false;
+
   return {
     start: () => {
-      if (!reducedMotion) loop.start();
+      if (!reducedMotion && !probed) loop.start();
+    },
+    probe() {
+      probed = true;
+      loop.stop();
+      let t = 10;
+      return {
+        gl,
+        programs: progs,
+        frame(dt) {
+          t += dt;
+          stir(t, dt);
+          step(dt);
+          draw();
+        },
+      };
     },
     stop: () => loop.stop(),
     resize: () => {
@@ -681,6 +751,23 @@ export function createInk(init: {
     },
     setScroll(px) {
       scroll = px;
+    },
+    tune(t) {
+      if (t.dpr) maxDpr = t.dpr;
+      if (t.dye) dyeRes = t.dye;
+      if (t.sim) simRes = t.sim;
+      if (ready && (t.dpr || t.dye || t.sim)) {
+        rebuild = true;
+        resize();
+        still();
+      }
+      return {
+        dpr: maxDpr,
+        dye: dyeRes,
+        sim: simRes,
+        buffer: `${canvas.width}x${canvas.height}`,
+        dyeGrid: dye ? `${dye.read.w}x${dye.read.h}` : "",
+      };
     },
     setDarkness(t) {
       if (t === dark) return;

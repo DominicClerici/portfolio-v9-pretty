@@ -123,6 +123,7 @@ export default defineConfig({
      out with `export const prerender = false`, so the adapter emits exactly
      one function and the rest of the site ships as static HTML. */
   adapter: vercel(),
+  devToolbar: { enabled: false },
   /* Opt-in only (no defaultStrategy): the sole link that asks for it is the
      spread's way back to the front page, on /projects/<slug>. A cold visitor
      landing there from a search result is one click from a 116KB document the

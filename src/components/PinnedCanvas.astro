@@ -123,6 +123,10 @@
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const forceCPU = new URLSearchParams(location.search).has("cpu");
+    if (new URLSearchParams(location.search).has("inkdebug"))
+      import("../scripts/ink-debug").then((m) => ink && m.inkDebug(ink));
+    if (new URLSearchParams(location.search).has("inkbench"))
+      import("../scripts/ink-bench").then((m) => ink && m.inkBench(ink));
 
     /* ══ Tunable knobs ══════════════════════════════════════════════════
        The glass's shared feel knobs (pointer sensitivity, easing, drift, fps
