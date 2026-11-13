@@ -352,8 +352,9 @@ h6 {
 /* On touch screens the ink's parallax is the canvas itself sliding, on a
    scroll timeline, so it is the compositor's to run: the page's script hears
    the scroll position too late and too coarsely there to draw it (see
-   createInk in scripts/ink-fluid.ts, which reads --ink-tiles and draws the
-   looping sheet that many times down the canvas). The canvas is two frames
+   scripts/ink-mount.ts, which reads --ink-tiles, and createInk in
+   scripts/ink-fluid.ts, which draws the looping sheet that many times down
+   the canvas). The canvas is two frames
    tall and each iteration lifts it by one, which lands it where it started,
    over two frames' height of scroll: half the page's speed, PARALLAX in
    ink-fluid.ts. The iterations only have to outlast the scroll down to

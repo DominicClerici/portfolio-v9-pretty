@@ -13,22 +13,31 @@
 // can say so without blocking, otherwise checked a frame later, by which time
 // the rest of the page's startup has run alongside the compile.
 
-/** Compiles and links a program without asking how it went. */
+/** Compiles a shader without asking how it went. */
+export function buildShader(
+  gl: WebGL2RenderingContext,
+  type: number,
+  src: string,
+): WebGLShader {
+  const sh = gl.createShader(type)!;
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  return sh;
+}
+
+/** Compiles and links a program without asking how it went. A scene whose
+ *  programs all share a vertex shader can build that once and pass it in. */
 export function buildProgram(
   gl: WebGL2RenderingContext,
-  vs: string,
+  vs: string | WebGLShader,
   fs: string,
 ): WebGLProgram {
   const prog = gl.createProgram()!;
-  for (const [type, src] of [
-    [gl.VERTEX_SHADER, vs],
-    [gl.FRAGMENT_SHADER, fs],
-  ] as const) {
-    const sh = gl.createShader(type)!;
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    gl.attachShader(prog, sh);
-  }
+  gl.attachShader(
+    prog,
+    typeof vs === "string" ? buildShader(gl, gl.VERTEX_SHADER, vs) : vs,
+  );
+  gl.attachShader(prog, buildShader(gl, gl.FRAGMENT_SHADER, fs));
   gl.linkProgram(prog);
   return prog;
 }

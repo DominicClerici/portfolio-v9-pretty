@@ -13,14 +13,14 @@
 // and what leaves one edge comes back in at the other, so the frame is never
 // short of sheet to show.
 
-import { buildProgram, whenLinked } from "../lib/gl-program";
+import { buildProgram, buildShader, whenLinked } from "../lib/gl-program";
 import {
   BONE,
   DARK,
   FULLSCREEN_VS,
   bindFullscreenTriangle,
   createLoop,
-  fitCanvas,
+  fitBuffer,
   getGL,
   glsl3,
   uniforms,
@@ -33,7 +33,7 @@ const DYE_RES = 900;
 const DYE_RES_SMALL = 800;
 // A frame whose short side is under this many CSS px is a phone's.
 const SMALL_FRAME = 600;
-const PRESSURE_ITERATIONS = 18;
+const PRESSURE_PASSES = 9; // each is two rounds of the relaxation
 const CURL = 14; // vorticity confinement: how much the eddies are kept alive
 const VELOCITY_FADE = 0.55; // per second
 const DYE_FADE = 0.16; // per second
@@ -47,6 +47,11 @@ const TOUCH_DAB = 0.3; // the ink a finger leaves where it lands
 // does the sliding itself (see createInk), global.css's ink-slide carries
 // the same figure.
 const PARALLAX = 0.5;
+// A splat is drawn only where it can change a half-float at all. The format's
+// finest step is 2^-24, so anything under half of that is rounded away
+// whatever it is added to; the margin below that covers the sum being
+// rounded twice, once as a float and once into the target.
+const SPLAT_FLOOR = 2 ** -27;
 
 // What each pigment lets through at full strength.
 const PIGMENTS = [
@@ -76,9 +81,9 @@ void main() {
   o = texture(uSource, from) / (1.0 + uFade * uDt);
 }`;
 
+// Blended onto the target, not written over it: see splatOnto.
 const SPLAT_FS = `#version 300 es
 ${HEAD}
-uniform sampler2D uTarget;
 uniform vec2 uShape;
 uniform vec2 uPoint;
 uniform vec3 uColor;
@@ -87,39 +92,46 @@ void main() {
   vec2 d = vUv - uPoint;
   d.y = fract(d.y + 0.5) - 0.5;
   vec2 p = d * uShape;
-  o = vec4(texture(uTarget, vUv).xyz + uColor * exp(-dot(p, p) / uRadius), 1.0);
+  o = vec4(uColor * exp(-dot(p, p) / uRadius), 0.0);
 }`;
 
-const CURL_FS = `#version 300 es
-${HEAD}
-uniform sampler2D uVelocity;
-uniform vec2 uTexel;
-void main() {
-  float l = texture(uVelocity, vUv - vec2(uTexel.x, 0.0)).y;
-  float r = texture(uVelocity, vUv + vec2(uTexel.x, 0.0)).y;
-  float t = texture(uVelocity, vUv + vec2(0.0, uTexel.y)).x;
-  float b = texture(uVelocity, vUv - vec2(0.0, uTexel.y)).x;
-  o = vec4(0.5 * (r - l - t + b), 0.0, 0.0, 1.0);
+// The water grid's edges, for a shader that fetches texels by index: held at
+// the sides and looping top to bottom, as the targets' samplers have them.
+const GRID = `
+ivec2 size;
+ivec2 cell(int x, int y) {
+  return ivec2(clamp(x, 0, size.x - 1), (y + size.y) % size.y);
 }`;
 
+// The curl is worked out here, at the cell and its four neighbours, and not
+// in a pass of its own: on a grid this small a pass costs far more than the
+// fetches it saves.
 const VORTICITY_FS = `#version 300 es
 ${HEAD}
 uniform sampler2D uVelocity;
-uniform sampler2D uCurl;
-uniform vec2 uTexel;
 uniform float uCurlAmount;
 uniform float uDt;
+${GRID}
+vec2 vel(int x, int y) {
+  return texelFetch(uVelocity, cell(x, y), 0).xy;
+}
+float curl(int x, int y) {
+  x = clamp(x, 0, size.x - 1);
+  return 0.5 * (vel(x + 1, y).y - vel(x - 1, y).y - vel(x, y + 1).x + vel(x, y - 1).x);
+}
 void main() {
-  float l = texture(uCurl, vUv - vec2(uTexel.x, 0.0)).x;
-  float r = texture(uCurl, vUv + vec2(uTexel.x, 0.0)).x;
-  float t = texture(uCurl, vUv + vec2(0.0, uTexel.y)).x;
-  float b = texture(uCurl, vUv - vec2(0.0, uTexel.y)).x;
-  float c = texture(uCurl, vUv).x;
+  size = textureSize(uVelocity, 0);
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  float l = curl(p.x - 1, p.y);
+  float r = curl(p.x + 1, p.y);
+  float t = curl(p.x, p.y + 1);
+  float b = curl(p.x, p.y - 1);
+  float c = curl(p.x, p.y);
   vec2 force = 0.5 * vec2(abs(t) - abs(b), abs(r) - abs(l));
   force /= length(force) + 0.0001;
   force *= uCurlAmount * c;
   force.y *= -1.0;
-  vec2 v = texture(uVelocity, vUv).xy + force * uDt;
+  vec2 v = vel(p.x, p.y) + force * uDt;
   o = vec4(clamp(v, -1000.0, 1000.0), 0.0, 1.0);
 }`;
 
@@ -135,26 +147,42 @@ void main() {
   o = vec4(0.5 * (r - l + t - b), 0.0, 0.0, 1.0);
 }`;
 
+// Two rounds of the relaxation, p ← (its four neighbours − d) / 4, in one
+// pass: the second round written out in terms of what the first one reads.
+// Each neighbour's own neighbours are the cell itself (four times over), the
+// diagonals (twice each) and the cells two away.
+//
+// At the sides a single round reads the edge cell for the one beyond it. Two
+// rounds at once must then read the cell two beyond the edge as the one a
+// step inside it, which is the grid mirrored in its edge, and not held.
+//
+// uScale is applied to the pressure as it is read: the first pass of a frame
+// starts from last frame's answer, taken down a little.
 const PRESSURE_FS = `#version 300 es
 ${HEAD}
 uniform sampler2D uPressure;
 uniform sampler2D uDivergence;
-uniform vec2 uTexel;
+uniform float uScale;
+ivec2 size;
+ivec2 cell(int x, int y) {
+  x = x < 0 ? -1 - x : x >= size.x ? 2 * size.x - 1 - x : x;
+  return ivec2(x, (y + size.y) % size.y);
+}
+float p(int x, int y) {
+  return texelFetch(uPressure, cell(x, y), 0).x;
+}
+float d(int x, int y) {
+  return texelFetch(uDivergence, cell(x, y), 0).x;
+}
 void main() {
-  float l = texture(uPressure, vUv - vec2(uTexel.x, 0.0)).x;
-  float r = texture(uPressure, vUv + vec2(uTexel.x, 0.0)).x;
-  float t = texture(uPressure, vUv + vec2(0.0, uTexel.y)).x;
-  float b = texture(uPressure, vUv - vec2(0.0, uTexel.y)).x;
-  float d = texture(uDivergence, vUv).x;
-  o = vec4((l + r + b + t - d) * 0.25, 0.0, 0.0, 1.0);
-}`;
-
-const SCALE_FS = `#version 300 es
-${HEAD}
-uniform sampler2D uSource;
-uniform float uValue;
-void main() {
-  o = uValue * texture(uSource, vUv);
+  size = textureSize(uPressure, 0);
+  int x = int(gl_FragCoord.x);
+  int y = int(gl_FragCoord.y);
+  float around = 4.0 * p(x, y)
+    + 2.0 * (p(x - 1, y - 1) + p(x + 1, y - 1) + p(x - 1, y + 1) + p(x + 1, y + 1))
+    + p(x - 2, y) + p(x + 2, y) + p(x, y - 2) + p(x, y + 2);
+  float near = d(x - 1, y) + d(x + 1, y) + d(x, y - 1) + d(x, y + 1);
+  o = vec4(((uScale * around - near) * 0.25 - d(x, y)) * 0.25, 0.0, 0.0, 1.0);
 }`;
 
 const PROJECT_FS = `#version 300 es
@@ -228,10 +256,42 @@ type Target = {
 };
 type Pair = { read: Target; write: Target; swap(): void };
 
-export type InkScene = {
+/** The frame's size in CSS px, and the screen's pixel ratio. */
+export type FrameSize = { cssW: number; cssH: number; dpr: number };
+
+/** Where the pointer or a finger is: 0…1 across the canvas each way, y up. */
+export type PointerSample = {
+  x: number;
+  y: number;
+  touch: boolean;
+  /** A finger has just come down. */
+  landed: boolean;
+  /** The stroke before this point is over: this is not a line on from it. */
+  lift: boolean;
+};
+
+type Pixels = { w: number; h: number; bytes: Uint8Array };
+type Held = "dye" | "velocity" | "pressure";
+
+/** For ink-look.mjs: the simulation stepped and read back on demand, in
+ *  calls that can be made from another thread. */
+export type InkLook = {
+  /** Runs frames, and returns the canvas as the last one left it. */
+  run(frames: number): Pixels;
+  /** One of the opening drops. */
+  drop(i: number): void;
+  /** A target's floats, and the same put back. */
+  read(what: Held): Pixels;
+  write(what: Held, bytes: Uint8Array): void;
+  info(): ReturnType<Ink["tune"]>;
+  /** A clean sheet. */
+  reset(): void;
+};
+
+export type Ink = {
   start(): void;
   stop(): void;
-  resize(): void;
+  resize(size: FrameSize): void;
   /** Scroll into the pinned scope, CSS px. */
   setScroll(px: number): void;
   /** The turn to dark, 0 (paper) to 1 (the glass scene's dark backdrop). */
@@ -251,7 +311,7 @@ export type InkScene = {
     gl: WebGL2RenderingContext;
     programs: Record<string, WebGLProgram>;
     frame(dt: number): void;
-  };
+  } & InkLook;
 };
 
 // The buffer stops short of the screen's own density: the washes are soft
@@ -261,14 +321,23 @@ export type InkScene = {
 const MAX_DPR = 1.5;
 const MAX_DPR_SMALL = 1.5;
 
+/** The simulation, on whichever thread holds the canvas: nothing in here
+ *  reads the page. What it needs from it (the frame's size, the pointer,
+ *  the scroll) is handed in, by ink-mount.ts. */
 export function createInk(init: {
-  canvas: HTMLCanvasElement;
-  /** The element the canvas fills. */
-  wrap: HTMLElement;
+  canvas: HTMLCanvasElement | OffscreenCanvas;
+  /** How many times over the canvas shows the sheet (see ink-mount.ts). */
+  tiles: number;
   reducedMotion: boolean;
-}): InkScene | null {
-  const { canvas, wrap, reducedMotion } = init;
-  performance.mark("ink:create");
+  size: FrameSize;
+  /** Where the pointer has got to, if it has moved since last asked: asked
+   *  once a frame. */
+  pointer(): PointerSample | null;
+  mark?(name: string): void;
+}): Ink | null {
+  const { canvas, tiles, reducedMotion } = init;
+  const mark = init.mark ?? ((name: string) => performance.mark(name));
+  mark("ink:create");
   const gl = getGL(canvas);
   if (!gl) return null;
   // Rendering to half-float needs one of these; without it there is no sim.
@@ -278,35 +347,26 @@ export function createInk(init: {
   )
     return null;
 
-  // On a phone the page hears its own scroll position late and in steps (a
-  // fast flick, or Safari's bar sliding, brings it down to ten reports a
-  // second), so a sheet slid from those reports lurches under copy that is
-  // scrolling smoothly. There the canvas slides instead, on a scroll
-  // timeline the compositor runs (global.css, ink-slide): it is --ink-tiles
-  // frames tall, shows the looping sheet that many times over, and moving
-  // it up one frame's height brings it back to where it began.
-  const tiles =
-    Number(getComputedStyle(canvas).getPropertyValue("--ink-tiles")) || 1;
-
   const sources = {
     advect: ADVECT_FS,
     splat: SPLAT_FS,
-    curl: CURL_FS,
     vorticity: VORTICITY_FS,
     divergence: DIVERGENCE_FS,
     pressure: PRESSURE_FS,
-    scale: SCALE_FS,
     project: PROJECT_FS,
     display: DISPLAY_FS,
   };
   type Name = keyof typeof sources;
   const names = Object.keys(sources) as Name[];
+  const vs = buildShader(gl, gl.VERTEX_SHADER, FULLSCREEN_VS);
   const progs = Object.fromEntries(
-    names.map((n) => [n, buildProgram(gl, FULLSCREEN_VS, sources[n])]),
+    names.map((n) => [n, buildProgram(gl, vs, sources[n])]),
   ) as Record<Name, WebGLProgram>;
   const U = {} as Record<Name, Record<string, WebGLUniformLocation | null>>;
   bindFullscreenTriangle(gl);
-  performance.mark("ink:built");
+  // Only splats blend. They leave alpha as it is, at 1.
+  gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+  mark("ink:built");
 
   function target(w: number, h: number, filter: number): Target {
     const tex = gl!.createTexture()!;
@@ -346,7 +406,6 @@ export function createInk(init: {
   let dye: Pair;
   let pressure: Pair;
   let divergence: Target;
-  let curl: Target;
   let ready = false;
   let cssW = 1;
   let cssH = 1;
@@ -368,12 +427,14 @@ export function createInk(init: {
       : { w: res, h: Math.round(res / aspect) };
   }
 
+  let size = init.size;
   function resize() {
-    cssW = wrap.clientWidth;
-    cssH = wrap.clientHeight;
+    cssW = size.cssW;
+    cssH = size.cssH;
     const small = Math.min(cssW, cssH) < SMALL_FRAME;
     maxDpr ||= small ? MAX_DPR_SMALL : MAX_DPR;
-    const changed = fitCanvas(canvas, wrap, maxDpr, tiles) || rebuild;
+    const changed =
+      fitBuffer(canvas, cssW, cssH, Math.min(size.dpr, maxDpr), tiles) || rebuild;
     rebuild = false;
     const aspect = cssW / cssH;
     shapeX = Math.max(aspect, 1);
@@ -389,11 +450,9 @@ export function createInk(init: {
       free(p?.write);
     }
     free(divergence);
-    free(curl);
     velocity = pair(sim.w, sim.h, gl!.LINEAR);
     pressure = pair(sim.w, sim.h, gl!.NEAREST);
     divergence = target(sim.w, sim.h, gl!.NEAREST);
-    curl = target(sim.w, sim.h, gl!.NEAREST);
     dye = pair(d.w, d.h, gl!.LINEAR);
     if (reducedMotion) settle();
   }
@@ -409,6 +468,7 @@ export function createInk(init: {
     gl!.bindTexture(gl!.TEXTURE_2D, t.tex);
     gl!.uniform1i(loc, unit++);
   }
+  /** A pass over the whole of a target. */
   function blit(t: Target | null) {
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, t ? t.fbo : null);
     gl!.viewport(0, 0, t ? t.w : canvas.width, t ? t.h : canvas.height);
@@ -421,6 +481,47 @@ export function createInk(init: {
   let shapeX = 1;
   let shapeY = 1;
 
+  /** Adds a splat to a target in place, over the box it reaches and no
+   *  further: most are a small part of the grid, and none needs the rest of
+   *  it read and written back. */
+  function splatOnto(
+    t: Target,
+    x: number,
+    y: number,
+    color: readonly number[],
+    radius: number,
+  ) {
+    const peak = Math.max(Math.abs(color[0]), Math.abs(color[1]), Math.abs(color[2]));
+    const reach = Math.sqrt(Math.max(0, radius * Math.log(peak / SPLAT_FLOOR)));
+    if (!reach) return;
+    const x0 = Math.max(0, Math.floor((x - reach / shapeX) * t.w));
+    const x1 = Math.min(t.w, Math.ceil((x + reach / shapeX) * t.w));
+    if (!(x1 > x0)) return;
+    const u = use("splat");
+    gl!.uniform2f(u.uShape, shapeX, shapeY);
+    gl!.uniform2f(u.uPoint, x, y);
+    gl!.uniform3f(u.uColor, color[0], color[1], color[2]);
+    gl!.uniform1f(u.uRadius, radius);
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, t.fbo);
+    gl!.viewport(0, 0, t.w, t.h);
+    const rows = (from: number, to: number) => {
+      gl!.scissor(x0, from, x1 - x0, to - from);
+      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+    };
+    // The sheet loops top to bottom, and the shader measures to the nearest
+    // copy of the point, so a box over an edge carries on from the other.
+    // The pieces must not overlap: a row drawn twice is added to twice.
+    const wrapped = y - Math.floor(y);
+    const y0 = Math.floor((wrapped - reach / shapeY) * t.h);
+    const y1 = Math.ceil((wrapped + reach / shapeY) * t.h);
+    if (y1 - y0 >= t.h) rows(0, t.h);
+    else {
+      rows(Math.max(y0, 0), Math.min(y1, t.h));
+      if (y0 < 0) rows(y0 + t.h, t.h);
+      if (y1 > t.h) rows(0, y1 - t.h);
+    }
+  }
+
   /** x, y in 0…1 from the bottom-left; force in sim texels per second. */
   function splat(
     x: number,
@@ -430,23 +531,12 @@ export function createInk(init: {
     ink: readonly number[] | null,
     radius: number,
   ) {
-    let u = use("splat");
-    tex(u.uTarget, velocity.read);
-    gl!.uniform2f(u.uShape, shapeX, shapeY);
-    gl!.uniform2f(u.uPoint, x, y);
-    gl!.uniform3f(u.uColor, fx, fy, 0);
-    gl!.uniform1f(u.uRadius, radius);
-    blit(velocity.write);
-    velocity.swap();
-    if (!ink) return;
-    u = use("splat");
-    tex(u.uTarget, dye.read);
-    gl!.uniform2f(u.uShape, shapeX, shapeY);
-    gl!.uniform2f(u.uPoint, x, y);
-    gl!.uniform3f(u.uColor, ink[0], ink[1], ink[2]);
-    gl!.uniform1f(u.uRadius, radius);
-    blit(dye.write);
-    dye.swap();
+    gl!.enable(gl!.BLEND);
+    gl!.enable(gl!.SCISSOR_TEST);
+    splatOnto(velocity.read, x, y, [fx, fy, 0], radius);
+    if (ink) splatOnto(dye.read, x, y, ink, radius);
+    gl!.disable(gl!.SCISSOR_TEST);
+    gl!.disable(gl!.BLEND);
   }
 
   /** A drop landing: a pool of one pigment, pushed outward all round. */
@@ -476,15 +566,8 @@ export function createInk(init: {
     const shift = tiles > 1 ? 0 : ((scroll - lastScroll) * PARALLAX) / cssH;
     lastScroll = scroll;
 
-    let u = use("curl");
+    let u = use("vorticity");
     tex(u.uVelocity, velocity.read);
-    gl!.uniform2f(u.uTexel, tx, ty);
-    blit(curl);
-
-    u = use("vorticity");
-    tex(u.uVelocity, velocity.read);
-    tex(u.uCurl, curl);
-    gl!.uniform2f(u.uTexel, tx, ty);
     gl!.uniform1f(u.uCurlAmount, CURL);
     gl!.uniform1f(u.uDt, dt);
     blit(velocity.write);
@@ -495,19 +578,13 @@ export function createInk(init: {
     gl!.uniform2f(u.uTexel, tx, ty);
     blit(divergence);
 
-    // Last frame's pressure is most of the way to this frame's answer.
-    u = use("scale");
-    tex(u.uSource, pressure.read);
-    gl!.uniform1f(u.uValue, 0.8);
-    blit(pressure.write);
-    pressure.swap();
-
     u = use("pressure");
-    gl!.uniform2f(u.uTexel, tx, ty);
-    for (let i = 0; i < PRESSURE_ITERATIONS; i++) {
+    for (let i = 0; i < PRESSURE_PASSES; i++) {
       unit = 0;
       tex(u.uPressure, pressure.read);
       tex(u.uDivergence, divergence);
+      // Last frame's pressure is most of the way to this frame's answer.
+      gl!.uniform1f(u.uScale, i ? 1 : 0.8);
       blit(pressure.write);
       pressure.swap();
     }
@@ -549,48 +626,9 @@ export function createInk(init: {
 
   /* ── What stirs it ── */
 
-  // The pointer, as last reported and (lx, ly) as last stirred from, in the
-  // frame's own 0…1 with y up. The events only note where it is; the frame
-  // that uses it places it, so the canvas is measured once a frame at most.
-  const ptr = {
-    cx: 0,
-    cy: 0,
-    lx: 0,
-    ly: 0,
-    down: false,
-    fresh: false,
-    touch: false,
-    landed: false,
-  };
-  window.addEventListener(
-    "pointermove",
-    (e) => {
-      // A finger's pointer events stop the moment the browser takes the
-      // gesture for a scroll; its touch events (below) do not.
-      if (e.pointerType === "touch") return;
-      if (ptr.touch) ptr.down = false;
-      ptr.touch = false;
-      ptr.cx = e.clientX;
-      ptr.cy = e.clientY;
-      ptr.fresh = true;
-    },
-    { passive: true },
-  );
-  const onTouch = (e: TouchEvent) => {
-    const f = e.touches[0];
-    if (!f) return;
-    // Each touch is a stroke of its own, not a line from the last one.
-    if (e.type === "touchstart" && e.touches.length === 1) {
-      ptr.down = false;
-      ptr.landed = true;
-    }
-    ptr.touch = true;
-    ptr.cx = f.clientX;
-    ptr.cy = f.clientY;
-    ptr.fresh = true;
-  };
-  window.addEventListener("touchstart", onTouch, { passive: true });
-  window.addEventListener("touchmove", onTouch, { passive: true });
+  // Where the stroke under way was last stirred from, in the frame's own
+  // 0…1 with y up.
+  const ptr = { lx: 0, ly: 0, down: false };
 
   // Which pigment the pointer is loaded with: it turns through the three as
   // it travels, so a long stroke changes colour along its length.
@@ -603,12 +641,12 @@ export function createInk(init: {
   }
 
   function stir(t: number, dt: number) {
-    if (ptr.fresh) {
-      ptr.fresh = false;
-      const r = canvas.getBoundingClientRect();
-      const x = (ptr.cx - r.left) / r.width;
-      let y = 1 - (ptr.cy - r.top) / r.height;
-      const radius = ptr.touch ? TOUCH_RADIUS : POINTER_RADIUS;
+    const at = init.pointer();
+    if (at) {
+      if (at.lift) ptr.down = false;
+      const x = at.x;
+      let y = at.y;
+      const radius = at.touch ? TOUCH_RADIUS : POINTER_RADIUS;
       // Off the frame (it has scrolled away from under the pointer) the
       // stroke ends: the sheet's loop would bring it back in at the far edge.
       if (y < 0 || y > 1) ptr.down = false;
@@ -620,7 +658,7 @@ export function createInk(init: {
           ptr.lx = x;
           ptr.ly = y;
           ptr.down = true;
-          if (ptr.landed) {
+          if (at.landed) {
             travel += 0.2;
             splat(x, y, 0, 0, pointerInk(TOUCH_DAB), radius);
           }
@@ -648,7 +686,6 @@ export function createInk(init: {
         ptr.lx = x;
         ptr.ly = y;
       }
-      ptr.landed = false;
     }
 
     // Two brushes on slow looping paths, each trailing one pigment and
@@ -710,14 +747,14 @@ export function createInk(init: {
 
   whenLinked(gl, Object.values(progs), (ok) => {
     if (!ok) return;
-    performance.mark("ink:linked");
+    mark("ink:linked");
     const find = (src: string) =>
       Array.from(new Set(Array.from(src.matchAll(/uniform \w+ (\w+);/g), (m) => m[1])));
     for (const n of names) U[n] = uniforms(gl, progs[n], find(sources[n]));
     ready = true;
     resize();
     if (!loop.running && !reducedMotion) draw();
-    performance.mark("ink:ready");
+    mark("ink:ready");
   });
 
   const still = () => {
@@ -726,7 +763,7 @@ export function createInk(init: {
 
   let probed = false;
 
-  return {
+  const scene: Ink = {
     start: () => {
       if (!reducedMotion && !probed) loop.start();
     },
@@ -743,10 +780,41 @@ export function createInk(init: {
           step(dt);
           draw();
         },
+        // The canvas is read in the task that drew it: its buffer is not kept.
+        run(frames) {
+          for (let i = 0; i < frames; i++) this.frame(1 / 60);
+          const bytes = new Uint8Array(canvas.width * canvas.height * 4);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+          return { w: canvas.width, h: canvas.height, bytes };
+        },
+        drop(i) {
+          const d = DROPS[i];
+          drop(d.x, d.y, d.pigment, d.size);
+        },
+        read(what) {
+          const t = { dye, velocity, pressure }[what].read;
+          const f = new Float32Array(t.w * t.h * 4);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
+          gl.readPixels(0, 0, t.w, t.h, gl.RGBA, gl.FLOAT, f);
+          return { w: t.w, h: t.h, bytes: new Uint8Array(f.buffer) };
+        },
+        write(what, bytes) {
+          const t = { dye, velocity, pressure }[what].read;
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, t.tex);
+          gl.texSubImage2D(
+            gl.TEXTURE_2D, 0, 0, 0, t.w, t.h, gl.RGBA, gl.FLOAT,
+            new Float32Array(bytes.buffer, bytes.byteOffset, bytes.length / 4),
+          );
+        },
+        info: () => scene.tune({}),
+        reset: () => void scene.tune({ dye: dyeRes }),
       };
     },
     stop: () => loop.stop(),
-    resize: () => {
+    resize(to) {
+      size = to;
       if (ready) resize();
     },
     setScroll(px) {
@@ -773,6 +841,78 @@ export function createInk(init: {
       if (t === dark) return;
       dark = t;
       still();
+    },
+  };
+  return scene;
+}
+
+/** What ink-mount.ts says to the ink, across to its worker or straight to
+ *  it, and what comes back. */
+export type ToInk =
+  | {
+      is: "open";
+      canvas: HTMLCanvasElement | OffscreenCanvas;
+      tiles: number;
+      reducedMotion: boolean;
+      size: FrameSize;
+    }
+  | { is: "size"; size: FrameSize }
+  | { is: "running"; on: boolean }
+  | { is: "scroll"; px: number }
+  | { is: "dark"; t: number }
+  | { is: "pointer"; at: PointerSample }
+  | { is: "look"; id: number; call: keyof InkLook; args: unknown[] };
+export type FromInk =
+  | { is: "failed" }
+  | { is: "mark"; name: string; at: number }
+  | { is: "looked"; id: number; value: unknown };
+
+/** Runs an ink from messages. `pointer`, where the ink is on the page's own
+ *  thread, is asked in place of waiting to be told. */
+export function serveInk(
+  reply: (m: FromInk, transfer?: Transferable[]) => void,
+  pointer?: () => PointerSample | null,
+) {
+  let ink: Ink | null = null;
+  let look: InkLook | undefined;
+  // Told of more often than a frame comes round: the frame takes where it
+  // has got to, and whatever happened on the way there.
+  let told: PointerSample | null = null;
+  const take = () => {
+    const at = told;
+    told = null;
+    return at;
+  };
+  return {
+    ink: () => ink,
+    hear(m: ToInk) {
+      if (m.is === "open") {
+        ink = createInk({
+          ...m,
+          pointer: pointer ?? take,
+          mark(name) {
+            performance.mark(name);
+            reply({ is: "mark", name, at: performance.timeOrigin + performance.now() });
+          },
+        });
+        if (!ink) reply({ is: "failed" });
+      } else if (!ink) return;
+      else if (m.is === "size") ink.resize(m.size);
+      else if (m.is === "running") m.on ? ink.start() : ink.stop();
+      else if (m.is === "scroll") ink.setScroll(m.px);
+      else if (m.is === "dark") ink.setDarkness(m.t);
+      else if (m.is === "pointer")
+        told = {
+          ...m.at,
+          landed: m.at.landed || !!told?.landed,
+          lift: m.at.lift || !!told?.lift,
+        };
+      else if (m.is === "look") {
+        look ??= ink.probe();
+        const value = (look[m.call] as (...a: unknown[]) => unknown)(...m.args);
+        const bytes = (value as Pixels | undefined)?.bytes;
+        reply({ is: "looked", id: m.id, value }, bytes ? [bytes.buffer] : []);
+      }
     },
   };
 }

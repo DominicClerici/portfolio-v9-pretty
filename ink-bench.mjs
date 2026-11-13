@@ -5,8 +5,8 @@
 //   node ink-bench.mjs                     this build, desktop and phone sizes
 //   node ink-bench.mjs --b other/client    ...against a second build (A/B)
 //   node ink-bench.mjs --phone             serve it, and wait for a real phone
-//        [--a dist/client] [--device desktop|phone|both] [--rounds 7]
-//        [--loads 5] [--save results.json] [--headed]
+//        [--a dist/client] [--device desktop|phone|both|none] [--rounds 7]
+//        [--loads 5] [--latency 0] [--save results.json] [--headed]
 //
 // To compare a change: build, copy dist/client somewhere, make the change,
 // build again, and pass the copy as --a and dist/client as --b.
@@ -70,6 +70,9 @@ const B = arg("b", "");
 const DEVICE = arg("device", "both");
 const ROUNDS = +arg("rounds", 7);
 const LOADS = +arg("loads", 5);
+// A stand-in for a network: every response waits this long, so a request
+// that is only discovered late shows up in the load marks.
+const LATENCY = +arg("latency", 0);
 const SAVE = arg("save", "");
 const CHROME = arg(
   "chrome",
@@ -122,6 +125,7 @@ async function serve(dir, onReport) {
       } catch {}
       return;
     }
+    if (LATENCY) await new Promise((r) => setTimeout(r, LATENCY));
     let path = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
     let file = join(root, path);
     if (!file.startsWith(root)) return res.writeHead(403).end();
@@ -395,7 +399,7 @@ async function loads(build) {
     console.log(`  ${label.padEnd(44)} cold ${cell(runs.cold)}   warm ${cell(runs.warm)}`);
   };
   row("script starts creating the ink at", "create");
-  row("context + 9 programs queued (blocks the page)", "build");
+  row("context + programs queued (blocks the page)", "build");
   row("waiting on the shader link (page is free)", "link");
   row("uniforms, targets, first draw (blocks)", "setup");
   row("ink ready at", "ready");
@@ -428,7 +432,7 @@ if (flag("phone")) {
     console.log(`  build ${b.label}:  http://${ip}:${b.port}/?inkbench&report=/report`);
   console.log("\nResults print here as they arrive. Ctrl-C when done.");
 } else {
-  for (const name of DEVICE === "both" ? ["desktop", "phone"] : [DEVICE])
+  for (const name of { both: ["desktop", "phone"], none: [] }[DEVICE] ?? [DEVICE])
     out.devices[name] = await benchDevice(name, builds);
   if (LOADS > 0) for (const b of builds) out.loads[b.label] = await loads(b);
   if (SAVE) await writeFile(SAVE, JSON.stringify(out, null, 1));

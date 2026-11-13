@@ -115,10 +115,72 @@ function stripHtmlComments() {
   };
 }
 
+/* A page's scripts share small modules (the layout watcher, the WebGL
+   helpers), which the bundler keeps as files of their own, and the browser
+   only learns of those once the script importing them has arrived: a second
+   round trip before any of it runs, the ink under the hero included. They
+   cannot be folded into one file, since each is shared with a script that
+   also loads where the others do not. So each page names them up front
+   instead, and they are fetched alongside the scripts that need them.
+   Only static imports: what a script fetches on demand stays on demand. */
+function preloadStaticImports() {
+  const ENTRY = /<script type="module" src="(\/[^"]+\.js)"/g;
+  const STATIC = /\b(?:from|import)\s*"(\.{1,2}\/[^"]+\.js)"/g;
+
+  async function* htmlFiles(dir) {
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) yield* htmlFiles(p);
+      else if (e.name.endsWith(".html")) yield p;
+    }
+  }
+
+  return {
+    name: "preload-static-imports",
+    hooks: {
+      "astro:build:done": async ({ dir, logger }) => {
+        const root = fileURLToPath(dir);
+        const imports = new Map();
+        const importsOf = async (url) => {
+          if (!imports.has(url)) {
+            const code = await readFile(join(root, url), "utf8").catch(() => "");
+            imports.set(
+              url,
+              Array.from(code.matchAll(STATIC), (m) => new URL(m[1], `file://${url}`).pathname),
+            );
+          }
+          return imports.get(url);
+        };
+        let added = 0;
+        for await (const file of htmlFiles(root)) {
+          const html = await readFile(file, "utf8");
+          const entries = Array.from(html.matchAll(ENTRY), (m) => m[1]);
+          const found = new Set();
+          const queue = [...entries];
+          for (let url; (url = queue.pop()); )
+            for (const dep of await importsOf(url)) {
+              if (found.has(dep) || entries.includes(dep)) continue;
+              found.add(dep);
+              queue.push(dep);
+            }
+          if (!found.size || !html.includes("</head>")) continue;
+          const links = [...found]
+            .sort()
+            .map((url) => `<link rel="modulepreload" href="${url}">`)
+            .join("");
+          await writeFile(file, html.replace("</head>", `${links}</head>`));
+          added += found.size;
+        }
+        logger.info(`preloading ${added} shared script files`);
+      },
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   site: "https://www.dominicclerici.com",
-  integrations: [sitemap(), stripHtmlComments()],
+  integrations: [sitemap(), stripHtmlComments(), preloadStaticImports()],
   /* Every page stays prerendered; only the two files under src/pages/api opt
      out with `export const prerender = false`, so the adapter emits exactly
      one function and the rest of the site ships as static HTML. */

@@ -1,9 +1,9 @@
 // Temporary: with ?inkdebug, a frame-rate counter and sliders for the ink's
 // resolutions, for finding the lowest ones that still look right on a phone.
 
-import type { InkScene } from "./ink-fluid";
+import type { Ink } from "./ink-fluid";
 
-export function inkDebug(ink: InkScene) {
+export function inkDebug(ink: Ink) {
   const box = document.createElement("div");
   box.style.cssText =
     "position:fixed;left:6px;right:6px;top:max(6px,env(safe-area-inset-top));z-index:99999;" +

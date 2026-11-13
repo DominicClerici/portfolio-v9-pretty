@@ -23,7 +23,7 @@
 // context) and the frame's GPU time is given against it, in "ref units".
 
 import { FULLSCREEN_VS } from "../lib/gl-kit";
-import type { InkScene } from "./ink-fluid";
+import type { Ink } from "./ink-fluid";
 
 const REF_SIZE = 2048;
 const REF_PASSES = 4;
@@ -76,7 +76,7 @@ const spread = (v: number[]) =>
   (quantile(v, 0.75) - quantile(v, 0.25)) / (median(v) || 1);
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-export async function inkBench(ink: InkScene) {
+export async function inkBench(ink: Ink) {
   while (!ink.tune({}).dyeGrid) await new Promise((r) => setTimeout(r, 50));
   const probe = ink.probe();
   const gl = probe.gl;
@@ -91,13 +91,58 @@ export async function inkBench(ink: InkScene) {
     useProgram: gl.useProgram.bind(gl),
     viewport: gl.viewport.bind(gl),
     drawArrays: gl.drawArrays.bind(gl),
+    scissor: gl.scissor.bind(gl),
+    enable: gl.enable.bind(gl),
+    disable: gl.disable.bind(gl),
   };
+  // The ink scissors and blends its splats. The bench cuts draws to one
+  // pixel with the scissor too, so it keeps track of what the ink asked for:
+  // to hold its own over it (pinned), and to put the ink's back after.
+  const asked = { on: false, x: 0, y: 0, w: 0, h: 0 };
+  let blending = false;
+  let pinned = false;
+  gl.scissor = (x, y, w, h) => {
+    Object.assign(asked, { x, y, w, h });
+    if (!pinned) raw.scissor(x, y, w, h);
+  };
+  gl.enable = (cap) => {
+    if (cap === gl.BLEND) blending = true;
+    if (cap === gl.SCISSOR_TEST) {
+      asked.on = true;
+      if (pinned) return;
+    }
+    raw.enable(cap);
+  };
+  gl.disable = (cap) => {
+    if (cap === gl.BLEND) blending = false;
+    if (cap === gl.SCISSOR_TEST) {
+      asked.on = false;
+      if (pinned) return;
+    }
+    raw.disable(cap);
+  };
+  // The ink gives up a target's contents before it draws all over it. With
+  // its draws cut to one pixel that would leave the rest undefined.
+  const rawInvalidate = gl.invalidateFramebuffer.bind(gl);
+  gl.invalidateFramebuffer = (target, attachments) => {
+    if (!pinned) rawInvalidate(target, attachments);
+  };
+  function cutToOnePixel(on: boolean) {
+    pinned = on;
+    if (on || asked.on) raw.enable(gl.SCISSOR_TEST);
+    else raw.disable(gl.SCISSOR_TEST);
+    if (on) raw.scissor(0, 0, 1, 1);
+    else raw.scissor(asked.x, asked.y, asked.w, asked.h);
+  }
+  const area = () => (asked.on ? asked.w * asked.h : vw * vh);
   let program = "";
   let vw = 0;
   let vh = 0;
   let onDraw: ((kind: string, draw: () => void) => void) | null = null;
+  // The display pass is the screen's even where it is shaded into a frame
+  // of its own first and copied up (a canvas of more than one tile).
   const grid = () =>
-    vw === canvas.width && vh === canvas.height
+    program === "display" || (vw === canvas.width && vh === canvas.height)
       ? "screen"
       : `${vw}x${vh}` === ink.tune({}).dyeGrid
         ? "ink"
@@ -115,6 +160,17 @@ export async function inkBench(ink: InkScene) {
     const draw = () => raw.drawArrays(mode, first, count);
     if (onDraw) onDraw(`${program}:${grid()}`, draw);
     else draw();
+  };
+  // Copies are counted as passes too: a texture read for each pixel written.
+  const rawBlit = gl.blitFramebuffer.bind(gl);
+  gl.blitFramebuffer = (...a) => {
+    const draw = () => rawBlit(...a);
+    if (!onDraw) return draw();
+    const was = [vw, vh];
+    vw = Math.abs(a[6] - a[4]);
+    vh = Math.abs(a[7] - a[5]);
+    onDraw("copy:screen", draw);
+    [vw, vh] = was;
   };
 
   /* ── Counts ── */
@@ -147,8 +203,25 @@ export async function inkBench(ink: InkScene) {
       const fs = gl
         .getAttachedShaders(p)
         ?.find((s) => gl.getShaderParameter(s, gl.SHADER_TYPE) === gl.FRAGMENT_SHADER);
-      taps.set(n, ((fs && gl.getShaderSource(fs))?.match(/texture\(/g) ?? []).length);
+      // Fetches made inside a function count once for each call of it.
+      const bodies = new Map<string, string>();
+      const src = (fs && gl.getShaderSource(fs)) ?? "";
+      for (const m of src.matchAll(/^\w+ (\w+)\([^)]*\) \{\n([\s\S]*?)^\}/gm))
+        bodies.set(m[1], m[2]);
+      const calls = (body: string, f: string) =>
+        (body.match(new RegExp(`\\b${f}\\(`, "g")) ?? []).length;
+      const fetches = (f: string): number => {
+        const body = bodies.get(f) ?? "";
+        let sum = calls(body, "texture") + calls(body, "texelFetch");
+        for (const g of bodies.keys()) {
+          const n = g === f ? 0 : calls(body, g);
+          if (n) sum += n * fetches(g);
+        }
+        return sum;
+      };
+      taps.set(n, fetches("main"));
     }
+    taps.set("copy", 1);
 
     let bytes = canvas.width * canvas.height * 4;
     let targets = 0;
@@ -157,6 +230,7 @@ export async function inkBench(ink: InkScene) {
       () => ink.tune({ dye: now.dye }),
       (name, a) => {
         if (name !== "texImage2D") return;
+        if (a[2] === gl.RGBA8) return void (bytes += a[3] * a[4] * 4);
         targets++;
         bytes += a[3] * a[4] * 8;
       },
@@ -171,8 +245,8 @@ export async function inkBench(ink: InkScene) {
     onDraw = (kind, draw) => {
       const k = (kinds[kind] ||= { draws: 0, fragments: 0, taps: 0 });
       k.draws++;
-      k.fragments += vw * vh;
-      k.taps += vw * vh * (taps.get(kind.split(":")[0]) ?? 0);
+      k.fragments += area();
+      k.taps += area() * (taps.get(kind.split(":")[0]) ?? 0);
       draw();
     };
     counted(
@@ -272,29 +346,29 @@ export async function inkBench(ink: InkScene) {
    *  drawn its repeats more (at one pixel if `onePixel`). */
   function loaded(n: number, loadBy: number, kind = "", onePixel = false, bareAll = false) {
     const again = (times: number, scissor: boolean, draw: () => void) => {
+      // A splat adds to its target, so a repeat of it would add again: it
+      // is repeated blended to nothing instead, and then the ink's own
+      // blend (set once, in createInk) is put back.
+      const additive = blending;
+      if (additive) gl.blendFuncSeparate(gl.ZERO, gl.ONE, gl.ZERO, gl.ONE);
       for (let i = 0; i < times; i++) {
         // A pass of its own each time: a tile-based GPU shades only the
         // last of several opaque draws over the same pixels in one pass.
         gl.flush();
-        if (scissor) {
-          gl.enable(gl.SCISSOR_TEST);
-          gl.scissor(0, 0, 1, 1);
-        }
+        if (scissor) cutToOnePixel(true);
         draw();
-        if (scissor) gl.disable(gl.SCISSOR_TEST);
+        if (scissor) cutToOnePixel(false);
       }
+      if (additive) gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
     };
     onDraw = (k, draw) => {
       draw();
       if (k === SCREEN) again(loadBy, false, draw);
       if (k === kind) again(repeats(kind), onePixel, draw);
     };
-    if (bareAll) {
-      gl.enable(gl.SCISSOR_TEST);
-      gl.scissor(0, 0, 1, 1);
-    }
+    if (bareAll) cutToOnePixel(true);
     const ms = timeFrames(n).frame;
-    if (bareAll) gl.disable(gl.SCISSOR_TEST);
+    if (bareAll) cutToOnePixel(false);
     onDraw = null;
     return ms;
   }
@@ -307,10 +381,9 @@ export async function inkBench(ink: InkScene) {
   };
 
   function bare(n: number) {
-    gl.enable(gl.SCISSOR_TEST);
-    gl.scissor(0, 0, 1, 1);
+    cutToOnePixel(true);
     const ms = timeFrames(n).frame;
-    gl.disable(gl.SCISSOR_TEST);
+    cutToOnePixel(false);
     return ms;
   }
 
@@ -538,6 +611,7 @@ export async function inkBench(ink: InkScene) {
     return report();
   }
 
+  (window as any).__inkLook = { ink, probe };
   (window as any).__inkBench = {
     prepare,
     round,

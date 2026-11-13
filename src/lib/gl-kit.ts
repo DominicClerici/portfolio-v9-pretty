@@ -30,9 +30,11 @@ export function bindFullscreenTriangle(gl: WebGL2RenderingContext): void {
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 }
 
-export function getGL(canvas: HTMLCanvasElement): WebGL2RenderingContext | null {
+export function getGL(
+  canvas: HTMLCanvasElement | OffscreenCanvas,
+): WebGL2RenderingContext | null {
   try {
-    return canvas.getContext("webgl2", {
+    return (canvas as HTMLCanvasElement).getContext("webgl2", {
       alpha: false,
       antialias: false,
       depth: false,
@@ -61,9 +63,26 @@ export function fitCanvas(
   maxDpr: number,
   rows = 1,
 ): boolean {
-  const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
-  const w = Math.max(1, Math.round(wrap.clientWidth * dpr));
-  const h = Math.max(1, Math.round(wrap.clientHeight * dpr)) * rows;
+  return fitBuffer(
+    canvas,
+    wrap.clientWidth,
+    wrap.clientHeight,
+    Math.min(window.devicePixelRatio || 1, maxDpr),
+    rows,
+  );
+}
+
+/** The same from the numbers alone, for a canvas whose page is on another
+ *  thread. */
+export function fitBuffer(
+  canvas: { width: number; height: number },
+  cssW: number,
+  cssH: number,
+  dpr: number,
+  rows = 1,
+): boolean {
+  const w = Math.max(1, Math.round(cssW * dpr));
+  const h = Math.max(1, Math.round(cssH * dpr)) * rows;
   if (canvas.width === w && canvas.height === h) return false;
   canvas.width = w;
   canvas.height = h;
